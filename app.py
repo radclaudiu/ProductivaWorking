@@ -31,6 +31,10 @@ def create_app(config_class='config.Config'):
     # Load configuration
     app.config.from_object(config_class)
     
+    # Set application secret key explicitly
+    app.secret_key = os.environ.get('SESSION_SECRET', 'dev-key-for-development-2025-secure')
+    app.config['SECRET_KEY'] = app.secret_key
+    
     # Initialize extensions
     db.init_app(app)
     login_manager.init_app(app)
@@ -177,6 +181,11 @@ from flask_login import current_user
 
 # Create the application instance
 app = create_app()
+
+# Set a secret key directly in this instance (for development only)
+app.secret_key = 'development-secret-key-2025-secure'
+app.config['SECRET_KEY'] = app.secret_key
+app.config['WTF_CSRF_SECRET_KEY'] = app.secret_key
 
 # El servicio de cierre automático se inicia en main.py
 

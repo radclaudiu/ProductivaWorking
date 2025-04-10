@@ -210,6 +210,84 @@
 
     <!-- Gráfico y Acciones Rápidas -->
     <div class="row mb-4">
+        <!-- Pestañas del Dashboard (Puntos de Fichaje) - MOVIDO ARRIBA -->
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Puntos de Fichaje</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4>Lista de Puntos de Control</h4>
+                        <a href="{{ url_for('checkpoints.create_checkpoint') }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Nuevo Punto de Fichaje
+                        </a>
+                    </div>
+                    
+                    <div class="row" id="checkpointsList">
+                        {% for checkpoint in checkpoints %}
+                        <div class="col-lg-4 col-md-6 mb-4">
+                            <div class="card checkpoint-card h-100">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">
+                                        <span class="checkpoint-status status-{{ checkpoint.status.value }}"></span>
+                                        {{ checkpoint.name }}
+                                    </h5>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="checkpoint{{ checkpoint.id }}Actions" data-bs-toggle="dropdown" aria-expanded="false">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="checkpoint{{ checkpoint.id }}Actions">
+                                            <li><a class="dropdown-item" href="{{ url_for('checkpoints.edit_checkpoint', id=checkpoint.id) }}"><i class="bi bi-pencil me-2"></i>Editar</a></li>
+                                            <li><a class="dropdown-item" href="{{ url_for('checkpoints.login', checkpoint_id=checkpoint.id) }}"><i class="bi bi-box-arrow-in-right me-2"></i>Acceder</a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item text-danger" href="{{ url_for('checkpoints.delete_checkpoint', id=checkpoint.id) }}"><i class="bi bi-trash me-2"></i>Eliminar</a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text">
+                                        <i class="bi bi-geo-alt text-secondary me-1"></i> {{ checkpoint.location or 'Sin ubicación' }}
+                                    </p>
+                                    <p class="card-text">
+                                        <i class="bi bi-clock text-secondary me-1"></i> 
+                                        {% if checkpoint.operation_start_time and checkpoint.operation_end_time %}
+                                            {{ checkpoint.operation_start_time.strftime('%H:%M') }} - {{ checkpoint.operation_end_time.strftime('%H:%M') }}
+                                        {% else %}
+                                            Sin horario definido
+                                        {% endif %}
+                                    </p>
+                                    <p class="mb-0">
+                                        <small class="text-muted">Estado: 
+                                        {% if checkpoint.status.value == 'active' %}
+                                            <span class="badge bg-success">Activo</span>
+                                        {% elif checkpoint.status.value == 'maintenance' %}
+                                            <span class="badge bg-warning">Mantenimiento</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Desactivado</span>
+                                        {% endif %}
+                                        </small>
+                                    </p>
+                                </div>
+                                <div class="card-footer d-flex justify-content-between">
+                                    <small class="text-muted">Fichajes hoy: <span class="fw-bold">{{ checkpoint.today_records }}</span></small>
+                                    <a href="{{ url_for('checkpoints.view_records', id=checkpoint.id) }}" class="btn btn-sm btn-outline-primary">Registros</a>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                <i class="bi bi-info-circle me-2"></i> No hay puntos de fichaje configurados. 
+                                <a href="{{ url_for('checkpoints.create_checkpoint') }}" class="alert-link">Crear el primero</a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="col-lg-8 mb-4">
             <div class="card h-100">
                 <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
@@ -282,12 +360,7 @@
                 <div class="card-header bg-dark text-white">
                     <ul class="nav nav-pills card-header-pills" id="dashboard-tabs" role="tablist">
                         <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="checkpoints-tab" data-bs-toggle="tab" data-bs-target="#checkpointsTab" type="button" role="tab" aria-controls="checkpointsTab" aria-selected="true">
-                                <i class="bi bi-tablet"></i> Puntos de Fichaje
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="records-tab" data-bs-toggle="tab" data-bs-target="#recordsTab" type="button" role="tab" aria-controls="recordsTab" aria-selected="false">
+                            <button class="nav-link active" id="records-tab" data-bs-toggle="tab" data-bs-target="#recordsTab" type="button" role="tab" aria-controls="recordsTab" aria-selected="true">
                                 <i class="bi bi-clock-history"></i> Registros
                             </button>
                         </li>
@@ -310,97 +383,8 @@
                 </div>
                 <div class="card-body">
                     <div class="tab-content" id="dashboard-tabsContent">
-                        <!-- PESTAÑA: PUNTOS DE FICHAJE -->
-                        <div class="tab-pane fade show active" id="checkpointsTab" role="tabpanel" aria-labelledby="checkpoints-tab">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h4>Puntos de Fichaje</h4>
-                                <a href="{{ url_for('checkpoints.create_checkpoint') }}" class="btn btn-primary">
-                                    <i class="bi bi-plus-circle"></i> Nuevo Punto de Fichaje
-                                </a>
-                            </div>
-                            
-                            <div class="row" id="checkpointsList">
-                                {% for checkpoint in checkpoints %}
-                                <div class="col-lg-4 col-md-6 mb-4">
-                                    <div class="card checkpoint-card h-100">
-                                        <div class="card-header d-flex justify-content-between align-items-center">
-                                            <h5 class="mb-0">
-                                                <span class="checkpoint-status status-{{ checkpoint.status.value }}"></span>
-                                                {{ checkpoint.name }}
-                                            </h5>
-                                            <div class="dropdown">
-                                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="checkpoint{{ checkpoint.id }}Actions" data-bs-toggle="dropdown" aria-expanded="false">
-                                                    <i class="bi bi-three-dots-vertical"></i>
-                                                </button>
-                                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="checkpoint{{ checkpoint.id }}Actions">
-                                                    <li><a class="dropdown-item" href="{{ url_for('checkpoints.edit_checkpoint', id=checkpoint.id) }}"><i class="bi bi-pencil me-2"></i> Editar</a></li>
-                                                    <li><a class="dropdown-item" href="{{ url_for('checkpoints.list_checkpoint_records', id=checkpoint.id) }}"><i class="bi bi-clock-history me-2"></i> Ver Registros</a></li>
-                                                    <li><a class="dropdown-item" href="{{ url_for('checkpoints.login', checkpoint_id=checkpoint.id) }}"><i class="bi bi-box-arrow-in-right me-2"></i> Acceder</a></li>
-                                                    <li><hr class="dropdown-divider"></li>
-                                                    <li>
-                                                        <form action="{{ url_for('checkpoints.delete_checkpoint', id=checkpoint.id) }}" method="post" onsubmit="return confirm('¿Está seguro de eliminar este punto de fichaje? Esta acción no se puede deshacer.');">
-                                                            <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i> Eliminar</button>
-                                                        </form>
-                                                    </li>
-                                                </ul>
-                                            </div>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="mb-3">
-                                                <small class="text-muted d-block">Ubicación:</small>
-                                                <p>{{ checkpoint.location or 'No especificada' }}</p>
-                                            </div>
-                                            <div class="mb-3">
-                                                <small class="text-muted d-block">Estado:</small>
-                                                {% if checkpoint.status.value == 'active' %}
-                                                    <span class="badge bg-success">Activo</span>
-                                                {% elif checkpoint.status.value == 'maintenance' %}
-                                                    <span class="badge bg-warning text-dark">Mantenimiento</span>
-                                                {% else %}
-                                                    <span class="badge bg-danger">Desactivado</span>
-                                                {% endif %}
-                                            </div>
-                                            <div class="mb-3">
-                                                <small class="text-muted d-block">Usuario de acceso:</small>
-                                                <p>{{ checkpoint.username }}</p>
-                                            </div>
-                                            <div>
-                                                <small class="text-muted d-block">Configuraciones:</small>
-                                                <div class="mt-1">
-                                                    {% if checkpoint.auto_checkout_time %}
-                                                        <span class="badge bg-info text-white">Auto-checkout: {{ checkpoint.auto_checkout_time.strftime('%H:%M') }}</span>
-                                                    {% endif %}
-                                                    
-                                                    {% if checkpoint.enforce_contract_hours %}
-                                                        <span class="badge bg-primary">Límite horas contrato</span>
-                                                    {% endif %}
-                                                    
-                                                    {% if checkpoint.auto_adjust_overtime %}
-                                                        <span class="badge bg-secondary">Ajuste automático</span>
-                                                    {% endif %}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="card-footer">
-                                            <a href="{{ url_for('checkpoints.login') }}?checkpoint_id={{ checkpoint.id }}" class="btn btn-sm btn-outline-primary">
-                                                <i class="bi bi-tablet"></i> Acceder al Punto
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                                {% else %}
-                                <div class="col-12">
-                                    <div class="alert alert-info">
-                                        <i class="bi bi-info-circle me-2"></i> No hay puntos de fichaje configurados. 
-                                        <a href="{{ url_for('checkpoints.create_checkpoint') }}" class="alert-link">Crear un nuevo punto de fichaje</a>.
-                                    </div>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        
                         <!-- PESTAÑA: REGISTROS DE FICHAJE -->
-                        <div class="tab-pane fade" id="recordsTab" role="tabpanel" aria-labelledby="records-tab">
+                        <div class="tab-pane fade show active" id="recordsTab" role="tabpanel" aria-labelledby="records-tab">
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h4>Registros de Fichaje</h4>
                                 <a href="{{ url_for('checkpoints.export_records') }}" class="btn btn-primary">

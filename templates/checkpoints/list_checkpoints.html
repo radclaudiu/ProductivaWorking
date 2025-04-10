@@ -150,34 +150,39 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <div class="btn-group">
-                                    <button type="button" class="btn btn-sm btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                        Acciones
-                                    </button>
-                                    <ul class="dropdown-menu">
-                                        <li>
-                                            <a href="{{ url_for('checkpoints.list_checkpoint_records', id=checkpoint.id) }}" class="dropdown-item">
-                                                <i class="bi bi-clock-history"></i> Ver Registros
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="{{ url_for('checkpoints.view_original_records', slug=company.get_slug()) }}" class="dropdown-item">
-                                                <i class="bi bi-file-earmark-ruled"></i> Original
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a href="{{ url_for('checkpoints.edit_checkpoint', id=checkpoint.id) }}" class="dropdown-item">
-                                                <i class="bi bi-pencil"></i> Editar
-                                            </a>
-                                        </li>
-                                        <li><hr class="dropdown-divider"></li>
-                                        <li>
-                                            <button class="dropdown-item text-danger" 
-                                                    onclick="confirmDeleteCheckpoint({{ checkpoint.id }}, '{{ checkpoint.name }}')">
-                                                <i class="bi bi-trash"></i> Eliminar
-                                            </button>
-                                        </li>
-                                    </ul>
+                                <div class="d-flex">
+                                    <a href="{{ url_for('checkpoints.view_rrrrrr_records', slug=company.get_slug()) }}" class="btn btn-sm btn-info me-2">
+                                        <i class="bi bi-file-earmark-ruled"></i> RRRRRR
+                                    </a>
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-sm btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                            Acciones
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li>
+                                                <a href="{{ url_for('checkpoints.list_checkpoint_records', id=checkpoint.id) }}" class="dropdown-item">
+                                                    <i class="bi bi-clock-history"></i> Ver Registros
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a href="{{ url_for('checkpoints.view_rrrrrr_records', slug=company.get_slug()) }}" class="dropdown-item">
+                                                    <i class="bi bi-file-earmark-ruled"></i> Registros Originales (RRRRRR)
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a href="{{ url_for('checkpoints.edit_checkpoint', id=checkpoint.id) }}" class="dropdown-item">
+                                                    <i class="bi bi-pencil"></i> Editar
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <button class="dropdown-item text-danger" 
+                                                        onclick="confirmDeleteCheckpoint({{ checkpoint.id }}, '{{ checkpoint.name }}')">
+                                                    <i class="bi bi-trash"></i> Eliminar
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
                                 </div>
                             </td>
                         </tr>

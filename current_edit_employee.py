@@ -1,8 +1,3 @@
-"""
-Función corregida para editar empleados, asegurando que el valor del campo status
-esté entre las opciones disponibles.
-"""
-
 def edit_employee(id):
     employee = Employee.query.get_or_404(id)
     
@@ -81,3 +76,5 @@ def edit_employee(id):
             return redirect(url_for('employee_bp.view', id=employee.id))
     
     return render_template('employee_form.html', form=form, employee=employee, edit=True)
+
+

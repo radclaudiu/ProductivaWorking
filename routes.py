@@ -721,15 +721,30 @@ def edit_employee(id):
             print(f"DEBUG form errors: {form.errors}")
             log_activity(f"DEBUG form errors: {form.errors}")
     
-    # Get list of companies for the dropdown
+    # Get list of companies for the dropdown - con fallback seguro
+    companies_found = False
     if current_user.is_admin():
         companies = Company.query.all()
-        form.company_id.choices = [(c.id, c.name) for c in companies]
+        if companies:
+            form.company_id.choices = [(c.id, c.name) for c in companies]
+            companies_found = True
     else:
         # Para gerentes, mostrar todas las empresas a las que tienen acceso
         companies = current_user.companies
         if companies:
             form.company_id.choices = [(c.id, c.name) for c in companies]
+            companies_found = True
+    
+    # Si no se encontraron empresas, establecer la empresa actual como única opción
+    if not companies_found:
+        form.company_id.choices = [(employee.company_id, "Empresa actual")]
+        
+    # Asegurar que todos los SelectFields tienen opciones válidas
+    # Estos campos ya deberían tener opciones predefinidas, pero lo verificamos por seguridad
+    if not form.contract_type.choices:
+        form.contract_type.choices = [(ct.value, ct.name.capitalize()) for ct in ContractType]
+    if not form.status.choices:
+        form.status.choices = [(status.value, status.name.capitalize()) for status in EmployeeStatus]
     
     if form.validate_on_submit():
         # Log de depuración para validar que el formulario pasó la validación

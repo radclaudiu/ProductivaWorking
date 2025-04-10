@@ -7,9 +7,6 @@
             <i class="bi bi-speedometer"></i> Dashboard
         </h1>
         <div class="d-flex align-items-center gap-3">
-            <a href="{{ url_for('tasks.manage_labels') }}" class="btn btn-info btn-lg">
-                <i class="bi bi-tags"></i> Gestor de Etiquetas
-            </a>
             <span class="text-muted">Última actualización: {{ datetime.now().strftime('%d/%m/%Y %H:%M') }}</span>
         </div>
     </div>
@@ -321,11 +318,7 @@
                             </a>
                         </div>
                         
-                        <div class="col-md-3 mb-3">
-                            <a href="{{ url_for('tasks.manage_labels') }}" class="btn btn-info w-100">
-                                <i class="bi bi-tags"></i> Gestor de Etiquetas
-                            </a>
-                        </div>
+
                     </div>
                 </div>
             </div>

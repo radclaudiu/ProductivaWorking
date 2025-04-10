@@ -155,6 +155,13 @@ def profile():
     
     return render_template('profile.html', title='Mi Perfil', form=form)
 
+@main_bp.route('/backup/')
+@login_required
+@admin_required
+def backup_panel():
+    """Panel de opciones de backup y exportación de datos."""
+    return render_template('backup_panel.html', title='Panel de Backup')
+
 @main_bp.route('/search')
 @login_required
 def search():

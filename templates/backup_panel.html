@@ -1,0 +1,90 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h2 mb-0">
+            <i class="bi bi-database"></i> Panel de Backups
+        </h1>
+    </div>
+    
+    <div class="row">
+        <!-- Database Backup -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold">Copia de Seguridad de Base de Datos</h6>
+                </div>
+                <div class="card-body">
+                    <p>Cree y descargue una copia de seguridad completa de la base de datos.</p>
+                    <p class="text-muted">Esta opción genera un archivo SQL con toda la estructura y datos de la base de datos.</p>
+                    <a href="{{ url_for('employee.backup_database') }}" class="btn btn-primary">
+                        <i class="bi bi-download me-2"></i>Crear Backup de Base de Datos
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Data Export -->
+        <div class="col-lg-6 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold">Exportar Datos</h6>
+                </div>
+                <div class="card-body">
+                    <p>Exporte datos específicos en diferentes formatos.</p>
+                    <div class="list-group">
+                        <a href="{{ url_for('employee.export_checkins') }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1"><i class="bi bi-clock-history me-2"></i>Exportar Fichajes</h5>
+                            </div>
+                            <p class="mb-1">Exportar datos de fichajes a Excel</p>
+                        </a>
+                        <a href="{{ url_for('company.export_company_data') }}" class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h5 class="mb-1"><i class="bi bi-building me-2"></i>Exportar Datos de Empresa</h5>
+                            </div>
+                            <p class="mb-1">Exportar información de empresas y empleados</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Information -->
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold">Información del Sistema</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th style="width: 30%">Versión de la Aplicación</th>
+                                    <td>1.0.0</td>
+                                </tr>
+                                <tr>
+                                    <th>Última copia de seguridad</th>
+                                    <td>No disponible</td>
+                                </tr>
+                                <tr>
+                                    <th>Estado de la Base de Datos</th>
+                                    <td><span class="badge bg-success">Conectada</span></td>
+                                </tr>
+                                <tr>
+                                    <th>Tipo de Base de Datos</th>
+                                    <td>PostgreSQL</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

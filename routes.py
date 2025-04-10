@@ -778,11 +778,11 @@ def edit_employee(id):
             log_employee_change(employee, 'end_date', old_end_date, 
                               new_end_date.isoformat() if new_end_date else None)
             
-            # Eliminar la asignación ORM que parece no funcionar correctamente
-            # employee.end_date = new_end_date
+            # Usar una combinación de ORM y SQL directo para garantizar que funcione
+            # 1. Primero intentamos con ORM por consistencia
+            employee.end_date = new_end_date
             
-            # Ejecutar SQL directo para asegurar que el cambio se aplica
-            # Este paso es crítico - usamos SQL directo para evitar problemas con SQLAlchemy
+            # 2. Ejecutar SQL directo para garantizar que el cambio se aplica
             if new_end_date is not None:
                 # Si hay fecha, asignarla directamente con SQL
                 sql = "UPDATE employees SET end_date = :end_date WHERE id = :id"
@@ -794,7 +794,8 @@ def edit_employee(id):
                 db.session.execute(sql, {"id": employee.id})
                 print(f"Fecha de baja eliminada (NULL) para empleado {employee.id}")
             
-            # No hacemos commit aquí, se hará al final de la función
+            # Hacemos un commit parcial para asegurar que este cambio se guarda
+            db.session.flush()
             
         if employee.company_id != form.company_id.data:
             old_company = Company.query.get(employee.company_id).name if employee.company_id else 'Ninguna'

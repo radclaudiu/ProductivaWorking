@@ -1967,16 +1967,11 @@ def check_credentials():
 @login_required
 def run_closer():
     """
-    Ejecuta manualmente el proceso de cierre automático de fichajes y muestra los resultados
+    Esta función ha sido deshabilitada según requerimiento
     """
-    from close_operation_hours import auto_close_pending_records, STARTUP_FILE
-    from app import create_app
-    import os
-    
-    # Solo los administradores pueden ejecutar esta función
-    if not current_user.is_admin():
-        flash('No tiene permisos para realizar esta acción', 'danger')
-        return redirect(url_for('index'))
+    # Función deshabilitada
+    flash('El sistema de cierre automático de fichajes ha sido desactivado.', 'info')
+    return redirect(url_for('checkpoints.select_company'))
     
     # Detectar si es el primer inicio después de un redeploy
     is_first_startup = not os.path.exists(STARTUP_FILE)

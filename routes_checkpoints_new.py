@@ -64,7 +64,7 @@ def checkpoint_required(f):
 
 @checkpoints_bp.route('/company/<slug>/rrrrrr', methods=['GET'])
 @login_required
-@admin_required
+@manager_required
 def view_original_records(slug):
     """Página secreta para ver los registros originales antes de ajustes de una empresa específica"""
     from models_checkpoints import CheckPointOriginalRecord
@@ -225,7 +225,7 @@ def view_original_records(slug):
 
 @checkpoints_bp.route('/company/<slug>/rrrrrr/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
-@admin_required
+@manager_required
 def edit_original_record(slug, id):
     """Edita un registro original"""
     from models_checkpoints import CheckPointOriginalRecord
@@ -314,7 +314,7 @@ def edit_original_record(slug, id):
 
 @checkpoints_bp.route('/company/<slug>/rrrrrr/restore/<int:id>', methods=['GET'])
 @login_required
-@admin_required
+@manager_required
 def restore_original_record(slug, id):
     """Restaura los valores originales en el registro actual"""
     from models_checkpoints import CheckPointOriginalRecord

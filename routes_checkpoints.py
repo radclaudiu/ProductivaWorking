@@ -1967,11 +1967,16 @@ def check_credentials():
 @login_required
 def run_closer():
     """
-    Esta función ha sido deshabilitada según requerimiento
+    Ejecuta manualmente el proceso de cierre automático de fichajes y muestra los resultados
     """
-    # Función deshabilitada
-    flash('El sistema de cierre automático de fichajes ha sido desactivado.', 'info')
-    return redirect(url_for('checkpoints.select_company'))
+    from close_operation_hours import auto_close_pending_records, STARTUP_FILE
+    from app import create_app
+    import os
+    
+    # Solo los administradores pueden ejecutar esta función
+    if not current_user.is_admin():
+        flash('No tiene permisos para realizar esta acción', 'danger')
+        return redirect(url_for('index'))
     
     # Detectar si es el primer inicio después de un redeploy
     is_first_startup = not os.path.exists(STARTUP_FILE)
@@ -2030,11 +2035,13 @@ def run_closer():
 @admin_required
 def verify_closures():
     """
-    Esta función ha sido deshabilitada según requerimiento
+    Verifica el estado del sistema de cierre automático y muestra un informe detallado
     """
-    # Función deshabilitada
-    flash('El sistema de cierre automático de fichajes ha sido desactivado.', 'info')
-    return redirect(url_for('checkpoints.select_company'))
+    from verify_checkpoint_closures import check_pending_records_after_hours
+    import io
+    import os
+    from contextlib import redirect_stdout
+    from close_operation_hours import STARTUP_FILE
     
     # Detectar si es el primer inicio después de un redeploy
     is_first_startup = not os.path.exists(STARTUP_FILE)

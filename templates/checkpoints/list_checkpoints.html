@@ -50,7 +50,27 @@
         </div>
         <div class="card-body">
             <div class="row">
-                <div class="col-12">
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0">
+                                <i class="bi bi-clock-history me-2"></i> Sistema de Cierre Automático
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">Verifique y gestione el sistema de cierre automático de fichajes fuera de horario.</p>
+                            <div class="btn-group w-100">
+                                <a href="{{ url_for('checkpoints.run_closer') }}" class="btn btn-primary">
+                                    <i class="bi bi-play-circle me-2"></i> Ejecutar Cierre
+                                </a>
+                                <a href="{{ url_for('checkpoints.verify_closures') }}" class="btn btn-info">
+                                    <i class="bi bi-check-circle me-2"></i> Verificar Sistema
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mt-3 mt-md-0">
                     <div class="card h-100">
                         <div class="card-header bg-secondary text-white">
                             <h6 class="mb-0">

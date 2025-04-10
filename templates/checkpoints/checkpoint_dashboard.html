@@ -26,6 +26,40 @@
         {% endif %}
     {% endwith %}
 
+    <!-- Sección de selección de empleados subida arriba -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Seleccione un empleado</h4>
+        </div>
+        <div class="card-body">
+            <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
+                {% for employee in employees %}
+                <div class="col">
+                    <div class="card h-100 bg-dark text-white border border-light" 
+                         onclick="selectEmployee({{ employee.id }}, '{{ employee.name }}')">
+                        <div class="text-center pt-4">
+                            <div class="employee-avatar mb-3">
+                                <img src="{{ url_for('static', filename='icons/user-circle.svg') }}" 
+                                     class="rounded-circle border border-2 border-white"
+                                     width="120" height="120" alt="{{ employee.name }}">
+                            </div>
+                            <h5 class="card-title">{{ employee.first_name }} {{ employee.last_name }}</h5>
+                            <p class="card-text text-muted">{{ employee.position or 'Sin posición' }}</p>
+                        </div>
+                        <div class="card-footer text-center bg-dark border-light">
+                            {% if employee.is_on_shift %}
+                                <span class="badge bg-success">ACTIVO</span>
+                            {% else %}
+                                <span class="badge bg-danger">OUT</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
     <div class="row mb-4">
         <div class="col-md-6">
             <div class="card h-100">
@@ -84,39 +118,6 @@
                     </p>
                     <!-- Auto-checkout eliminado -->
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <h4 class="mb-0">Seleccione un empleado</h4>
-        </div>
-        <div class="card-body">
-            <div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-4">
-                {% for employee in employees %}
-                <div class="col">
-                    <div class="card h-100 bg-dark text-white border border-light" 
-                         onclick="selectEmployee({{ employee.id }}, '{{ employee.name }}')">
-                        <div class="text-center pt-4">
-                            <div class="employee-avatar mb-3">
-                                <img src="{{ url_for('static', filename='icons/user-circle.svg') }}" 
-                                     class="rounded-circle border border-2 border-white"
-                                     width="120" height="120" alt="{{ employee.name }}">
-                            </div>
-                            <h5 class="card-title">{{ employee.first_name }} {{ employee.last_name }}</h5>
-                            <p class="card-text text-muted">{{ employee.position or 'Sin posición' }}</p>
-                        </div>
-                        <div class="card-footer text-center bg-dark border-light">
-                            {% if employee.is_on_shift %}
-                                <span class="badge bg-success">ACTIVO</span>
-                            {% else %}
-                                <span class="badge bg-danger">OUT</span>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
             </div>
         </div>
     </div>

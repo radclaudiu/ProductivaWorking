@@ -208,9 +208,9 @@
         </div>
     </div>
 
-    <!-- Gráfico y Acciones Rápidas -->
+    <!-- Gráfico de Actividad -->
     <div class="row mb-4">
-        <div class="col-lg-8 mb-4">
+        <div class="col-12 mb-4">
             <div class="card h-100">
                 <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Actividad de Fichajes (7 días)</h5>
@@ -223,52 +223,6 @@
                 <div class="card-body">
                     <div class="chart-container">
                         <canvas id="checkinsChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-4 mb-4">
-            <div class="card h-100">
-                <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0">Acciones Rápidas</h5>
-                </div>
-                <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <a href="{{ url_for('checkpoints.create_checkpoint') }}" class="btn btn-primary btn-action">
-                            <i class="bi bi-plus-circle quick-action-icon"></i>Nuevo Punto
-                        </a>
-                        <a href="{{ url_for('checkpoints.export_records') }}" class="btn btn-success btn-action">
-                            <i class="bi bi-file-earmark-pdf quick-action-icon"></i>Exportar Informes
-                        </a>
-                        
-                        <!-- Menú desplegable para acceso a puntos de fichaje -->
-                        <div class="dropdown mt-2">
-                            <button class="btn btn-info btn-action dropdown-toggle" type="button" id="accessPointsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-tablet quick-action-icon"></i>Acceder a Punto
-                            </button>
-                            <ul class="dropdown-menu w-100" aria-labelledby="accessPointsDropdown">
-                                {% for checkpoint in checkpoints %}
-                                    <li><a class="dropdown-item" href="{{ url_for('checkpoints.login', checkpoint_id=checkpoint.id) }}">{{ checkpoint.name }}</a></li>
-                                {% else %}
-                                    <li><span class="dropdown-item text-muted">No hay puntos configurados</span></li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        
-                        <!-- Menú desplegable para configurar horas de empleados -->
-                        <div class="dropdown mt-2">
-                            <button class="btn btn-secondary btn-action dropdown-toggle" type="button" id="configEmployeesDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-sliders quick-action-icon"></i>Config. Horas
-                            </button>
-                            <ul class="dropdown-menu w-100" aria-labelledby="configEmployeesDropdown">
-                                {% for employee in employees %}
-                                    <li><a class="dropdown-item" href="{{ url_for('checkpoints.manage_contract_hours', id=employee.id) }}">{{ employee.first_name }} {{ employee.last_name }}</a></li>
-                                {% else %}
-                                    <li><span class="dropdown-item text-muted">No hay empleados disponibles</span></li>
-                                {% endfor %}
-                            </ul>
-                        </div>
                     </div>
                 </div>
             </div>

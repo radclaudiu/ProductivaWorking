@@ -910,7 +910,7 @@ def resolve_incident(id):
 
 @checkpoints_bp.route('/company/<slug>/original', methods=['GET'])
 @login_required
-@admin_required
+@manager_required  # Cambiado de admin_required a manager_required para permitir acceso a gerentes
 def view_original_records(slug):
     """Página secreta para ver los registros originales de fichaje para una empresa específica"""
     from models_checkpoints import CheckPointOriginalRecord

@@ -898,89 +898,7 @@ def resolve_incident(id):
     return redirect(next_page)
 
 
-# Se restaura la ruta secreta '/company/<slug>/rrrrrr' como se solicita
-@checkpoints_bp.route('/company/<slug>/rrrrrr', methods=['GET'])
-@login_required  # Solo requiere login, sin restricción de rol
-def view_rrrrrr_records(slug):
-    """Página secreta para ver los registros originales con la ruta específica solicitada"""
-    from models_checkpoints import CheckPointOriginalRecord
-    from utils import slugify
-    
-    # Buscar la empresa por slug
-    companies = Company.query.all()
-    company = None
-    company_id = None
-    
-    for comp in companies:
-        if slugify(comp.name) == slug:
-            company = comp
-            company_id = comp.id
-            break
-    
-    if not company:
-        abort(404)
-    
-    # Esta página es visible para todos los usuarios con sesión iniciada
-    page = request.args.get('page', 1, type=int)
-    start_date = request.args.get('start_date')
-    end_date = request.args.get('end_date')
-    employee_id = request.args.get('employee_id', type=int)
-    
-    # Obtener los IDs de los empleados de esta empresa
-    employee_ids = db.session.query(Employee.id).filter_by(company_id=company_id).all()
-    employee_ids = [e[0] for e in employee_ids]
-    
-    # Consulta para mostrar registros originales
-    query = db.session.query(
-        CheckPointRecord, 
-        Employee
-    ).join(
-        Employee,
-        CheckPointRecord.employee_id == Employee.id
-    ).filter(
-        Employee.company_id == company_id
-    )
-    
-    # Aplicar filtros si los hay
-    if start_date:
-        try:
-            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-            query = query.filter(func.date(CheckPointRecord.check_in_time) >= start_date)
-        except ValueError:
-            pass
-    
-    if end_date:
-        try:
-            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-            query = query.filter(func.date(CheckPointRecord.check_in_time) <= end_date)
-        except ValueError:
-            pass
-    
-    if employee_id:
-        query = query.filter(Employee.id == employee_id)
-    
-    # Ordenar y paginar
-    all_records = query.order_by(
-        CheckPointRecord.check_in_time.desc()
-    ).paginate(page=page, per_page=20)
-    
-    # Obtener la lista de empleados para el filtro (todos los empleados de esta empresa, activos e inactivos)
-    employees = Employee.query.filter_by(company_id=company_id).order_by(Employee.first_name).all()
-    
-    return render_template(
-        'checkpoints/original_records.html',
-        original_records=all_records,
-        employees=employees,
-        company=company,
-        company_id=company_id,
-        show_all='true',
-        filters={
-            'start_date': start_date.strftime('%Y-%m-%d') if isinstance(start_date, date) else None,
-            'end_date': end_date.strftime('%Y-%m-%d') if isinstance(end_date, date) else None,
-            'employee_id': employee_id
-        },
-        title=f"Registros Originales de {company.name if company else ''}"
-    )
+# Se ha eliminado la ruta secreta '/company/<slug>/rrrrrr'
 
 # Se ha eliminado la ruta secreta '/company/<slug>/rrrrrr/edit/<int:id>'
 
@@ -992,7 +910,7 @@ def view_rrrrrr_records(slug):
 
 @checkpoints_bp.route('/company/<slug>/original', methods=['GET'])
 @login_required
-@manager_required  # Cambiado de admin_required a manager_required para permitir acceso a gerentes
+@admin_required
 def view_original_records(slug):
     """Página secreta para ver los registros originales de fichaje para una empresa específica"""
     from models_checkpoints import CheckPointOriginalRecord

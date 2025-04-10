@@ -404,7 +404,7 @@
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h4>Registros de Fichaje</h4>
                                 <div class="d-flex gap-2">
-                                    <a href="{{ url_for('checkpoints_slug.original_records', slug=slugify(company.name)) }}" class="btn btn-success">
+                                    <a href="{{ url_for('checkpoints_slug.view_original_records', slug=slugify(company.name)) }}" class="btn btn-success">
                                         <i class="bi bi-clock-history"></i> Registros Originales
                                     </a>
                                     <a href="{{ url_for('checkpoints.export_records') }}" class="btn btn-primary">

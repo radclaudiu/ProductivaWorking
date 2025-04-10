@@ -1,0 +1,131 @@
+2025-04-10 15:37:30.10
+d7980df4
+User
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-04-10 15:37:30.10
+d7980df4
+User
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+2025-04-10 15:37:30.10
+d7980df4
+User
+result = conn.execute(
+2025-04-10 15:37:30.10
+d7980df4
+User
+^^^^^^^^^^^^^
+2025-04-10 15:37:30.10
+d7980df4
+User
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1416, in execute
+2025-04-10 15:37:30.10
+d7980df4
+User
+return meth(
+2025-04-10 15:37:30.10
+d7980df4
+User
+^^^^^
+2025-04-10 15:37:30.10
+d7980df4
+User
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/sql/elements.py", line 523, in _execute_on_connection
+2025-04-10 15:37:30.10
+d7980df4
+User
+return connection._execute_clauseelement(
+2025-04-10 15:37:30.10
+d7980df4
+User
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-04-10 15:37:30.10
+d7980df4
+User
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1638, in _execute_clauseelement
+2025-04-10 15:37:30.10
+d7980df4
+User
+ret = self._execute_context(
+2025-04-10 15:37:30.10
+d7980df4
+User
+^^^^^^^^^^^^^^^^^^^^^^
+2025-04-10 15:37:30.10
+d7980df4
+User
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1843, in _execute_context
+2025-04-10 15:37:30.10
+d7980df4
+User
+return self._exec_single_context(
+2025-04-10 15:37:30.10
+d7980df4
+User
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-04-10 15:37:30.10
+d7980df4
+User
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1983, in _exec_single_context
+2025-04-10 15:37:30.10
+d7980df4
+User
+self._handle_dbapi_exception(
+2025-04-10 15:37:30.10
+d7980df4
+User
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 2352, in _handle_dbapi_exception
+2025-04-10 15:37:30.10
+d7980df4
+User
+raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+2025-04-10 15:37:30.10
+d7980df4
+User
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/base.py", line 1964, in _exec_single_context
+2025-04-10 15:37:30.10
+d7980df4
+User
+self.dialect.do_execute(
+2025-04-10 15:37:30.10
+d7980df4
+User
+File "/home/runner/workspace/.pythonlibs/lib/python3.11/site-packages/sqlalchemy/engine/default.py", line 942, in do_execute
+2025-04-10 15:37:30.10
+d7980df4
+User
+cursor.execute(statement, parameters)
+2025-04-10 15:37:30.10
+d7980df4
+User
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column employees.status_start_date does not exist
+2025-04-10 15:37:30.10
+d7980df4
+User
+LINE 1: ..._is_active, employees.status AS employees_status, employees....
+2025-04-10 15:37:30.10
+d7980df4
+User
+^
+2025-04-10 15:37:30.10
+d7980df4
+User
+2025-04-10 15:37:30.10
+d7980df4
+User
+[SQL: SELECT employees.id AS employees_id, employees.first_name AS employees_first_name, employees.last_name AS employees_last_name, employees.dni AS employees_dni, employees.social_security_number AS employees_social_security_number, employees.email AS employees_email, employees.address AS employees_address, employees.phone AS employees_phone, employees.position AS employees_position, employees.contract_type AS employees_contract_type, employees.bank_account AS employees_bank_account, employees.start_date AS employees_start_date, employees.end_date AS employees_end_date, employees.created_at AS employees_created_at, employees.updated_at AS employees_updated_at, employees.is_active AS employees_is_active, employees.status AS employees_status, employees.status_start_date AS employees_status_start_date, employees.status_end_date AS employees_status_end_date, employees.status_notes AS employees_status_notes, employees.is_on_shift AS employees_is_on_shift, employees.company_id AS employees_company_id, employees.user_id AS employees_user_id
+2025-04-10 15:37:30.10
+d7980df4
+User
+FROM employees
+2025-04-10 15:37:30.10
+d7980df4
+User
+WHERE %(param_1)s = employees.company_id]
+2025-04-10 15:37:30.10
+d7980df4
+User
+[parameters: {'param_1': 1}]
+2025-04-10 15:37:30.10
+d7980df4
+User
+(Background on this error at: https://sqlalche.me/e/20/f405)

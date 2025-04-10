@@ -770,7 +770,8 @@ def edit_employee(id):
             db.session.commit()
             
             # Registrar la actividad
-            record_activity(f"Editó al empleado {employee.full_name}")
+            from utils import log_activity
+            log_activity(f"Editó al empleado {employee.full_name}")
             
             flash(f"Empleado {employee.full_name} actualizado correctamente.", "success")
             return redirect(url_for('employee_bp.view', id=employee.id))

@@ -750,6 +750,14 @@ def edit_employee(id):
         if not form.validate():
             print(f"DEBUG form errors: {form.errors}")
         
+        
+        # Asegurar que el valor de status es válido antes de validar
+        if form.status.data and form.status.choices:
+            valid_status_values = [choice[0] for choice in form.status.choices]
+            if form.status.data not in valid_status_values:
+                print(f"DEBUG: Corrigiendo status inválido antes de validar: {form.status.data} no está en {valid_status_values}")
+                # Establecer a un valor seguro que sabemos existe
+                form.status.data = "activo"
         if form.validate_on_submit():
             # Actualizar todos los campos del formulario al objeto employee
             form.populate_obj(employee)

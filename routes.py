@@ -705,6 +705,20 @@ def edit_employee(id):
     
     form = EmployeeForm(obj=employee)
     
+    # Asegurar que todos los SelectFields tengan opciones válidas
+    # Establecer opciones para contract_type si es necesario
+    if not hasattr(form.contract_type, 'choices') or not form.contract_type.choices:
+        form.contract_type.choices = [(ct.value, ct.name.capitalize()) for ct in ContractType]
+    
+    # Establecer opciones para status si es necesario
+    if not hasattr(form.status, 'choices') or not form.status.choices:
+        form.status.choices = [(status.value, status.name.capitalize()) for status in EmployeeStatus]
+    
+    # Establecer opciones para company_id si es necesario
+    if not hasattr(form.company_id, 'choices') or not form.company_id.choices:
+        # Si no hay opciones, usar la empresa actual como única opción
+        form.company_id.choices = [(employee.company_id, "Empresa actual")]
+    
     # Debug valores del formulario después de inicializar
     print(f"DEBUG post-form - Form end_date = {form.end_date.data}, tipo {type(form.end_date.data)}")
     log_activity(f"DEBUG post-form - Form end_date = {form.end_date.data}, tipo {type(form.end_date.data)}")

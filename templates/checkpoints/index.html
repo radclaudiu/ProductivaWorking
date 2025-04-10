@@ -403,9 +403,14 @@
                         <div class="tab-pane fade" id="recordsTab" role="tabpanel" aria-labelledby="records-tab">
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h4>Registros de Fichaje</h4>
-                                <a href="{{ url_for('checkpoints.export_records') }}" class="btn btn-primary">
-                                    <i class="bi bi-file-earmark-pdf"></i> Exportar Registros
-                                </a>
+                                <div class="d-flex gap-2">
+                                    <a href="{{ url_for('checkpoints_slug.original_records', slug=slugify(company.name)) }}" class="btn btn-success">
+                                        <i class="bi bi-clock-history"></i> Registros Originales
+                                    </a>
+                                    <a href="{{ url_for('checkpoints.export_records') }}" class="btn btn-primary">
+                                        <i class="bi bi-file-earmark-pdf"></i> Exportar Registros
+                                    </a>
+                                </div>
                             </div>
                             
                             <!-- Formulario de filtrado -->

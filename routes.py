@@ -778,21 +778,11 @@ def edit_employee(id):
             log_employee_change(employee, 'end_date', old_end_date, 
                               new_end_date.isoformat() if new_end_date else None)
             
-            # Eliminar la asignación ORM que parece no funcionar correctamente
-            # employee.end_date = new_end_date
+            # Usar asignación directa a la propiedad
+            employee.end_date = new_end_date
             
-            # Ejecutar SQL directo para asegurar que el cambio se aplica
-            # Este paso es crítico - usamos SQL directo para evitar problemas con SQLAlchemy
-            if new_end_date is not None:
-                # Si hay fecha, asignarla directamente con SQL
-                sql = "UPDATE employees SET end_date = :end_date WHERE id = :id"
-                db.session.execute(sql, {"end_date": new_end_date, "id": employee.id})
-                print(f"Fecha de baja establecida a {new_end_date} para empleado {employee.id}")
-            else:
-                # Si no hay fecha, establecer NULL directamente con SQL
-                sql = "UPDATE employees SET end_date = NULL WHERE id = :id"
-                db.session.execute(sql, {"id": employee.id})
-                print(f"Fecha de baja eliminada (NULL) para empleado {employee.id}")
+            # Log de depuración después de la asignación
+            print(f"DEBUG post-asignación - Actualizado end_date = {employee.end_date}, tipo {type(employee.end_date)}")
             
             # No hacemos commit aquí, se hará al final de la función
             

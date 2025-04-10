@@ -179,14 +179,14 @@ class Employee(db.Model):
     position = db.Column(db.String(64))
     contract_type = db.Column(Enum(ContractType), default=ContractType.INDEFINIDO)
     bank_account = db.Column(db.String(64))
-    start_date = db.Column(db.Date)
-    end_date = db.Column(db.Date)
+    start_date = db.Column(db.String(20))  # Cambiado de Date a String para mayor flexibilidad
+    end_date = db.Column(db.String(20))    # Cambiado de Date a String para mayor flexibilidad
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
     status = db.Column(Enum(EmployeeStatus), default=EmployeeStatus.ACTIVO)
-    status_start_date = db.Column(db.Date)
-    status_end_date = db.Column(db.Date)
+    status_start_date = db.Column(db.String(20))  # Cambiado de Date a String para mayor flexibilidad
+    status_end_date = db.Column(db.String(20))    # Cambiado de Date a String para mayor flexibilidad
     status_notes = db.Column(db.Text)
     is_on_shift = db.Column(db.Boolean, default=False)  # Indica si el empleado está en jornada activa (1=sí, 0=no)
     
@@ -219,13 +219,13 @@ class Employee(db.Model):
             'position': self.position,
             'contract_type': self.contract_type.value if self.contract_type else None,
             'bank_account': self.bank_account,
-            'start_date': self.start_date.isoformat() if self.start_date else None,
-            'end_date': self.end_date.isoformat() if self.end_date else None,
+            'start_date': self.start_date if self.start_date else None,
+            'end_date': self.end_date if self.end_date else None,
             'is_active': self.is_active,
             'is_on_shift': self.is_on_shift,  # Agregar estado de jornada
             'status': self.status.value if self.status else 'activo',
-            'status_start_date': self.status_start_date.isoformat() if self.status_start_date else None,
-            'status_end_date': self.status_end_date.isoformat() if self.status_end_date else None,
+            'status_start_date': self.status_start_date if self.status_start_date else None,
+            'status_end_date': self.status_end_date if self.status_end_date else None,
             'company_id': self.company_id,
             'company_name': self.company.name if self.company else None
         }

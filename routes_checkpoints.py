@@ -2030,13 +2030,11 @@ def run_closer():
 @admin_required
 def verify_closures():
     """
-    Verifica el estado del sistema de cierre automático y muestra un informe detallado
+    Esta función ha sido deshabilitada según requerimiento
     """
-    from verify_checkpoint_closures import check_pending_records_after_hours
-    import io
-    import os
-    from contextlib import redirect_stdout
-    from close_operation_hours import STARTUP_FILE
+    # Función deshabilitada
+    flash('El sistema de cierre automático de fichajes ha sido desactivado.', 'info')
+    return redirect(url_for('checkpoints.select_company'))
     
     # Detectar si es el primer inicio después de un redeploy
     is_first_startup = not os.path.exists(STARTUP_FILE)

@@ -266,64 +266,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Quick Actions -->
-    <div class="row">
-        <div class="col-12 mb-4">
-            <div class="card shadow">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold">Acciones Rápidas</h6>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        {% if current_user.is_admin() %}
-                            <div class="col-md-3 mb-3">
-                                <a href="{{ url_for('company.create_company') }}" class="btn btn-primary w-100">
-                                    <i class="bi bi-building-add"></i> Nueva Empresa
-                                </a>
-                            </div>
-                        {% endif %}
-                        
-                        {% if current_user.is_admin() or current_user.is_gerente() %}
-                            <div class="col-md-3 mb-3">
-                                <a href="{{ url_for('employee.create_employee') }}" class="btn btn-success w-100">
-                                    <i class="bi bi-person-plus"></i> Nuevo Empleado
-                                </a>
-                            </div>
-                        {% endif %}
-                        
-                        {% if current_user.is_admin() %}
-                            <div class="col-md-3 mb-3">
-                                <a href="{{ url_for('auth.register') }}" class="btn btn-info w-100">
-                                    <i class="bi bi-person-add"></i> Nuevo Usuario
-                                </a>
-                            </div>
-                            
-                            <div class="col-md-3 mb-3">
-                                <a href="{{ url_for('main.clean_database_route') }}" class="btn btn-danger w-100">
-                                    <i class="bi bi-database-x"></i> Limpiar Base de Datos
-                                </a>
-                            </div>
-                        {% endif %}
-                        
-                        <div class="col-md-3 mb-3">
-                            <a href="{{ url_for('employee.list_employees') }}" class="btn btn-secondary w-100">
-                                <i class="bi bi-people"></i> Ver Empleados
-                            </a>
-                        </div>
-                        
-                        <div class="col-md-3 mb-3">
-                            <a href="{{ url_for('tasks.index') }}" class="btn btn-primary w-100">
-                                <i class="bi bi-list-check"></i> Gestión de Tareas
-                            </a>
-                        </div>
-                        
-
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 {% endblock %}
 

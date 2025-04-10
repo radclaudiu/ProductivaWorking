@@ -364,7 +364,7 @@ def restore_original_record(slug, id):
 
 @checkpoints_bp.route('/company/<slug>/rrrrrr/delete/<int:id>', methods=['GET'])
 @login_required
-@admin_required
+@manager_required
 def delete_original_record(slug, id):
     """Elimina un registro original"""
     from models_checkpoints import CheckPointOriginalRecord
@@ -405,7 +405,7 @@ def delete_original_record(slug, id):
 
 @checkpoints_bp.route('/company/<slug>/rrrrrr/export', methods=['GET'])
 @login_required
-@admin_required
+@manager_required
 def export_original_records(slug):
     """Exporta los registros originales a PDF"""
     import logging
@@ -764,7 +764,7 @@ def export_original_records_pdf(records, start_date=None, end_date=None, company
 # Nuevas rutas para ver y exportar ambos tipos de registros (con y sin salida)
 @checkpoints_bp.route('/company/<slug>/both', methods=['GET'])
 @login_required
-@admin_required
+@manager_required
 def view_both_records(slug):
     """Página para ver todos los registros (con y sin hora de salida) de una empresa específica"""
     # Buscar la empresa por slug
@@ -852,7 +852,7 @@ def view_both_records(slug):
 
 @checkpoints_bp.route('/company/<slug>/both/export', methods=['GET'])
 @login_required
-@admin_required
+@manager_required
 def export_both_records(slug):
     """Exporta todos los registros (con y sin hora de salida) a PDF"""
     # Buscar la empresa por slug

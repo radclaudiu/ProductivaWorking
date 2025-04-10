@@ -771,9 +771,9 @@ def edit_employee(id):
             
             # Registrar la actividad
             from utils import log_activity
-            log_activity(f"Editó al empleado {employee.full_name}")
+            log_activity(f"Editó al empleado {employee.first_name} {employee.last_name}")
             
-            flash(f"Empleado {employee.full_name} actualizado correctamente.", "success")
+            flash(f"Empleado {employee.first_name} {employee.last_name} actualizado correctamente.", "success")
             return redirect(url_for('employee_bp.view', id=employee.id))
     
     return render_template('employee_form.html', form=form, employee=employee, edit=True)

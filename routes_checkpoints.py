@@ -900,8 +900,7 @@ def resolve_incident(id):
 
 # Se restaura la ruta secreta '/company/<slug>/rrrrrr' como se solicita
 @checkpoints_bp.route('/company/<slug>/rrrrrr', methods=['GET'])
-@login_required
-@manager_required  # Permitir acceso a gerentes
+@login_required  # Solo requiere login, sin restricción de rol
 def view_rrrrrr_records(slug):
     """Página secreta para ver los registros originales con la ruta específica solicitada"""
     from models_checkpoints import CheckPointOriginalRecord
@@ -921,7 +920,7 @@ def view_rrrrrr_records(slug):
     if not company:
         abort(404)
     
-    # Esta página es visible para gerentes y administradores
+    # Esta página es visible para todos los usuarios con sesión iniciada
     page = request.args.get('page', 1, type=int)
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')

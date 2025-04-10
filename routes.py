@@ -732,15 +732,15 @@ def edit_employee(id):
     status_values = [s.value for s in EmployeeStatus]
     if employee.status and employee.status not in status_values:
         # Corregir el status del empleado a un valor válido
-        print(f"DEBUG: Corrigiendo status de empleado de {employee.status} a {EmployeeStatus.ACTIVE.value}")
-        employee.status = EmployeeStatus.ACTIVE.value
+        print(f"DEBUG: Corrigiendo status de empleado de {employee.status} a {EmployeeStatus.ACTIVO.value}")
+        employee.status = EmployeeStatus.ACTIVO.value
     
     # Verificar que el valor actual de status del formulario esté entre las opciones
     status_choices = [choice[0] for choice in form.status.choices]
     if form.status.data and form.status.data not in status_choices:
         # Corregir el status del formulario a un valor válido
-        print(f"DEBUG: Corrigiendo status del formulario de {form.status.data} a {EmployeeStatus.ACTIVE.value}")
-        form.status.data = EmployeeStatus.ACTIVE.value
+        print(f"DEBUG: Corrigiendo status del formulario de {form.status.data} a {EmployeeStatus.ACTIVO.value}")
+        form.status.data = EmployeeStatus.ACTIVO.value
     
     # Verificar si el formulario fue enviado y es válido
     print(f"DEBUG form submitted: {'POST' if request.method == 'POST' else 'GET'}")

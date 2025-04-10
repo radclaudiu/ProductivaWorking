@@ -709,6 +709,18 @@ def edit_employee(id):
     print(f"DEBUG post-form - Form end_date = {form.end_date.data}, tipo {type(form.end_date.data)}")
     log_activity(f"DEBUG post-form - Form end_date = {form.end_date.data}, tipo {type(form.end_date.data)}")
     
+    # Revisar si el formulario fue enviado o no
+    print(f"DEBUG form submitted: {request.method}")
+    log_activity(f"DEBUG form submitted: {request.method}")
+    if request.method == 'POST':
+        print(f"DEBUG form is_submitted: {form.is_submitted()}")
+        log_activity(f"DEBUG form is_submitted: {form.is_submitted()}")
+        print(f"DEBUG form validate: {form.validate()}")
+        log_activity(f"DEBUG form validate: {form.validate()}")
+        if not form.validate():
+            print(f"DEBUG form errors: {form.errors}")
+            log_activity(f"DEBUG form errors: {form.errors}")
+    
     # Get list of companies for the dropdown
     if current_user.is_admin():
         companies = Company.query.all()
@@ -720,6 +732,10 @@ def edit_employee(id):
             form.company_id.choices = [(c.id, c.name) for c in companies]
     
     if form.validate_on_submit():
+        # Log de depuración para validar que el formulario pasó la validación
+        print(f"DEBUG form validate_on_submit: PASÓ LA VALIDACIÓN. Datos end_date={form.end_date.data}, tipo {type(form.end_date.data)}")
+        log_activity(f"DEBUG form validate_on_submit: PASÓ LA VALIDACIÓN. Datos end_date={form.end_date.data}, tipo {type(form.end_date.data)}")
+        
         # Track changes for employee history
         if employee.first_name != form.first_name.data:
             log_employee_change(employee, 'first_name', employee.first_name, form.first_name.data)
@@ -773,29 +789,42 @@ def edit_employee(id):
         old_end_date = employee.end_date.isoformat() if employee.end_date else None
         new_end_date = form.end_date.data
         
-        # Registrar el cambio en el historial si hay cambio
-        if old_end_date != (new_end_date.isoformat() if new_end_date else None):
-            log_employee_change(employee, 'end_date', old_end_date, 
-                              new_end_date.isoformat() if new_end_date else None)
+        # Log de depuración para verfificar el valor de end_date
+        print(f"DEBUG end_date procesando - old: {old_end_date}, new: {new_end_date}, tipo_new: {type(new_end_date)}")
+        log_activity(f"DEBUG end_date procesando - old: {old_end_date}, new: {new_end_date}, tipo_new: {type(new_end_date)}")
+        
+        # Cambiamos la comparación para asegurar que funcione correctamente
+        # Verificamos si hay diferencias entre el valor actual y el nuevo valor
+        # independientemente de su formato de representación
+        old_date_str = old_end_date if old_end_date else None
+        new_date_str = new_end_date.isoformat() if new_end_date else None
+        
+        if old_date_str != new_date_str:
+            print(f"DEBUG end_date CAMBIO DETECTADO - old: {old_date_str}, new: {new_date_str}")
+            log_activity(f"DEBUG end_date CAMBIO DETECTADO - old: {old_date_str}, new: {new_date_str}")
             
-            # Usar una combinación de ORM y SQL directo para garantizar que funcione
-            # 1. Primero intentamos con ORM por consistencia
+            log_employee_change(employee, 'end_date', old_date_str, new_date_str)
+            
+            # Asignar directamente el valor con ORM
             employee.end_date = new_end_date
             
-            # 2. Ejecutar SQL directo para garantizar que el cambio se aplica
+            # También ejecutar SQL directo para garantizar que se aplica el cambio
             if new_end_date is not None:
-                # Si hay fecha, asignarla directamente con SQL
                 sql = "UPDATE employees SET end_date = :end_date WHERE id = :id"
                 db.session.execute(sql, {"end_date": new_end_date, "id": employee.id})
                 print(f"Fecha de baja establecida a {new_end_date} para empleado {employee.id}")
             else:
-                # Si no hay fecha, establecer NULL directamente con SQL
                 sql = "UPDATE employees SET end_date = NULL WHERE id = :id"
                 db.session.execute(sql, {"id": employee.id})
                 print(f"Fecha de baja eliminada (NULL) para empleado {employee.id}")
             
-            # Hacemos un commit parcial para asegurar que este cambio se guarda
+            # Forzar que se apliquen los cambios inmediatamente
             db.session.flush()
+            
+            # Verificar inmediatamente si el cambio fue efectivo
+            db.session.refresh(employee)
+            print(f"DEBUG end_date post-refresh: {employee.end_date}")
+            log_activity(f"DEBUG end_date post-refresh: {employee.end_date}")
             
         if employee.company_id != form.company_id.data:
             old_company = Company.query.get(employee.company_id).name if employee.company_id else 'Ninguna'

@@ -130,8 +130,38 @@
             </div>
         </div>
 
-        <!-- Contenedor de detalles adicionales -->
+        <!-- Quick Actions -->
         <div class="col-lg-4 mb-4">
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold">Acciones Rápidas</h6>
+                </div>
+                <div class="card-body">
+                    <div class="list-group">
+                        <a href="{{ url_for('employee.list_documents', id=employee.id) }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-file-earmark"></i> Ver Documentos
+                        </a>
+                        
+                        <a href="{{ url_for('employee.upload_document', id=employee.id) }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-upload"></i> Subir Documento
+                        </a>
+                        
+                        <a href="{{ url_for('employee.manage_notes', id=employee.id) }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-journal-text"></i> Gestionar Notas
+                        </a>
+                        
+                        <a href="{{ url_for('employee.view_history', id=employee.id) }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-clock-history"></i> Ver Historial de Cambios
+                        </a>
+                        
+                        {% if current_user.is_admin() or (current_user.is_gerente() and current_user.company_id == employee.company_id) %}
+                        <a href="{{ url_for('employee.manage_status', id=employee.id) }}" class="list-group-item list-group-item-action">
+                            <i class="bi bi-arrow-repeat"></i> Gestionar Estado
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
             
             <!-- Recent Documents -->
             <div class="card shadow mb-4">

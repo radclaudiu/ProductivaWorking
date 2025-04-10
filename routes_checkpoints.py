@@ -22,7 +22,7 @@ from models_checkpoints import CheckPointStatus, CheckPointIncidentType, CheckPo
 from forms_checkpoints import (CheckPointForm, CheckPointLoginForm, CheckPointEmployeePinForm, 
                              ContractHoursForm, CheckPointRecordAdjustmentForm,
                              SignaturePadForm, ExportCheckPointRecordsForm, DeleteCheckPointRecordsForm)
-from utils import log_activity, slugify
+from utils import log_activity
 from utils_checkpoints import generate_pdf_report, generate_simple_pdf_report, draw_signature, delete_employee_records
 
 
@@ -85,11 +85,6 @@ def select_company():
         current_app.logger.error(f"Error en select_company: {e}")
         flash("Error al cargar la selección de empresas. Por favor, inténtelo de nuevo.", "danger")
         return redirect(url_for('main.dashboard'))
-
-# Añadir función slugify al contexto de la plantilla
-@checkpoints_bp.context_processor
-def utility_processor():
-    return {'slugify': slugify}
 
 @checkpoints_bp.route('/company/<string:slug>')
 @login_required

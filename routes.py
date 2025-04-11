@@ -242,7 +242,7 @@ def list_companies():
 @login_required
 def view_company(slug):
     # Usar approach más robusto para buscar empresas por slug
-    from utils import slugify
+    from utils import slugify, can_manage_company
     
     # Buscar por ID si es un número
     if slug.isdigit():
@@ -256,8 +256,8 @@ def view_company(slug):
             flash('Empresa no encontrada', 'danger')
             return redirect(url_for('company.list_companies'))
     
-    # Check if user has permission to view this company
-    if not current_user.is_admin() and company not in current_user.companies:
+    # Check if user has permission to view this company - using the can_manage_company function
+    if not can_manage_company(company.id):
         flash('No tienes permiso para ver esta empresa.', 'danger')
         return redirect(url_for('company.list_companies'))
     

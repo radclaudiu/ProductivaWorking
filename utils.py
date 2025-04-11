@@ -114,22 +114,20 @@ def can_manage_company(company_id):
             current_app.logger.error(f"ERROR: company_id no es un entero válido: {company_id}")
             return False
             
-        current_app.logger.debug(f"Gerente {current_user.username} (ID:{current_user.id}) verificando permisos para empresa ID:{company_id_int}")
+        # Verificación de permisos para gerentes
         
         # Verificar en las empresas asignadas
         for company in current_user.companies:
             try:
                 current_company_id = int(company.id)
-                current_app.logger.debug(f"Empresa asignada: {company.name} (ID:{current_company_id})")
                 
                 if current_company_id == company_id_int:
-                    current_app.logger.debug(f"✓ Permiso concedido para empresa {company.name} (ID:{current_company_id})")
                     return True
             except (ValueError, TypeError):
                 current_app.logger.error(f"ERROR: ID de empresa asignada no válido: {company.id}")
                 continue
         
-        current_app.logger.debug(f"✗ Permiso denegado para empresa ID:{company_id_int}")
+        # Permiso denegado para esta empresa
     
     return False
 

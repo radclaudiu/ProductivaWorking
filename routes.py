@@ -641,9 +641,7 @@ def view_employee(id):
         if str(employee.company_id) in company_ids:
             can_manage_activation = True
     
-    # Log de depuración
-    print(f"Empleado: {employee.id} - Empresa: {employee.company_id} - Empresas del usuario: {[c.id for c in current_user.companies]}")
-    print(f"¿Puede administrar activación? {can_manage_activation}")
+    # Verificación de permisos completada
     
     return render_template('employee_detail.html', 
                           title=f'{employee.first_name} {employee.last_name}', 

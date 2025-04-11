@@ -91,10 +91,10 @@
                                     {{ employee.status.name.capitalize() if employee.status else 'Activo' }}
                                 </span>
                                 {% if employee.status_start_date %}
-                                <small class="d-block mt-1">Desde: {{ employee.status_start_date.strftime('%d/%m/%Y') }}</small>
+                                <small class="d-block mt-1">Desde: {{ employee.status_start_date }}</small>
                                 {% endif %}
                                 {% if employee.status_end_date %}
-                                <small class="d-block">Hasta: {{ employee.status_end_date.strftime('%d/%m/%Y') }}</small>
+                                <small class="d-block">Hasta: {{ employee.status_end_date }}</small>
                                 {% endif %}
                             </dd>
                             

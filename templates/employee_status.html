@@ -30,12 +30,12 @@
                                             </div>
                                             {% if employee.status_start_date %}
                                             <div class="text-xs text-muted mt-2">
-                                                Desde: {{ employee.status_start_date.strftime('%d/%m/%Y') }}
+                                                Desde: {{ employee.status_start_date }}
                                             </div>
                                             {% endif %}
                                             {% if employee.status_end_date %}
                                             <div class="text-xs text-muted">
-                                                Hasta: {{ employee.status_end_date.strftime('%d/%m/%Y') }}
+                                                Hasta: {{ employee.status_end_date }}
                                             </div>
                                             {% endif %}
                                         </div>

@@ -165,7 +165,7 @@
                                 <td>{{ employee.dni }}</td>
                                 <td>{{ employee.position }}</td>
                                 <td>{{ employee.contract_type.name if employee.contract_type else 'No definido' }}</td>
-                                <td>{{ employee.start_date.strftime('%d/%m/%Y') if employee.start_date else 'No definida' }}</td>
+                                <td>{{ employee.start_date if employee.start_date else 'No definida' }}</td>
                                 <td>
                                     <span class="badge {% if employee.is_active %}bg-success{% else %}bg-danger{% endif %}">
                                         {{ 'Activo' if employee.is_active else 'Inactivo' }}

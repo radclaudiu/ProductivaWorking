@@ -1905,3 +1905,106 @@ def clean_database_route():
             flash('La confirmación no es correcta. La base de datos NO ha sido limpiada.', 'warning')
     
     return render_template('clean_database.html', title='Limpiar Base de Datos')
+
+# Ruta para exportar todos los fichajes (para el panel de backup)
+@checkin_bp.route('/export/all', methods=['GET'])
+@login_required
+@admin_required
+def export_all_checkins():
+    """Export all check-ins to Excel file"""
+    from io import BytesIO
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+    from openpyxl.utils import get_column_letter
+    
+    # Get all checkins, join with employee to get names
+    query = db.session.query(EmployeeCheckIn, Employee)\
+        .join(Employee, EmployeeCheckIn.employee_id == Employee.id)\
+        .order_by(EmployeeCheckIn.check_in_time.desc())
+    
+    # If not admin, filter by companies the user has access to
+    if not current_user.is_admin():
+        company_ids = [c.id for c in current_user.companies]
+        query = query.filter(Employee.company_id.in_(company_ids))
+    
+    results = query.all()
+    
+    if not results:
+        flash('No hay fichajes para exportar.', 'info')
+        return redirect(url_for('main.dashboard'))
+    
+    # Create Excel file
+    output = BytesIO()
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Todos los Fichajes"
+    
+    # Headers
+    headers = ["ID", "Empleado", "Empresa", "Fecha", "Hora Entrada", "Hora Salida", "Duración", "Estado", "Notas"]
+    for col_num, header in enumerate(headers, 1):
+        col_letter = get_column_letter(col_num)
+        worksheet[f'{col_letter}1'] = header
+        # Apply style to header
+        worksheet[f'{col_letter}1'].font = Font(bold=True)
+        worksheet[f'{col_letter}1'].fill = PatternFill(start_color="DDDDDD", end_color="DDDDDD", fill_type="solid")
+    
+    # Data
+    for row_num, (checkin, employee) in enumerate(results, 2):
+        check_in_date = checkin.check_in_time.strftime('%d-%m-%Y') if checkin.check_in_time else ''
+        check_in_time = checkin.check_in_time.strftime('%H:%M:%S') if checkin.check_in_time else ''
+        check_out_time = checkin.check_out_time.strftime('%H:%M:%S') if checkin.check_out_time else ''
+        
+        duration = ''
+        if checkin.check_in_time and checkin.check_out_time:
+            duration_seconds = (checkin.check_out_time - checkin.check_in_time).total_seconds()
+            hours, remainder = divmod(duration_seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            duration = f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
+        
+        status = "Completo" if checkin.check_out_time else "Pendiente"
+        
+        # Get company name
+        company_name = employee.company.name if employee.company else "No asignada"
+        
+        row = [
+            checkin.id,
+            f"{employee.first_name} {employee.last_name}",
+            company_name,
+            check_in_date,
+            check_in_time,
+            check_out_time,
+            duration,
+            status,
+            checkin.notes or ''
+        ]
+        
+        for col_num, cell_value in enumerate(row, 1):
+            col_letter = get_column_letter(col_num)
+            worksheet[f'{col_letter}{row_num}'] = cell_value
+    
+    # Adjust column widths
+    for column in worksheet.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            if cell.value:
+                max_length = max(max_length, len(str(cell.value)))
+        adjusted_width = (max_length + 2)
+        worksheet.column_dimensions[column_letter].width = adjusted_width
+    
+    workbook.save(output)
+    output.seek(0)
+    
+    # Generate filename
+    now = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f"todos_los_fichajes_{now}.xlsx"
+    
+    # Log activity
+    log_activity('Exportados todos los fichajes a Excel')
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=filename
+    )

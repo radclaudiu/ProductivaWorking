@@ -143,18 +143,20 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         {{ form.start_date.label(class="form-label") }}
-                                        {{ form.start_date(class="form-control", type="date") }}
+                                        {{ form.start_date(class="form-control", type="text", placeholder="YYYY-MM-DD") }}
                                         {% for error in form.start_date.errors %}
                                             <div class="text-danger">{{ error }}</div>
                                         {% endfor %}
+                                        <small class="form-text text-muted">Formato: YYYY-MM-DD (Ejemplo: 2025-04-11)</small>
                                     </div>
                                     
                                     <div class="col-md-6 mb-3">
                                         {{ form.end_date.label(class="form-label") }}
-                                        {{ form.end_date(class="form-control", type="date") }}
+                                        {{ form.end_date(class="form-control", type="text", placeholder="YYYY-MM-DD") }}
                                         {% for error in form.end_date.errors %}
                                             <div class="text-danger">{{ error }}</div>
                                         {% endfor %}
+                                        <small class="form-text text-muted">Formato: YYYY-MM-DD (Ejemplo: 2025-06-15)</small>
                                     </div>
                                 </div>
                             </div>

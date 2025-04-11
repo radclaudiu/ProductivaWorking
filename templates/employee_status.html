@@ -76,21 +76,22 @@
                             <div class="col-md-6 mb-3">
                                 <div class="form-group">
                                     {{ form.status_start_date.label(class="form-label") }}
-                                    {{ form.status_start_date(class="form-control", type="date") }}
+                                    {{ form.status_start_date(class="form-control", type="text", placeholder="YYYY-MM-DD") }}
                                     {% for error in form.status_start_date.errors %}
                                         <span class="text-danger">{{ error }}</span>
                                     {% endfor %}
+                                    <small class="form-text text-muted">Formato: YYYY-MM-DD (Ejemplo: 2025-04-11)</small>
                                 </div>
                             </div>
                         </div>
                         
                         <div class="form-group mb-3">
                             {{ form.status_end_date.label(class="form-label") }}
-                            {{ form.status_end_date(class="form-control", type="date") }}
+                            {{ form.status_end_date(class="form-control", type="text", placeholder="YYYY-MM-DD") }}
                             {% for error in form.status_end_date.errors %}
                                 <span class="text-danger">{{ error }}</span>
                             {% endfor %}
-                            <small class="form-text text-muted">Opcional. Solo es necesario para estados temporales como baja médica o vacaciones.</small>
+                            <small class="form-text text-muted">Opcional. Solo es necesario para estados temporales como baja médica o vacaciones. Formato: YYYY-MM-DD (Ejemplo: 2025-06-15)</small>
                         </div>
                         
                         <div class="form-group mb-3">

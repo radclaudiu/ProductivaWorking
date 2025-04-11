@@ -26,7 +26,7 @@
                             <p><strong>Tipo de Contrato:</strong> {{ employee.contract_type.name }}</p>
                             <p><strong>Fecha de inicio:</strong> 
                                 {% if employee.start_date %}
-                                {{ employee.start_date.strftime('%d/%m/%Y') }}
+                                {{ employee.start_date }}
                                 {% else %}
                                 No especificada
                                 {% endif %}

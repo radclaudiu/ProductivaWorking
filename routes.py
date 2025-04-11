@@ -261,7 +261,13 @@ def view_company(slug):
         flash('No tienes permiso para ver esta empresa.', 'danger')
         return redirect(url_for('company.list_companies'))
     
-    return render_template('company_detail.html', title=company.name, company=company)
+    # Ordenar empleados: primero activos, luego inactivos
+    sorted_employees = sorted(company.employees, key=lambda e: (not e.is_active, e.first_name.lower()))
+    
+    return render_template('company_detail.html', 
+                          title=company.name, 
+                          company=company,
+                          sorted_employees=sorted_employees)
 
 @company_bp.route('/new', methods=['GET', 'POST'])
 @admin_required

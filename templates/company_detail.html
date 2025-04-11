@@ -142,7 +142,7 @@
             {% endif %}
         </div>
         <div class="card-body">
-            {% if company.employees %}
+            {% if sorted_employees %}
                 <div class="table-responsive">
                     <table class="table table-hover">
                         <thead>
@@ -157,8 +157,8 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for employee in company.employees %}
-                            <tr data-href="{{ url_for('employee.view_employee', id=employee.id) }}">
+                            {% for employee in sorted_employees %}
+                            <tr data-href="{{ url_for('employee.view_employee', id=employee.id) }}" class="{% if not employee.is_active %}table-secondary{% endif %}">
                                 <td>{{ employee.first_name }} {{ employee.last_name }}</td>
                                 <td>{{ employee.dni }}</td>
                                 <td>{{ employee.position }}</td>

@@ -68,12 +68,12 @@
                             <dd class="col-sm-8">{{ employee.bank_account or 'No disponible' }}</dd>
                             
                             <dt class="col-sm-4">Fecha de Inicio:</dt>
-                            <dd class="col-sm-8">{{ employee.start_date.strftime('%d/%m/%Y') if employee.start_date else 'No definida' }}</dd>
+                            <dd class="col-sm-8">{{ employee.start_date if employee.start_date else 'No definida' }}</dd>
                             
                             <dt class="col-sm-4">Fecha de Fin:</dt>
                             <dd class="col-sm-8">
                                 {% if employee.end_date %}
-                                    {{ employee.end_date.strftime('%d/%m/%Y') }}
+                                    {{ employee.end_date }}
                                 {% else %}
                                     <span class="text-muted">No definida</span>
                                 {% endif %}
@@ -115,10 +115,10 @@
                             </dd>
                             
                             <dt class="col-sm-4">Fecha de Registro:</dt>
-                            <dd class="col-sm-8">{{ employee.created_at.strftime('%d/%m/%Y') }}</dd>
+                            <dd class="col-sm-8">{{ employee.created_at.strftime('%d/%m/%Y') if employee.created_at else 'No disponible' }}</dd>
                             
                             <dt class="col-sm-4">Última Actualización:</dt>
-                            <dd class="col-sm-8">{{ employee.updated_at.strftime('%d/%m/%Y %H:%M') }}</dd>
+                            <dd class="col-sm-8">{{ employee.updated_at.strftime('%d/%m/%Y %H:%M') if employee.updated_at else 'No disponible' }}</dd>
                             
                             {% if employee.user %}
                             <dt class="col-sm-4">Usuario Asociado:</dt>

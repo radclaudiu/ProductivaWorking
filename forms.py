@@ -182,8 +182,8 @@ class EmployeeForm(FlaskForm):
     contract_type = SelectField('Tipo de Contrato', 
                                choices=[(ct.value, ct.name.capitalize()) for ct in ContractType])
     bank_account = StringField('Cuenta Bancaria', validators=[Length(max=64)])
-    start_date = DateField('Fecha de Inicio', validators=[Optional()], default=date.today)
-    end_date = DateField('Fecha de Fin', validators=[Optional()])
+    start_date = StringField('Fecha de Inicio', validators=[Optional()])
+    end_date = StringField('Fecha de Fin', validators=[Optional()])
     company_id = SelectField('Empresa', coerce=int, validators=[DataRequired()])
     is_active = BooleanField('Empleado Activo')
     status = SelectField('Estado', choices=[(status.value, status.name.capitalize()) for status in EmployeeStatus], 
@@ -208,8 +208,8 @@ class EmployeeNoteForm(FlaskForm):
 
 class EmployeeStatusForm(FlaskForm):
     status = SelectField('Estado', choices=[(status.value, status.name.capitalize()) for status in EmployeeStatus])
-    status_start_date = DateField('Fecha de Inicio', validators=[DataRequired()], default=date.today)
-    status_end_date = DateField('Fecha de Fin Prevista', validators=[Optional()])
+    status_start_date = StringField('Fecha de Inicio', validators=[DataRequired()])
+    status_end_date = StringField('Fecha de Fin Prevista', validators=[Optional()])
     status_notes = TextAreaField('Notas', validators=[Optional(), Length(max=500)])
     submit = SubmitField('Actualizar Estado')
     

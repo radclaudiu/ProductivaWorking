@@ -641,9 +641,6 @@ def create_employee():
         companies = current_user.companies
         if companies:
             form.company_id.choices = [(c.id, c.name) for c in companies]
-            # Si no hay datos seleccionados, use la primera empresa por defecto
-            if not form.company_id.data and companies:
-                form.company_id.data = companies[0].id
     
     if form.validate_on_submit():
         employee = Employee(

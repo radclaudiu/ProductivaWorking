@@ -723,16 +723,17 @@ def get_dashboard_stats():
     return stats
 def create_database_backup():
     """
-    Create a backup of the database using SQLAlchemy for database schema 
-    and CSV exports for data instead of pg_dump
+    Create a simplified backup of the database by directly querying tables
+    without using SQLAlchemy introspection
     """
     import os
     from datetime import datetime
     import tempfile
     import csv
     import zipfile
-    from io import BytesIO, StringIO
-    from sqlalchemy import inspect, select
+    from io import BytesIO
+    import traceback
+    from sqlalchemy import text
     
     # Generate timestamp for filenames
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -740,89 +741,76 @@ def create_database_backup():
     try:
         # Create a temporary directory for our files
         with tempfile.TemporaryDirectory() as temp_dir:
-            inspector = inspect(db.engine)
-            
-            # Get all table names
-            table_names = inspector.get_table_names()
-            
-            # Create schema file
-            schema_file = os.path.join(temp_dir, 'schema.sql')
-            with open(schema_file, 'w') as f:
-                f.write(f"-- Schema Backup Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
-                
-                # For each table, get its columns and write CREATE TABLE statement
-                for table_name in table_names:
-                    f.write(f"-- Table: {table_name}\n")
-                    columns = inspector.get_columns(table_name)
-                    primary_keys = [pk for pk in inspector.get_pk_constraint(table_name).get('constrained_columns', [])]
-                    
-                    f.write(f"CREATE TABLE IF NOT EXISTS {table_name} (\n")
-                    
-                    # Write column definitions
-                    col_defs = []
-                    for col in columns:
-                        col_def = f"    {col['name']} {col['type']}"
-                        if not col.get('nullable', True):
-                            col_def += " NOT NULL"
-                        if col['name'] in primary_keys:
-                            col_def += " PRIMARY KEY"
-                        if col.get('default') is not None:
-                            col_def += f" DEFAULT {col['default']}"
-                        col_defs.append(col_def)
-                    
-                    f.write(",\n".join(col_defs))
-                    f.write("\n);\n\n")
-            
             # Create a ZIP file in memory
             zip_buffer = BytesIO()
             with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED, False) as zip_file:
-                # Add schema.sql to the ZIP
-                zip_file.write(schema_file, arcname='schema.sql')
+                # Get table information from our models
+                main_tables = [
+                    ('users', 'Tabla de usuarios'),
+                    ('companies', 'Tabla de empresas'),
+                    ('employees', 'Tabla de empleados'),
+                    ('employee_documents', 'Documentos de empleados'),
+                    ('employee_notes', 'Notas de empleados'),
+                    ('employee_schedules', 'Horarios de empleados'),
+                    ('employee_check_ins', 'Fichajes de empleados'),
+                    ('employee_vacations', 'Vacaciones de empleados'),
+                    ('activity_logs', 'Registros de actividad'),
+                    ('checkpoints', 'Puntos de fichaje')
+                ]
                 
-                # For each table, export its data as CSV
-                for table_name in table_names:
-                    metadata = db.MetaData()
-                    table = db.Table(table_name, metadata, autoload_with=db.engine)
-                    
-                    # Create CSV file for this table
-                    csv_file_path = os.path.join(temp_dir, f"{table_name}.csv")
-                    
-                    with open(csv_file_path, 'w', newline='') as csv_file:
-                        # Get column names
-                        columns = [column.name for column in table.columns]
-                        
-                        # Create CSV writer and write header
-                        csv_writer = csv.writer(csv_file)
-                        csv_writer.writerow(columns)
-                        
-                        # Execute query to get all rows
-                        result = db.session.execute(select(table)).fetchall()
-                        
-                        # Write data rows
-                        for row in result:
-                            csv_writer.writerow([str(cell) if cell is not None else '' for cell in row])
-                    
-                    # Add CSV file to ZIP
-                    zip_file.write(csv_file_path, arcname=f"data/{table_name}.csv")
-                
-                # Add README file with instructions
-                readme_content = f"""# Database Backup
+                # Create INFO file with backup details
+                info_content = f"""# Database Backup
 Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
 
-## Contents
-- schema.sql: SQL schema definitions
-- data/*.csv: Table data in CSV format
-
-## Restoration Instructions
-1. Create database schema using schema.sql
-2. Import CSV data into respective tables
+## Tables Included
 """
+                # Add table details to info
+                for table_name, description in main_tables:
+                    info_content += f"- {table_name}: {description}\n"
                 
-                readme_file = os.path.join(temp_dir, 'README.md')
-                with open(readme_file, 'w') as f:
-                    f.write(readme_content)
+                info_file = os.path.join(temp_dir, 'INFO.md')
+                with open(info_file, 'w') as f:
+                    f.write(info_content)
                 
-                zip_file.write(readme_file, arcname='README.md')
+                zip_file.write(info_file, arcname='INFO.md')
+                
+                # Export data for each table
+                for table_name, _ in main_tables:
+                    try:
+                        # Execute direct SQL query to get column names
+                        result = db.session.execute(text(f"SELECT column_name FROM information_schema.columns WHERE table_name = '{table_name}' ORDER BY ordinal_position")).fetchall()
+                        
+                        if not result:
+                            continue  # Skip table if it doesn't exist
+                            
+                        columns = [row[0] for row in result]
+                        
+                        # Create CSV file for this table
+                        csv_file_path = os.path.join(temp_dir, f"{table_name}.csv")
+                        
+                        with open(csv_file_path, 'w', newline='') as csv_file:
+                            # Create CSV writer and write header
+                            csv_writer = csv.writer(csv_file)
+                            csv_writer.writerow(columns)
+                            
+                            # Execute direct SQL query to get all data from table
+                            data_result = db.session.execute(text(f"SELECT * FROM {table_name}")).fetchall()
+                            
+                            # Write data rows
+                            for row in data_result:
+                                csv_writer.writerow([str(cell) if cell is not None else '' for cell in row])
+                        
+                        # Add CSV file to ZIP
+                        zip_file.write(csv_file_path, arcname=f"{table_name}.csv")
+                    except Exception as table_error:
+                        # Create error log for this table
+                        error_file = os.path.join(temp_dir, f"{table_name}_error.log")
+                        with open(error_file, 'w') as f:
+                            f.write(f"Error exporting table {table_name}: {str(table_error)}\n\n")
+                            f.write(traceback.format_exc())
+                        
+                        # Add error log to ZIP
+                        zip_file.write(error_file, arcname=f"errors/{table_name}_error.log")
             
             # Reset buffer position to beginning
             zip_buffer.seek(0)

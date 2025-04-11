@@ -3,9 +3,9 @@ import logging
 from datetime import timedelta
 
 # Configure logging
-# Usar INFO en lugar de DEBUG para reducir el verbosity
+# Cambiar a DEBUG para depuración
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
     datefmt='%Y-%m-%d %H:%M:%S'
 )

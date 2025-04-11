@@ -13,7 +13,7 @@
                         {% if current_user.is_admin() or current_user.is_gerente() or 
                               (current_user.is_empleado() and current_user.employee and current_user.employee.id == employee.id) %}
                         <a href="{{ url_for('vacation.create_vacation', employee_id=employee.id) }}" class="btn btn-primary btn-sm">
-                            <i class="bi bi-plus-circle"></i> Solicitar Vacaciones
+                            <i class="bi bi-plus-circle"></i> Agregar Vacaciones
                         </a>
                         {% endif %}
                     </div>

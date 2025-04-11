@@ -147,7 +147,6 @@
                     <table class="table table-hover">
                         <thead>
                             <tr>
-                                <th>ID</th>
                                 <th>Nombre</th>
                                 <th>DNI</th>
                                 <th>Puesto</th>
@@ -160,7 +159,6 @@
                         <tbody>
                             {% for employee in company.employees %}
                             <tr data-href="{{ url_for('employee.view_employee', id=employee.id) }}">
-                                <td>{{ employee.id }}</td>
                                 <td>{{ employee.first_name }} {{ employee.last_name }}</td>
                                 <td>{{ employee.dni }}</td>
                                 <td>{{ employee.position }}</td>

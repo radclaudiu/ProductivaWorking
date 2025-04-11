@@ -722,60 +722,121 @@ def get_dashboard_stats():
     
     return stats
 def create_database_backup():
-    """Create a backup of the database"""
+    """
+    Create a backup of the database using SQLAlchemy for database schema 
+    and CSV exports for data instead of pg_dump
+    """
     import os
     from datetime import datetime
-    import subprocess
+    import tempfile
+    import csv
+    import zipfile
+    from io import BytesIO, StringIO
+    from sqlalchemy import inspect, select
     
-    # Create backups directory if it doesn't exist
-    backup_dir = os.path.join(os.getcwd(), 'backups')
-    os.makedirs(backup_dir, exist_ok=True)
-    
-    # Generate backup filename with timestamp
+    # Generate timestamp for filenames
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    backup_file = os.path.join(backup_dir, f'backup_{timestamp}.sql')
     
     try:
-        # Get database URL from environment
-        database_url = os.environ.get('DATABASE_URL')
-        if not database_url:
-            raise Exception("DATABASE_URL not found in environment variables")
+        # Create a temporary directory for our files
+        with tempfile.TemporaryDirectory() as temp_dir:
+            inspector = inspect(db.engine)
             
-        # Parse connection details from URL
-        from urllib.parse import urlparse
-        url = urlparse(database_url)
-        
-        # Create pg_dump command
-        cmd = [
-            'pg_dump',
-            '-h', url.hostname,
-            '-p', str(url.port),
-            '-U', url.username,
-            '-f', backup_file,
-            url.path[1:]  # Database name
-        ]
-        
-        # Execute backup
-        process = subprocess.Popen(
-            cmd,
-            env={'PGPASSWORD': url.password},
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        
-        output, error = process.communicate()
-        
-        if process.returncode != 0:
-            raise Exception(f"Backup failed: {error.decode()}")
+            # Get all table names
+            table_names = inspector.get_table_names()
             
-        return {
-            'success': True,
-            'file': backup_file,
-            'timestamp': timestamp
-        }
+            # Create schema file
+            schema_file = os.path.join(temp_dir, 'schema.sql')
+            with open(schema_file, 'w') as f:
+                f.write(f"-- Schema Backup Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+                
+                # For each table, get its columns and write CREATE TABLE statement
+                for table_name in table_names:
+                    f.write(f"-- Table: {table_name}\n")
+                    columns = inspector.get_columns(table_name)
+                    primary_keys = [pk for pk in inspector.get_pk_constraint(table_name).get('constrained_columns', [])]
+                    
+                    f.write(f"CREATE TABLE IF NOT EXISTS {table_name} (\n")
+                    
+                    # Write column definitions
+                    col_defs = []
+                    for col in columns:
+                        col_def = f"    {col['name']} {col['type']}"
+                        if not col.get('nullable', True):
+                            col_def += " NOT NULL"
+                        if col['name'] in primary_keys:
+                            col_def += " PRIMARY KEY"
+                        if col.get('default') is not None:
+                            col_def += f" DEFAULT {col['default']}"
+                        col_defs.append(col_def)
+                    
+                    f.write(",\n".join(col_defs))
+                    f.write("\n);\n\n")
+            
+            # Create a ZIP file in memory
+            zip_buffer = BytesIO()
+            with zipfile.ZipFile(zip_buffer, 'a', zipfile.ZIP_DEFLATED, False) as zip_file:
+                # Add schema.sql to the ZIP
+                zip_file.write(schema_file, arcname='schema.sql')
+                
+                # For each table, export its data as CSV
+                for table_name in table_names:
+                    metadata = db.MetaData()
+                    table = db.Table(table_name, metadata, autoload_with=db.engine)
+                    
+                    # Create CSV file for this table
+                    csv_file_path = os.path.join(temp_dir, f"{table_name}.csv")
+                    
+                    with open(csv_file_path, 'w', newline='') as csv_file:
+                        # Get column names
+                        columns = [column.name for column in table.columns]
+                        
+                        # Create CSV writer and write header
+                        csv_writer = csv.writer(csv_file)
+                        csv_writer.writerow(columns)
+                        
+                        # Execute query to get all rows
+                        result = db.session.execute(select(table)).fetchall()
+                        
+                        # Write data rows
+                        for row in result:
+                            csv_writer.writerow([str(cell) if cell is not None else '' for cell in row])
+                    
+                    # Add CSV file to ZIP
+                    zip_file.write(csv_file_path, arcname=f"data/{table_name}.csv")
+                
+                # Add README file with instructions
+                readme_content = f"""# Database Backup
+Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+## Contents
+- schema.sql: SQL schema definitions
+- data/*.csv: Table data in CSV format
+
+## Restoration Instructions
+1. Create database schema using schema.sql
+2. Import CSV data into respective tables
+"""
+                
+                readme_file = os.path.join(temp_dir, 'README.md')
+                with open(readme_file, 'w') as f:
+                    f.write(readme_content)
+                
+                zip_file.write(readme_file, arcname='README.md')
+            
+            # Reset buffer position to beginning
+            zip_buffer.seek(0)
+            
+            return {
+                'success': True,
+                'file': zip_buffer,
+                'timestamp': timestamp
+            }
         
     except Exception as e:
+        import traceback
         return {
             'success': False,
-            'error': str(e)
+            'error': str(e),
+            'traceback': traceback.format_exc()
         }

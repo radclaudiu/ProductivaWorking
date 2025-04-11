@@ -1144,10 +1144,12 @@ def backup_database():
             return send_file(
                 result['file'],
                 as_attachment=True,
-                download_name=f"backup_{result['timestamp']}.sql"
+                download_name=f"backup_{result['timestamp']}.zip",
+                mimetype='application/zip'
             )
         else:
-            flash(f'Error al crear la copia de seguridad: {result["error"]}', 'danger')
+            error_message = result.get("error", "Error desconocido")
+            flash(f'Error al crear la copia de seguridad: {error_message}', 'danger')
             
     return render_template('backup_form.html', title='Copia de Seguridad de Base de Datos')
 

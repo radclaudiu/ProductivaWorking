@@ -99,11 +99,6 @@
                     <div class="card h-100 bg-dark text-white border border-light" 
                          onclick="selectEmployee({{ employee.id }}, '{{ employee.name }}')">
                         <div class="text-center pt-4">
-                            <div class="employee-avatar mb-3">
-                                <img src="{{ url_for('static', filename='icons/user-circle.svg') }}" 
-                                     class="rounded-circle border border-2 border-white"
-                                     width="120" height="120" alt="{{ employee.name }}">
-                            </div>
                             <h5 class="card-title">{{ employee.first_name }} {{ employee.last_name }}</h5>
                             <p class="card-text text-muted">{{ employee.position or 'Sin posición' }}</p>
                         </div>

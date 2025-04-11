@@ -174,13 +174,6 @@
                                         <div class="status-indicator inactive"></div>
                                         {% endif %}
                                         <div class="card-body">
-                                            <div class="employee-avatar">
-                                                {% if employee.photo_path %}
-                                                <img src="{{ url_for('static', filename=employee.photo_path) }}" alt="{{ employee.first_name }}">
-                                                {% else %}
-                                                <div class="avatar-text">{{ employee.first_name[0] }}{{ employee.last_name[0] }}</div>
-                                                {% endif %}
-                                            </div>
                                             <h5 class="employee-name">{{ employee.first_name }} {{ employee.last_name }}</h5>
                                             {% if employee.is_active %}
                                                 {% if employee.is_on_shift %}
@@ -250,9 +243,6 @@
                                     <div class="employee-card-border"></div>
                                     <div class="status-indicator ${employee.is_active ? (employee.is_on_shift ? `<div class="employee-status on-shift"><i class="bi bi-clock-fill me-1"></i> ACTIVO</div>` : '' : 'inactive'}"></div>
                                     <div class="card-body">
-                                        <div class="employee-avatar">
-                                            <div class="avatar-text">${employee.name.charAt(0)}${employee.name.split(' ')[1]?.charAt(0) || ''}</div>
-                                        </div>
                                         <h5 class="employee-name">${employee.name}</h5>
                                         ${employee.is_active ? (employee.is_on_shift ? `<div class="employee-status on-shift"><i class="bi bi-clock-fill me-1"></i> ACTIVO</div>` : 
                                             `<div class="employee-status out-shift"><i class="bi bi-x-circle-fill"></i> OUT</div>` : 

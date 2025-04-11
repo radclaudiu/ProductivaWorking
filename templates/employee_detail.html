@@ -68,12 +68,28 @@
                             <dd class="col-sm-8">{{ employee.bank_account or 'No disponible' }}</dd>
                             
                             <dt class="col-sm-4">Fecha de Inicio:</dt>
-                            <dd class="col-sm-8">{{ employee.start_date if employee.start_date else 'No definida' }}</dd>
+                            <dd class="col-sm-8">
+                                {% if employee.start_date %}
+                                    {% set date_parts = employee.start_date.split('-') if employee.start_date and '-' in employee.start_date else ['', '', ''] %}
+                                    {% if date_parts|length == 3 %}
+                                        {{ date_parts[2] }}-{{ date_parts[1] }}-{{ date_parts[0] }}
+                                    {% else %}
+                                        {{ employee.start_date }}
+                                    {% endif %}
+                                {% else %}
+                                    No definida
+                                {% endif %}
+                            </dd>
                             
                             <dt class="col-sm-4">Fecha de Fin:</dt>
                             <dd class="col-sm-8">
                                 {% if employee.end_date %}
-                                    {{ employee.end_date }}
+                                    {% set date_parts = employee.end_date.split('-') if employee.end_date and '-' in employee.end_date else ['', '', ''] %}
+                                    {% if date_parts|length == 3 %}
+                                        {{ date_parts[2] }}-{{ date_parts[1] }}-{{ date_parts[0] }}
+                                    {% else %}
+                                        {{ employee.end_date }}
+                                    {% endif %}
                                 {% else %}
                                     <span class="text-muted">No definida</span>
                                 {% endif %}
@@ -91,10 +107,24 @@
                                     {{ employee.status.name.capitalize() if employee.status else 'Activo' }}
                                 </span>
                                 {% if employee.status_start_date %}
-                                <small class="d-block mt-1">Desde: {{ employee.status_start_date }}</small>
+                                <small class="d-block mt-1">Desde: 
+                                    {% set date_parts = employee.status_start_date.split('-') if employee.status_start_date and '-' in employee.status_start_date else ['', '', ''] %}
+                                    {% if date_parts|length == 3 %}
+                                        {{ date_parts[2] }}-{{ date_parts[1] }}-{{ date_parts[0] }}
+                                    {% else %}
+                                        {{ employee.status_start_date }}
+                                    {% endif %}
+                                </small>
                                 {% endif %}
                                 {% if employee.status_end_date %}
-                                <small class="d-block">Hasta: {{ employee.status_end_date }}</small>
+                                <small class="d-block">Hasta: 
+                                    {% set date_parts = employee.status_end_date.split('-') if employee.status_end_date and '-' in employee.status_end_date else ['', '', ''] %}
+                                    {% if date_parts|length == 3 %}
+                                        {{ date_parts[2] }}-{{ date_parts[1] }}-{{ date_parts[0] }}
+                                    {% else %}
+                                        {{ employee.status_end_date }}
+                                    {% endif %}
+                                </small>
                                 {% endif %}
                             </dd>
                             

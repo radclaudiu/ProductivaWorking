@@ -95,7 +95,18 @@
                                                     <td>{{ employee.dni }}</td>
                                                     <td>{{ employee.position }}</td>
                                                     <td>{{ employee.contract_type.name if employee.contract_type else 'No definido' }}</td>
-                                                    <td>{{ employee.start_date if employee.start_date else 'No definida' }}</td>
+                                                    <td>
+                                                        {% if employee.start_date %}
+                                                            {% set date_parts = employee.start_date.split('-') if employee.start_date and '-' in employee.start_date else ['', '', ''] %}
+                                                            {% if date_parts|length == 3 %}
+                                                                {{ date_parts[2] }}-{{ date_parts[1] }}-{{ date_parts[0] }}
+                                                            {% else %}
+                                                                {{ employee.start_date }}
+                                                            {% endif %}
+                                                        {% else %}
+                                                            No definida
+                                                        {% endif %}
+                                                    </td>
                                                     <td>
                                                         <span class="badge {% if employee.is_active %}bg-success{% else %}bg-danger{% endif %}">
                                                             {{ 'Activo' if employee.is_active else 'Inactivo' }}
@@ -163,7 +174,18 @@
                                     <td>{{ employee.position }}</td>
                                     <td>{{ employee.company.name if employee.company else 'No asignada' }}</td>
                                     <td>{{ employee.contract_type.name if employee.contract_type else 'No definido' }}</td>
-                                    <td>{{ employee.start_date if employee.start_date else 'No definida' }}</td>
+                                    <td>
+                                        {% if employee.start_date %}
+                                            {% set date_parts = employee.start_date.split('-') if employee.start_date and '-' in employee.start_date else ['', '', ''] %}
+                                            {% if date_parts|length == 3 %}
+                                                {{ date_parts[2] }}-{{ date_parts[1] }}-{{ date_parts[0] }}
+                                            {% else %}
+                                                {{ employee.start_date }}
+                                            {% endif %}
+                                        {% else %}
+                                            No definida
+                                        {% endif %}
+                                    </td>
                                     <td>
                                         <span class="badge {% if employee.is_active %}bg-success{% else %}bg-danger{% endif %}">
                                             {{ 'Activo' if employee.is_active else 'Inactivo' }}

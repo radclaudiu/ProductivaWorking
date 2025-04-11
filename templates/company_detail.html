@@ -158,7 +158,7 @@
                         </thead>
                         <tbody>
                             {% for employee in sorted_employees %}
-                            <tr data-href="{{ url_for('employee.view_employee', id=employee.id) }}" class="{% if not employee.is_active %}table-secondary{% endif %}">
+                            <tr data-href="{{ url_for('employee.view_employee', id=employee.id) }}" class="{% if not employee.is_active %}table-dark{% endif %}">
                                 <td>{{ employee.first_name }} {{ employee.last_name }}</td>
                                 <td>{{ employee.dni }}</td>
                                 <td>{{ employee.position }}</td>

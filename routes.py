@@ -631,7 +631,24 @@ def view_employee(id):
         flash('No tienes permiso para ver este empleado.', 'danger')
         return redirect(url_for('employee.list_employees'))
     
-    return render_template('employee_detail.html', title=f'{employee.first_name} {employee.last_name}', employee=employee)
+    # Determinar si el usuario puede administrar la activación del empleado
+    can_manage_activation = False
+    if current_user.is_admin():
+        can_manage_activation = True
+    elif current_user.is_gerente():
+        # Convertir ambos IDs a string para comparar
+        company_ids = [str(c.id) for c in current_user.companies]
+        if str(employee.company_id) in company_ids:
+            can_manage_activation = True
+    
+    # Log de depuración
+    print(f"Empleado: {employee.id} - Empresa: {employee.company_id} - Empresas del usuario: {[c.id for c in current_user.companies]}")
+    print(f"¿Puede administrar activación? {can_manage_activation}")
+    
+    return render_template('employee_detail.html', 
+                          title=f'{employee.first_name} {employee.last_name}', 
+                          employee=employee,
+                          can_manage_activation=can_manage_activation)
 
 @employee_bp.route('/new', methods=['GET', 'POST'])
 @manager_required

@@ -133,9 +133,7 @@
                                 <span class="badge {% if employee.is_active %}bg-success{% else %}bg-danger{% endif %}">
                                     {{ 'Activo' if employee.is_active else 'Inactivo' }}
                                 </span>
-                                <!-- Debugging -->
-                                {{ employee.company_id }} - {{ [c.id for c in current_user.companies] }}
-                                {% if current_user.is_admin() or (current_user.is_gerente() and employee.company_id|string in [c.id|string for c in current_user.companies]) %}
+                                {% if can_manage_activation %}
                                 <form action="{{ url_for('employee.toggle_employee_activation', id=employee.id) }}" method="post" class="d-inline">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                                     <button type="submit" class="btn btn-sm btn-outline-{% if employee.is_active %}danger{% else %}success{% endif %} mt-2">
@@ -186,7 +184,7 @@
                             <i class="bi bi-clock-history"></i> Ver Historial de Cambios
                         </a>
                         
-                        {% if current_user.is_admin() or (current_user.is_gerente() and employee.company_id|string in [c.id|string for c in current_user.companies]) %}
+                        {% if can_manage_activation %}
                         <a href="{{ url_for('employee.manage_status', id=employee.id) }}" class="list-group-item list-group-item-action">
                             <i class="bi bi-arrow-repeat"></i> Gestionar Estado
                         </a>

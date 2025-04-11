@@ -7,7 +7,9 @@
             <i class="bi bi-building"></i> {{ company.name }}
         </h1>
         <div>
-            {% if current_user.is_admin() or (current_user.is_gerente() and current_user.company_id == company.id) %}
+            {# Usar la función can_manage_company en lugar de verificar company_id directamente #}
+            {% from "utils.html" import can_manage_company with context %}
+            {% if current_user.is_admin() or can_manage_company(company.id) %}
             <a href="{{ url_for('company.edit_company', slug=company.get_slug()) }}" class="btn btn-warning">
                 <i class="bi bi-pencil"></i> Editar Empresa
             </a>

@@ -105,7 +105,7 @@ def can_manage_company(company_id):
         
     if current_user.is_gerente():
         # Verificar si el usuario tiene esta empresa asignada
-        from app import current_app
+        from flask import current_app
         
         # Convertir company_id a entero para asegurar comparación correcta
         try:
@@ -143,7 +143,7 @@ def can_manage_employee(employee):
         
     if current_user.is_gerente():
         # Verificar si el usuario tiene la empresa del empleado asignada
-        from app import current_app
+        from flask import current_app
         
         # Convertir company_id del empleado a entero para asegurar comparación correcta
         try:
@@ -184,7 +184,7 @@ def can_view_employee(employee):
         
     if current_user.is_gerente():
         # Verificar si el usuario tiene la empresa del empleado asignada
-        from app import current_app
+        from flask import current_app
         
         # Convertir company_id del empleado a entero para asegurar comparación correcta
         try:

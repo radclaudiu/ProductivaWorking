@@ -720,99 +720,89 @@ def edit_employee(id):
             form.company_id.choices = [(c.id, c.name) for c in companies]
     
     if form.validate_on_submit():
-        # Track changes for employee history
+        # Registrar cambios solo con propósito de auditoría
         if employee.first_name != form.first_name.data:
             log_employee_change(employee, 'first_name', employee.first_name, form.first_name.data)
-            employee.first_name = form.first_name.data
-            
+        
         if employee.last_name != form.last_name.data:
             log_employee_change(employee, 'last_name', employee.last_name, form.last_name.data)
-            employee.last_name = form.last_name.data
             
         if employee.dni != form.dni.data:
             log_employee_change(employee, 'dni', employee.dni, form.dni.data)
-            employee.dni = form.dni.data
             
         if employee.social_security_number != form.social_security_number.data:
             log_employee_change(employee, 'social_security_number', employee.social_security_number, form.social_security_number.data)
-            employee.social_security_number = form.social_security_number.data
             
         if employee.email != form.email.data:
             log_employee_change(employee, 'email', employee.email, form.email.data)
-            employee.email = form.email.data
             
         if employee.address != form.address.data:
             log_employee_change(employee, 'address', employee.address, form.address.data)
-            employee.address = form.address.data
             
         if employee.phone != form.phone.data:
             log_employee_change(employee, 'phone', employee.phone, form.phone.data)
-            employee.phone = form.phone.data
             
         if employee.position != form.position.data:
             log_employee_change(employee, 'position', employee.position, form.position.data)
-            employee.position = form.position.data
             
-        if str(employee.contract_type.value if employee.contract_type else None) != form.contract_type.data:
-            log_employee_change(employee, 'contract_type', 
-                              employee.contract_type.value if employee.contract_type else None, 
-                              form.contract_type.data)
-            employee.contract_type = ContractType(form.contract_type.data) if form.contract_type.data else None
+        contract_type_value = employee.contract_type.value if employee.contract_type else None
+        if str(contract_type_value) != form.contract_type.data:
+            log_employee_change(employee, 'contract_type', contract_type_value, form.contract_type.data)
             
         if employee.bank_account != form.bank_account.data:
             log_employee_change(employee, 'bank_account', employee.bank_account, form.bank_account.data)
-            employee.bank_account = form.bank_account.data
             
         if employee.start_date != form.start_date.data:
             log_employee_change(employee, 'start_date', 
                               employee.start_date if employee.start_date else None, 
                               form.start_date.data if form.start_date.data else None)
-            employee.start_date = form.start_date.data
             
-        # Manejar la fecha de baja (end_date)
         old_end_date = employee.end_date if employee.end_date else None
-        new_end_date = form.end_date.data
+        new_end_date = form.end_date.data if form.end_date.data else None
         
-        # Debug para ver qué valores estamos comparando
+        # Debug para ver qué valores estamos comparando para end_date
         print(f"DEBUG comparación - old_end_date = '{old_end_date}', tipo {type(old_end_date)}, new_end_date = '{new_end_date}', tipo {type(new_end_date)}")
         log_activity(f"DEBUG comparación - old_end_date = '{old_end_date}', tipo {type(old_end_date)}, new_end_date = '{new_end_date}', tipo {type(new_end_date)}")
         
-        # Verificamos si el campo de fecha de fin ha cambiado
-        # Ambos son None o vacíos, no hay cambio
-        if (not old_end_date and not new_end_date):
-            print("DEBUG: Ambos valores son vacíos/None, no hay cambio")
-        # Si son diferentes, hay un cambio (incluyendo si uno es None y el otro no)
-        elif old_end_date != new_end_date:
-            print(f"DEBUG: Valores diferentes, actualizando end_date de '{old_end_date}' a '{new_end_date}'")
-            log_employee_change(employee, 'end_date', old_end_date, 
-                              new_end_date if new_end_date else None)
-            
-            # Usar asignación directa a la propiedad
-            employee.end_date = new_end_date
-        else:
-            print("DEBUG: No hay cambio en end_date")
-            
-        # Log de depuración después de la asignación
-        print(f"DEBUG post-asignación - Actualizado end_date = {employee.end_date}, tipo {type(employee.end_date)}")
-        log_activity(f"DEBUG post-asignación - Actualizado end_date = {employee.end_date}, tipo {type(employee.end_date)}")
-        
-        # No hacemos commit aquí, se hará al final de la función
+        if old_end_date != new_end_date:
+            log_employee_change(employee, 'end_date', old_end_date, new_end_date)
             
         if employee.company_id != form.company_id.data:
             old_company = Company.query.get(employee.company_id).name if employee.company_id else 'Ninguna'
             new_company = Company.query.get(form.company_id.data).name
             log_employee_change(employee, 'company', old_company, new_company)
-            employee.company_id = form.company_id.data
             
         if employee.is_active != form.is_active.data:
             log_employee_change(employee, 'is_active', str(employee.is_active), str(form.is_active.data))
-            employee.is_active = form.is_active.data
             
-        if str(employee.status.value if employee.status else 'activo') != form.status.data:
-            log_employee_change(employee, 'status', 
-                              employee.status.value if employee.status else 'activo', 
-                              form.status.data)
-            employee.status = EmployeeStatus(form.status.data)
+        status_value = employee.status.value if employee.status else 'activo'
+        if str(status_value) != form.status.data:
+            log_employee_change(employee, 'status', status_value, form.status.data)
+        
+        # Asignar TODOS los valores del formulario al objeto employee
+        # en lugar de hacer comparaciones individuales
+        employee.first_name = form.first_name.data
+        employee.last_name = form.last_name.data
+        employee.dni = form.dni.data
+        employee.social_security_number = form.social_security_number.data
+        employee.email = form.email.data
+        employee.address = form.address.data
+        employee.phone = form.phone.data
+        employee.position = form.position.data
+        employee.contract_type = ContractType(form.contract_type.data) if form.contract_type.data else None
+        employee.bank_account = form.bank_account.data
+        employee.start_date = form.start_date.data
+        
+        # Asignar fecha fin directamente sin comparaciones adicionales
+        print(f"DEBUG: Asignación directa de end_date: '{form.end_date.data}'")
+        employee.end_date = form.end_date.data  # Asignación directa del valor
+        
+        # Log después de la asignación
+        print(f"DEBUG post-asignación - end_date = '{employee.end_date}', tipo {type(employee.end_date)}")
+        
+        employee.company_id = form.company_id.data
+        employee.is_active = form.is_active.data
+        employee.status = EmployeeStatus(form.status.data)
             
         employee.updated_at = datetime.utcnow()
         
@@ -882,14 +872,17 @@ def manage_status(id):
     form = EmployeeStatusForm(obj=employee)
     
     if form.validate_on_submit():
+        # Log de depuración antes de realizar cambios
+        print(f"DEBUG antes de cambios - Employee {employee.id}: status_start_date = {employee.status_start_date}, status_end_date = {employee.status_end_date}")
+        
+        # Registrar los cambios para auditoría
         old_status = employee.status.value if employee.status else 'activo'
         new_status = form.status.data
         
         if old_status != new_status:
             log_employee_change(employee, 'status', old_status, new_status)
-            employee.status = EmployeeStatus(new_status)
         
-        # Log changes to dates and notes if they've changed
+        # Comparación de fechas para el log de auditoría
         if employee.status_start_date != form.status_start_date.data:
             log_employee_change(employee, 'status_start_date', 
                               employee.status_start_date if employee.status_start_date else None, 
@@ -903,14 +896,27 @@ def manage_status(id):
         if employee.status_notes != form.status_notes.data:
             log_employee_change(employee, 'status_notes', employee.status_notes, form.status_notes.data)
         
-        # Update the employee record with the new status information
+        # Actualizar directamente todos los campos del formulario
         employee.status = EmployeeStatus(form.status.data)
+        
+        # Depuración de las fechas
+        print(f"DEBUG fecha inicio - form.status_start_date.data = '{form.status_start_date.data}', tipo {type(form.status_start_date.data)}")
+        print(f"DEBUG fecha fin - form.status_end_date.data = '{form.status_end_date.data}', tipo {type(form.status_end_date.data)}")
+        
+        # Asignar directamente
         employee.status_start_date = form.status_start_date.data
         employee.status_end_date = form.status_end_date.data
         employee.status_notes = form.status_notes.data
         employee.updated_at = datetime.utcnow()
         
+        # Log de depuración después de asignar, antes de commit
+        print(f"DEBUG pre-commit - Employee {employee.id}: status_start_date = {employee.status_start_date}, status_end_date = {employee.status_end_date}")
+        
         db.session.commit()
+        
+        # Verificar después del commit
+        employee_post_commit = Employee.query.get(employee.id)
+        print(f"DEBUG post-commit - Employee {employee_post_commit.id}: status_start_date = {employee_post_commit.status_start_date}, status_end_date = {employee_post_commit.status_end_date}")
         
         log_activity(f'Estado de empleado actualizado: {employee.first_name} {employee.last_name}')
         flash(f'Estado del empleado "{employee.first_name} {employee.last_name}" actualizado correctamente.', 'success')

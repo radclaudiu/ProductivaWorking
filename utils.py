@@ -150,22 +150,19 @@ def can_manage_employee(employee):
             current_app.logger.error(f"ERROR: employee.company_id no es un entero válido: {employee.company_id}")
             return False
             
-        current_app.logger.debug(f"Gerente {current_user.username} (ID:{current_user.id}) verificando permisos para empleado {employee.first_name} {employee.last_name} (ID:{employee.id}) de empresa ID:{employee_company_id}")
+        # Verificación de permisos para gerentes en la gestión de empleados
         
         # Verificar en las empresas asignadas
         for company in current_user.companies:
             try:
                 current_company_id = int(company.id)
-                current_app.logger.debug(f"Empresa asignada: {company.name} (ID:{current_company_id})")
-                
                 if current_company_id == employee_company_id:
-                    current_app.logger.debug(f"✓ Permiso concedido para empleado de empresa {company.name} (ID:{current_company_id})")
                     return True
             except (ValueError, TypeError):
                 current_app.logger.error(f"ERROR: ID de empresa asignada no válido: {company.id}")
                 continue
         
-        current_app.logger.debug(f"✗ Permiso denegado para empleado de empresa ID:{employee_company_id}")
+        # Permiso denegado para el empleado de esta empresa
     
     if current_user.is_empleado() and current_user.id == employee.user_id:
         return True

@@ -765,18 +765,18 @@ def edit_employee(id):
             
         if employee.start_date != form.start_date.data:
             log_employee_change(employee, 'start_date', 
-                              employee.start_date.isoformat() if employee.start_date else None, 
-                              form.start_date.data.isoformat() if form.start_date.data else None)
+                              employee.start_date if employee.start_date else None, 
+                              form.start_date.data if form.start_date.data else None)
             employee.start_date = form.start_date.data
             
         # Manejar la fecha de baja (end_date)
-        old_end_date = employee.end_date.isoformat() if employee.end_date else None
+        old_end_date = employee.end_date if employee.end_date else None
         new_end_date = form.end_date.data
         
         # Registrar el cambio en el historial si hay cambio
-        if old_end_date != (new_end_date.isoformat() if new_end_date else None):
+        if old_end_date != new_end_date:
             log_employee_change(employee, 'end_date', old_end_date, 
-                              new_end_date.isoformat() if new_end_date else None)
+                              new_end_date if new_end_date else None)
             
             # Usar asignación directa a la propiedad
             employee.end_date = new_end_date
@@ -880,13 +880,13 @@ def manage_status(id):
         # Log changes to dates and notes if they've changed
         if employee.status_start_date != form.status_start_date.data:
             log_employee_change(employee, 'status_start_date', 
-                              employee.status_start_date.isoformat() if employee.status_start_date else None, 
-                              form.status_start_date.data.isoformat() if form.status_start_date.data else None)
+                              employee.status_start_date if employee.status_start_date else None, 
+                              form.status_start_date.data if form.status_start_date.data else None)
         
         if employee.status_end_date != form.status_end_date.data:
             log_employee_change(employee, 'status_end_date', 
-                              employee.status_end_date.isoformat() if employee.status_end_date else None, 
-                              form.status_end_date.data.isoformat() if form.status_end_date.data else None)
+                              employee.status_end_date if employee.status_end_date else None, 
+                              form.status_end_date.data if form.status_end_date.data else None)
         
         if employee.status_notes != form.status_notes.data:
             log_employee_change(employee, 'status_notes', employee.status_notes, form.status_notes.data)

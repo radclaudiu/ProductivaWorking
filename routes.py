@@ -773,18 +773,30 @@ def edit_employee(id):
         old_end_date = employee.end_date if employee.end_date else None
         new_end_date = form.end_date.data
         
-        # Registrar el cambio en el historial si hay cambio
-        if old_end_date != new_end_date:
+        # Debug para ver qué valores estamos comparando
+        print(f"DEBUG comparación - old_end_date = '{old_end_date}', tipo {type(old_end_date)}, new_end_date = '{new_end_date}', tipo {type(new_end_date)}")
+        log_activity(f"DEBUG comparación - old_end_date = '{old_end_date}', tipo {type(old_end_date)}, new_end_date = '{new_end_date}', tipo {type(new_end_date)}")
+        
+        # Verificamos si el campo de fecha de fin ha cambiado
+        # Ambos son None o vacíos, no hay cambio
+        if (not old_end_date and not new_end_date):
+            print("DEBUG: Ambos valores son vacíos/None, no hay cambio")
+        # Si son diferentes, hay un cambio (incluyendo si uno es None y el otro no)
+        elif old_end_date != new_end_date:
+            print(f"DEBUG: Valores diferentes, actualizando end_date de '{old_end_date}' a '{new_end_date}'")
             log_employee_change(employee, 'end_date', old_end_date, 
                               new_end_date if new_end_date else None)
             
             # Usar asignación directa a la propiedad
             employee.end_date = new_end_date
+        else:
+            print("DEBUG: No hay cambio en end_date")
             
-            # Log de depuración después de la asignación
-            print(f"DEBUG post-asignación - Actualizado end_date = {employee.end_date}, tipo {type(employee.end_date)}")
-            
-            # No hacemos commit aquí, se hará al final de la función
+        # Log de depuración después de la asignación
+        print(f"DEBUG post-asignación - Actualizado end_date = {employee.end_date}, tipo {type(employee.end_date)}")
+        log_activity(f"DEBUG post-asignación - Actualizado end_date = {employee.end_date}, tipo {type(employee.end_date)}")
+        
+        # No hacemos commit aquí, se hará al final de la función
             
         if employee.company_id != form.company_id.data:
             old_company = Company.query.get(employee.company_id).name if employee.company_id else 'Ninguna'

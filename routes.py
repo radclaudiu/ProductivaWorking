@@ -1906,6 +1906,150 @@ def clean_database_route():
     
     return render_template('clean_database.html', title='Limpiar Base de Datos')
 
+# Ruta para exportar datos de todas las empresas (para el panel de backup)
+@company_bp.route('/export/all', methods=['GET'])
+@login_required
+@admin_required
+def export_all_companies():
+    """Export all companies data to Excel file"""
+    from io import BytesIO
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+    from openpyxl.utils import get_column_letter
+    
+    # Obtener todas las empresas
+    companies = Company.query.all()
+    
+    if not companies:
+        flash('No hay empresas para exportar.', 'info')
+        return redirect(url_for('main.dashboard'))
+    
+    # Crear archivo Excel
+    output = BytesIO()
+    workbook = Workbook()
+    
+    # Hoja de empresas
+    companies_sheet = workbook.active
+    companies_sheet.title = "Empresas"
+    
+    # Encabezados para empresas
+    company_headers = ["ID", "Nombre", "CIF/NIF", "Dirección", "Ciudad", "Código Postal", 
+                      "País", "Sector", "Teléfono", "Email", "Sitio Web", "Activa", 
+                      "Fecha de Creación", "Última Actualización"]
+    
+    for col_num, header in enumerate(company_headers, 1):
+        col_letter = get_column_letter(col_num)
+        companies_sheet[f'{col_letter}1'] = header
+        companies_sheet[f'{col_letter}1'].font = Font(bold=True)
+        companies_sheet[f'{col_letter}1'].fill = PatternFill(start_color="DDDDDD", end_color="DDDDDD", fill_type="solid")
+    
+    # Datos de empresas
+    for row_num, company in enumerate(companies, 2):
+        created_at = company.created_at.strftime('%d-%m-%Y %H:%M') if company.created_at else ''
+        updated_at = company.updated_at.strftime('%d-%m-%Y %H:%M') if company.updated_at else ''
+        
+        row = [
+            company.id,
+            company.name,
+            company.tax_id,
+            company.address,
+            company.city,
+            company.postal_code,
+            company.country,
+            company.sector,
+            company.phone,
+            company.email,
+            company.website,
+            "Sí" if company.is_active else "No",
+            created_at,
+            updated_at
+        ]
+        
+        for col_num, cell_value in enumerate(row, 1):
+            col_letter = get_column_letter(col_num)
+            companies_sheet[f'{col_letter}{row_num}'] = cell_value
+    
+    # Ajustar anchos de columna
+    for column in companies_sheet.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            if cell.value:
+                max_length = max(max_length, len(str(cell.value)))
+        adjusted_width = (max_length + 2)
+        companies_sheet.column_dimensions[column_letter].width = adjusted_width
+    
+    # Hoja de empleados
+    employees_sheet = workbook.create_sheet(title="Empleados")
+    
+    # Encabezados para empleados
+    employee_headers = ["ID", "Empresa", "Nombre", "Apellidos", "DNI/NIE", "Email", 
+                       "Teléfono", "Dirección", "Fecha Nacimiento", "Fecha Inicio", 
+                       "Fecha Fin", "Posición", "Tipo Contrato", "Estado"]
+    
+    for col_num, header in enumerate(employee_headers, 1):
+        col_letter = get_column_letter(col_num)
+        employees_sheet[f'{col_letter}1'] = header
+        employees_sheet[f'{col_letter}1'].font = Font(bold=True)
+        employees_sheet[f'{col_letter}1'].fill = PatternFill(start_color="DDDDDD", end_color="DDDDDD", fill_type="solid")
+    
+    # Obtener todos los empleados
+    employees = Employee.query.all()
+    
+    # Datos de empleados
+    for row_num, employee in enumerate(employees, 2):
+        company_name = employee.company.name if employee.company else "No asignada"
+        contract_type = employee.contract_type.name if employee.contract_type else "No especificado"
+        status_name = employee.status.name if employee.status else "No especificado"
+        
+        row = [
+            employee.id,
+            company_name,
+            employee.first_name,
+            employee.last_name,
+            employee.identity_document,
+            employee.email,
+            employee.phone,
+            employee.address,
+            employee.birth_date,
+            employee.start_date,
+            employee.end_date,
+            employee.position,
+            contract_type,
+            status_name
+        ]
+        
+        for col_num, cell_value in enumerate(row, 1):
+            col_letter = get_column_letter(col_num)
+            employees_sheet[f'{col_letter}{row_num}'] = cell_value
+    
+    # Ajustar anchos de columna
+    for column in employees_sheet.columns:
+        max_length = 0
+        column_letter = column[0].column_letter
+        for cell in column:
+            if cell.value:
+                max_length = max(max_length, len(str(cell.value)))
+        adjusted_width = (max_length + 2)
+        employees_sheet.column_dimensions[column_letter].width = adjusted_width
+    
+    workbook.save(output)
+    output.seek(0)
+    
+    # Generar nombre de archivo
+    now = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f"datos_empresas_empleados_{now}.xlsx"
+    
+    # Registrar actividad
+    log_activity('Exportados datos de todas las empresas y empleados a Excel')
+    
+    return send_file(
+        output,
+        mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        as_attachment=True,
+        download_name=filename
+    )
+
 # Ruta para exportar todos los fichajes (para el panel de backup)
 @checkin_bp.route('/export/all', methods=['GET'])
 @login_required

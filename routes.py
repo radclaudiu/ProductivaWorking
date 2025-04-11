@@ -20,7 +20,7 @@ from forms import (LoginForm, RegistrationForm, UserUpdateForm, PasswordChangeFo
                   EmployeeVacationForm, GenerateCheckInsForm, ExportCheckInsForm)
 from utils import (save_file, log_employee_change, log_activity, can_manage_company, 
                   can_manage_employee, can_view_employee, get_dashboard_stats, generate_checkins_pdf,
-                  export_company_employees_zip)
+                  export_company_employees_zip, create_database_backup)
 from clean_database import clean_database
 
 # Create blueprints

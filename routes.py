@@ -1214,6 +1214,33 @@ def view_history(id):
                           employee=employee, 
                           history=history)
 
+@employee_bp.route('/<int:id>/vacations')
+@login_required
+def view_vacations(id):
+    employee = Employee.query.get_or_404(id)
+    
+    # Check if user has permission to view this employee's vacations
+    if not can_view_employee(employee):
+        flash('No tienes permiso para ver las vacaciones de este empleado.', 'danger')
+        return redirect(url_for('employee.list_employees'))
+    
+    # Redirect to the vacation blueprint's list view
+    return redirect(url_for('vacation.list_vacations', employee_id=employee.id))
+
+@employee_bp.route('/<int:id>/vacations/manage')
+@login_required
+@manager_required
+def manage_vacations(id):
+    employee = Employee.query.get_or_404(id)
+    
+    # Check if user has permission to manage this employee's vacations
+    if not current_user.is_admin() and (current_user.company_id != employee.company_id):
+        flash('No tienes permiso para gestionar las vacaciones de este empleado.', 'danger')
+        return redirect(url_for('employee.list_employees'))
+    
+    # Redirect to the vacation list with management capabilities
+    return redirect(url_for('vacation.list_vacations', employee_id=employee.id))
+
 # User routes
 @user_bp.route('/')
 @admin_required

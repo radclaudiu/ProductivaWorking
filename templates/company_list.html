@@ -17,6 +17,13 @@
             {% endif %}
         </div>
     </div>
+    <!-- Mensaje para depuración que muestra el rol del usuario -->
+    <div class="alert alert-info mb-4">
+        <p>Rol del usuario: {% if current_user.is_admin() %}Admin{% elif current_user.is_gerente() %}Gerente{% elif current_user.is_empleado() %}Empleado{% else %}Desconocido{% endif %}</p>
+        <p>Username: {{ current_user.username }}</p>
+        <p>¿Es gerente? {{ 'Sí' if current_user.is_gerente() else 'No' }}</p>
+        <p>¿Es admin? {{ 'Sí' if current_user.is_admin() else 'No' }}</p>
+    </div>
 
     <div class="card shadow mb-4">
         <div class="card-header py-3">

@@ -773,15 +773,10 @@ def edit_employee(id):
                 employee.bank_account = form.bank_account.data
                 employee.start_date = form.start_date.data
                 
-                # IMPORTANTE: los campos problemáticos
+                # IMPORTANTE: Procesar y limpiar las fechas
                 # Asignar fechas directamente, limpiando valores vacíos
                 end_date = form.end_date.data.strip() if form.end_date.data and form.end_date.data.strip() else None
                 employee.end_date = end_date
-                
-                # Debug
-                print(f"DEBUG: end_date del formulario: '{form.end_date.data}', tipo: {type(form.end_date.data)}")
-                print(f"DEBUG: end_date procesado: '{end_date}', tipo: {type(end_date)}")
-                print(f"DEBUG: end_date asignado al empleado: '{employee.end_date}', tipo: {type(employee.end_date)}")
                 
                 employee.company_id = form.company_id.data
                 employee.is_active = form.is_active.data
@@ -826,8 +821,7 @@ def edit_employee(id):
                                              str(new_value) if new_value is not None else None)
                 
                 # Verificar que los cambios se guardaron correctamente
-                updated_employee = Employee.query.get(employee.id)
-                log_activity(f"Updated End Date = '{updated_employee.end_date}', tipo: {type(updated_employee.end_date)}")
+                db.session.refresh(employee)
                 
                 # Notificar al usuario
                 log_activity(f'Empleado actualizado: {employee.first_name} {employee.last_name}')
@@ -913,8 +907,8 @@ def manage_status(id):
     if request.method == 'GET':
         form = EmployeeStatusForm(obj=employee)
         
-        # Log para depuración
-        log_activity(f"Form loaded for Employee Status {employee.id}: status_start_date = {employee.status_start_date}, status_end_date = {employee.status_end_date}")
+        # Registrar actividad
+        log_activity(f"Formulario de estado del empleado cargado: {employee.first_name} {employee.last_name}")
         
         return render_template('employee_status.html', 
                              title=f'Gestionar Estado - {employee.first_name} {employee.last_name}', 
@@ -949,10 +943,6 @@ def manage_status(id):
                 employee.status_notes = form.status_notes.data
                 employee.updated_at = datetime.utcnow()
                 
-                # Debug
-                print(f"DEBUG status_start_date procesado: '{status_start_date}', tipo: {type(status_start_date)}")
-                print(f"DEBUG status_end_date procesado: '{status_end_date}', tipo: {type(status_end_date)}")
-                
                 # Garantizar la persistencia de los datos incluso con SQL directo
                 if status_start_date is not None or status_end_date is not None:
                     db.session.execute(text(
@@ -976,7 +966,6 @@ def manage_status(id):
                 
                 # Verificar que los cambios se guardaron correctamente
                 updated_employee = Employee.query.get(employee.id)
-                log_activity(f"Empleado actualizado: status_start_date = '{updated_employee.status_start_date}', status_end_date = '{updated_employee.status_end_date}'")
                 
                 # Registrar cambios en el historial después de la operación exitosa
                 for field in old_values:
@@ -991,7 +980,7 @@ def manage_status(id):
                                           str(old_value) if old_value is not None else None, 
                                           str(new_value) if new_value is not None else None)
                 
-                # Notificar al usuario
+                # Registrar en el log
                 log_activity(f'Estado de empleado actualizado: {employee.first_name} {employee.last_name}')
                 flash(f'Estado del empleado "{employee.first_name} {employee.last_name}" actualizado correctamente.', 'success')
                 

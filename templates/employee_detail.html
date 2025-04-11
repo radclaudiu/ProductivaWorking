@@ -133,6 +133,8 @@
                                 <span class="badge {% if employee.is_active %}bg-success{% else %}bg-danger{% endif %}">
                                     {{ 'Activo' if employee.is_active else 'Inactivo' }}
                                 </span>
+                                <!-- Debugging -->
+                                {{ employee.company_id }} - {{ [c.id for c in current_user.companies] }}
                                 {% if current_user.is_admin() or (current_user.is_gerente() and employee.company_id|string in [c.id|string for c in current_user.companies]) %}
                                 <form action="{{ url_for('employee.toggle_employee_activation', id=employee.id) }}" method="post" class="d-inline">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />

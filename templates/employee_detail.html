@@ -294,11 +294,11 @@
                                     </p>
                                     <div class="d-grid gap-2">
                                         {% if current_user.is_admin() or current_user.is_gerente() %}
-                                        <a href="#" class="btn btn-success mt-auto disabled">
+                                        <a href="{{ url_for('employee.manage_vacations', id=employee.id) }}" class="btn btn-success mt-auto">
                                             <i class="fas fa-calendar-plus"></i> Gestionar Vacaciones
                                         </a>
                                         {% else %}
-                                        <a href="#" class="btn btn-success mt-auto disabled">
+                                        <a href="{{ url_for('employee.view_vacations', id=employee.id) }}" class="btn btn-success mt-auto">
                                             <i class="fas fa-calendar-alt"></i> Ver Vacaciones
                                         </a>
                                         {% endif %}

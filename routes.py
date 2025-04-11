@@ -1,4 +1,5 @@
 import os
+import sqlalchemy
 from datetime import datetime, time
 from functools import wraps
 
@@ -6,7 +7,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_user, logout_user, login_required, current_user
 from urllib.parse import urlparse
 from werkzeug.utils import secure_filename
-from sqlalchemy import func
+from sqlalchemy import func, text
 
 from app import db
 from models import (User, Company, Employee, EmployeeDocument, EmployeeNote, UserRole, 
@@ -692,136 +693,174 @@ def create_employee():
 @employee_bp.route('/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_employee(id):
+    # Obtener el empleado directamente de la base de datos
     employee = Employee.query.get_or_404(id)
     
-    # Check if user has permission to edit this employee
+    # Verificar permisos
     if not can_manage_employee(employee):
         flash('No tienes permiso para editar este empleado.', 'danger')
         return redirect(url_for('employee.list_employees'))
     
-    # Debug información del empleado antes de inicializar el formulario
-    print(f"DEBUG pre-form - Employee {employee.id}: end_date = {employee.end_date}, tipo {type(employee.end_date)}")
-    log_activity(f"DEBUG pre-form - Employee {employee.id}: end_date = {employee.end_date}, tipo {type(employee.end_date)}")
-    
-    form = EmployeeForm(obj=employee)
-    
-    # Debug valores del formulario después de inicializar
-    print(f"DEBUG post-form - Form end_date = {form.end_date.data}, tipo {type(form.end_date.data)}")
-    log_activity(f"DEBUG post-form - Form end_date = {form.end_date.data}, tipo {type(form.end_date.data)}")
-    
-    # Get list of companies for the dropdown
-    if current_user.is_admin():
-        companies = Company.query.all()
-        form.company_id.choices = [(c.id, c.name) for c in companies]
-    else:
-        # Para gerentes, mostrar todas las empresas a las que tienen acceso
-        companies = current_user.companies
-        if companies:
+    # Método GET: Preparar el formulario con los datos del empleado
+    if request.method == 'GET':
+        form = EmployeeForm(obj=employee)
+        
+        # Configurar las opciones de empresas según el rol del usuario
+        if current_user.is_admin():
+            companies = Company.query.all()
             form.company_id.choices = [(c.id, c.name) for c in companies]
+        else:
+            companies = current_user.companies
+            if companies:
+                form.company_id.choices = [(c.id, c.name) for c in companies]
+                
+        # Log para depuración
+        log_activity(f"Form loaded for Employee {employee.id}: end_date = {employee.end_date}")
+        
+        return render_template('employee_form.html', 
+                             title=f'Editar {employee.first_name} {employee.last_name}', 
+                             form=form, 
+                             employee=employee)
     
-    if form.validate_on_submit():
-        # Registrar cambios solo con propósito de auditoría
-        if employee.first_name != form.first_name.data:
-            log_employee_change(employee, 'first_name', employee.first_name, form.first_name.data)
+    # Método POST: Procesar el formulario
+    elif request.method == 'POST':
+        # Inicializar el formulario con los datos del POST
+        form = EmployeeForm(formdata=request.form)
         
-        if employee.last_name != form.last_name.data:
-            log_employee_change(employee, 'last_name', employee.last_name, form.last_name.data)
-            
-        if employee.dni != form.dni.data:
-            log_employee_change(employee, 'dni', employee.dni, form.dni.data)
-            
-        if employee.social_security_number != form.social_security_number.data:
-            log_employee_change(employee, 'social_security_number', employee.social_security_number, form.social_security_number.data)
-            
-        if employee.email != form.email.data:
-            log_employee_change(employee, 'email', employee.email, form.email.data)
-            
-        if employee.address != form.address.data:
-            log_employee_change(employee, 'address', employee.address, form.address.data)
-            
-        if employee.phone != form.phone.data:
-            log_employee_change(employee, 'phone', employee.phone, form.phone.data)
-            
-        if employee.position != form.position.data:
-            log_employee_change(employee, 'position', employee.position, form.position.data)
-            
-        contract_type_value = employee.contract_type.value if employee.contract_type else None
-        if str(contract_type_value) != form.contract_type.data:
-            log_employee_change(employee, 'contract_type', contract_type_value, form.contract_type.data)
-            
-        if employee.bank_account != form.bank_account.data:
-            log_employee_change(employee, 'bank_account', employee.bank_account, form.bank_account.data)
-            
-        if employee.start_date != form.start_date.data:
-            log_employee_change(employee, 'start_date', 
-                              employee.start_date if employee.start_date else None, 
-                              form.start_date.data if form.start_date.data else None)
-            
-        old_end_date = employee.end_date if employee.end_date else None
-        new_end_date = form.end_date.data if form.end_date.data else None
+        # Configurar las opciones de empresas nuevamente
+        if current_user.is_admin():
+            companies = Company.query.all()
+            form.company_id.choices = [(c.id, c.name) for c in companies]
+        else:
+            companies = current_user.companies
+            if companies:
+                form.company_id.choices = [(c.id, c.name) for c in companies]
         
-        # Debug para ver qué valores estamos comparando para end_date
-        print(f"DEBUG comparación - old_end_date = '{old_end_date}', tipo {type(old_end_date)}, new_end_date = '{new_end_date}', tipo {type(new_end_date)}")
-        log_activity(f"DEBUG comparación - old_end_date = '{old_end_date}', tipo {type(old_end_date)}, new_end_date = '{new_end_date}', tipo {type(new_end_date)}")
-        
-        if old_end_date != new_end_date:
-            log_employee_change(employee, 'end_date', old_end_date, new_end_date)
+        # Validar el formulario
+        if form.validate():
+            try:
+                # Registrar los cambios para auditoría (solo registra, no afecta a la operación)
+                # Si hay algún cambio, lo registramos en el historial
+                old_values = {
+                    'first_name': employee.first_name,
+                    'last_name': employee.last_name,
+                    'dni': employee.dni,
+                    'social_security_number': employee.social_security_number,
+                    'email': employee.email,
+                    'address': employee.address,
+                    'phone': employee.phone,
+                    'position': employee.position,
+                    'contract_type': employee.contract_type.value if employee.contract_type else None,
+                    'bank_account': employee.bank_account,
+                    'start_date': employee.start_date,
+                    'end_date': employee.end_date,
+                    'is_active': employee.is_active,
+                    'status': employee.status.value if employee.status else 'activo',
+                    'company_id': employee.company_id
+                }
+                
+                # Asignar los valores del formulario directamente al objeto employee
+                # sin comparaciones intermedias ni lógica compleja
+                employee.first_name = form.first_name.data
+                employee.last_name = form.last_name.data
+                employee.dni = form.dni.data
+                employee.social_security_number = form.social_security_number.data
+                employee.email = form.email.data
+                employee.address = form.address.data
+                employee.phone = form.phone.data
+                employee.position = form.position.data
+                employee.contract_type = ContractType(form.contract_type.data) if form.contract_type.data else None
+                employee.bank_account = form.bank_account.data
+                employee.start_date = form.start_date.data
+                
+                # IMPORTANTE: los campos problemáticos
+                # Asignar fechas directamente, limpiando valores vacíos
+                end_date = form.end_date.data.strip() if form.end_date.data and form.end_date.data.strip() else None
+                employee.end_date = end_date
+                
+                # Debug
+                print(f"DEBUG: end_date del formulario: '{form.end_date.data}', tipo: {type(form.end_date.data)}")
+                print(f"DEBUG: end_date procesado: '{end_date}', tipo: {type(end_date)}")
+                print(f"DEBUG: end_date asignado al empleado: '{employee.end_date}', tipo: {type(employee.end_date)}")
+                
+                employee.company_id = form.company_id.data
+                employee.is_active = form.is_active.data
+                employee.status = EmployeeStatus(form.status.data)
+                employee.updated_at = datetime.utcnow()
+                
+                # Ejecutar actualización directamente en SQL para asegurar que los datos se guardan
+                # Esta consulta asegura que los datos se escriben correctamente, incluso si hay algún 
+                # problema con el ORM
+                if end_date is not None:
+                    db.session.execute(text(
+                        "UPDATE employees SET end_date = :end_date WHERE id = :id"),
+                        {"end_date": end_date, "id": employee.id}
+                    )
+                else:
+                    db.session.execute(text(
+                        "UPDATE employees SET end_date = NULL WHERE id = :id"),
+                        {"id": employee.id}
+                    )
+                
+                # Aplicar los cambios a la base de datos
+                db.session.commit()
+                
+                # Registrar los cambios en el historial (para auditoría)
+                # Solo después de que la operación haya sido exitosa
+                for field in old_values:
+                    old_value = old_values[field]
+                    if field == 'company_id':
+                        # Caso especial para company_id: registrar los nombres
+                        if old_value != form.company_id.data:
+                            old_company = Company.query.get(old_value).name if old_value else 'Ninguna'
+                            new_company = Company.query.get(form.company_id.data).name
+                            log_employee_change(employee, 'company', old_company, new_company)
+                    else:
+                        # Para el resto de campos
+                        new_value = getattr(employee, field)
+                        if field == 'contract_type' or field == 'status':
+                            new_value = new_value.value if new_value else None
+                        
+                        if str(old_value) != str(new_value):
+                            log_employee_change(employee, field, str(old_value) if old_value is not None else None, 
+                                             str(new_value) if new_value is not None else None)
+                
+                # Verificar que los cambios se guardaron correctamente
+                updated_employee = Employee.query.get(employee.id)
+                log_activity(f"Updated End Date = '{updated_employee.end_date}', tipo: {type(updated_employee.end_date)}")
+                
+                # Notificar al usuario
+                log_activity(f'Empleado actualizado: {employee.first_name} {employee.last_name}')
+                flash(f'Empleado "{employee.first_name} {employee.last_name}" actualizado correctamente.', 'success')
+                
+                # Redirigir a la página de detalle del empleado
+                return redirect(url_for('employee.view_employee', id=employee.id))
+                
+            except Exception as e:
+                # Manejar cualquier error que pueda ocurrir durante el proceso
+                db.session.rollback()
+                log_activity(f"Error al actualizar empleado: {str(e)}")
+                flash(f'Error al actualizar empleado: {str(e)}', 'danger')
+                
+                # Mostrar el formulario nuevamente con los datos proporcionados
+                return render_template('employee_form.html', 
+                                     title=f'Editar {employee.first_name} {employee.last_name}', 
+                                     form=form, 
+                                     employee=employee)
+        else:
+            # Si el formulario no es válido, mostrar errores
+            for field, errors in form.errors.items():
+                for error in errors:
+                    flash(f"Error en {getattr(form, field).label.text}: {error}", 'danger')
             
-        if employee.company_id != form.company_id.data:
-            old_company = Company.query.get(employee.company_id).name if employee.company_id else 'Ninguna'
-            new_company = Company.query.get(form.company_id.data).name
-            log_employee_change(employee, 'company', old_company, new_company)
+            # Volver a mostrar el formulario con los errores
+            return render_template('employee_form.html', 
+                                 title=f'Editar {employee.first_name} {employee.last_name}', 
+                                 form=form, 
+                                 employee=employee)
             
-        if employee.is_active != form.is_active.data:
-            log_employee_change(employee, 'is_active', str(employee.is_active), str(form.is_active.data))
-            
-        status_value = employee.status.value if employee.status else 'activo'
-        if str(status_value) != form.status.data:
-            log_employee_change(employee, 'status', status_value, form.status.data)
-        
-        # Asignar TODOS los valores del formulario al objeto employee
-        # en lugar de hacer comparaciones individuales
-        employee.first_name = form.first_name.data
-        employee.last_name = form.last_name.data
-        employee.dni = form.dni.data
-        employee.social_security_number = form.social_security_number.data
-        employee.email = form.email.data
-        employee.address = form.address.data
-        employee.phone = form.phone.data
-        employee.position = form.position.data
-        employee.contract_type = ContractType(form.contract_type.data) if form.contract_type.data else None
-        employee.bank_account = form.bank_account.data
-        employee.start_date = form.start_date.data
-        
-        # Asignar fecha fin directamente sin comparaciones adicionales
-        print(f"DEBUG: Asignación directa de end_date: '{form.end_date.data}'")
-        employee.end_date = form.end_date.data  # Asignación directa del valor
-        
-        # Log después de la asignación
-        print(f"DEBUG post-asignación - end_date = '{employee.end_date}', tipo {type(employee.end_date)}")
-        
-        employee.company_id = form.company_id.data
-        employee.is_active = form.is_active.data
-        employee.status = EmployeeStatus(form.status.data)
-            
-        employee.updated_at = datetime.utcnow()
-        
-        # Log de depuración justo antes del commit
-        print(f"DEBUG pre-commit - Employee {employee.id}: end_date = {employee.end_date}, tipo {type(employee.end_date)}")
-        log_activity(f"DEBUG pre-commit - Employee {employee.id}: end_date = {employee.end_date}, tipo {type(employee.end_date)}")
-        
-        db.session.commit()
-        
-        # Log de depuración justo después del commit - recargamos el empleado para verificar
-        employee_post_commit = Employee.query.get(employee.id)
-        print(f"DEBUG post-commit - Employee {employee_post_commit.id}: end_date = {employee_post_commit.end_date}, tipo {type(employee_post_commit.end_date)}")
-        log_activity(f"DEBUG post-commit - Employee {employee_post_commit.id}: end_date = {employee_post_commit.end_date}, tipo {type(employee_post_commit.end_date)}")
-        
-        log_activity(f'Empleado actualizado: {employee.first_name} {employee.last_name}')
-        flash(f'Empleado "{employee.first_name} {employee.last_name}" actualizado correctamente.', 'success')
-        return redirect(url_for('employee.view_employee', id=employee.id))
-    
-    return render_template('employee_form.html', title=f'Editar {employee.first_name} {employee.last_name}', form=form, employee=employee)
+    # Nunca debería llegar aquí, pero por si acaso
+    return redirect(url_for('employee.list_employees'))
 
 @employee_bp.route('/<int:id>/delete', methods=['POST'])
 @manager_required
@@ -862,68 +901,119 @@ def delete_employee(id):
 @employee_bp.route('/<int:id>/status', methods=['GET', 'POST'])
 @login_required
 def manage_status(id):
+    # Obtener el empleado directamente de la base de datos
     employee = Employee.query.get_or_404(id)
     
-    # Check if user has permission to manage this employee's status
+    # Verificar permisos
     if not can_manage_employee(employee):
         flash('No tienes permiso para gestionar el estado de este empleado.', 'danger')
         return redirect(url_for('employee.list_employees'))
     
-    form = EmployeeStatusForm(obj=employee)
+    # Método GET: Preparar el formulario con los datos del empleado
+    if request.method == 'GET':
+        form = EmployeeStatusForm(obj=employee)
+        
+        # Log para depuración
+        log_activity(f"Form loaded for Employee Status {employee.id}: status_start_date = {employee.status_start_date}, status_end_date = {employee.status_end_date}")
+        
+        return render_template('employee_status.html', 
+                             title=f'Gestionar Estado - {employee.first_name} {employee.last_name}', 
+                             form=form, 
+                             employee=employee)
     
-    if form.validate_on_submit():
-        # Log de depuración antes de realizar cambios
-        print(f"DEBUG antes de cambios - Employee {employee.id}: status_start_date = {employee.status_start_date}, status_end_date = {employee.status_end_date}")
+    # Método POST: Procesar el formulario
+    elif request.method == 'POST':
+        form = EmployeeStatusForm(formdata=request.form)
         
-        # Registrar los cambios para auditoría
-        old_status = employee.status.value if employee.status else 'activo'
-        new_status = form.status.data
+        # Validar el formulario
+        if form.validate():
+            try:
+                # Registrar los cambios para auditoría
+                old_values = {
+                    'status': employee.status.value if employee.status else 'activo',
+                    'status_start_date': employee.status_start_date,
+                    'status_end_date': employee.status_end_date,
+                    'status_notes': employee.status_notes
+                }
+                
+                # Actualizar el estado
+                employee.status = EmployeeStatus(form.status.data)
+                
+                # IMPORTANTE: Procesar y limpiar las fechas
+                status_start_date = form.status_start_date.data.strip() if form.status_start_date.data and form.status_start_date.data.strip() else None
+                status_end_date = form.status_end_date.data.strip() if form.status_end_date.data and form.status_end_date.data.strip() else None
+                
+                # Asignar los valores procesados
+                employee.status_start_date = status_start_date
+                employee.status_end_date = status_end_date
+                employee.status_notes = form.status_notes.data
+                employee.updated_at = datetime.utcnow()
+                
+                # Debug
+                print(f"DEBUG status_start_date procesado: '{status_start_date}', tipo: {type(status_start_date)}")
+                print(f"DEBUG status_end_date procesado: '{status_end_date}', tipo: {type(status_end_date)}")
+                
+                # Garantizar la persistencia de los datos incluso con SQL directo
+                if status_start_date is not None or status_end_date is not None:
+                    db.session.execute(text(
+                        """UPDATE employees 
+                           SET status_start_date = :start_date,
+                               status_end_date = :end_date,
+                               status = :status,
+                               status_notes = :notes
+                           WHERE id = :id"""),
+                        {
+                            "start_date": status_start_date,
+                            "end_date": status_end_date,
+                            "status": form.status.data,
+                            "notes": form.status_notes.data,
+                            "id": employee.id
+                        }
+                    )
+                
+                # Guardar los cambios
+                db.session.commit()
+                
+                # Verificar que los cambios se guardaron correctamente
+                updated_employee = Employee.query.get(employee.id)
+                log_activity(f"Empleado actualizado: status_start_date = '{updated_employee.status_start_date}', status_end_date = '{updated_employee.status_end_date}'")
+                
+                # Registrar cambios en el historial después de la operación exitosa
+                for field in old_values:
+                    old_value = old_values[field]
+                    new_value = getattr(employee, field)
+                    
+                    if field == 'status':
+                        new_value = new_value.value if new_value else None
+                    
+                    if str(old_value) != str(new_value):
+                        log_employee_change(employee, field, 
+                                          str(old_value) if old_value is not None else None, 
+                                          str(new_value) if new_value is not None else None)
+                
+                # Notificar al usuario
+                log_activity(f'Estado de empleado actualizado: {employee.first_name} {employee.last_name}')
+                flash(f'Estado del empleado "{employee.first_name} {employee.last_name}" actualizado correctamente.', 'success')
+                
+                # Redirigir a la página de detalle del empleado
+                return redirect(url_for('employee.view_employee', id=employee.id))
+                
+            except Exception as e:
+                # Manejar cualquier error
+                db.session.rollback()
+                log_activity(f"Error al actualizar estado de empleado: {str(e)}")
+                flash(f'Error al actualizar estado: {str(e)}', 'danger')
+        else:
+            # Si el formulario no es válido, mostrar errores
+            for field, errors in form.errors.items():
+                for error in errors:
+                    flash(f"Error en {getattr(form, field).label.text}: {error}", 'danger')
         
-        if old_status != new_status:
-            log_employee_change(employee, 'status', old_status, new_status)
-        
-        # Comparación de fechas para el log de auditoría
-        if employee.status_start_date != form.status_start_date.data:
-            log_employee_change(employee, 'status_start_date', 
-                              employee.status_start_date if employee.status_start_date else None, 
-                              form.status_start_date.data if form.status_start_date.data else None)
-        
-        if employee.status_end_date != form.status_end_date.data:
-            log_employee_change(employee, 'status_end_date', 
-                              employee.status_end_date if employee.status_end_date else None, 
-                              form.status_end_date.data if form.status_end_date.data else None)
-        
-        if employee.status_notes != form.status_notes.data:
-            log_employee_change(employee, 'status_notes', employee.status_notes, form.status_notes.data)
-        
-        # Actualizar directamente todos los campos del formulario
-        employee.status = EmployeeStatus(form.status.data)
-        
-        # Depuración de las fechas
-        print(f"DEBUG fecha inicio - form.status_start_date.data = '{form.status_start_date.data}', tipo {type(form.status_start_date.data)}")
-        print(f"DEBUG fecha fin - form.status_end_date.data = '{form.status_end_date.data}', tipo {type(form.status_end_date.data)}")
-        
-        # Asignar directamente
-        employee.status_start_date = form.status_start_date.data
-        employee.status_end_date = form.status_end_date.data
-        employee.status_notes = form.status_notes.data
-        employee.updated_at = datetime.utcnow()
-        
-        # Log de depuración después de asignar, antes de commit
-        print(f"DEBUG pre-commit - Employee {employee.id}: status_start_date = {employee.status_start_date}, status_end_date = {employee.status_end_date}")
-        
-        db.session.commit()
-        
-        # Verificar después del commit
-        employee_post_commit = Employee.query.get(employee.id)
-        print(f"DEBUG post-commit - Employee {employee_post_commit.id}: status_start_date = {employee_post_commit.status_start_date}, status_end_date = {employee_post_commit.status_end_date}")
-        
-        log_activity(f'Estado de empleado actualizado: {employee.first_name} {employee.last_name}')
-        flash(f'Estado del empleado "{employee.first_name} {employee.last_name}" actualizado correctamente.', 'success')
-        return redirect(url_for('employee.view_employee', id=employee.id))
-    
-    return render_template('employee_status.html', title=f'Gestionar Estado - {employee.first_name} {employee.last_name}', 
-                          form=form, employee=employee)
+        # Si hay errores, volver a mostrar el formulario con los mensajes
+        return render_template('employee_status.html', 
+                             title=f'Gestionar Estado - {employee.first_name} {employee.last_name}', 
+                             form=form, 
+                             employee=employee)
 
 @employee_bp.route('/<int:id>/documents')
 @login_required

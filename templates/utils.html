@@ -1,0 +1,13 @@
+{# Utilidades y macros para templates #}
+
+{% macro can_manage_company(company_id) %}
+    {{ utils.can_manage_company(company_id) }}
+{% endmacro %}
+
+{% macro can_manage_employee(employee) %}
+    {{ utils.can_manage_employee(employee) }}
+{% endmacro %}
+
+{% macro can_view_employee(employee) %}
+    {{ utils.can_view_employee(employee) }}
+{% endmacro %}

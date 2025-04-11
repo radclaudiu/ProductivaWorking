@@ -105,10 +105,16 @@ def can_manage_company(company_id):
         
     if current_user.is_gerente():
         # Verificar si el usuario tiene esta empresa asignada
+        from app import current_app
+        current_app.logger.debug(f"Gerente {current_user.username} (ID:{current_user.id}) verificando permisos para empresa ID:{company_id}")
         for company in current_user.companies:
-            if company.id == company_id:
+            current_app.logger.debug(f"Empresa asignada: {company.name} (ID:{company.id})")
+            if int(company.id) == int(company_id):
+                current_app.logger.debug(f"✓ Permiso concedido para empresa {company.name} (ID:{company.id})")
                 return True
         
+        current_app.logger.debug(f"✗ Permiso denegado para empresa ID:{company_id}")
+    
     return False
 
 def can_manage_employee(employee):
@@ -121,10 +127,16 @@ def can_manage_employee(employee):
         
     if current_user.is_gerente():
         # Verificar si el usuario tiene la empresa del empleado asignada
+        from app import current_app
+        current_app.logger.debug(f"Gerente {current_user.username} (ID:{current_user.id}) verificando permisos para empleado {employee.first_name} {employee.last_name} (ID:{employee.id}) de empresa ID:{employee.company_id}")
         for company in current_user.companies:
-            if company.id == employee.company_id:
+            current_app.logger.debug(f"Empresa asignada: {company.name} (ID:{company.id})")
+            if int(company.id) == int(employee.company_id):
+                current_app.logger.debug(f"✓ Permiso concedido para empleado de empresa {company.name} (ID:{company.id})")
                 return True
         
+        current_app.logger.debug(f"✗ Permiso denegado para empleado de empresa ID:{employee.company_id}")
+    
     if current_user.is_empleado() and current_user.id == employee.user_id:
         return True
         

@@ -69,6 +69,22 @@
         </div>
     </nav>
 
+    <!-- Banner de instalación PWA -->
+    <div id="pwa-install-banner" class="alert alert-info alert-dismissible fade show fixed-bottom m-3 d-none" role="alert">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <i class="fas fa-mobile-alt me-2"></i>
+                <strong>¡Instala Productiva!</strong> Disfruta de una experiencia más rápida instalando la app en tu dispositivo.
+            </div>
+            <div>
+                <button id="pwa-install-button" class="btn btn-sm btn-primary me-2">Instalar</button>
+                <button id="pwa-close-banner" type="button" class="btn btn-sm btn-outline-secondary">
+                    No, gracias
+                </button>
+            </div>
+        </div>
+    </div>
+
     <main class="py-4">
         {% block content %}{% endblock %}
     </main>
@@ -97,6 +113,9 @@
         });
       }
     </script>
+    
+    <!-- Script para la instalación de PWA -->
+    <script src="/static/js/pwa-install.js"></script>
     
     {% block scripts %}{% endblock %}
 </body>

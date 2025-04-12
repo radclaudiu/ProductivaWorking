@@ -7,8 +7,11 @@ const STATIC_ASSETS = [
   '/static/css/style.css',
   '/static/js/bootstrap.bundle.min.js',
   '/static/js/jquery.min.js',
+  '/static/js/pwa-install.js',
   '/static/pwa/icon-192.png',
-  '/static/pwa/icon-512.png'
+  '/static/pwa/icon-512.png',
+  '/static/offline.html',
+  '/manifest.json'
 ];
 
 // Instalación del Service Worker
@@ -84,6 +87,15 @@ self.addEventListener('fetch', event => {
             });
           
           return cachedResponse || fetchPromise;
+        })
+    );
+  } else {
+    // Para otras solicitudes, intentamos obtenerlas de la red y mostramos
+    // la página offline si hay un error
+    event.respondWith(
+      fetch(event.request)
+        .catch(() => {
+          return caches.match('/static/offline.html');
         })
     );
   }

@@ -27,7 +27,7 @@
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
             overflow: hidden;
             width: 100%;
-            max-width: 650px; /* Aumentado de 500px a 650px */
+            max-width: 800px; /* Aumentado de 650px a 800px para más espacio horizontal */
             margin: 0 auto;
         }
         
@@ -56,12 +56,24 @@
         
         .signature-pad {
             width: 100%;
-            height: 300px; /* Aumentado de 200px a 300px */
+            height: 300px; /* Altura aumentada para firma más cómoda */
             cursor: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAMAAAC6V+0/AAABCFBMVEX///8AAAD///+AgICAgICAgICAgIAAvs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs4Avs7CyPl5AAAAV3RSTlMAAQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyAhIiMkJSYnKCkqKywtLi8wMTIzNDU2Nzg5Ojs8PT4/QEFCQ0RFRkdISUpLTE1OT1BRUlNUc5ASlgAAAKBJREFUGBlVwQUSgjAABdCH4DJrUEYj7rBdADzgbBcQcGTv/z8icPp7E2KcLFYHgWmS9Wlxs3jchBhPWx1LkbVLy/6H0wUJ1rvIlNLtSXB7RebB4I9Js+QzZ55lyTzrpRSZ1+v5mpc5l07jlPXrqn2+Kq++0nul9Ju/r3bo63q9qGN5yPRmuhiFs8hY7B82YmZYzVw1XX+hzOFv1b9QmQPhB3NkHsB/JqlLAAAAAElFTkSuQmCC"), pointer;
+        }
+        
+        .signature-pad-container {
+            margin: 0 auto;
+            width: 100%;
         }
         
         .signature-pad-container canvas {
             background-color: white;
+            border: 1px solid #e9ecef;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1) inset;
+        }
+        
+        .border.rounded.p-2.bg-light.mb-2 {
+            padding: 4px !important; /* Reducir el padding para maximizar el área de firma */
+            background-color: #f8f9fa !important;
         }
         
         .btn-verify {
@@ -77,13 +89,36 @@
         }
         
         /* Media queries para mejorar la visualización en móviles */
-        @media (max-width: 576px) {
+        @media (max-width: 767px) {
             .employee-header h2 {
                 font-size: 1.5rem;
             }
             
             .signature-pad {
-                height: 250px; /* Aumentado de 150px a 250px */
+                height: 250px; /* Altura adaptada para móviles */
+            }
+            
+            .container {
+                padding-left: 5px; /* Reducir padding para aprovechar más la pantalla */
+                padding-right: 5px;
+            }
+            
+            .card {
+                max-width: 100%; /* Usar todo el ancho en dispositivos móviles */
+            }
+            
+            .card-body, .employee-card {
+                padding: 12px !important; /* Reducir padding interior */
+            }
+            
+            .main-container {
+                padding: 10px;
+            }
+            
+            /* Mostrar botones más grandes para mejor usabilidad táctil */
+            .btn-verify, #clear-button {
+                padding: 12px 16px;
+                font-size: 1.1rem;
             }
         }
     </style>
@@ -92,7 +127,7 @@
     <div class="main-container">
         <div class="container">
             <div class="row justify-content-center">
-                <div class="col-md-8 col-lg-6">
+                <div class="col-12 col-lg-10">
                     <div class="card">
                         <div class="card-header bg-primary">
                             <h4 class="mb-0 text-center text-white">Firma Digital</h4>
@@ -133,7 +168,7 @@
                                         <label class="form-label fw-bold text-center w-100">Por favor, firme a continuación:</label>
                                         <div class="signature-pad-container text-center">
                                             <div class="border rounded p-2 bg-light mb-2">
-                                                <canvas id="signature-pad" class="signature-pad" width="600" height="300"></canvas>
+                                                <canvas id="signature-pad" class="signature-pad" width="750" height="300"></canvas>
                                             </div>
                                             <button type="button" id="clear-button" class="btn btn-sm btn-outline-secondary">Borrar firma</button>
                                         </div>
@@ -163,47 +198,91 @@
             const signatureDataField = document.getElementById('signature-data');
             const clearButton = document.getElementById('clear-button');
             const form = document.querySelector('form');
-            const signatureLength = 20; // Longitud mínima para considerar válida la firma
+            const signatureMinLength = 500; // Longitud mínima para considerar válida la firma (aumentado para mayor seguridad)
+            
+            // Verificar que todos los elementos necesarios existan
+            if (!canvas || !signatureDataField || !clearButton || !form) {
+                console.error('No se encontraron todos los elementos necesarios para el signature pad');
+                return;
+            }
             
             // Ajustar tamaño del canvas
             function resizeCanvas() {
-                const ratio = Math.max(window.devicePixelRatio || 1, 1);
-                canvas.width = canvas.offsetWidth * ratio;
-                canvas.height = canvas.offsetHeight * ratio;
-                canvas.getContext("2d").scale(ratio, ratio);
+                try {
+                    const ratio = Math.max(window.devicePixelRatio || 1, 1);
+                    canvas.width = canvas.offsetWidth * ratio;
+                    canvas.height = canvas.offsetHeight * ratio;
+                    canvas.getContext("2d").scale(ratio, ratio);
+                    
+                    // Si ya existía un pad de firma, limpiar y recrear
+                    if (window.signaturePad) {
+                        window.signaturePad.clear();
+                    }
+                } catch (error) {
+                    console.error('Error al redimensionar el canvas:', error);
+                }
             }
             
+            // Escuchar evento de redimensionamiento
             window.addEventListener("resize", resizeCanvas);
             resizeCanvas();
             
-            // Crear Signature Pad
-            const signaturePad = new SignaturePad(canvas, {
+            // Crear opciones con mejor rendimiento para dispositivos táctiles
+            const signaturePadOptions = {
                 backgroundColor: 'rgba(255, 255, 255, 0)',
                 penColor: 'rgb(0, 0, 0)',
-                velocityFilterWeight: 0.7
-            });
+                velocityFilterWeight: 0.7,
+                minWidth: 1,
+                maxWidth: 2.5,
+                throttle: 16, // 16ms - 60fps
+                minDistance: 5
+            };
+            
+            // Crear Signature Pad con manejo de errores
+            try {
+                window.signaturePad = new SignaturePad(canvas, signaturePadOptions);
+            } catch (error) {
+                console.error('Error al inicializar el signature pad:', error);
+                alert('Hubo un problema al inicializar la herramienta de firma. Por favor, recargue la página.');
+                return;
+            }
             
             // Limpiar firma
             clearButton.addEventListener('click', function() {
-                signaturePad.clear();
+                window.signaturePad.clear();
                 signatureDataField.value = '';
             });
             
             // Guardar firma al submit
             form.addEventListener('submit', function(event) {
-                if (signaturePad.isEmpty()) {
+                if (!window.signaturePad) {
+                    event.preventDefault();
+                    alert('Error en la herramienta de firma. Por favor, recargue la página.');
+                    return;
+                }
+                
+                if (window.signaturePad.isEmpty()) {
                     event.preventDefault();
                     alert('Por favor, firme antes de continuar.');
-                } else {
-                    const data = signaturePad.toDataURL('image/png');
+                    return;
+                }
+                
+                try {
+                    const data = window.signaturePad.toDataURL('image/png');
                     
                     // Verificar que la firma tenga contenido suficiente
-                    if (data.length < signatureLength) {
+                    if (data.length < signatureMinLength) {
                         event.preventDefault();
-                        alert('Por favor, realice una firma válida.');
+                        alert('La firma es demasiado corta o simple. Por favor, realice una firma más completa.');
                     } else {
+                        // Establecer los datos de firma en el campo oculto
                         signatureDataField.value = data;
+                        console.log('Firma capturada correctamente');
                     }
+                } catch (error) {
+                    event.preventDefault();
+                    console.error('Error al capturar la firma:', error);
+                    alert('Hubo un problema al guardar la firma. Por favor, intente de nuevo.');
                 }
             });
         });

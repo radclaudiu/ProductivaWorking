@@ -16,15 +16,21 @@ const STATIC_ASSETS = [
 
 // Instalación del Service Worker
 self.addEventListener('install', event => {
-  console.log('Service Worker: Instalando...');
+  console.log('[Service Worker] Instalando...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => {
-        console.log('Service Worker: Cacheando archivos estáticos');
-        return cache.addAll(STATIC_ASSETS);
+        console.log('[Service Worker] Cacheando archivos estáticos:', STATIC_ASSETS);
+        return cache.addAll(STATIC_ASSETS)
+          .then(() => {
+            console.log('[Service Worker] Todos los recursos han sido cacheados correctamente');
+          })
+          .catch(error => {
+            console.error('[Service Worker] Error al cachear recursos:', error);
+          });
       })
       .then(() => {
-        console.log('Service Worker: Todos los recursos han sido cacheados');
+        console.log('[Service Worker] Llamando a skipWaiting para activar inmediatamente');
         return self.skipWaiting();
       })
   );

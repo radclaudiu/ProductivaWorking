@@ -277,3 +277,16 @@ def db_query():
                           affected_rows=affected_rows, 
                           error=error, 
                           query=query_text)
+
+# Rutas para PWA (Progressive Web App)
+@app.route('/service-worker.js')
+def service_worker():
+    """Sirve el service worker para la funcionalidad PWA."""
+    from flask import send_from_directory
+    return send_from_directory('static', 'service-worker.js')
+
+@app.route('/manifest.json')
+def manifest():
+    """Sirve el manifest.json para la funcionalidad PWA."""
+    from flask import send_from_directory
+    return send_from_directory('static', 'manifest.json')

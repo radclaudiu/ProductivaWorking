@@ -1438,10 +1438,7 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
             print(f"✅ CHECKOUT: Empleado ID {employee.id} - Estado: {old_status} → {employee.is_on_shift}")
             print(f"   Registro ID: {record_id}, Salida: {pending_record.check_out_time}")
             
-            # Notificar al usuario
-            flash(f'Jornada finalizada correctamente para {employee.first_name} {employee.last_name}. Por favor, firma tu registro.', 'success')
-            
-            # Redirigir directamente a la página de firma
+            # Redirigir directamente a la página de firma sin mostrar mensaje (eliminado a petición del cliente)
             return redirect(url_for('checkpoints.checkpoint_record_signature', id=pending_record.id))
         
         # CASO 2: Check-in (iniciar jornada)
@@ -1697,10 +1694,7 @@ def record_checkout(id):
         print(f"✅ CHECKOUT (pantalla detalles): Empleado ID {employee.id} - Estado: {old_status} → {employee.is_on_shift}")
         print(f"   Registro ID: {record.id}, Entrada: {record.check_in_time}, Salida: {record.check_out_time}")
         
-        # Notificar al usuario
-        flash(f'Jornada finalizada correctamente para {employee.first_name} {employee.last_name}. Por favor, firma tu registro.', 'success')
-        
-        # Redirigir directamente a la página de firma
+        # Redirigir directamente a la página de firma sin mostrar mensaje (eliminado a petición del cliente)
         return redirect(url_for('checkpoints.checkpoint_record_signature', id=record.id))
     except Exception as e:
         # Rollback en caso de error

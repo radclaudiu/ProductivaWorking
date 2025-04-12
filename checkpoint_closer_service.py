@@ -18,7 +18,7 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger(__name__)
 
 # Intervalo entre ejecuciones (en segundos)
-CHECK_INTERVAL = 10 * 60  # 10 minutos
+CHECK_INTERVAL = 40 * 60  # 40 minutos
 
 # Variable global para controlar el estado del servicio
 service_thread = None

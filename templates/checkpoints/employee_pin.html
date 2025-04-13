@@ -213,6 +213,16 @@
                                                 <button type="submit" name="action" value="checkout" class="btn btn-primary btn-lg w-100 mb-2" id="btn-checkout">Terminar Jornada</button>
                                             {% else %}
                                                 <button type="submit" name="action" value="checkin" class="btn btn-primary btn-lg w-100 mb-2" id="btn-checkin">Iniciar Jornada</button>
+                                                <script>
+                                                    // Capturamos el timestamp al cargar la página para el checkin
+                                                    document.addEventListener('DOMContentLoaded', function() {
+                                                        // Asignar un timestamp inicial por si se hace clic directamente
+                                                        setTimeout(function() {
+                                                            document.getElementById('client-timestamp').value = new Date().toISOString();
+                                                            console.log('Timestamp inicial asignado: ' + document.getElementById('client-timestamp').value);
+                                                        }, 500);
+                                                    });
+                                                </script>
                                             {% endif %}
                                             <a href="{{ url_for('checkpoints.checkpoint_dashboard') }}" class="btn btn-outline-secondary w-100 mb-2">
                                                 Volver a Empleados

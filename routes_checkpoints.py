@@ -1488,7 +1488,12 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
             db.session.begin_nested()
             
             # 1. Crear nuevo registro de fichaje
-            checkin_time = current_time  # Usar la hora capturada del cliente
+            # Convertir a UTC para almacenar en la base de datos
+            from datetime import timezone
+            current_time_utc = current_time.astimezone(timezone.utc)
+            print(f"✏️ Convertido a UTC para almacenar en checkin: {current_time_utc}")
+            
+            checkin_time = current_time_utc  # Usar la hora capturada del cliente (en UTC)
             new_record = CheckPointRecord(
                 employee_id=employee.id,
                 checkpoint_id=checkpoint_id,
@@ -1659,8 +1664,13 @@ def record_checkout(id):
             # Sin timestamp del cliente, usar la hora del servidor
             current_time = get_current_time()
             print(f"⚠️ No se recibió timestamp del cliente en record_checkout. Usando hora del servidor: {current_time}")
-            
-        record.check_out_time = current_time
+        
+        # Convertir a UTC para almacenar en la base de datos
+        from datetime import timezone
+        current_time_utc = current_time.astimezone(timezone.utc)
+        print(f"✏️ Convertido a UTC para almacenar en record_checkout: {current_time_utc}")
+        
+        record.check_out_time = current_time_utc
         db.session.add(record)
         db.session.flush()  # Aseguramos que record tenga todos sus campos actualizados
         
@@ -1670,7 +1680,7 @@ def record_checkout(id):
         # Capturar los valores reales antes de cualquier ajuste
         # Importante: Guardamos la hora exacta que se introdujo al inicio de la jornada
         original_checkin = record.check_in_time  # Esta es la hora original de entrada
-        original_checkout = current_time  # Esta es la hora real de salida antes de ajustes
+        original_checkout = current_time_utc  # Esta es la hora real de salida antes de ajustes (en UTC)
         
         # Buscar si ya existe un registro original al iniciar jornada
         existing_original = CheckPointOriginalRecord.query.filter_by(

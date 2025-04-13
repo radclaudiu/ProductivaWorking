@@ -1663,23 +1663,29 @@ def record_checkout(id):
         # Obtener la hora actual, priorizando la hora local del cliente si está disponible
         if client_timestamp_str:
             print(f"⏱️ Procesando timestamp del cliente en record_checkout: {client_timestamp_str}")
+            # Obtener tiempo para logs con zona horaria
             current_time = parse_client_timestamp(client_timestamp_str)
-            if current_time is None:  # Si hubo error al parsear, usar la hora del servidor
+            # Obtener tiempo para almacenamiento sin zona horaria
+            current_time_for_storage = parse_client_timestamp_for_storage(client_timestamp_str)
+            
+            if current_time is None or current_time_for_storage is None:  # Si hubo error al parsear, usar la hora del servidor
                 current_time = get_current_time()
+                current_time_for_storage = get_local_time_for_storage()
                 print(f"⚠️ Error al parsear timestamp del cliente en record_checkout. Usando hora del servidor: {current_time}")
             else:
                 print(f"✅ Éxito en record_checkout: Usando hora local del cliente: {current_time}, Hora servidor: {get_current_time()}")
+                print(f"✅ Hora para almacenar en BD (sin zona horaria): {current_time_for_storage}")
         else:
             # Sin timestamp del cliente, usar la hora del servidor
             current_time = get_current_time()
+            current_time_for_storage = get_local_time_for_storage()
             print(f"⚠️ No se recibió timestamp del cliente en record_checkout. Usando hora del servidor: {current_time}")
+            print(f"✅ Hora para almacenar en BD (sin zona horaria): {current_time_for_storage}")
         
-        # Convertir a UTC para almacenar en la base de datos
-        from datetime import timezone
-        current_time_utc = current_time.astimezone(timezone.utc)
-        print(f"✏️ Convertido a UTC para almacenar en record_checkout: {current_time_utc}")
+        # Guardar directamente la hora local sin información de zona horaria
+        print(f"✏️ Guardando hora local directamente en record_checkout: {current_time_for_storage}")
         
-        record.check_out_time = current_time_utc
+        record.check_out_time = current_time_for_storage
         db.session.add(record)
         db.session.flush()  # Aseguramos que record tenga todos sus campos actualizados
         
@@ -1689,7 +1695,7 @@ def record_checkout(id):
         # Capturar los valores reales antes de cualquier ajuste
         # Importante: Guardamos la hora exacta que se introdujo al inicio de la jornada
         original_checkin = record.check_in_time  # Esta es la hora original de entrada
-        original_checkout = current_time_utc  # Esta es la hora real de salida antes de ajustes (en UTC)
+        original_checkout = current_time_for_storage  # Esta es la hora real de salida en hora local
         
         # Buscar si ya existe un registro original al iniciar jornada
         existing_original = CheckPointOriginalRecord.query.filter_by(
@@ -1770,12 +1776,10 @@ def record_checkout(id):
         db.session.commit()
         
         # Log detallado post-transacción
-        from timezone_config import datetime_to_madrid
-        madrid_checkin = datetime_to_madrid(record.check_in_time)
-        madrid_checkout = datetime_to_madrid(record.check_out_time)
+        # No necesitamos convertir las horas, ya están en tiempo local de Madrid
         print(f"✅ CHECKOUT (pantalla detalles): Empleado ID {employee.id} - Estado: {old_status} → {employee.is_on_shift}")
-        print(f"   Registro ID: {record.id}, Entrada: {record.check_in_time} (UTC), Salida: {record.check_out_time} (UTC)")
-        print(f"   Hora local (Madrid): Entrada: {madrid_checkin}, Salida: {madrid_checkout}")
+        print(f"   Registro ID: {record.id}, Entrada: {record.check_in_time}, Salida: {record.check_out_time}")
+        print(f"   Recordar: Las horas ahora se guardan directamente en hora local de Madrid sin conversión")
         
         # Redirigir directamente a la página de firma sin mostrar mensaje (eliminado a petición del cliente)
         return redirect(url_for('checkpoints.checkpoint_record_signature', id=record.id))

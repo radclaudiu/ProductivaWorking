@@ -1342,17 +1342,24 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
     Encapsula la lógica de negocio y el manejo de transacciones
     """
     try:
+        # Obtener y mostrar todos los datos del formulario para debugging
+        print("🔍 DATOS RECIBIDOS DEL FORMULARIO:")
+        for key, value in request.form.items():
+            print(f"   {key}: {value}")
+            
         # Intentar obtener el timestamp del cliente
         client_timestamp_str = request.form.get('client_timestamp')
+        print(f"📅 Timestamp del cliente recibido: '{client_timestamp_str}'")
         
         # Obtener la hora actual, priorizando la hora local del cliente si está disponible
         if client_timestamp_str:
+            print(f"⏱️ Procesando timestamp del cliente: {client_timestamp_str}")
             current_time = parse_client_timestamp(client_timestamp_str)
             if current_time is None:  # Si hubo error al parsear, usar la hora del servidor
                 current_time = get_current_time()
-                print(f"⚠️ Error al parsear timestamp del cliente: {client_timestamp_str}. Usando hora del servidor.")
+                print(f"⚠️ Error al parsear timestamp del cliente. Usando hora del servidor: {current_time}")
             else:
-                print(f"✓ Usando hora local del cliente: {current_time}")
+                print(f"✅ Éxito: Usando hora local del cliente: {current_time}, Hora servidor: {get_current_time()}")
         else:
             # Sin timestamp del cliente, usar la hora del servidor
             current_time = get_current_time()
@@ -1630,17 +1637,24 @@ def record_checkout(id):
         db.session.begin_nested()
         
         # 1. Actualizar el registro con la hora de salida
+        # Obtener y mostrar todos los datos del formulario para debugging
+        print("🔍 DATOS RECIBIDOS DEL FORMULARIO (record_checkout):")
+        for key, value in request.form.items():
+            print(f"   {key}: {value}")
+        
         # Intentar obtener el timestamp del cliente
         client_timestamp_str = request.form.get('client_timestamp')
+        print(f"📅 Timestamp del cliente recibido en record_checkout: '{client_timestamp_str}'")
         
         # Obtener la hora actual, priorizando la hora local del cliente si está disponible
         if client_timestamp_str:
+            print(f"⏱️ Procesando timestamp del cliente en record_checkout: {client_timestamp_str}")
             current_time = parse_client_timestamp(client_timestamp_str)
             if current_time is None:  # Si hubo error al parsear, usar la hora del servidor
                 current_time = get_current_time()
-                print(f"⚠️ Error al parsear timestamp del cliente: {client_timestamp_str}. Usando hora del servidor.")
+                print(f"⚠️ Error al parsear timestamp del cliente en record_checkout. Usando hora del servidor: {current_time}")
             else:
-                print(f"✓ Usando hora local del cliente en record_checkout: {current_time}")
+                print(f"✅ Éxito en record_checkout: Usando hora local del cliente: {current_time}, Hora servidor: {get_current_time()}")
         else:
             # Sin timestamp del cliente, usar la hora del servidor
             current_time = get_current_time()

@@ -30,18 +30,35 @@ def parse_client_timestamp(timestamp_str):
         Objeto datetime en zona horaria de Madrid o None si hay error
     """
     if not timestamp_str:
+        print("ℹ️ parse_client_timestamp: No se recibió timestamp (valor vacío)")
         return None
+    
+    print(f"🔍 Intentando parsear timestamp del cliente: {timestamp_str}")
         
     try:
         # Parsear la cadena ISO a datetime con zona horaria
         dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+        print(f"✓ Timestamp parseado correctamente: {dt}")
+        
         # Asegurar que tiene zona horaria UTC si no la tiene
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
+            print(f"ℹ️ Timestamp no tenía zona horaria, asignado UTC: {dt}")
+            
         # Convertir a la zona horaria de Madrid
-        return dt.astimezone(TIMEZONE)
+        madrid_dt = dt.astimezone(TIMEZONE)
+        print(f"✓ Timestamp convertido a hora de Madrid: {madrid_dt}")
+        
+        return madrid_dt
+    except ValueError as e:
+        print(f"❌ Error ValueError al parsear timestamp del cliente: {e}")
+        print(f"   Formato recibido: {timestamp_str}")
+        print(f"   Formato esperado: ISO 8601 (YYYY-MM-DDTHH:MM:SS.sssZ)")
+        return None
     except Exception as e:
-        print(f"Error al parsear timestamp del cliente: {e}")
+        print(f"❌ Error inesperado al parsear timestamp del cliente: {e}")
+        print(f"   Timestamp: {timestamp_str}")
+        print(f"   Tipo de dato: {type(timestamp_str)}")
         return None
 
 def datetime_to_madrid(dt):
@@ -68,7 +85,9 @@ def format_datetime(dt, format_str='%Y-%m-%d %H:%M:%S'):
     
     try:
         madrid_dt = datetime_to_madrid(dt)
-        return madrid_dt.strftime(format_str)
+        if madrid_dt is not None:
+            return madrid_dt.strftime(format_str)
+        return ""
     except Exception as e:
         print(f"Error al formatear fecha: {e}")
         return ""

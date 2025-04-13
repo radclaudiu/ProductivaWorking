@@ -35,4 +35,3 @@ pytz
 pgadmin4
 pgadmin4
 jinja2
-isoweek

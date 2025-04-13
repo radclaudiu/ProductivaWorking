@@ -75,7 +75,8 @@
                                 document.getElementById('client-timestamp').value = timestamp;
                                 console.log('Timestamp capturado (checkout desde detalles):', timestamp);
                                 
-                                // No mostrar ningún mensaje para la captura de hora
+                                // Mostrar un mensaje de confirmación pero no detener el envío
+                                alert('Hora local capturada: ' + new Date().toLocaleString());
                             });
                         </script>
                     {% endif %}

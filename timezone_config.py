@@ -3,7 +3,7 @@ Configuración de zona horaria para la aplicación
 """
 import os
 import time
-from datetime import datetime, timezone, timedelta, date
+from datetime import datetime, timezone
 import pytz
 
 # Configurar zona horaria de Madrid
@@ -131,44 +131,3 @@ def format_datetime(dt, format_str='%Y-%m-%d %H:%M:%S'):
     except Exception as e:
         print(f"Error al formatear fecha: {e}")
         return ""
-        
-def get_datetime_range_for_week(year, week_number):
-    """
-    Retorna el rango de fechas (inicio y fin) para una semana específica del año.
-    La semana comienza en lunes y termina en domingo.
-    
-    Args:
-        year: Año de la semana
-        week_number: Número de semana (1-53)
-        
-    Returns:
-        Tupla (fecha_inicio, fecha_fin) donde fecha_inicio es el lunes a las 00:00:00
-        y fecha_fin es el domingo a las 23:59:59
-    """
-    # Encontrar el primer día del año
-    first_day_of_year = date(year, 1, 1)
-    
-    # Encontrar el primer lunes del año o el lunes de la última semana del año anterior
-    # (según sea necesario para la primera semana)
-    first_day_weekday = first_day_of_year.weekday()  # 0 es lunes, 6 es domingo
-    
-    # Calcular el primer lunes del año (o de la última semana del año anterior)
-    if first_day_weekday > 0:  # Si el año no comienza en lunes
-        first_monday = first_day_of_year - timedelta(days=first_day_weekday)
-    else:
-        first_monday = first_day_of_year
-    
-    # Calcular el inicio de la semana especificada (sumando semanas)
-    week_start = first_monday + timedelta(weeks=week_number-1)
-    
-    # Calcular el fin de la semana (domingo)
-    week_end = week_start + timedelta(days=6, hours=23, minutes=59, seconds=59)
-    
-    # Convertir a datetime con zona horaria Madrid
-    start_datetime = datetime.combine(week_start, datetime.min.time())
-    start_datetime = TIMEZONE.localize(start_datetime)
-    
-    end_datetime = datetime.combine(week_end, datetime.max.time())
-    end_datetime = TIMEZONE.localize(end_datetime)
-    
-    return start_datetime, end_datetime

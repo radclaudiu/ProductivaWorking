@@ -24,7 +24,6 @@ from forms_checkpoints import (CheckPointForm, CheckPointLoginForm, CheckPointEm
                              SignaturePadForm, ExportCheckPointRecordsForm, DeleteCheckPointRecordsForm)
 from utils import log_activity
 from utils_checkpoints import generate_pdf_report, generate_simple_pdf_report, draw_signature, delete_employee_records
-from utils_checkpoints_hours import calculate_weekly_hours, get_weekly_hours_summary
 
 
 # Crear un Blueprint para las rutas de checkpoints

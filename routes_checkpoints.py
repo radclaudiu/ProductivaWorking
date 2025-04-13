@@ -2274,15 +2274,33 @@ def localize_datetime_filter(dt, format_str="%d/%m/%Y %H:%M:%S"):
         Cadena formateada con la fecha/hora en zona horaria de Madrid
     """
     from timezone_config import datetime_to_madrid
+    import logging
+    
+    logger = logging.getLogger(__name__)
     
     if dt is None:
+        logger.warning("localize_datetime_filter: Se recibió un objeto datetime None")
         return ""
     
-    # Convertir a zona horaria de Madrid
+    # Registrar detalles del objeto datetime original
+    logger.info(f"Original datetime: {dt} (tzinfo: {dt.tzinfo})")
+    
+    # Convertir a zona horaria de Madrid (UTC+2)
     madrid_dt = datetime_to_madrid(dt)
     
+    # Registrar el objeto datetime convertido
+    logger.info(f"Madrid datetime: {madrid_dt} (tzinfo: {madrid_dt.tzinfo})")
+    
+    # Registrar diferencia horaria para verificar
+    if dt.tzinfo is not None and madrid_dt.tzinfo is not None:
+        hora_diff = madrid_dt.hour - dt.replace(tzinfo=None).hour
+        logger.info(f"Diferencia horaria: {hora_diff} horas")
+    
     # Formatear como cadena legible con el formato indicado
-    return madrid_dt.strftime(format_str)
+    formatted = madrid_dt.strftime(format_str)
+    logger.info(f"Formato final: {formatted}")
+    
+    return formatted
 
 def init_app(app):
     # Registrar el blueprint

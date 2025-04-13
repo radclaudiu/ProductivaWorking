@@ -21,6 +21,19 @@
                     <h3>{{ record.employee.first_name }} {{ record.employee.last_name }}</h3>
                     <p class="text-muted">DNI: {{ record.employee.dni }}</p>
                     
+                    <div class="card mt-3 mb-3">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0">Información del Fichaje</h5>
+                        </div>
+                        <div class="card-body">
+                            <p><strong>Entrada:</strong> {{ record.check_in_time | localize_datetime }}</p>
+                            {% if record.check_out_time %}
+                            <p><strong>Salida:</strong> {{ record.check_out_time | localize_datetime }}</p>
+                            <p><strong>Duración:</strong> {{ ((record.check_out_time - record.check_in_time).total_seconds() / 60)|int }} minutos</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
                     {% if record.check_out_time %}
                         <div class="alert alert-success mt-3">
                             <div class="d-flex align-items-center">

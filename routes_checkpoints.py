@@ -1353,7 +1353,6 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
         
         # Obtener la hora actual, priorizando la hora local del cliente si está disponible
         if client_timestamp_str:
-            print(f"⏱️ Procesando timestamp del cliente: {client_timestamp_str}")
             # Usar la nueva función para obtener la hora local para almacenamiento directo
             current_time_for_storage = parse_client_timestamp_for_storage(client_timestamp_str)
             current_time = parse_client_timestamp(client_timestamp_str)  # Para mostrar en logs con zona horaria
@@ -1363,8 +1362,7 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
                 current_time = get_current_time()
                 print(f"⚠️ Error al parsear timestamp del cliente. Usando hora del servidor: {current_time}")
             else:
-                print(f"✅ Éxito: Usando hora local del cliente: {current_time}, Hora servidor: {get_current_time()}")
-                print(f"✅ Hora para almacenar en BD (sin zona horaria): {current_time_for_storage}")
+                print(f"✅ Éxito: Usando hora local del cliente: {current_time}")
         else:
             # Sin timestamp del cliente, usar la hora del servidor
             current_time = get_current_time()
@@ -1497,8 +1495,6 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
             
             # 1. Crear nuevo registro de fichaje
             # Guardar directamente la hora local (Madrid) sin convertir a UTC
-            print(f"✏️ Guardando hora local (Madrid) directamente: {current_time_for_storage}")
-            
             checkin_time = current_time_for_storage  # Usar hora capturada sin información de zona horaria
             new_record = CheckPointRecord(
                 employee_id=employee.id,
@@ -1533,11 +1529,8 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
             db.session.refresh(new_record)
             
             # Log detallado post-transacción
-            from timezone_config import datetime_to_madrid
-            madrid_time = datetime_to_madrid(new_record.check_in_time)
             print(f"✅ CHECKIN: Empleado ID {employee.id} - Estado: {old_status} → {employee.is_on_shift}")
-            print(f"   Nuevo registro ID: {new_record.id}, Entrada: {new_record.check_in_time} (UTC)")
-            print(f"   Hora local (Madrid): {madrid_time}")
+            print(f"   Nuevo registro ID: {new_record.id}, Entrada: {new_record.check_in_time}")
             
             # Redirigir a la pantalla de empleados (dashboard) sin notificación
             return redirect(url_for('checkpoints.checkpoint_dashboard'))
@@ -1673,18 +1666,14 @@ def record_checkout(id):
                 current_time_for_storage = get_local_time_for_storage()
                 print(f"⚠️ Error al parsear timestamp del cliente en record_checkout. Usando hora del servidor: {current_time}")
             else:
-                print(f"✅ Éxito en record_checkout: Usando hora local del cliente: {current_time}, Hora servidor: {get_current_time()}")
-                print(f"✅ Hora para almacenar en BD (sin zona horaria): {current_time_for_storage}")
+                print(f"✅ Éxito en record_checkout: Usando hora local del cliente: {current_time}")
         else:
             # Sin timestamp del cliente, usar la hora del servidor
             current_time = get_current_time()
             current_time_for_storage = get_local_time_for_storage()
             print(f"⚠️ No se recibió timestamp del cliente en record_checkout. Usando hora del servidor: {current_time}")
-            print(f"✅ Hora para almacenar en BD (sin zona horaria): {current_time_for_storage}")
         
         # Guardar directamente la hora local sin información de zona horaria
-        print(f"✏️ Guardando hora local directamente en record_checkout: {current_time_for_storage}")
-        
         record.check_out_time = current_time_for_storage
         db.session.add(record)
         db.session.flush()  # Aseguramos que record tenga todos sus campos actualizados

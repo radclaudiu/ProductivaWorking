@@ -353,6 +353,7 @@
                         const timestamp = new Date().toISOString();
                         document.getElementById('client-timestamp').value = timestamp;
                         console.log('Timestamp capturado (check-in):', timestamp);
+                        console.log('Hora local del cliente:', new Date().toLocaleString());
                         
                         // Mostrar un mensaje de confirmación pero no detener el envío
                         alert('Hora local capturada: ' + new Date().toLocaleString());
@@ -367,6 +368,7 @@
                         const timestamp = new Date().toISOString();
                         document.getElementById('client-timestamp').value = timestamp;
                         console.log('Timestamp capturado (check-out):', timestamp);
+                        console.log('Hora local del cliente:', new Date().toLocaleString());
                         
                         // Mostrar un mensaje de confirmación pero no detener el envío
                         alert('Hora local capturada: ' + new Date().toLocaleString());

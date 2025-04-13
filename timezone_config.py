@@ -48,6 +48,8 @@ def parse_client_timestamp(timestamp_str):
         # Convertir a la zona horaria de Madrid
         madrid_dt = dt.astimezone(TIMEZONE)
         print(f"✓ Timestamp convertido a hora de Madrid: {madrid_dt}")
+        print(f"✓ Timestamp como epoch: {madrid_dt.timestamp()}")
+        print(f"✓ Timestamp UTC: {dt}, Timestamp Madrid: {madrid_dt}")
         
         return madrid_dt
     except ValueError as e:

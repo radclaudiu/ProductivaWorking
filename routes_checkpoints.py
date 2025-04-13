@@ -1488,12 +1488,10 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
             db.session.begin_nested()
             
             # 1. Crear nuevo registro de fichaje
-            # Convertir a UTC para almacenar en la base de datos
-            from datetime import timezone
-            current_time_utc = current_time.astimezone(timezone.utc)
-            print(f"✏️ Convertido a UTC para almacenar en checkin: {current_time_utc}")
+            # Guardar directamente la hora local (Madrid) sin convertir a UTC
+            print(f"✏️ Guardando hora local (Madrid) directamente: {current_time}")
             
-            checkin_time = current_time_utc  # Usar la hora capturada del cliente (en UTC)
+            checkin_time = current_time  # Usar la hora capturada del cliente en hora local
             new_record = CheckPointRecord(
                 employee_id=employee.id,
                 checkpoint_id=checkpoint_id,

@@ -340,7 +340,12 @@
                 if (checkinBtn) {
                     checkinBtn.addEventListener('click', function(e) {
                         // Capturar la hora local exacta al hacer clic
-                        document.getElementById('client-timestamp').value = new Date().toISOString();
+                        const timestamp = new Date().toISOString();
+                        document.getElementById('client-timestamp').value = timestamp;
+                        console.log('Timestamp capturado (check-in):', timestamp);
+                        
+                        // Mostrar un mensaje de confirmación pero no detener el envío
+                        alert('Hora local capturada: ' + new Date().toLocaleString());
                     });
                 }
                 
@@ -349,7 +354,12 @@
                 if (checkoutBtn) {
                     checkoutBtn.addEventListener('click', function(e) {
                         // Capturar la hora local exacta al hacer clic
-                        document.getElementById('client-timestamp').value = new Date().toISOString();
+                        const timestamp = new Date().toISOString();
+                        document.getElementById('client-timestamp').value = timestamp;
+                        console.log('Timestamp capturado (check-out):', timestamp);
+                        
+                        // Mostrar un mensaje de confirmación pero no detener el envío
+                        alert('Hora local capturada: ' + new Date().toLocaleString());
                     });
                 }
             }

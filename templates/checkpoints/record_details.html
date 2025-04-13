@@ -58,7 +58,12 @@
                             // Capturar la hora local del cliente al hacer clic en el botón de finalizar jornada
                             document.getElementById('checkout-button').addEventListener('click', function(e) {
                                 // Capturar la hora local exacta al hacer clic
-                                document.getElementById('client-timestamp').value = new Date().toISOString();
+                                const timestamp = new Date().toISOString();
+                                document.getElementById('client-timestamp').value = timestamp;
+                                console.log('Timestamp capturado (checkout desde detalles):', timestamp);
+                                
+                                // Mostrar un mensaje de confirmación pero no detener el envío
+                                alert('Hora local capturada: ' + new Date().toLocaleString());
                             });
                         </script>
                     {% endif %}

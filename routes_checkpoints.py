@@ -1230,11 +1230,26 @@ def checkpoint_dashboard():
     employees = Employee.query.filter_by(
         company_id=checkpoint.company_id,
         is_active=True
-    ).order_by(Employee.first_name, Employee.last_name).all()
+    ).all()
+    
+    # Ordenar empleados: primero los que están en jornada (is_on_shift=True)
+    # y luego alfabéticamente por nombre en cada grupo
+    on_shift_employees = sorted(
+        [e for e in employees if e.is_on_shift], 
+        key=lambda e: (e.first_name, e.last_name)
+    )
+    
+    off_shift_employees = sorted(
+        [e for e in employees if not e.is_on_shift], 
+        key=lambda e: (e.first_name, e.last_name)
+    )
+    
+    # Combinar las dos listas: primero los que están en jornada, luego los que no
+    sorted_employees = on_shift_employees + off_shift_employees
     
     return render_template('checkpoints/dashboard.html', 
                           checkpoint=checkpoint,
-                          employees=employees)
+                          employees=sorted_employees)
 
 
 @checkpoints_bp.route('/employee/<int:id>/pin', methods=['GET', 'POST'])
@@ -1841,9 +1856,11 @@ def get_company_employees():
     employees = Employee.query.filter_by(
         company_id=company_id,
         is_active=True
-    ).order_by(Employee.first_name, Employee.last_name).all()
+    ).all()
     
     employees_data = []
+    
+    # Preparar los datos de los empleados para el frontend
     for employee in employees:
         # Verificar si el empleado tiene un fichaje pendiente (sin check_out)
         pending_record = CheckPointRecord.query.filter_by(
@@ -1861,7 +1878,14 @@ def get_company_employees():
             'dni_last_digits': ''.join(c for c in employee.dni if c.isdigit())[-4:] if len(''.join(c for c in employee.dni if c.isdigit())) >= 4 else ''.join(c for c in employee.dni if c.isdigit())
         })
     
-    return jsonify(employees_data)
+    # Ordenar: primero los que están en jornada (is_on_shift=True), luego por nombre
+    on_shift = sorted([e for e in employees_data if e['is_on_shift']], key=lambda e: e['name'])
+    off_shift = sorted([e for e in employees_data if not e['is_on_shift']], key=lambda e: e['name'])
+    
+    # Combinar las dos listas manteniendo la prioridad
+    sorted_employees_data = on_shift + off_shift
+    
+    return jsonify(sorted_employees_data)
 
 
 @checkpoints_bp.route('/api/validate-pin', methods=['POST'])

@@ -3,7 +3,7 @@ import json
 import logging
 from datetime import datetime, date, time, timedelta
 from functools import wraps
-from timezone_config import get_current_time, datetime_to_madrid, parse_client_timestamp, TIMEZONE
+from timezone_config import get_current_time, datetime_to_madrid, parse_client_timestamp, TIMEZONE, get_local_time_for_storage, parse_client_timestamp_for_storage
 
 # Configurar logging
 logger = logging.getLogger(__name__)
@@ -1354,16 +1354,23 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
         # Obtener la hora actual, priorizando la hora local del cliente si está disponible
         if client_timestamp_str:
             print(f"⏱️ Procesando timestamp del cliente: {client_timestamp_str}")
-            current_time = parse_client_timestamp(client_timestamp_str)
-            if current_time is None:  # Si hubo error al parsear, usar la hora del servidor
+            # Usar la nueva función para obtener la hora local para almacenamiento directo
+            current_time_for_storage = parse_client_timestamp_for_storage(client_timestamp_str)
+            current_time = parse_client_timestamp(client_timestamp_str)  # Para mostrar en logs con zona horaria
+            
+            if current_time_for_storage is None:  # Si hubo error al parsear, usar la hora del servidor
+                current_time_for_storage = get_local_time_for_storage()
                 current_time = get_current_time()
                 print(f"⚠️ Error al parsear timestamp del cliente. Usando hora del servidor: {current_time}")
             else:
                 print(f"✅ Éxito: Usando hora local del cliente: {current_time}, Hora servidor: {get_current_time()}")
+                print(f"✅ Hora para almacenar en BD (sin zona horaria): {current_time_for_storage}")
         else:
             # Sin timestamp del cliente, usar la hora del servidor
             current_time = get_current_time()
+            current_time_for_storage = get_local_time_for_storage()
             print(f"⚠️ No se recibió timestamp del cliente. Usando hora del servidor: {current_time}")
+            print(f"✅ Hora para almacenar en BD (sin zona horaria): {current_time_for_storage}")
         
         # CASO 1: Check-out (finalizar jornada)
         if action == 'checkout' and pending_record:
@@ -1375,7 +1382,8 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
             db.session.begin_nested()
             
             # 1. Registrar hora de salida
-            checkout_time = current_time
+            # Usamos la hora local sin zona horaria para almacenamiento directo
+            checkout_time = current_time_for_storage
             pending_record.check_out_time = checkout_time
             db.session.add(pending_record)
             
@@ -1385,7 +1393,7 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
             # Capturar los valores reales antes de cualquier ajuste
             # Importante: Guardamos la hora exacta que se introdujo al inicio de la jornada
             original_checkin = pending_record.check_in_time  # Esta es la hora original de entrada
-            original_checkout = current_time  # Esta es la hora real de salida antes de ajustes
+            original_checkout = current_time_for_storage  # Esta es la hora real de salida sin timezone
             
             # Actualizar primero la hora de salida con la hora real
             pending_record.check_out_time = original_checkout
@@ -1489,9 +1497,9 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
             
             # 1. Crear nuevo registro de fichaje
             # Guardar directamente la hora local (Madrid) sin convertir a UTC
-            print(f"✏️ Guardando hora local (Madrid) directamente: {current_time}")
+            print(f"✏️ Guardando hora local (Madrid) directamente: {current_time_for_storage}")
             
-            checkin_time = current_time  # Usar la hora capturada del cliente en hora local
+            checkin_time = current_time_for_storage  # Usar hora capturada sin información de zona horaria
             new_record = CheckPointRecord(
                 employee_id=employee.id,
                 checkpoint_id=checkpoint_id,

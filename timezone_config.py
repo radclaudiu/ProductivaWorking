@@ -18,6 +18,18 @@ def get_current_time():
     # Convertir a la hora de Madrid
     return utc_now.astimezone(TIMEZONE)
 
+def get_local_time_for_storage():
+    """
+    Obtiene la hora actual en Madrid pero sin zona horaria (naive),
+    para almacenamiento directo en la base de datos.
+    
+    Usamos esta función cuando queremos guardar horas en formato local Madrid
+    directamente en la BD sin convertir a UTC.
+    """
+    madrid_now = get_current_time()
+    # Quitamos la información de zona horaria para guardar como hora local
+    return madrid_now.replace(tzinfo=None)
+
 def parse_client_timestamp(timestamp_str):
     """
     Convierte una cadena ISO 8601 de timestamp del cliente a un objeto datetime
@@ -62,6 +74,32 @@ def parse_client_timestamp(timestamp_str):
         print(f"   Timestamp: {timestamp_str}")
         print(f"   Tipo de dato: {type(timestamp_str)}")
         return None
+
+def parse_client_timestamp_for_storage(timestamp_str):
+    """
+    Convierte una cadena ISO 8601 de timestamp del cliente a un objeto datetime
+    en la zona horaria de Madrid, pero sin información de zona horaria (naive)
+    para almacenamiento directo en la base de datos.
+    
+    Args:
+        timestamp_str: Cadena ISO 8601 (formato: YYYY-MM-DDTHH:MM:SS.sssZ)
+        
+    Returns:
+        Objeto datetime en hora local de Madrid (naive) para guardar directamente
+        en la base de datos, o None si hay error.
+    """
+    # Utilizamos la función existente para obtener el datetime con zona horaria
+    madrid_dt = parse_client_timestamp(timestamp_str)
+    
+    # Si hay error, retornamos None
+    if madrid_dt is None:
+        return None
+        
+    # Quitamos la información de zona horaria para guardar como hora local
+    local_time = madrid_dt.replace(tzinfo=None)
+    print(f"🔄 Timestamp convertido a hora local sin zona horaria para BD: {local_time}")
+    
+    return local_time
 
 def datetime_to_madrid(dt):
     """

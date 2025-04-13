@@ -1527,8 +1527,11 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
             db.session.refresh(new_record)
             
             # Log detallado post-transacción
+            from timezone_config import datetime_to_madrid
+            madrid_time = datetime_to_madrid(new_record.check_in_time)
             print(f"✅ CHECKIN: Empleado ID {employee.id} - Estado: {old_status} → {employee.is_on_shift}")
-            print(f"   Nuevo registro ID: {new_record.id}, Entrada: {new_record.check_in_time}")
+            print(f"   Nuevo registro ID: {new_record.id}, Entrada: {new_record.check_in_time} (UTC)")
+            print(f"   Hora local (Madrid): {madrid_time}")
             
             # Redirigir a la pantalla de empleados (dashboard) sin notificación
             return redirect(url_for('checkpoints.checkpoint_dashboard'))
@@ -1761,8 +1764,12 @@ def record_checkout(id):
         db.session.commit()
         
         # Log detallado post-transacción
+        from timezone_config import datetime_to_madrid
+        madrid_checkin = datetime_to_madrid(record.check_in_time)
+        madrid_checkout = datetime_to_madrid(record.check_out_time)
         print(f"✅ CHECKOUT (pantalla detalles): Empleado ID {employee.id} - Estado: {old_status} → {employee.is_on_shift}")
-        print(f"   Registro ID: {record.id}, Entrada: {record.check_in_time}, Salida: {record.check_out_time}")
+        print(f"   Registro ID: {record.id}, Entrada: {record.check_in_time} (UTC), Salida: {record.check_out_time} (UTC)")
+        print(f"   Hora local (Madrid): Entrada: {madrid_checkin}, Salida: {madrid_checkout}")
         
         # Redirigir directamente a la página de firma sin mostrar mensaje (eliminado a petición del cliente)
         return redirect(url_for('checkpoints.checkpoint_record_signature', id=record.id))
@@ -1989,6 +1996,18 @@ def validate_pin():
         ).order_by(CheckPointRecord.check_in_time.desc()).first()
         
         action = "checkout" if pending_record else "checkin"
+        
+        # Cuando validamos el PIN, mostramos información detallada
+        if pending_record:
+            from timezone_config import datetime_to_madrid
+            madrid_time = datetime_to_madrid(pending_record.check_in_time)
+            print(f"Empleado: {employee.id} - {employee.first_name} {employee.last_name}")
+            print(f"Estado actual: is_on_shift={employee.is_on_shift}, pending_record={pending_record is not None}")
+            print(f"Registro pendiente ID: {pending_record.id}, Entrada: {pending_record.check_in_time}")
+            print(f"Entrada en hora local (Madrid): {madrid_time}")
+        else:
+            print(f"Empleado: {employee.id} - {employee.first_name} {employee.last_name}")
+            print(f"Estado actual: is_on_shift={employee.is_on_shift}, pending_record=False")
         
         return jsonify({
             "success": True, 

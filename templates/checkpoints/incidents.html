@@ -116,7 +116,7 @@
                             {% for incident in incidents.items %}
                             <tr>
                                 <td>{{ incident.record.employee.first_name }} {{ incident.record.employee.last_name }}</td>
-                                <td>{{ incident.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                                <td>{{ incident.created_at | localize_datetime('%d/%m/%Y %H:%M') }}</td>
                                 <td>
                                     {% if incident.incident_type.value == 'missed_checkout' %}
                                     <span class="badge bg-danger">Falta de salida</span>

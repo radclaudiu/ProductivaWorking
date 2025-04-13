@@ -132,13 +132,13 @@
                             {% for record in records.items %}
                             <tr>
                                 <td>{{ record.employee.first_name }} {{ record.employee.last_name }}</td>
-                                <td>{{ record.check_in_time.strftime('%d/%m/%Y') }}</td>
-                                <td>{{ record.check_in_time.strftime('%H:%M') }}</td>
+                                <td>{{ record.check_in_time | localize_datetime('%d/%m/%Y') }}</td>
+                                <td>{{ record.check_in_time | localize_datetime('%H:%M') }}</td>
                                 <td>
                                     {% if record.notes and "[Cerrado automáticamente por fin de horario de funcionamiento]" in record.notes %}
                                     <span class="text-danger">SIN SALIDA</span>
                                     {% elif record.check_out_time %}
-                                    {{ record.check_out_time.strftime('%H:%M') }}
+                                    {{ record.check_out_time | localize_datetime('%H:%M') }}
                                     {% else %}
                                     <span class="text-warning">Pendiente</span>
                                     {% endif %}

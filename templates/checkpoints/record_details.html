@@ -46,12 +46,21 @@
                             </div>
                         </div>
                         
-                        <form method="POST" action="{{ url_for('checkpoints.record_checkout', id=record.id) }}" class="mt-4">
+                        <form method="POST" action="{{ url_for('checkpoints.record_checkout', id=record.id) }}" class="mt-4" id="checkout-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-primary btn-lg">
+                            <input type="hidden" name="client_timestamp" id="client-timestamp" value="">
+                            <button type="submit" class="btn btn-primary btn-lg" id="checkout-button">
                                 <i class="bi bi-box-arrow-right"></i> Finalizar Jornada
                             </button>
                         </form>
+                        
+                        <script>
+                            // Capturar la hora local del cliente al hacer clic en el botón de finalizar jornada
+                            document.getElementById('checkout-button').addEventListener('click', function(e) {
+                                // Capturar la hora local exacta al hacer clic
+                                document.getElementById('client-timestamp').value = new Date().toISOString();
+                            });
+                        </script>
                     {% endif %}
                     
                     {% if record.check_out_time and not record.has_signature %}

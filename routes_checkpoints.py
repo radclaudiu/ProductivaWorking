@@ -1630,7 +1630,22 @@ def record_checkout(id):
         db.session.begin_nested()
         
         # 1. Actualizar el registro con la hora de salida
-        current_time = get_current_time()
+        # Intentar obtener el timestamp del cliente
+        client_timestamp_str = request.form.get('client_timestamp')
+        
+        # Obtener la hora actual, priorizando la hora local del cliente si está disponible
+        if client_timestamp_str:
+            current_time = parse_client_timestamp(client_timestamp_str)
+            if current_time is None:  # Si hubo error al parsear, usar la hora del servidor
+                current_time = get_current_time()
+                print(f"⚠️ Error al parsear timestamp del cliente: {client_timestamp_str}. Usando hora del servidor.")
+            else:
+                print(f"✓ Usando hora local del cliente en record_checkout: {current_time}")
+        else:
+            # Sin timestamp del cliente, usar la hora del servidor
+            current_time = get_current_time()
+            print(f"⚠️ No se recibió timestamp del cliente en record_checkout. Usando hora del servidor: {current_time}")
+            
         record.check_out_time = current_time
         db.session.add(record)
         db.session.flush()  # Aseguramos que record tenga todos sus campos actualizados

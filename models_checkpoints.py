@@ -103,8 +103,18 @@ class CheckPointRecord(db.Model):
     has_signature = db.Column(db.Boolean, default=False)
     
     def __repr__(self):
+        from timezone_config import datetime_to_madrid
+        
         status = "Completado" if self.check_out_time else "Pendiente de salida"
-        return f'<Fichaje {self.employee.first_name} {self.check_in_time.strftime("%d/%m/%Y %H:%M")} - {status}>'
+        
+        # Convertir la hora de check-in a zona horaria de Madrid para mostrarla
+        if self.check_in_time:
+            madrid_time = datetime_to_madrid(self.check_in_time)
+            formatted_time = madrid_time.strftime("%d/%m/%Y %H:%M")
+        else:
+            formatted_time = "Sin fecha"
+            
+        return f'<Fichaje {self.employee.first_name} {formatted_time} - {status}>'
     
     def duration(self):
         """Calcula la duración del fichaje en horas"""
@@ -176,7 +186,16 @@ class CheckPointIncident(db.Model):
     resolved_by = db.relationship('User')
     
     def __repr__(self):
-        return f'<Incidencia {self.incident_type.value} - {self.created_at.strftime("%d/%m/%Y")}>'
+        from timezone_config import datetime_to_madrid
+        
+        # Convertir la fecha de creación a zona horaria de Madrid
+        if self.created_at:
+            madrid_time = datetime_to_madrid(self.created_at)
+            formatted_date = madrid_time.strftime("%d/%m/%Y")
+        else:
+            formatted_date = "Sin fecha"
+            
+        return f'<Incidencia {self.incident_type.value} - {formatted_date}>'
     
     def resolve(self, user_id, notes=None):
         """Marca la incidencia como resuelta"""

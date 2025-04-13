@@ -2262,8 +2262,17 @@ def delete_records():
                           title='Eliminar Registros de Fichaje')
 
 
-def localize_datetime_filter(dt):
-    """Filtro Jinja para convertir datetimes UTC a la zona horaria local (Madrid)"""
+def localize_datetime_filter(dt, format_str="%d/%m/%Y %H:%M:%S"):
+    """
+    Filtro Jinja para convertir datetimes UTC a la zona horaria local (Madrid)
+    
+    Args:
+        dt: Objeto datetime a convertir
+        format_str: Cadena de formato opcional para strftime
+    
+    Returns:
+        Cadena formateada con la fecha/hora en zona horaria de Madrid
+    """
     from timezone_config import datetime_to_madrid
     
     if dt is None:
@@ -2272,8 +2281,8 @@ def localize_datetime_filter(dt):
     # Convertir a zona horaria de Madrid
     madrid_dt = datetime_to_madrid(dt)
     
-    # Formatear como cadena legible
-    return madrid_dt.strftime("%d/%m/%Y %H:%M:%S")
+    # Formatear como cadena legible con el formato indicado
+    return madrid_dt.strftime(format_str)
 
 def init_app(app):
     # Registrar el blueprint

@@ -3,7 +3,7 @@ import json
 import logging
 from datetime import datetime, date, time, timedelta
 from functools import wraps
-from timezone_config import get_current_time, datetime_to_madrid, TIMEZONE
+from timezone_config import get_current_time, datetime_to_madrid, parse_client_timestamp, TIMEZONE
 
 # Configurar logging
 logger = logging.getLogger(__name__)
@@ -1342,6 +1342,22 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
     Encapsula la lógica de negocio y el manejo de transacciones
     """
     try:
+        # Intentar obtener el timestamp del cliente
+        client_timestamp_str = request.form.get('client_timestamp')
+        
+        # Obtener la hora actual, priorizando la hora local del cliente si está disponible
+        if client_timestamp_str:
+            current_time = parse_client_timestamp(client_timestamp_str)
+            if current_time is None:  # Si hubo error al parsear, usar la hora del servidor
+                current_time = get_current_time()
+                print(f"⚠️ Error al parsear timestamp del cliente: {client_timestamp_str}. Usando hora del servidor.")
+            else:
+                print(f"✓ Usando hora local del cliente: {current_time}")
+        else:
+            # Sin timestamp del cliente, usar la hora del servidor
+            current_time = get_current_time()
+            print(f"⚠️ No se recibió timestamp del cliente. Usando hora del servidor: {current_time}")
+        
         # CASO 1: Check-out (finalizar jornada)
         if action == 'checkout' and pending_record:
             # Obtener datos actuales para logging
@@ -1352,7 +1368,7 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
             db.session.begin_nested()
             
             # 1. Registrar hora de salida
-            checkout_time = get_current_time()
+            checkout_time = current_time
             pending_record.check_out_time = checkout_time
             db.session.add(pending_record)
             
@@ -1362,7 +1378,7 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
             # Capturar los valores reales antes de cualquier ajuste
             # Importante: Guardamos la hora exacta que se introdujo al inicio de la jornada
             original_checkin = pending_record.check_in_time  # Esta es la hora original de entrada
-            original_checkout = get_current_time()  # Esta es la hora real de salida antes de ajustes
+            original_checkout = current_time  # Esta es la hora real de salida antes de ajustes
             
             # Actualizar primero la hora de salida con la hora real
             pending_record.check_out_time = original_checkout
@@ -1465,7 +1481,7 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
             db.session.begin_nested()
             
             # 1. Crear nuevo registro de fichaje
-            checkin_time = get_current_time()
+            checkin_time = current_time  # Usar la hora capturada del cliente
             new_record = CheckPointRecord(
                 employee_id=employee.id,
                 checkpoint_id=checkpoint_id,

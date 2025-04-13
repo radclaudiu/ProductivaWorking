@@ -221,6 +221,9 @@
                                         
                                         <!-- Campo oculto para indicar que el PIN ha sido verificado -->
                                         <input type="hidden" name="pin_verified" id="pin-verified" value="0">
+                                        
+                                        <!-- Campo oculto para la hora local del cliente -->
+                                        <input type="hidden" name="client_timestamp" id="client-timestamp" value="">
                                     </div>
                                 </form>
                             </div>
@@ -330,6 +333,27 @@
                 }
             }
             
+            // Función para configurar la captura de hora local
+            function setupTimestampCapture() {
+                // Botón de check-in
+                const checkinBtn = document.getElementById('btn-checkin');
+                if (checkinBtn) {
+                    checkinBtn.addEventListener('click', function(e) {
+                        // Capturar la hora local exacta al hacer clic
+                        document.getElementById('client-timestamp').value = new Date().toISOString();
+                    });
+                }
+                
+                // Botón de check-out
+                const checkoutBtn = document.getElementById('btn-checkout');
+                if (checkoutBtn) {
+                    checkoutBtn.addEventListener('click', function(e) {
+                        // Capturar la hora local exacta al hacer clic
+                        document.getElementById('client-timestamp').value = new Date().toISOString();
+                    });
+                }
+            }
+            
             // Al hacer clic en el botón de verificar PIN
             document.getElementById('validate-pin').addEventListener('click', function() {
                 // Verificar que el PIN tiene 4 dígitos
@@ -369,6 +393,9 @@
                             
                             // Mostrar los botones de acción
                             document.getElementById('action-buttons').classList.remove('d-none');
+                            
+                            // Configurar los manejadores para capturar la hora local al hacer clic en los botones
+                            setupTimestampCapture();
                         } else {
                             // PIN incorrecto, mostrar mensaje de error
                             showErrorMessage(data.message || 'PIN incorrecto. Inténtelo de nuevo.');

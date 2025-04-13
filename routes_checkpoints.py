@@ -1644,18 +1644,14 @@ def record_checkout(id):
         db.session.begin_nested()
         
         # 1. Actualizar el registro con la hora de salida
-        # Obtener y mostrar todos los datos del formulario para debugging
-        print("🔍 DATOS RECIBIDOS DEL FORMULARIO (record_checkout):")
-        for key, value in request.form.items():
-            print(f"   {key}: {value}")
+        # Obtener datos del formulario
         
         # Intentar obtener el timestamp del cliente
         client_timestamp_str = request.form.get('client_timestamp')
-        print(f"📅 Timestamp del cliente recibido en record_checkout: '{client_timestamp_str}'")
+        # Timestamp del cliente recibido
         
         # Obtener la hora actual, priorizando la hora local del cliente si está disponible
         if client_timestamp_str:
-            print(f"⏱️ Procesando timestamp del cliente en record_checkout: {client_timestamp_str}")
             # Obtener tiempo para logs con zona horaria
             current_time = parse_client_timestamp(client_timestamp_str)
             # Obtener tiempo para almacenamiento sin zona horaria
@@ -1664,14 +1660,13 @@ def record_checkout(id):
             if current_time is None or current_time_for_storage is None:  # Si hubo error al parsear, usar la hora del servidor
                 current_time = get_current_time()
                 current_time_for_storage = get_local_time_for_storage()
-                print(f"⚠️ Error al parsear timestamp del cliente en record_checkout. Usando hora del servidor: {current_time}")
             else:
-                print(f"✅ Éxito en record_checkout: Usando hora local del cliente: {current_time}")
+                # Usar hora local del cliente (no mostrar mensaje)
+                pass
         else:
             # Sin timestamp del cliente, usar la hora del servidor
             current_time = get_current_time()
             current_time_for_storage = get_local_time_for_storage()
-            print(f"⚠️ No se recibió timestamp del cliente en record_checkout. Usando hora del servidor: {current_time}")
         
         # Guardar directamente la hora local sin información de zona horaria
         record.check_out_time = current_time_for_storage
@@ -1765,10 +1760,9 @@ def record_checkout(id):
         db.session.commit()
         
         # Log detallado post-transacción
-        # No necesitamos convertir las horas, ya están en tiempo local de Madrid
+        # Log básico de la acción
         print(f"✅ CHECKOUT (pantalla detalles): Empleado ID {employee.id} - Estado: {old_status} → {employee.is_on_shift}")
-        print(f"   Registro ID: {record.id}, Entrada: {record.check_in_time}, Salida: {record.check_out_time}")
-        print(f"   Recordar: Las horas ahora se guardan directamente en hora local de Madrid sin conversión")
+        print(f"   Registro ID: {record.id}")
         
         # Redirigir directamente a la página de firma sin mostrar mensaje (eliminado a petición del cliente)
         return redirect(url_for('checkpoints.checkpoint_record_signature', id=record.id))

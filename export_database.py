@@ -284,21 +284,27 @@ def export_database_with_connection(db_params, filename):
             
             # Obtener y escribir secuencias
             f.write("\n-- Sequences\n")
-            cursor.execute("""
-                SELECT
-                    'SELECT setval(' || quote_literal(sequence_name) || ', ' ||
-                    'COALESCE((SELECT MAX(' || quote_ident(column_name) || ') FROM ' || 
-                    quote_ident(table_name) || '), 1));'
-                FROM
-                    information_schema.columns
-                WHERE
-                    column_default LIKE 'nextval%'
-                    AND table_schema = 'public';
-            """)
-            
-            sequences = cursor.fetchall()
-            for sequence in sequences:
-                f.write(f"{sequence[0]}\n")
+            try:
+                # Consulta mejorada para obtener secuencias
+                cursor.execute("""
+                    SELECT 
+                        'SELECT setval(' || quote_literal(pg_get_serial_sequence(quote_ident(c.table_name), quote_ident(c.column_name))) || ', ' ||
+                        'COALESCE((SELECT MAX(' || quote_ident(c.column_name) || ') FROM ' || 
+                        quote_ident(c.table_name) || '), 1));' as sequence_statement
+                    FROM 
+                        information_schema.columns c
+                    WHERE 
+                        c.column_default LIKE 'nextval%'
+                        AND c.table_schema = 'public'
+                        AND pg_get_serial_sequence(quote_ident(c.table_name), quote_ident(c.column_name)) IS NOT NULL;
+                """)
+                
+                sequences = cursor.fetchall()
+                for sequence in sequences:
+                    f.write(f"{sequence[0]}\n")
+            except Exception as seq_error:
+                f.write(f"-- Error al obtener secuencias: {str(seq_error)}\n")
+                f.write("-- Después de importar, es posible que necesites reiniciar las secuencias manualmente\n")
                 
             # Finalizar la transacción
             f.write("\nCOMMIT;\n")

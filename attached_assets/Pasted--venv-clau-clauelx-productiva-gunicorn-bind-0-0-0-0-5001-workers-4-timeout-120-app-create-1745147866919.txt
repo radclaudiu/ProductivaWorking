@@ -1,0 +1,141 @@
+(venv) clau@clauelx:~/productiva$ gunicorn --bind 0.0.0.0:5001 --workers 4 --timeout 120 "app:create_app()"
+[2025-04-20 11:15:49 +0000] [389705] [INFO] Starting gunicorn 23.0.0
+[2025-04-20 11:15:49 +0000] [389705] [INFO] Listening at: http://0.0.0.0:5001 (389705)
+[2025-04-20 11:15:49 +0000] [389705] [INFO] Using worker: sync
+[2025-04-20 11:15:49 +0000] [389706] [INFO] Booting worker with pid: 389706
+[2025-04-20 11:15:49 +0000] [389707] [INFO] Booting worker with pid: 389707
+[2025-04-20 11:15:49 +0000] [389708] [INFO] Booting worker with pid: 389708
+[2025-04-20 11:15:49 +0000] [389709] [INFO] Booting worker with pid: 389709
+INFO:app:Initializing Flask application
+INFO:app:Initializing Flask application
+INFO:app:Initializing Flask application
+INFO:app:Initializing Flask application
+ERROR:checkpoint_closer_service:No se pudo iniciar el servicio de cierre automático
+WARNING:app:⚠ No se pudo iniciar el servicio de cierre automático
+ERROR:checkpoint_closer_service:No se pudo iniciar el servicio de cierre automático
+WARNING:app:⚠ No se pudo iniciar el servicio de cierre automático
+ERROR:checkpoint_closer_service:No se pudo iniciar el servicio de cierre automático
+WARNING:app:⚠ No se pudo iniciar el servicio de cierre automático
+ERROR:checkpoint_closer_service:No se pudo iniciar el servicio de cierre automático
+WARNING:app:⚠ No se pudo iniciar el servicio de cierre automático
+INFO:checkpoint_closer_service:El servicio de cierre automático ya está en ejecución
+WARNING:app:⚠ No se pudo iniciar el servicio de cierre automático
+INFO:checkpoint_closer_service:El servicio de cierre automático ya está en ejecución
+WARNING:app:⚠ No se pudo iniciar el servicio de cierre automático
+INFO:checkpoint_closer_service:Iniciando servicio de cierre automático de fichajes
+INFO:checkpoint_closer_service:Servicio en ejecución continua - Archivo de startup encontrado
+INFO:checkpoint_closer_service:Ejecutando verificación de cierre automático de fichajes
+
+****************************************************************************************************
+* INICIANDO FUNCIÓN DE BARRIDO AUTOMÁTICO
+* Fecha/hora: 2025-04-20 11:15:54.971481
+* Versión: 1.2.0
+* Primer inicio después de redeploy: No
+****************************************************************************************************
+
+INFO:checkpoints_closer:Iniciando barrido de cierre automático: 2025-04-20 11:15:54.971481
+========== INICIO BARRIDO DE CIERRE AUTOMÁTICO: 2025-04-20 11:15:54.971481 ==========
+Ejecutando verificación de cierre automático dentro de la ventana horaria configurada: 2025-04-20 11:15:54.971481
+Hora actual (Madrid): 13:15:54.971561
+
+========== ERROR EN BARRIDO DE CIERRE AUTOMÁTICO ==========
+Fecha y hora de inicio: 2025-04-20 11:15:54.971481
+Fecha y hora de error: 2025-04-20 11:15:54.971967
+Primer inicio tras redeploy: No
+Error general durante el proceso: When initializing mapper Mapper[CheckPoint(checkpoints)], expression 'Company' failed to locate a name ('Company'). If this is a class name, consider adding this relationship() to the <class 'models_checkpoints.CheckPoint'> class after both dependent classes have been defined.
+========== FIN BARRIDO CON ERROR ==========
+
+ERROR:checkpoints_closer:Error en barrido: When initializing mapper Mapper[CheckPoint(checkpoints)], expression 'Company' failed to locate a name ('Company'). If this is a class name, consider adding this relationship() to the <class 'models_checkpoints.CheckPoint'> class after both dependent classes have been defined.
+WARNING:checkpoint_closer_service:El cierre automático finalizó con errores
+INFO:checkpoint_closer_service:Próxima ejecución en 40.0 minutos
+INFO:checkpoint_closer_service:El servicio de cierre automático ya está en ejecución
+INFO:checkpoint_closer_service:El servicio de cierre automático ya está en ejecución
+WARNING:app:⚠ No se pudo iniciar el servicio de cierre automático
+INFO:checkpoint_closer_service:El servicio de cierre automático ya está en ejecución
+WARNING:app:⚠ No se pudo iniciar el servicio de cierre automático
+WARNING:app:⚠ No se pudo iniciar el servicio de cierre automático
+INFO:checkpoint_closer_service:Iniciando servicio de cierre automático de fichajes
+INFO:checkpoint_closer_service:Servicio en ejecución continua - Archivo de startup encontrado
+INFO:checkpoint_closer_service:Ejecutando verificación de cierre automático de fichajes
+
+****************************************************************************************************
+* INICIANDO FUNCIÓN DE BARRIDO AUTOMÁTICO
+* Fecha/hora: 2025-04-20 11:15:55.037686
+* Versión: 1.2.0
+* Primer inicio después de redeploy: No
+****************************************************************************************************
+
+INFO:checkpoints_closer:Iniciando barrido de cierre automático: 2025-04-20 11:15:55.037686
+========== INICIO BARRIDO DE CIERRE AUTOMÁTICO: 2025-04-20 11:15:55.037686 ==========
+Ejecutando verificación de cierre automático dentro de la ventana horaria configurada: 2025-04-20 11:15:55.037686
+Hora actual (Madrid): 13:15:55.038111
+
+========== ERROR EN BARRIDO DE CIERRE AUTOMÁTICO ==========
+Fecha y hora de inicio: 2025-04-20 11:15:55.037686
+Fecha y hora de error: 2025-04-20 11:15:55.038578
+Primer inicio tras redeploy: No
+Error general durante el proceso: When initializing mapper Mapper[CheckPoint(checkpoints)], expression 'Company' failed to locate a name ('Company'). If this is a class name, consider adding this relationship() to the <class 'models_checkpoints.CheckPoint'> class after both dependent classes have been defined.
+========== FIN BARRIDO CON ERROR ==========
+
+ERROR:checkpoints_closer:Error en barrido: When initializing mapper Mapper[CheckPoint(checkpoints)], expression 'Company' failed to locate a name ('Company'). If this is a class name, consider adding this relationship() to the <class 'models_checkpoints.CheckPoint'> class after both dependent classes have been defined.
+WARNING:checkpoint_closer_service:El cierre automático finalizó con errores
+INFO:checkpoint_closer_service:Próxima ejecución en 40.0 minutos
+INFO:checkpoint_closer_service:El servicio de cierre automático ya está en ejecución
+WARNING:app:⚠ No se pudo iniciar el servicio de cierre automático
+INFO:checkpoint_closer_service:Iniciando servicio de cierre automático de fichajes
+INFO:checkpoint_closer_service:Servicio en ejecución continua - Archivo de startup encontrado
+INFO:checkpoint_closer_service:Ejecutando verificación de cierre automático de fichajes
+
+****************************************************************************************************
+INFO:checkpoint_closer_service:El servicio de cierre automático ya está en ejecución
+WARNING:app:⚠ No se pudo iniciar el servicio de cierre automático
+INFO:checkpoint_closer_service:Iniciando servicio de cierre automático de fichajes
+INFO:checkpoint_closer_service:Servicio en ejecución continua - Archivo de startup encontrado
+INFO:checkpoint_closer_service:Ejecutando verificación de cierre automático de fichajes
+
+****************************************************************************************************
+* INICIANDO FUNCIÓN DE BARRIDO AUTOMÁTICO
+* Fecha/hora: 2025-04-20 11:15:55.093084
+* Versión: 1.2.0
+* Primer inicio después de redeploy: No
+****************************************************************************************************
+
+INFO:checkpoints_closer:Iniciando barrido de cierre automático: 2025-04-20 11:15:55.093084
+========== INICIO BARRIDO DE CIERRE AUTOMÁTICO: 2025-04-20 11:15:55.093084 ==========
+Ejecutando verificación de cierre automático dentro de la ventana horaria configurada: 2025-04-20 11:15:55.093084
+Hora actual (Madrid): 13:15:55.093191
+
+========== ERROR EN BARRIDO DE CIERRE AUTOMÁTICO ==========
+Fecha y hora de inicio: 2025-04-20 11:15:55.093084
+Fecha y hora de error: 2025-04-20 11:15:55.093646
+Primer inicio tras redeploy: No
+Error general durante el proceso: When initializing mapper Mapper[CheckPoint(checkpoints)], expression 'Company' failed to locate a name ('Company'). If this is a class name, consider adding this relationship() to the <class 'models_checkpoints.CheckPoint'> class after both dependent classes have been defined.
+========== FIN BARRIDO CON ERROR ==========
+
+ERROR:checkpoints_closer:Error en barrido: When initializing mapper Mapper[CheckPoint(checkpoints)], expression 'Company' failed to locate a name ('Company'). If this is a class name, consider adding this relationship() to the <class 'models_checkpoints.CheckPoint'> class after both dependent classes have been defined.
+WARNING:checkpoint_closer_service:El cierre automático finalizó con errores
+INFO:checkpoint_closer_service:Próxima ejecución en 40.0 minutos
+* INICIANDO FUNCIÓN DE BARRIDO AUTOMÁTICO
+* Fecha/hora: 2025-04-20 11:15:55.081210
+* Versión: 1.2.0
+* Primer inicio después de redeploy: No
+****************************************************************************************************
+
+INFO:checkpoint_closer_service:El servicio de cierre automático ya está en ejecución
+WARNING:app:⚠ No se pudo iniciar el servicio de cierre automático
+INFO:checkpoints_closer:Iniciando barrido de cierre automático: 2025-04-20 11:15:55.081210
+========== INICIO BARRIDO DE CIERRE AUTOMÁTICO: 2025-04-20 11:15:55.081210 ==========
+Ejecutando verificación de cierre automático dentro de la ventana horaria configurada: 2025-04-20 11:15:55.081210
+Hora actual (Madrid): 13:15:55.116145
+
+========== ERROR EN BARRIDO DE CIERRE AUTOMÁTICO ==========
+Fecha y hora de inicio: 2025-04-20 11:15:55.081210
+Fecha y hora de error: 2025-04-20 11:15:55.116592
+Primer inicio tras redeploy: No
+Error general durante el proceso: When initializing mapper Mapper[CheckPoint(checkpoints)], expression 'Company' failed to locate a name ('Company'). If this is a class name, consider adding this relationship() to the <class 'models_checkpoints.CheckPoint'> class after both dependent classes have been defined.
+========== FIN BARRIDO CON ERROR ==========
+
+ERROR:checkpoints_closer:Error en barrido: When initializing mapper Mapper[CheckPoint(checkpoints)], expression 'Company' failed to locate a name ('Company'). If this is a class name, consider adding this relationship() to the <class 'models_checkpoints.CheckPoint'> class after both dependent classes have been defined.
+WARNING:checkpoint_closer_service:El cierre automático finalizó con errores
+INFO:checkpoint_closer_service:Próxima ejecución en 40.0 minutos
+

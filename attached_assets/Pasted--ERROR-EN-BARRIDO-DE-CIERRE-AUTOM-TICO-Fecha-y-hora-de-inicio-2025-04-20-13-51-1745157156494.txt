@@ -1,0 +1,27 @@
+========== ERROR EN BARRIDO DE CIERRE AUTOMÁTICO ==========
+Fecha y hora de inicio: 2025-04-20 13:51:27.702729
+Fecha y hora de error: 2025-04-20 13:51:27.705501
+Primer inicio tras redeploy: No
+Error general durante el proceso: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum checkpoint_status: "ACTIVE"
+LINE 3: ...ation_end_time IS NOT NULL AND checkpoints.status = 'ACTIVE'
+                                                               ^
+
+[SQL: SELECT checkpoints.id AS checkpoints_id, checkpoints.name AS checkpoints_name, checkpoints.description AS checkpoints_description, checkpoints.location AS checkpoints_location, checkpoints.status AS checkpoints_status, checkpoints.username AS checkpoints_username, checkpoints.password_hash AS checkpoints_password_hash, checkpoints.created_at AS checkpoints_created_at, checkpoints.updated_at AS checkpoints_updated_at, checkpoints.company_id AS checkpoints_company_id, checkpoints.enforce_contract_hours AS checkpoints_enforce_contract_hours, checkpoints.auto_adjust_overtime AS checkpoints_auto_adjust_overtime, checkpoints.operation_start_time AS checkpoints_operation_start_time, checkpoints.operation_end_time AS checkpoints_operation_end_time, checkpoints.enforce_operation_hours AS checkpoints_enforce_operation_hours 
+FROM checkpoints 
+WHERE checkpoints.enforce_operation_hours = true AND checkpoints.operation_start_time IS NOT NULL AND checkpoints.operation_end_time IS NOT NULL AND checkpoints.status = %(status_1)s]
+[parameters: {'status_1': 'ACTIVE'}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+========== FIN BARRIDO CON ERROR ==========
+
+ERROR:checkpoints_closer:Error en barrido: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum checkpoint_status: "ACTIVE"
+LINE 3: ...ation_end_time IS NOT NULL AND checkpoints.status = 'ACTIVE'
+                                                               ^
+
+[SQL: SELECT checkpoints.id AS checkpoints_id, checkpoints.name AS checkpoints_name, checkpoints.description AS checkpoints_description, checkpoints.location AS checkpoints_location, checkpoints.status AS checkpoints_status, checkpoints.username AS checkpoints_username, checkpoints.password_hash AS checkpoints_password_hash, checkpoints.created_at AS checkpoints_created_at, checkpoints.updated_at AS checkpoints_updated_at, checkpoints.company_id AS checkpoints_company_id, checkpoints.enforce_contract_hours AS checkpoints_enforce_contract_hours, checkpoints.auto_adjust_overtime AS checkpoints_auto_adjust_overtime, checkpoints.operation_start_time AS checkpoints_operation_start_time, checkpoints.operation_end_time AS checkpoints_operation_end_time, checkpoints.enforce_operation_hours AS checkpoints_enforce_operation_hours 
+FROM checkpoints 
+WHERE checkpoints.enforce_operation_hours = true AND checkpoints.operation_start_time IS NOT NULL AND checkpoints.operation_end_time IS NOT NULL AND checkpoints.status = %(status_1)s]
+[parameters: {'status_1': 'ACTIVE'}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+WARNING:checkpoint_closer_service:El cierre automático finalizó con errores
+INFO:checkpoint_closer_service:Próxima ejecución en 40.0 minutos
+

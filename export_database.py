@@ -174,7 +174,7 @@ def export_database_with_connection(db_params, filename):
                 table_name = table[0]
                 print(f"Exportando tabla: {table_name}")
                 
-                # Obtener definición de la tabla
+                # Obtener definición de la tabla con corrección de tipos USER-DEFINED
                 cursor.execute(f"""
                     SELECT 
                         'CREATE TABLE ' || 
@@ -185,7 +185,20 @@ def export_database_with_connection(db_params, filename):
                         SELECT 
                             table_name,
                             column_name || ' ' || 
-                            data_type || 
+                            CASE 
+                                -- Convertir tipos USER-DEFINED a tipos estándar de PostgreSQL
+                                WHEN data_type = 'USER-DEFINED' THEN
+                                    CASE 
+                                        WHEN column_name LIKE '%incident_type%' THEN 'VARCHAR(50)'
+                                        WHEN column_name LIKE '%status%' THEN 'VARCHAR(20)'
+                                        WHEN column_name LIKE '%day_of_week%' THEN 'VARCHAR(20)'
+                                        WHEN column_name LIKE '%priority%' THEN 'VARCHAR(20)'
+                                        WHEN column_name LIKE '%frequency%' THEN 'VARCHAR(20)'
+                                        WHEN column_name LIKE '%conservation_type%' THEN 'VARCHAR(50)'
+                                        ELSE 'VARCHAR(100)' -- Tipo por defecto para otros campos USER-DEFINED
+                                    END
+                                ELSE data_type
+                            END || 
                             CASE 
                                 WHEN character_maximum_length IS NOT NULL 
                                 THEN '(' || character_maximum_length || ')'

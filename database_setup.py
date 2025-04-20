@@ -32,15 +32,20 @@ import psycopg2
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
 
+# Obtener configuración desde variables de entorno
+def get_env_config():
+    """Obtiene la configuración de conexión desde variables de entorno"""
+    return {
+        'host': os.environ.get('PGHOST', 'localhost'),
+        'port': int(os.environ.get('PGPORT', 5432)),
+        'user': os.environ.get('PGUSER', 'postgres'),
+        'password': os.environ.get('PGPASSWORD', 'postgres'),
+        'dbname': os.environ.get('PGDATABASE', 'productiva'),
+        'backup_file': None  # Si es None, solo se crean las tablas sin importar datos
+    }
+
 # Configuración por defecto
-DEFAULT_CONFIG = {
-    'host': 'localhost',
-    'port': 5432,
-    'user': 'postgres',
-    'password': 'postgres',
-    'dbname': 'productiva',
-    'backup_file': None  # Si es None, solo se crean las tablas sin importar datos
-}
+DEFAULT_CONFIG = get_env_config()
 
 
 def parse_arguments():
@@ -682,17 +687,47 @@ CREATE INDEX IF NOT EXISTS idx_products_location ON products(location_id);
         return False
 
 
-def import_from_backup(config):
-    """Importa datos desde un archivo de backup SQL"""
+def import_schema_from_backup(config):
+    """Importa solo la estructura de tablas desde un archivo de backup"""
     if not config['backup_file']:
-        print("No se especificó archivo de backup, omitiendo importación de datos.")
+        print("No se especificó archivo de backup, omitiendo importación de esquema.")
         return True
     
-    if not os.path.exists(config['backup_file']):
-        print(f"El archivo de backup '{config['backup_file']}' no existe.")
-        return False
-    
     try:
+        # Leer el archivo de backup
+        with open(config['backup_file'], 'r') as f:
+            sql_backup = f.read()
+        
+        # Extraer solo los comandos CREATE TABLE y ALTER TABLE
+        schema_commands = []
+        
+        # Dividir el script en líneas
+        lines = sql_backup.split('\n')
+        
+        # Identificar y extraer comandos de esquema (CREATE TABLE, ALTER TABLE, etc.)
+        current_command = ""
+        in_create_table = False
+        
+        for line in lines:
+            line = line.strip()
+            
+            # Ignorar comentarios y líneas vacías
+            if not line or line.startswith('--'):
+                continue
+            
+            # Detectar inicio de comandos para crear esquema
+            if line.startswith('CREATE TABLE') or line.startswith('ALTER TABLE') or line.startswith('CREATE INDEX'):
+                in_create_table = True
+                current_command = line
+            elif in_create_table:
+                current_command += " " + line
+                
+                # Si la línea termina con punto y coma, finaliza el comando
+                if line.endswith(';'):
+                    schema_commands.append(current_command)
+                    current_command = ""
+                    in_create_table = False
+        
         # Conectar a la base de datos
         conn = connect_to_database(config)
         if not conn:
@@ -700,22 +735,132 @@ def import_from_backup(config):
         
         cursor = conn.cursor()
         
+        # Ejecutar los comandos de esquema
+        print("Importando esquema (CREATE TABLE, ALTER TABLE) desde el backup...")
+        for i, command in enumerate(schema_commands):
+            command = command.replace('USER-DEFINED', 'VARCHAR(100)')
+            try:
+                cursor.execute(command)
+            except Exception as e:
+                print(f"Error al importar esquema, comando {i+1}: {str(e)}")
+                # No abortamos, seguimos con el siguiente comando
+        
+        cursor.close()
+        conn.close()
+        
+        print("Esquema importado exitosamente.")
+        return True
+        
+    except Exception as e:
+        print(f"Error al importar esquema: {str(e)}")
+        return False
+
+
+def import_data_from_backup(config):
+    """Importa solo los datos (INSERT) desde un archivo de backup"""
+    if not config['backup_file']:
+        print("No se especificó archivo de backup, omitiendo importación de datos.")
+        return True
+    
+    try:
         # Leer el archivo de backup
-        print(f"Importando datos desde '{config['backup_file']}'...")
         with open(config['backup_file'], 'r') as f:
             sql_backup = f.read()
         
-        # Ejecutar el script SQL
-        cursor.execute(sql_backup)
+        # Extraer solo los comandos INSERT
+        insert_commands = []
+        
+        # Dividir el script en líneas y buscar INSERT
+        for line in sql_backup.split('\n'):
+            line = line.strip()
+            if line.startswith('INSERT INTO'):
+                insert_commands.append(line)
+        
+        # Conectar a la base de datos
+        conn = connect_to_database(config)
+        if not conn:
+            return False
+        
+        cursor = conn.cursor()
+        
+        # Ejecutar los comandos INSERT en bloques
+        print(f"Importando datos ({len(insert_commands)} INSERTs) desde el backup...")
+        
+        # Procesar en bloques de 100 comandos
+        BLOCK_SIZE = 100
+        total_blocks = (len(insert_commands) + BLOCK_SIZE - 1) // BLOCK_SIZE
+        
+        for block_index in range(total_blocks):
+            start_idx = block_index * BLOCK_SIZE
+            end_idx = min(start_idx + BLOCK_SIZE, len(insert_commands))
+            block_commands = insert_commands[start_idx:end_idx]
+            
+            # Crear una transacción para cada bloque
+            try:
+                cursor.execute("BEGIN;")
+                
+                for command in block_commands:
+                    try:
+                        cursor.execute(command)
+                    except Exception as cmd_error:
+                        print(f"Error en INSERT: {str(cmd_error)}")
+                        # No abortamos, seguimos con el siguiente INSERT
+                
+                cursor.execute("COMMIT;")
+                print(f"Bloque {block_index+1}/{total_blocks} importado ({len(block_commands)} registros)")
+                
+            except Exception as block_error:
+                print(f"Error en bloque {block_index+1}: {str(block_error)}")
+                cursor.execute("ROLLBACK;")
+        
+        # Importar secuencias
+        print("Actualizando secuencias...")
+        try:
+            # Buscar y ejecutar comandos de secuencia (SELECT setval)
+            for line in sql_backup.split('\n'):
+                line = line.strip()
+                if line.startswith('SELECT setval('):
+                    try:
+                        cursor.execute(line)
+                    except Exception as seq_error:
+                        print(f"Error al actualizar secuencia: {str(seq_error)}")
+        except Exception as seq_block_error:
+            print(f"Error al actualizar secuencias: {str(seq_block_error)}")
         
         cursor.close()
         conn.close()
         
         print("Datos importados exitosamente.")
         return True
+        
     except Exception as e:
         print(f"Error al importar datos: {str(e)}")
         return False
+
+
+def import_from_backup(config):
+    """Importa datos desde un archivo de backup SQL en dos fases: esquema y datos"""
+    if not config['backup_file']:
+        print("No se especificó archivo de backup, omitiendo importación.")
+        return True
+    
+    if not os.path.exists(config['backup_file']):
+        print(f"El archivo de backup '{config['backup_file']}' no existe.")
+        return False
+    
+    # Fase 1: Importar esquema
+    schema_success = import_schema_from_backup(config)
+    if not schema_success:
+        print("Error al importar el esquema de la base de datos.")
+        return False
+    
+    # Fase 2: Importar datos
+    data_success = import_data_from_backup(config)
+    if not data_success:
+        print("Error al importar los datos. La estructura fue creada pero los datos pueden estar incompletos.")
+        return False
+    
+    return True
 
 
 def setup_database(config):

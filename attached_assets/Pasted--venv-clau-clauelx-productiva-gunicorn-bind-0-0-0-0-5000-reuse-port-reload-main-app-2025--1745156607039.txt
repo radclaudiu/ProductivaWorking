@@ -1,0 +1,55 @@
+(venv) clau@clauelx:~/productiva$ gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app
+[2025-04-20 13:43:09 +0000] [399017] [INFO] Starting gunicorn 23.0.0
+[2025-04-20 13:43:09 +0000] [399017] [INFO] Listening at: http://0.0.0.0:5000 (399017)
+[2025-04-20 13:43:09 +0000] [399017] [INFO] Using worker: sync
+[2025-04-20 13:43:09 +0000] [399018] [INFO] Booting worker with pid: 399018
+INFO:app:Initializing Flask application
+ERROR:checkpoint_closer_service:No se pudo iniciar el servicio de cierre automático
+WARNING:app:⚠ No se pudo iniciar el servicio de cierre automático
+INFO:main:Iniciando servicio de cierre automático de fichajes...
+INFO:checkpoint_closer_service:El servicio de cierre automático ya está en ejecución
+WARNING:main:⚠ No se pudo iniciar el servicio de cierre automático
+INFO:checkpoint_closer_service:El servicio de cierre automático ya está en ejecución
+WARNING:app:⚠ No se pudo iniciar el servicio de cierre automático
+INFO:checkpoint_closer_service:Iniciando servicio de cierre automático de fichajes
+INFO:checkpoint_closer_service:Servicio en ejecución continua - Archivo de startup encontrado
+INFO:checkpoint_closer_service:Ejecutando verificación de cierre automático de fichajes
+
+****************************************************************************************************
+* INICIANDO FUNCIÓN DE BARRIDO AUTOMÁTICO
+* Fecha/hora: 2025-04-20 13:43:15.049603
+* Versión: 1.2.0
+* Primer inicio después de redeploy: No
+****************************************************************************************************
+
+INFO:checkpoints_closer:Iniciando barrido de cierre automático: 2025-04-20 13:43:15.049603
+========== INICIO BARRIDO DE CIERRE AUTOMÁTICO: 2025-04-20 13:43:15.049603 ==========
+Ejecutando verificación de cierre automático dentro de la ventana horaria configurada: 2025-04-20 13:43:15.049603
+Hora actual (Madrid): 15:43:15.049682
+
+========== ERROR EN BARRIDO DE CIERRE AUTOMÁTICO ==========
+Fecha y hora de inicio: 2025-04-20 13:43:15.049603
+Fecha y hora de error: 2025-04-20 13:43:15.052336
+Primer inicio tras redeploy: No
+Error general durante el proceso: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum checkpoint_status: "ACTIVE"
+LINE 3: ...ation_end_time IS NOT NULL AND checkpoints.status = 'ACTIVE'
+                                                               ^
+
+[SQL: SELECT checkpoints.id AS checkpoints_id, checkpoints.name AS checkpoints_name, checkpoints.description AS checkpoints_description, checkpoints.location AS checkpoints_location, checkpoints.status AS checkpoints_status, checkpoints.username AS checkpoints_username, checkpoints.password_hash AS checkpoints_password_hash, checkpoints.created_at AS checkpoints_created_at, checkpoints.updated_at AS checkpoints_updated_at, checkpoints.company_id AS checkpoints_company_id, checkpoints.enforce_contract_hours AS checkpoints_enforce_contract_hours, checkpoints.auto_adjust_overtime AS checkpoints_auto_adjust_overtime, checkpoints.operation_start_time AS checkpoints_operation_start_time, checkpoints.operation_end_time AS checkpoints_operation_end_time, checkpoints.enforce_operation_hours AS checkpoints_enforce_operation_hours 
+FROM checkpoints 
+WHERE checkpoints.enforce_operation_hours = true AND checkpoints.operation_start_time IS NOT NULL AND checkpoints.operation_end_time IS NOT NULL AND checkpoints.status = %(status_1)s]
+[parameters: {'status_1': 'ACTIVE'}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+========== FIN BARRIDO CON ERROR ==========
+
+ERROR:checkpoints_closer:Error en barrido: (psycopg2.errors.InvalidTextRepresentation) invalid input value for enum checkpoint_status: "ACTIVE"
+LINE 3: ...ation_end_time IS NOT NULL AND checkpoints.status = 'ACTIVE'
+                                                               ^
+
+[SQL: SELECT checkpoints.id AS checkpoints_id, checkpoints.name AS checkpoints_name, checkpoints.description AS checkpoints_description, checkpoints.location AS checkpoints_location, checkpoints.status AS checkpoints_status, checkpoints.username AS checkpoints_username, checkpoints.password_hash AS checkpoints_password_hash, checkpoints.created_at AS checkpoints_created_at, checkpoints.updated_at AS checkpoints_updated_at, checkpoints.company_id AS checkpoints_company_id, checkpoints.enforce_contract_hours AS checkpoints_enforce_contract_hours, checkpoints.auto_adjust_overtime AS checkpoints_auto_adjust_overtime, checkpoints.operation_start_time AS checkpoints_operation_start_time, checkpoints.operation_end_time AS checkpoints_operation_end_time, checkpoints.enforce_operation_hours AS checkpoints_enforce_operation_hours 
+FROM checkpoints 
+WHERE checkpoints.enforce_operation_hours = true AND checkpoints.operation_start_time IS NOT NULL AND checkpoints.operation_end_time IS NOT NULL AND checkpoints.status = %(status_1)s]
+[parameters: {'status_1': 'ACTIVE'}]
+(Background on this error at: https://sqlalche.me/e/20/9h9h)
+WARNING:checkpoint_closer_service:El cierre automático finalizó con errores
+INFO:checkpoint_closer_service:Próxima ejecución en 40.0 minutos

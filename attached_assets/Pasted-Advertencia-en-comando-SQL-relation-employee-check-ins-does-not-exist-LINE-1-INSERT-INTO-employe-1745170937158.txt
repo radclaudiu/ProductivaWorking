@@ -1,0 +1,1376 @@
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+LINE 1: INSERT INTO employee_check_ins (id, employee_id, check_in_ti...
+                    ^
+
+Advertencia en comando SQL: relation "employee_contract_hours_id_seq" does not exist
+LINE 1: ...ntract_hours (id integer NOT NULL DEFAULT nextval('employee_...
+                                                             ^
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+LINE 1: INSERT INTO employee_contract_hours (id, daily_hours, weekly...
+                    ^
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+LINE 1: INSERT INTO employee_contract_hours (id, daily_hours, weekly...
+                    ^
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+LINE 1: INSERT INTO employee_contract_hours (id, daily_hours, weekly...
+                    ^
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+LINE 1: INSERT INTO employee_contract_hours (id, daily_hours, weekly...
+                    ^
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+LINE 1: INSERT INTO employee_contract_hours (id, daily_hours, weekly...
+                    ^
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+LINE 1: INSERT INTO employee_contract_hours (id, daily_hours, weekly...
+                    ^
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+LINE 1: INSERT INTO employee_contract_hours (id, daily_hours, weekly...
+                    ^
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+LINE 1: INSERT INTO employee_contract_hours (id, daily_hours, weekly...
+                    ^
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+LINE 1: INSERT INTO employee_contract_hours (id, daily_hours, weekly...
+                    ^
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+LINE 1: INSERT INTO employee_contract_hours (id, daily_hours, weekly...
+                    ^
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+LINE 1: INSERT INTO employee_contract_hours (id, daily_hours, weekly...
+                    ^
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+LINE 1: INSERT INTO employee_contract_hours (id, daily_hours, weekly...
+                    ^
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+LINE 1: INSERT INTO employee_contract_hours (id, daily_hours, weekly...
+                    ^
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+LINE 1: INSERT INTO employee_contract_hours (id, daily_hours, weekly...
+                    ^
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+LINE 1: INSERT INTO employee_contract_hours (id, daily_hours, weekly...
+                    ^
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+LINE 1: INSERT INTO employee_contract_hours (id, daily_hours, weekly...
+                    ^
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+LINE 1: INSERT INTO employee_contract_hours (id, daily_hours, weekly...
+                    ^
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+LINE 1: INSERT INTO employee_contract_hours (id, daily_hours, weekly...
+                    ^
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+LINE 1: INSERT INTO employee_contract_hours (id, daily_hours, weekly...
+                    ^
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+LINE 1: INSERT INTO employee_contract_hours (id, daily_hours, weekly...
+                    ^
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+LINE 1: INSERT INTO employee_contract_hours (id, daily_hours, weekly...
+                    ^
+
+Advertencia en comando SQL: relation "employee_documents_id_seq" does not exist
+LINE 1: ...ee_documents (id integer NOT NULL DEFAULT nextval('employee_...
+                                                             ^
+
+Advertencia en comando SQL: relation "employee_history_id_seq" does not exist
+LINE 1: ...oyee_history (id integer NOT NULL DEFAULT nextval('employee_...
+                                                             ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+LINE 1: INSERT INTO employee_history (id, field_name, old_value, new...
+                    ^
+
+Advertencia en comando SQL: relation "employee_notes_id_seq" does not exist
+LINE 1: ...ployee_notes (id integer NOT NULL DEFAULT nextval('employee_...
+                                                             ^
+
+Advertencia en comando SQL: relation "employee_schedules_id_seq" does not exist
+LINE 1: ...ee_schedules (id integer NOT NULL DEFAULT nextval('employee_...
+                                                             ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+LINE 1: INSERT INTO employee_schedules (id, employee_id, day_of_week...
+                    ^
+
+Advertencia en comando SQL: syntax error at or near "USER"
+LINE 1: ...ate date NOT NULL, end_date date NOT NULL, status USER-DEFIN...
+                                                             ^
+
+Advertencia en comando SQL: relation "employee_vacations" does not exist
+LINE 1: INSERT INTO employee_vacations (id, start_date, end_date, st...
+                    ^
+
+Advertencia en comando SQL: relation "employee_vacations" does not exist
+LINE 1: INSERT INTO employee_vacations (id, start_date, end_date, st...
+                    ^
+
+Advertencia en comando SQL: relation "employee_vacations" does not exist
+LINE 1: INSERT INTO employee_vacations (id, start_date, end_date, st...
+                    ^
+
+Advertencia en comando SQL: relation "employee_vacations" does not exist
+LINE 1: INSERT INTO employee_vacations (id, start_date, end_date, st...
+                    ^
+
+Advertencia en comando SQL: relation "employee_vacations" does not exist
+LINE 1: INSERT INTO employee_vacations (id, start_date, end_date, st...
+                    ^
+
+Advertencia en comando SQL: relation "employee_vacations" does not exist
+LINE 1: INSERT INTO employee_vacations (id, start_date, end_date, st...
+                    ^
+
+Advertencia en comando SQL: relation "employees_id_seq" does not exist
+LINE 1: ...LE employees (id integer NOT NULL DEFAULT nextval('employees...
+                                                             ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "employees" does not exist
+LINE 1: INSERT INTO employees (id, first_name, last_name, dni, socia...
+                    ^
+
+Advertencia en comando SQL: relation "label_templates_id_seq" does not exist
+LINE 1: ...el_templates (id integer NOT NULL DEFAULT nextval('label_tem...
+                                                             ^
+
+Advertencia en comando SQL: relation "local_users_id_seq" does not exist
+LINE 1: ... local_users (id integer NOT NULL DEFAULT nextval('local_use...
+                                                             ^
+
+Advertencia en comando SQL: relation "locations_id_seq" does not exist
+LINE 1: ...LE locations (id integer NOT NULL DEFAULT nextval('locations...
+                                                             ^
+
+Advertencia en comando SQL: syntax error at or near "USER"
+LINE 1: ...nservations_id_seq'::regclass), conservation_type USER-DEFIN...
+                                                             ^
+
+Advertencia en comando SQL: syntax error at or near "USER"
+LINE 1: ...local_user_id integer NOT NULL, conservation_type USER-DEFIN...
+                                                             ^
+
+Advertencia en comando SQL: relation "products_id_seq" does not exist
+LINE 1: ...BLE products (id integer NOT NULL DEFAULT nextval('products_...
+                                                             ^
+
+Advertencia en comando SQL: relation "task_completions_id_seq" does not exist
+LINE 1: ..._completions (id integer NOT NULL DEFAULT nextval('task_comp...
+                                                             ^
+
+Advertencia en comando SQL: relation "task_groups_id_seq" does not exist
+LINE 1: ... task_groups (id integer NOT NULL DEFAULT nextval('task_grou...
+                                                             ^
+
+Advertencia en comando SQL: syntax error at or near "USER"
+LINE 1: ...::regclass), scheduled_date date NOT NULL, status USER-DEFIN...
+                                                             ^
+
+Advertencia en comando SQL: syntax error at or near "USER"
+LINE 1: ...l('task_schedules_id_seq'::regclass), day_of_week USER-DEFIN...
+                                                             ^
+
+Advertencia en comando SQL: syntax error at or near "USER"
+LINE 1: ...al('task_weekdays_id_seq'::regclass), day_of_week USER-DEFIN...
+                                                             ^
+
+Advertencia en comando SQL: syntax error at or near "USER"
+LINE 1: ...varying(128) NOT NULL, description text, priority USER-DEFIN...
+                                                             ^
+
+Advertencia en comando SQL: relation "users_id_seq" does not exist
+LINE 1: ... TABLE users (id integer NOT NULL DEFAULT nextval('users_id_...
+                                                             ^
+
+Advertencia en comando SQL: relation "users" does not exist
+LINE 1: INSERT INTO users (id, username, email, password_hash, role,...
+                    ^
+
+Advertencia en comando SQL: relation "users" does not exist
+LINE 1: INSERT INTO users (id, username, email, password_hash, role,...
+                    ^
+
+Advertencia en comando SQL: relation "activity_logs" does not exist
+
+Advertencia en comando SQL: relation "activity_logs" does not exist
+
+Advertencia en comando SQL: relation "checkpoint_incidents" does not exist
+
+Advertencia en comando SQL: relation "checkpoint_incidents" does not exist
+
+Advertencia en comando SQL: relation "checkpoint_incidents" does not exist
+
+Advertencia en comando SQL: relation "checkpoint_original_records" does not exist
+
+Advertencia en comando SQL: relation "checkpoint_original_records" does not exist
+
+Advertencia en comando SQL: relation "checkpoint_original_records" does not exist
+
+Advertencia en comando SQL: relation "checkpoint_records" does not exist
+
+Advertencia en comando SQL: relation "checkpoint_records" does not exist
+
+Advertencia en comando SQL: relation "checkpoint_records" does not exist
+
+Advertencia en comando SQL: relation "checkpoints" does not exist
+
+Advertencia en comando SQL: relation "checkpoints" does not exist
+
+Advertencia en comando SQL: relation "checkpoints" does not exist
+
+Advertencia en comando SQL: relation "companies" does not exist
+
+Advertencia en comando SQL: relation "companies" does not exist
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+
+Advertencia en comando SQL: relation "employee_check_ins" does not exist
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+
+Advertencia en comando SQL: relation "employee_contract_hours" does not exist
+
+Advertencia en comando SQL: relation "employee_documents" does not exist
+
+Advertencia en comando SQL: relation "employee_documents" does not exist
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+
+Advertencia en comando SQL: relation "employee_history" does not exist
+
+Advertencia en comando SQL: relation "employee_notes" does not exist
+
+Advertencia en comando SQL: relation "employee_notes" does not exist
+
+Advertencia en comando SQL: relation "employee_notes" does not exist
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+
+Advertencia en comando SQL: relation "employee_schedules" does not exist
+
+Advertencia en comando SQL: relation "employee_vacations" does not exist
+
+Advertencia en comando SQL: relation "employee_vacations" does not exist
+
+Advertencia en comando SQL: relation "employees" does not exist
+
+Advertencia en comando SQL: relation "employees" does not exist
+
+Advertencia en comando SQL: relation "employees" does not exist
+
+Advertencia en comando SQL: relation "employees" does not exist
+
+Advertencia en comando SQL: relation "employees" does not exist
+
+Advertencia en comando SQL: relation "label_templates" does not exist
+
+Advertencia en comando SQL: relation "label_templates" does not exist
+
+Advertencia en comando SQL: relation "local_users" does not exist
+
+Advertencia en comando SQL: relation "local_users" does not exist
+
+Advertencia en comando SQL: relation "locations" does not exist
+
+Advertencia en comando SQL: relation "locations" does not exist
+
+Advertencia en comando SQL: relation "locations" does not exist
+
+Advertencia en comando SQL: relation "product_conservations" does not exist
+
+Advertencia en comando SQL: relation "product_conservations" does not exist
+
+Advertencia en comando SQL: relation "product_labels" does not exist
+
+Advertencia en comando SQL: relation "product_labels" does not exist
+
+Advertencia en comando SQL: relation "product_labels" does not exist
+
+Advertencia en comando SQL: relation "products" does not exist
+
+Advertencia en comando SQL: relation "products" does not exist
+
+Advertencia en comando SQL: relation "task_completions" does not exist
+
+Advertencia en comando SQL: relation "task_completions" does not exist
+
+Advertencia en comando SQL: relation "task_completions" does not exist
+
+Advertencia en comando SQL: relation "task_groups" does not exist
+
+Advertencia en comando SQL: relation "task_groups" does not exist
+
+Advertencia en comando SQL: relation "task_instances" does not exist
+
+Advertencia en comando SQL: relation "task_instances" does not exist
+
+Advertencia en comando SQL: relation "task_instances" does not exist
+
+Advertencia en comando SQL: relation "task_schedules" does not exist
+
+Advertencia en comando SQL: relation "task_schedules" does not exist
+
+Advertencia en comando SQL: relation "task_weekdays" does not exist
+
+Advertencia en comando SQL: relation "task_weekdays" does not exist
+
+Advertencia en comando SQL: relation "tasks" does not exist
+
+Advertencia en comando SQL: relation "tasks" does not exist
+
+Advertencia en comando SQL: relation "tasks" does not exist
+
+Advertencia en comando SQL: relation "tasks" does not exist
+
+Advertencia en comando SQL: relation "companies" does not exist
+
+Advertencia en comando SQL: relation "users" does not exist
+
+Advertencia en comando SQL: column "company_id" appears twice in primary key constraint
+LINE 1: ALTER TABLE user_companies ADD CONSTRAINT user_companies_pke...
+                                       ^
+
+Advertencia en comando SQL: relation "users" does not exist
+
+Advertencia en comando SQL: relation "users" does not exist
+
+Advertencia en comando SQL: relation "users" does not exist
+
+Advertencia en comando SQL: can't execute an empty query
+✅ Base de datos configurada exitosamente!

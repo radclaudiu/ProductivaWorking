@@ -82,6 +82,12 @@ def parse_arguments():
     parser.add_argument('--only-schema', action='store_true',
                         help='Importar solo esquema, omitir importación de datos')
     
+    parser.add_argument('--disable-fk', action='store_true',
+                        help='Deshabilitar temporalmente las restricciones de clave foránea durante la importación de datos')
+    
+    parser.add_argument('--ignore-errors', action='store_true',
+                        help='Continuar importando incluso si hay errores en algunos comandos')
+    
     return parser.parse_args()
 
 
@@ -776,14 +782,66 @@ def import_data_from_backup(config):
         with open(config['backup_file'], 'r') as f:
             sql_backup = f.read()
         
-        # Extraer solo los comandos INSERT
-        insert_commands = []
+        # Extraer los comandos INSERT y organizarlos por tabla
+        inserts_by_table = {}
         
         # Dividir el script en líneas y buscar INSERT
         for line in sql_backup.split('\n'):
             line = line.strip()
             if line.startswith('INSERT INTO'):
-                insert_commands.append(line)
+                # Extraer el nombre de la tabla
+                table_name = line.split('INSERT INTO ')[1].split(' ')[0].strip('"')
+                
+                # Agregar a la lista de inserts para esta tabla
+                if table_name not in inserts_by_table:
+                    inserts_by_table[table_name] = []
+                
+                inserts_by_table[table_name].append(line)
+        
+        if not inserts_by_table:
+            print("No se encontraron comandos INSERT en el archivo de backup.")
+            return False
+        
+        # Definir el orden de importación para respetar las dependencias de clave foránea
+        # Primero las tablas que no dependen de otras, luego las que dependen
+        table_import_order = [
+            # Primero las tablas sin dependencias
+            "users",
+            "companies",
+            "locations",
+            # Luego las tablas con dependencias simples
+            "user_companies",
+            "employees",
+            "checkpoints",
+            "local_users",
+            "task_groups",
+            "products",
+            # Luego las tablas con dependencias más complejas
+            "employee_documents",
+            "employee_notes",
+            "employee_history",
+            "employee_schedules",
+            "employee_check_ins",
+            "employee_vacations",
+            "checkpoint_records",
+            "checkpoint_incidents",
+            "checkpoint_original_records",
+            "employee_contract_hours",
+            "tasks",
+            "task_weekdays",
+            "task_schedules",
+            "task_instances",
+            "task_completions",
+            "product_conservations",
+            "product_labels",
+            "label_templates",
+            "activity_logs"
+        ]
+        
+        # Agregar cualquier tabla que esté en inserts_by_table pero no en table_import_order
+        for table in inserts_by_table.keys():
+            if table not in table_import_order:
+                table_import_order.append(table)
         
         # Conectar a la base de datos
         conn = connect_to_database(config)
@@ -792,55 +850,151 @@ def import_data_from_backup(config):
         
         cursor = conn.cursor()
         
-        # Ejecutar los comandos INSERT en bloques
-        print(f"Importando datos ({len(insert_commands)} INSERTs) desde el backup...")
-        
-        # Procesar en bloques de 100 comandos
-        BLOCK_SIZE = 100
-        total_blocks = (len(insert_commands) + BLOCK_SIZE - 1) // BLOCK_SIZE
-        
-        for block_index in range(total_blocks):
-            start_idx = block_index * BLOCK_SIZE
-            end_idx = min(start_idx + BLOCK_SIZE, len(insert_commands))
-            block_commands = insert_commands[start_idx:end_idx]
-            
-            # Crear una transacción para cada bloque
+        # Si se especificó deshabilitar las restricciones de clave foránea
+        if config.get('disable_fk'):
+            print("Deshabilitando temporalmente las restricciones de clave foránea...")
             try:
-                cursor.execute("BEGIN;")
-                
-                for command in block_commands:
-                    try:
-                        cursor.execute(command)
-                    except Exception as cmd_error:
-                        print(f"Error en INSERT: {str(cmd_error)}")
-                        # No abortamos, seguimos con el siguiente INSERT
-                
-                cursor.execute("COMMIT;")
-                print(f"Bloque {block_index+1}/{total_blocks} importado ({len(block_commands)} registros)")
-                
-            except Exception as block_error:
-                print(f"Error en bloque {block_index+1}: {str(block_error)}")
-                cursor.execute("ROLLBACK;")
+                cursor.execute("SET session_replication_role = 'replica';")
+                print("✓ Restricciones de clave foránea deshabilitadas correctamente.")
+            except Exception as fk_error:
+                print(f"Error al deshabilitar restricciones de clave foránea: {str(fk_error)}")
+                print("Continuando con las restricciones activas...")
         
-        # Importar secuencias
-        print("Actualizando secuencias...")
-        try:
-            # Buscar y ejecutar comandos de secuencia (SELECT setval)
-            for line in sql_backup.split('\n'):
-                line = line.strip()
-                if line.startswith('SELECT setval('):
-                    try:
-                        cursor.execute(line)
-                    except Exception as seq_error:
-                        print(f"Error al actualizar secuencia: {str(seq_error)}")
-        except Exception as seq_block_error:
-            print(f"Error al actualizar secuencias: {str(seq_block_error)}")
+        # Estadísticas globales
+        total_inserts = sum(len(cmds) for cmds in inserts_by_table.values())
+        successful_inserts = 0
+        failed_inserts = 0
         
+        print(f"Importando datos de {len(inserts_by_table)} tablas ({total_inserts} INSERTs totales)...")
+        
+        # Crear conexión para secuencias
+        seq_conn = connect_to_database(config)
+        if not seq_conn:
+            print("Error al conectar para actualizar secuencias.")
+            if conn:
+                conn.close()
+            return False
+        
+        seq_cursor = seq_conn.cursor()
+        
+        # Lista para almacenar errores únicos
+        unique_errors = set()
+        
+        # Para cada tabla en el orden definido
+        for table_index, table_name in enumerate(table_import_order):
+            if table_name not in inserts_by_table:
+                continue
+            
+            commands = inserts_by_table[table_name]
+            
+            print(f"\nImportando tabla {table_index+1}/{len(table_import_order)}: {table_name} ({len(commands)} registros)...")
+            
+            # Crear conexión dedicada para esta tabla
+            table_conn = connect_to_database(config)
+            if not table_conn:
+                print(f"Error al conectar para la tabla {table_name}.")
+                continue
+                
+            table_cursor = table_conn.cursor()
+            
+            # Deshabilitar FK en la conexión de esta tabla si se especificó
+            if config.get('disable_fk'):
+                try:
+                    table_cursor.execute("SET session_replication_role = 'replica';")
+                except Exception:
+                    pass
+            
+            # Ejecutar los INSERT para esta tabla
+            table_success = 0
+            table_fail = 0
+            
+            # Actualizar la secuencia para esta tabla antes de insertar datos
+            try:
+                seq_cursor.execute(f"SELECT pg_get_serial_sequence('{table_name}', 'id');")
+                seq_result = seq_cursor.fetchone()
+                if seq_result and seq_result[0]:
+                    seq_cursor.execute(f"SELECT setval('{seq_result[0]}', 1, false);")
+            except Exception as seq_error:
+                print(f"Aviso: No se pudo reiniciar la secuencia para {table_name}: {str(seq_error)}")
+            
+            # Para cada comando INSERT
+            for cmd_index, command in enumerate(commands):
+                try:
+                    # Cada INSERT en su propia transacción
+                    table_cursor.execute("BEGIN;")
+                    table_cursor.execute(command)
+                    table_cursor.execute("COMMIT;")
+                    table_success += 1
+                    successful_inserts += 1
+                except Exception as cmd_error:
+                    table_cursor.execute("ROLLBACK;")
+                    table_fail += 1
+                    failed_inserts += 1
+                    error_msg = str(cmd_error)
+                    
+                    # Almacenar errores únicos
+                    error_type = error_msg.split(':')[0] if ':' in error_msg else error_msg
+                    if error_type not in unique_errors:
+                        unique_errors.add(error_type)
+                        print(f"Nuevo tipo de error en {table_name}: {error_msg}")
+                    
+                    # Mostrar algunos errores para no llenar la consola
+                    if cmd_index < 3 or cmd_index % 50 == 0:
+                        print(f"Error en {table_name} #{cmd_index+1}/{len(commands)}: {error_msg[:100]}...")
+                    
+                    # Si no se especificó ignorar errores y hay un fallo, detener la importación de esta tabla
+                    if not config.get('ignore_errors'):
+                        print(f"Deteniendo importación de {table_name} debido a errores (use --ignore-errors para continuar).")
+                        break
+            
+            # Cerrar la conexión de esta tabla
+            table_cursor.close()
+            table_conn.close()
+            
+            # Actualizar la secuencia para esta tabla después de insertar datos
+            try:
+                seq_cursor.execute(f"SELECT pg_get_serial_sequence('{table_name}', 'id');")
+                seq_result = seq_cursor.fetchone()
+                if seq_result and seq_result[0]:
+                    seq_cursor.execute(f"""
+                    SELECT setval('{seq_result[0]}', COALESCE((SELECT MAX(id) FROM {table_name}), 1));
+                    """)
+            except Exception as seq_error:
+                print(f"Aviso: No se pudo actualizar la secuencia para {table_name}: {str(seq_error)}")
+            
+            print(f"Tabla {table_name}: {table_success} exitosos, {table_fail} fallidos")
+        
+        # Si se deshabilitaron las FK, volver a habilitarlas
+        if config.get('disable_fk'):
+            print("Reactivando las restricciones de clave foránea...")
+            try:
+                cursor.execute("SET session_replication_role = 'origin';")
+                print("✓ Restricciones de clave foránea reactivadas correctamente.")
+            except Exception as fk_error:
+                print(f"Error al reactivar restricciones de clave foránea: {str(fk_error)}")
+        
+        # Cerrar conexiones
         cursor.close()
-        conn.close()
+        seq_cursor.close()
+        seq_conn.close()
         
-        print("Datos importados exitosamente.")
-        return True
+        if conn:
+            conn.close()
+        
+        # Resumen de la importación
+        print("\n=== RESUMEN DE IMPORTACIÓN DE DATOS ===")
+        print(f"Total de comandos INSERT: {total_inserts}")
+        print(f"Comandos exitosos: {successful_inserts} ({successful_inserts/total_inserts*100:.1f}%)")
+        print(f"Comandos fallidos: {failed_inserts} ({failed_inserts/total_inserts*100:.1f}%)")
+        print("=======================================\n")
+        
+        if successful_inserts > 0:
+            completion_status = "parcialmente" if failed_inserts > 0 else "exitosamente"
+            print(f"Datos importados {completion_status}.")
+            return True
+        else:
+            print("Error: No se pudieron importar datos.")
+            return False
         
     except Exception as e:
         print(f"Error al importar datos: {str(e)}")
@@ -991,7 +1145,9 @@ def main():
         'drop_existing': args.drop_existing,
         'skip_tables': args.skip_tables,
         'only_data': args.only_data,
-        'only_schema': args.only_schema
+        'only_schema': args.only_schema,
+        'disable_fk': args.disable_fk,
+        'ignore_errors': args.ignore_errors
     }
     
     # Verificar opciones incompatibles
@@ -1002,6 +1158,15 @@ def main():
     if config['skip_tables'] and config['only_schema']:
         print("Error: Las opciones --skip-tables y --only-schema son mutuamente excluyentes.")
         return False
+    
+    # Mostrar advertencias para opciones potencialmente peligrosas
+    if config['disable_fk']:
+        print("\n⚠️ ADVERTENCIA: Has especificado --disable-fk, esto puede comprometer la integridad referencial de la base de datos.")
+        print("   Usa esta opción solo cuando sea necesario para resolver problemas de dependencias circulares.\n")
+    
+    if config['ignore_errors']:
+        print("\n⚠️ ADVERTENCIA: Has especificado --ignore-errors, esto continuará importando incluso si hay errores.")
+        print("   Los datos resultantes pueden estar incompletos o ser inconsistentes.\n")
     
     # Si no se especificó un archivo de backup, buscar automáticamente
     if not config['backup_file']:

@@ -73,6 +73,15 @@ def parse_arguments():
     parser.add_argument('--drop-existing', action='store_true',
                         help='Eliminar la base de datos si ya existe')
     
+    parser.add_argument('--skip-tables', action='store_true',
+                        help='Omitir la creación de tablas (útil si las tablas ya existen)')
+    
+    parser.add_argument('--only-data', action='store_true',
+                        help='Importar solo datos, omitir creación de tablas y estructura')
+    
+    parser.add_argument('--only-schema', action='store_true',
+                        help='Importar solo esquema, omitir importación de datos')
+    
     return parser.parse_args()
 
 
@@ -873,6 +882,12 @@ def setup_database(config):
     print(f"  Base de datos: {config['dbname']}")
     if config['backup_file']:
         print(f"  Archivo de backup: {config['backup_file']}")
+    if config.get('skip_tables'):
+        print("  Modo: Omitir creación de tablas")
+    if config.get('only_data'):
+        print("  Modo: Solo importar datos")
+    if config.get('only_schema'):
+        print("  Modo: Solo importar esquema")
     print("")
     
     # Si se especificó, eliminar la base de datos existente
@@ -881,21 +896,47 @@ def setup_database(config):
             print("No se pudo eliminar la base de datos existente.")
             return False
     
-    # Crear la base de datos
+    # Crear la base de datos (si no existe)
     if not create_database(config):
         print("No se pudo crear la base de datos.")
         return False
     
-    # Crear las tablas
-    if not create_tables(config):
-        print("No se pudieron crear las tablas.")
-        return False
-    
-    # Importar datos si se especificó un archivo de backup
+    # Si hay un archivo de backup
     if config['backup_file']:
-        if not import_from_backup(config):
-            print("No se pudieron importar los datos.")
-            return False
+        # Determinar qué fases ejecutar según los parámetros
+        import_schema = not config.get('only_data') and not config.get('skip_tables')
+        import_data = not config.get('only_schema')
+        
+        if import_schema:
+            print("Importando esquema desde archivo de backup...")
+            if not import_schema_from_backup(config):
+                print("Error al importar esquema desde el backup.")
+                
+                # Solo intentamos crear tablas desde el script si no se especificó omitir tablas
+                if not config.get('skip_tables'):
+                    print("Intentando crear tablas desde el script...")
+                    if not create_tables(config):
+                        print("No se pudieron crear las tablas.")
+                        # Si no se pudieron crear tablas y no se específicó solo datos,
+                        # consideramos que ha fallado
+                        if not config.get('only_data'):
+                            return False
+        
+        if import_data:
+            print("Importando datos desde archivo de backup...")
+            if not import_data_from_backup(config):
+                print("Error al importar datos desde el backup.")
+                # Si solo se especificó importar datos y falló, consideramos que ha fallado
+                if config.get('only_data'):
+                    return False
+    
+    else:
+        # Si no hay backup y no se especificó omitir tablas, crear tablas desde el script
+        if not config.get('skip_tables') and not config.get('only_data'):
+            print("Creando tablas desde el script (no se especificó archivo de backup)...")
+            if not create_tables(config):
+                print("No se pudieron crear las tablas.")
+                return False
     
     print("\n====== CONFIGURACIÓN COMPLETADA EXITOSAMENTE ======\n")
     return True
@@ -947,8 +988,20 @@ def main():
         'password': args.password,
         'dbname': args.dbname,
         'backup_file': args.backup_file,
-        'drop_existing': args.drop_existing
+        'drop_existing': args.drop_existing,
+        'skip_tables': args.skip_tables,
+        'only_data': args.only_data,
+        'only_schema': args.only_schema
     }
+    
+    # Verificar opciones incompatibles
+    if config['only_data'] and config['only_schema']:
+        print("Error: Las opciones --only-data y --only-schema son mutuamente excluyentes.")
+        return False
+    
+    if config['skip_tables'] and config['only_schema']:
+        print("Error: Las opciones --skip-tables y --only-schema son mutuamente excluyentes.")
+        return False
     
     # Si no se especificó un archivo de backup, buscar automáticamente
     if not config['backup_file']:
@@ -969,6 +1022,11 @@ def main():
                         print("Opción inválida, no se importarán datos.")
                 except ValueError:
                     print("Entrada inválida, no se importarán datos.")
+    
+    # Si se especificó only_data o only_schema pero no hay archivo de backup
+    if (config['only_data'] or config['only_schema']) and not config['backup_file']:
+        print("Error: Las opciones --only-data y --only-schema requieren un archivo de backup.")
+        return False
     
     # Configurar la base de datos
     return setup_database(config)

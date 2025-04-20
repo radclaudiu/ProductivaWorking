@@ -1,0 +1,170 @@
+[SQL: SELECT locations.id AS locations_id, locations.name AS locations_name, locations.address AS locations_address, locations.city AS locations_city, locations.postal_code AS locations_postal_code, locations.description AS locations_description, locations.created_at AS locations_created_at, locations.updated_at AS locations_updated_at, locations.is_active AS locations_is_active, locations.portal_username AS locations_portal_username, locations.portal_password_hash AS locations_portal_password_hash, locations.company_id AS locations_company_id 
+FROM locations 
+WHERE locations.is_active = true]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+ERROR:app:Error al cargar ubicaciones: (psycopg2.errors.UndefinedTable) relation "locations" does not exist
+LINE 2: FROM locations 
+             ^
+
+[SQL: SELECT locations.id AS locations_id, locations.name AS locations_name, locations.address AS locations_address, locations.city AS locations_city, locations.postal_code AS locations_postal_code, locations.description AS locations_description, locations.created_at AS locations_created_at, locations.updated_at AS locations_updated_at, locations.is_active AS locations_is_active, locations.portal_username AS locations_portal_username, locations.portal_password_hash AS locations_portal_password_hash, locations.company_id AS locations_company_id 
+FROM locations 
+WHERE locations.is_active = true]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+ERROR:app:Error al cargar ubicaciones: (psycopg2.errors.UndefinedTable) relation "locations" does not exist
+LINE 2: FROM locations 
+             ^
+
+[SQL: SELECT locations.id AS locations_id, locations.name AS locations_name, locations.address AS locations_address, locations.city AS locations_city, locations.postal_code AS locations_postal_code, locations.description AS locations_description, locations.created_at AS locations_created_at, locations.updated_at AS locations_updated_at, locations.is_active AS locations_is_active, locations.portal_username AS locations_portal_username, locations.portal_password_hash AS locations_portal_password_hash, locations.company_id AS locations_company_id 
+FROM locations 
+WHERE locations.is_active = true]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+ERROR:app:Error al registrar actividad: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block
+
+[SQL: INSERT INTO activity_logs (action, ip_address, timestamp, user_id) VALUES (%(action)s, %(ip_address)s, %(timestamp)s, %(user_id)s) RETURNING activity_logs.id]
+[parameters: {'action': 'POST /companies/new', 'ip_address': '192.168.1.47', 'timestamp': datetime.datetime(2025, 4, 20, 14, 27, 46, 14657), 'user_id': 1}]
+(Background on this error at: https://sqlalche.me/e/20/2j85)
+ERROR:app:Error al cargar ubicaciones: (psycopg2.errors.UndefinedTable) relation "locations" does not exist
+LINE 2: FROM locations 
+             ^
+
+[SQL: SELECT locations.id AS locations_id, locations.name AS locations_name, locations.address AS locations_address, locations.city AS locations_city, locations.postal_code AS locations_postal_code, locations.description AS locations_description, locations.created_at AS locations_created_at, locations.updated_at AS locations_updated_at, locations.is_active AS locations_is_active, locations.portal_username AS locations_portal_username, locations.portal_password_hash AS locations_portal_password_hash, locations.company_id AS locations_company_id 
+FROM locations 
+WHERE locations.is_active = true]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+ERROR:app:Error al registrar actividad: (psycopg2.errors.InFailedSqlTransaction) current transaction is aborted, commands ignored until end of transaction block
+
+[SQL: INSERT INTO activity_logs (action, ip_address, timestamp, user_id) VALUES (%(action)s, %(ip_address)s, %(timestamp)s, %(user_id)s) RETURNING activity_logs.id]
+[parameters: {'action': 'GET /companies/', 'ip_address': '192.168.1.47', 'timestamp': datetime.datetime(2025, 4, 20, 14, 27, 46, 165294), 'user_id': 1}]
+(Background on this error at: https://sqlalche.me/e/20/2j85)
+ERROR:app:Exception on /companies/ [GET]
+Traceback (most recent call last):
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1964, in _exec_single_context
+    self.dialect.do_execute(
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 942, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.UndefinedColumn: column employees.status_start_date does not exist
+LINE 1: ..._is_active, employees.status AS employees_status, employees....
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/clau/productiva/routes.py", line 239, in list_companies
+    return render_template('company_list.html', title='Empresas', companies=companies)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+         ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/home/clau/productiva/templates/company_list.html", line 1, in top-level template code
+    {% extends "layout.html" %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/clau/productiva/templates/layout.html", line 125, in top-level template code
+    {% block content %}{% endblock %}
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/clau/productiva/templates/company_list.html", line 47, in block 'content'
+    <td>{{ company.employees|length }}</td>
+    ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/jinja2/environment.py", line 490, in getattr
+    return getattr(obj, attribute)
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/sqlalchemy/orm/attributes.py", line 566, in __get__
+    return self.impl.get(state, dict_)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/sqlalchemy/orm/attributes.py", line 1086, in get
+    value = self._fire_loader_callables(state, key, passive)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/sqlalchemy/orm/attributes.py", line 1121, in _fire_loader_callables
+    return self.callable_(state, passive)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/sqlalchemy/orm/strategies.py", line 978, in _load_for_state
+    return self._emit_lazyload(
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/sqlalchemy/orm/strategies.py", line 1141, in _emit_lazyload
+    result = session.execute(
+             ^^^^^^^^^^^^^^^^
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2365, in execute
+    return self._execute_internal(
+           ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 2251, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+             ^^^^^^^^^^^^^
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1416, in execute
+    return meth(
+           ^^^^^
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/sqlalchemy/sql/elements.py", line 523, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1638, in _execute_clauseelement
+    ret = self._execute_context(
+          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1843, in _execute_context
+    return self._exec_single_context(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1983, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 2352, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/sqlalchemy/engine/base.py", line 1964, in _exec_single_context
+    self.dialect.do_execute(
+  File "/home/clau/productiva/venv/lib/python3.12/site-packages/sqlalchemy/engine/default.py", line 942, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column employees.status_start_date does not exist
+LINE 1: ..._is_active, employees.status AS employees_status, employees....
+                                                             ^
+
+[SQL: SELECT employees.id AS employees_id, employees.first_name AS employees_first_name, employees.last_name AS employees_last_name, employees.dni AS employees_dni, employees.social_security_number AS employees_social_security_number, employees.email AS employees_email, employees.address AS employees_address, employees.phone AS employees_phone, employees.position AS employees_position, employees.contract_type AS employees_contract_type, employees.bank_account AS employees_bank_account, employees.start_date AS employees_start_date, employees.end_date AS employees_end_date, employees.created_at AS employees_created_at, employees.updated_at AS employees_updated_at, employees.is_active AS employees_is_active, employees.status AS employees_status, employees.status_start_date AS employees_status_start_date, employees.status_end_date AS employees_status_end_date, employees.status_notes AS employees_status_notes, employees.is_on_shift AS employees_is_on_shift, employees.company_id AS employees_company_id, employees.user_id AS employees_user_id 
+FROM employees 
+WHERE %(param_1)s = employees.company_id]
+[parameters: {'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+ERROR:app:Error al cargar ubicaciones: (psycopg2.errors.UndefinedTable) relation "locations" does not exist
+LINE 2: FROM locations 
+             ^
+
+[SQL: SELECT locations.id AS locations_id, locations.name AS locations_name, locations.address AS locations_address, locations.city AS locations_city, locations.postal_code AS locations_postal_code, locations.description AS locations_description, locations.created_at AS locations_created_at, locations.updated_at AS locations_updated_at, locations.is_active AS locations_is_active, locations.portal_username AS locations_portal_username, locations.portal_password_hash AS locations_portal_password_hash, locations.company_id AS locations_company_id 
+FROM locations 
+WHERE locations.is_active = true]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+ERROR:app:Error al cargar ubicaciones: (psycopg2.errors.UndefinedTable) relation "locations" does not exist
+LINE 2: FROM locations 
+             ^
+
+[SQL: SELECT locations.id AS locations_id, locations.name AS locations_name, locations.address AS locations_address, locations.city AS locations_city, locations.postal_code AS locations_postal_code, locations.description AS locations_description, locations.created_at AS locations_created_at, locations.updated_at AS locations_updated_at, locations.is_active AS locations_is_active, locations.portal_username AS locations_portal_username, locations.portal_password_hash AS locations_portal_password_hash, locations.company_id AS locations_company_id 
+FROM locations 
+WHERE locations.is_active = true]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+ERROR:app:Error al cargar ubicaciones: (psycopg2.errors.UndefinedTable) relation "locations" does not exist
+LINE 2: FROM locations 
+             ^
+
+[SQL: SELECT locations.id AS locations_id, locations.name AS locations_name, locations.address AS locations_address, locations.city AS locations_city, locations.postal_code AS locations_postal_code, locations.description AS locations_description, locations.created_at AS locations_created_at, locations.updated_at AS locations_updated_at, locations.is_active AS locations_is_active, locations.portal_username AS locations_portal_username, locations.portal_password_hash AS locations_portal_password_hash, locations.company_id AS locations_company_id 
+FROM locations 
+WHERE locations.is_active = true]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+

@@ -1,0 +1,39 @@
+(venv) clau@clauelx:~/productiva$ gunicorn --bind 0.0.0.0:5000 --reuse-port --reload main:app
+[2025-04-20 13:58:31 +0000] [400044] [INFO] Starting gunicorn 23.0.0
+[2025-04-20 13:58:31 +0000] [400044] [INFO] Listening at: http://0.0.0.0:5000 (400044)
+[2025-04-20 13:58:31 +0000] [400044] [INFO] Using worker: sync
+[2025-04-20 13:58:31 +0000] [400045] [INFO] Booting worker with pid: 400045
+INFO:app:Initializing Flask application
+ERROR:checkpoint_closer_service:No se pudo iniciar el servicio de cierre automático
+WARNING:app:⚠ No se pudo iniciar el servicio de cierre automático
+INFO:main:Iniciando servicio de cierre automático de fichajes...
+INFO:checkpoint_closer_service:El servicio de cierre automático ya está en ejecución
+WARNING:main:⚠ No se pudo iniciar el servicio de cierre automático
+INFO:checkpoint_closer_service:El servicio de cierre automático ya está en ejecución
+WARNING:app:⚠ No se pudo iniciar el servicio de cierre automático
+INFO:checkpoint_closer_service:Iniciando servicio de cierre automático de fichajes
+INFO:checkpoint_closer_service:Servicio en ejecución continua - Archivo de startup encontrado
+INFO:checkpoint_closer_service:Ejecutando verificación de cierre automático de fichajes
+
+****************************************************************************************************
+* INICIANDO FUNCIÓN DE BARRIDO AUTOMÁTICO
+* Fecha/hora: 2025-04-20 13:58:36.733380
+* Versión: 1.2.0
+* Primer inicio después de redeploy: No
+****************************************************************************************************
+
+INFO:checkpoints_closer:Iniciando barrido de cierre automático: 2025-04-20 13:58:36.733380
+========== INICIO BARRIDO DE CIERRE AUTOMÁTICO: 2025-04-20 13:58:36.733380 ==========
+Ejecutando verificación de cierre automático dentro de la ventana horaria configurada: 2025-04-20 13:58:36.733380
+Hora actual (Madrid): 15:58:36.733454
+
+========== ERROR EN BARRIDO DE CIERRE AUTOMÁTICO ==========
+Fecha y hora de inicio: 2025-04-20 13:58:36.733380
+Fecha y hora de error: 2025-04-20 13:58:36.733649
+Primer inicio tras redeploy: No
+Error general durante el proceso: type object 'CheckPointStatus' has no attribute 'ACTIVE'
+========== FIN BARRIDO CON ERROR ==========
+
+ERROR:checkpoints_closer:Error en barrido: type object 'CheckPointStatus' has no attribute 'ACTIVE'
+WARNING:checkpoint_closer_service:El cierre automático finalizó con errores
+INFO:checkpoint_closer_service:Próxima ejecución en 40.0 minutos

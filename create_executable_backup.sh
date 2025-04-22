@@ -152,64 +152,138 @@ echo "Exportando datos de las tablas en orden controlado..."
 # Obtener lista de todas las tablas para procesar las que no están en la lista explícita
 ALL_TABLES=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT tablename FROM pg_tables WHERE schemaname='public'" | tr -d ' ')
 
-# Función para corregir los INSERT de tipos enumerados
-fix_enum_inserts() {
-  local input_file="$1"
-  local output_file="${input_file}.fixed"
-  
-  # Crear un archivo temporal para las transformaciones
-  cat "$input_file" | sed -E 's/VALUES \(([^)]*)\);/VALUES (\1);/g' > "$output_file"
-  
-  # Mover el archivo fijo al original
-  mv "$output_file" "$input_file"
-}
-
 # Archivo temporal para los datos
 DATA_TEMP=$(mktemp)
+PROCESSED_SQL=$(mktemp)
 
+echo "" > "$PROCESSED_SQL"
+
+echo "-- Creando tipo de datos enumerados personalizados" >> "$PROCESSED_SQL"
+cat >> "$PROCESSED_SQL" << 'EOL'
+DO $$
+DECLARE
+BEGIN
+    -- Verificar y crear tipos ENUM si no existen
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+        CREATE TYPE user_role AS ENUM ('admin', 'gerente', 'empleado');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'contract_type') THEN
+        CREATE TYPE contract_type AS ENUM ('INDEFINIDO', 'TEMPORAL', 'PRACTICAS', 'FORMACION', 'OBRA');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'employee_status') THEN
+        CREATE TYPE employee_status AS ENUM ('activo', 'baja_medica', 'excedencia', 'vacaciones', 'inactivo');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'week_day') THEN
+        CREATE TYPE week_day AS ENUM ('lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'vacation_status') THEN
+        CREATE TYPE vacation_status AS ENUM ('REGISTRADA', 'DISFRUTADA');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'checkpoint_status') THEN
+        CREATE TYPE checkpoint_status AS ENUM ('active', 'disabled', 'maintenance');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'checkpoint_incident_type') THEN
+        CREATE TYPE checkpoint_incident_type AS ENUM ('missed_checkout', 'late_checkin', 'early_checkout', 'overtime', 'manual_adjustment', 'contract_hours_adjustment');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'task_priority') THEN
+        CREATE TYPE task_priority AS ENUM ('alta', 'media', 'baja');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'task_frequency') THEN
+        CREATE TYPE task_frequency AS ENUM ('diaria', 'semanal', 'mensual', 'unica');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'task_status') THEN
+        CREATE TYPE task_status AS ENUM ('pendiente', 'completada', 'cancelada');
+    END IF;
+END;
+$$;
+EOL
+
+# Generar estructura de tablas (sin los tipos enumerados que ya se definieron arriba)
+echo "-- Generando estructura de tablas" >> "$PROCESSED_SQL"
+pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" --no-owner --no-acl --schema-only "$DB_NAME" | \
+  grep -v "CREATE TYPE" | \
+  grep -v "ALTER TYPE" | \
+  grep -v "^--" | \
+  grep -v "^SET " | \
+  grep -v "SELECT pg_catalog" >> "$PROCESSED_SQL"
+
+# Procesar cada tabla en el orden específico
 for TABLE in ${TABLES[@]}; do
-  echo " - Exportando datos de tabla $TABLE"
+  echo " - Exportando y procesando datos de tabla $TABLE"
   
-  # Exportar a un archivo temporal primero
-  pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" --no-owner --no-acl --data-only --table="$TABLE" "$DB_NAME" | \
-    grep -v "^--" | grep -v "^SET " | grep -v "^SELECT " > "$DATA_TEMP"
+  # Usar COPY en lugar de INSERT para mayor compatibilidad
+  echo "-- Datos para tabla $TABLE" >> "$PROCESSED_SQL"
+  echo "COPY $TABLE FROM stdin;" >> "$PROCESSED_SQL"
   
-  # Corregir problemas con los tipos enumerados
-  fix_enum_inserts "$DATA_TEMP"
+  # Obtener los datos usando COPY formato texto
+  PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "COPY $TABLE TO STDOUT;" >> "$PROCESSED_SQL" || true
   
-  # Convertir los valores de enum en cadenas literales para evitar problemas de sintaxis
-  sed -i -E "s/'([^']+)'::([a-z_]+)/'\\1'/g" "$DATA_TEMP"
-  
-  # Corregir formato de VALUES para INSERT de tipos enumerados
-  sed -i -E 's/\(([^)]*)\) VALUES \('\''/(\1) VALUES (/g' "$DATA_TEMP"
-  sed -i -E 's/'\''\);/);/g' "$DATA_TEMP"
-  
-  # Añadir al SQL principal
-  cat "$DATA_TEMP" >> "$TEMP_SQL"
+  # Finalizar COPY
+  echo "\." >> "$PROCESSED_SQL"
+  echo "" >> "$PROCESSED_SQL"
 done
 
-# Buscar si hay tablas adicionales que no estén en nuestra lista y exportarlas al final
+# Buscar tablas adicionales que no estén en nuestra lista
 for TABLE in $ALL_TABLES; do
   if [[ ! " ${TABLES[@]} " =~ " $TABLE " ]]; then
-    echo " - Exportando datos de tabla adicional $TABLE"
+    echo " - Exportando y procesando datos de tabla adicional $TABLE"
     
-    # Exportar a un archivo temporal primero
-    pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" --no-owner --no-acl --data-only --table="$TABLE" "$DB_NAME" | \
-      grep -v "^--" | grep -v "^SET " | grep -v "^SELECT " > "$DATA_TEMP"
+    # Usar COPY en lugar de INSERT para mayor compatibilidad
+    echo "-- Datos para tabla $TABLE" >> "$PROCESSED_SQL"
+    echo "COPY $TABLE FROM stdin;" >> "$PROCESSED_SQL"
     
-    # Corregir problemas con los tipos enumerados
-    fix_enum_inserts "$DATA_TEMP"
+    # Obtener los datos usando COPY formato texto
+    PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "COPY $TABLE TO STDOUT;" >> "$PROCESSED_SQL" || true
     
-    # Convertir los valores de enum en cadenas literales para evitar problemas de sintaxis
-    sed -i -E "s/'([^']+)'::([a-z_]+)/'\\1'/g" "$DATA_TEMP"
-    
-    # Añadir al SQL principal
-    cat "$DATA_TEMP" >> "$TEMP_SQL"
+    # Finalizar COPY incluso si no hay datos
+    echo "\." >> "$PROCESSED_SQL"
+    echo "" >> "$PROCESSED_SQL"
   fi
 done
 
-# Limpiar archivo temporal
-rm -f "$DATA_TEMP"
+# Agregar secuencias
+echo "-- Actualizar secuencias" >> "$PROCESSED_SQL"
+cat >> "$PROCESSED_SQL" << 'EOL'
+DO $$
+DECLARE
+    seq_record RECORD;
+BEGIN
+    FOR seq_record IN 
+        SELECT
+            n.nspname AS schema_name,
+            s.relname AS seq_name,
+            t.relname AS table_name,
+            a.attname AS column_name
+        FROM
+            pg_class s
+            JOIN pg_namespace n ON s.relnamespace = n.oid
+            JOIN pg_depend d ON d.objid = s.oid
+            JOIN pg_class t ON d.refobjid = t.oid
+            JOIN pg_attribute a ON (d.refobjid, d.refobjsubid) = (a.attrelid, a.attnum)
+        WHERE
+            s.relkind = 'S'
+            AND n.nspname = 'public'
+    LOOP
+        EXECUTE 'SELECT setval(''public.' || quote_ident(seq_record.seq_name) || ''', COALESCE((SELECT MAX(' || quote_ident(seq_record.column_name) || ') FROM ' || quote_ident(seq_record.table_name) || '), 1), true)';
+    END LOOP;
+END;
+$$;
+EOL
+
+# Mover el SQL procesado al archivo temporal final
+cat "$PROCESSED_SQL" > "$TEMP_SQL"
+
+# Limpiar archivos temporales
+rm -f "$DATA_TEMP" "$PROCESSED_SQL"
 
 # Crear el script ejecutable
 cat > "$BACKUP_FILE" << 'HEADER'

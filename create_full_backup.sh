@@ -147,17 +147,17 @@ NC='\033[0m' # No Color
 
 # Función para mostrar información del backup
 show_info() {
-    echo -e "\${BLUE}================ INFORMACIÓN DEL BACKUP ================\${NC}"
-    echo -e "\${GREEN}Fecha de creación:\${NC} \$(grep "# Fecha de backup:" "\$0" | cut -d: -f2-)"
-    echo -e "\${GREEN}Tamaño del backup SQL:\${NC} \$(grep "# Tamaño del backup SQL:" "\$0" | cut -d: -f2-)"
-    echo -e "\${GREEN}Tablas:\${NC} \$(grep "# Tablas:" "\$0" | cut -d: -f2-)"
-    echo -e "\${GREEN}Registros:\${NC} \$(grep "# Registros:" "\$0" | cut -d: -f2-)"
+    echo -e "${BLUE}================ INFORMACIÓN DEL BACKUP ================${NC}"
+    echo -e "${GREEN}Fecha de creación:${NC} $(grep "# Fecha de backup:" "$0" | cut -d: -f2-)"
+    echo -e "${GREEN}Tamaño del backup SQL:${NC} $(grep "# Tamaño del backup SQL:" "$0" | cut -d: -f2-)"
+    echo -e "${GREEN}Tablas:${NC} $(grep "# Tablas:" "$0" | cut -d: -f2-)"
+    echo -e "${GREEN}Registros:${NC} $(grep "# Registros:" "$0" | cut -d: -f2-)"
     echo
-    echo -e "\${YELLOW}Para restaurar este backup, ejecute:\${NC}"
-    echo -e "  \$0 --restore [--db DB_NAME] [--host HOST] [--user USER]"
+    echo -e "${YELLOW}Para restaurar este backup, ejecute:${NC}"
+    echo -e "  $0 --restore [--db DB_NAME] [--host HOST] [--user USER]"
     echo
-    echo -e "\${YELLOW}Para extraer el SQL sin ejecutarlo:\${NC}"
-    echo -e "  \$0 --extract [archivo_salida.sql]"
+    echo -e "${YELLOW}Para extraer el SQL sin ejecutarlo:${NC}"
+    echo -e "  $0 --extract [archivo_salida.sql]"
     echo
 }
 
@@ -294,14 +294,40 @@ restore_backup() {
     echo -e "Tablas restauradas: \$(psql -h "\$DB_HOST" -p "\$DB_PORT" -U "\$DB_USER" -c "SELECT COUNT(*) FROM pg_tables WHERE schemaname='public';" -t "\$DB_NAME" | tr -d ' ')"
     
     echo -e "Información de registros por tabla:"
+    # Usar una consulta más simple y compatible para evitar errores de sintaxis
     psql -h "\$DB_HOST" -p "\$DB_PORT" -U "\$DB_USER" -c "
-        SELECT tablename, pg_size_pretty(pg_relation_size(quote_ident(tablename)::text)) as size,
-        pg_total_relation_size(quote_ident(tablename)::text) as total_size, 
-        (SELECT count(*) FROM ONLY \\"\\"\\"||tablename||\\"\\"\\"') as records
-        FROM pg_tables
-        WHERE schemaname = 'public'
-        ORDER BY records DESC;
+        SELECT 
+            tablename, 
+            pg_size_pretty(pg_relation_size(quote_ident(tablename)::text)) as size,
+            pg_total_relation_size(quote_ident(tablename)::text) as total_size
+        FROM 
+            pg_tables
+        WHERE 
+            schemaname = 'public'
+        ORDER BY 
+            total_size DESC;
     " "\$DB_NAME"
+    
+    # Mostrar las 10 tablas con más registros (se calcula dinámicamente)
+    echo -e "\nTablas con más registros:"
+    psql -h "\$DB_HOST" -p "\$DB_PORT" -U "\$DB_USER" -t -c "
+        SELECT 'SELECT '''||tablename||''' AS tabla, COUNT(*) AS registros FROM '||tablename||' UNION ALL'
+        FROM pg_tables 
+        WHERE schemaname='public'
+        ORDER BY tablename
+    " "\$DB_NAME" | head -n 10 > /tmp/count_query.sql
+    
+    # Ajustar la última línea para quitar el UNION ALL
+    sed -i '\$ s/UNION ALL$//' /tmp/count_query.sql
+    
+    # Añadir ORDER BY
+    echo "ORDER BY registros DESC;" >> /tmp/count_query.sql
+    
+    # Ejecutar la consulta
+    psql -h "\$DB_HOST" -p "\$DB_PORT" -U "\$DB_USER" -c "$(cat /tmp/count_query.sql)" "\$DB_NAME"
+    
+    # Limpiar archivos temporales
+    rm -f /tmp/count_query.sql
 }
 
 # Ejecutar esta parte si se usa el comando --help

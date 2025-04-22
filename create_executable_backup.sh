@@ -126,6 +126,9 @@ cat > "$BACKUP_FILE" << 'HEADER'
 #   --no-data     Omitir los datos, restaurar solo la estructura
 #   --no-privs    Omitir los privilegios de usuarios
 #   --force       Sobrescribir la base de datos si ya existe
+#   --update      Modo de actualización: solo insertar registros nuevos y actualizar existentes
+#   --merge       Modo avanzado de fusión: conservar datos locales y solo agregar nuevos
+#   --compare     Solo mostrar diferencias entre backup y base de datos sin aplicar cambios
 #   --help        Mostrar esta ayuda
 # ============================================================================
 

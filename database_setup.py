@@ -3,15 +3,16 @@
 Script autónomo para configurar una base de datos PostgreSQL para Productiva
 
 Este script:
-1. Contiene toda la configuración de conexión a la base de datos (no usa variables de entorno)
+1. Utiliza la configuración del archivo config.py si está disponible
 2. Crea todas las tablas necesarias (basado en create_tables.sql y migraciones)
 3. Importa datos desde un archivo de backup
-4. No depende de ningún otro archivo de la aplicación
+4. Admite múltiples opciones para facilitar la restauración
 
 Uso:
     python database_setup.py [--host HOSTNAME] [--port PORT] [--user USERNAME] 
                              [--password PASSWORD] [--dbname DBNAME] 
-                             [--backup-file BACKUP_FILE]
+                             [--backup-file BACKUP_FILE] [--only-data]
+                             [--only-schema] [--disable-fk] [--ignore-errors]
 
 Ejemplos:
     # Usar configuración por defecto
@@ -22,6 +23,12 @@ Ejemplos:
     
     # Usar un archivo de backup específico
     python database_setup.py --backup-file my_backup.sql
+    
+    # Importar solo datos (no estructura)
+    python database_setup.py --backup-file my_backup.sql --only-data
+    
+    # Deshabilitar restricciones de clave foránea durante la importación
+    python database_setup.py --backup-file my_backup.sql --disable-fk
 """
 
 import argparse
@@ -29,13 +36,95 @@ import os
 import sys
 import time
 import psycopg2
+import logging
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 
+# Configurar logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger('database_setup')
 
-# Obtener configuración desde variables de entorno
-def get_env_config():
-    """Obtiene la configuración de conexión desde variables de entorno"""
-    return {
+# Intentar importar la configuración desde config.py
+try:
+    from config import Config
+    logger.info("Usando configuración desde config.py")
+    
+    # Extraer parámetros de conexión de DATABASE_URL
+    def parse_db_url(url):
+        """Extrae los componentes de una URL de conexión de base de datos"""
+        # postgresql://user:password@host:port/dbname
+        if not url or 'postgres' not in url:
+            return None
+            
+        # Remover el prefijo
+        if '://' in url:
+            url = url.split('://', 1)[1]
+            
+        # Extraer usuario:contraseña y host:puerto/nombre
+        if '@' in url:
+            auth, rest = url.split('@', 1)
+        else:
+            auth = ''
+            rest = url
+            
+        # Extraer host:port y dbname
+        if '/' in rest:
+            host_port, dbname = rest.split('/', 1)
+        else:
+            host_port = rest
+            dbname = 'postgres'
+            
+        # Extraer usuario y contraseña
+        if ':' in auth:
+            user, password = auth.split(':', 1)
+        else:
+            user = auth
+            password = ''
+            
+        # Extraer host y puerto
+        if ':' in host_port:
+            host, port = host_port.split(':', 1)
+            try:
+                port = int(port)
+            except:
+                port = 5432
+        else:
+            host = host_port
+            port = 5432
+            
+        return {
+            'host': host,
+            'port': port,
+            'user': user,
+            'password': password,
+            'dbname': dbname,
+            'backup_file': None
+        }
+        
+    # Intentar obtener parámetros desde DATABASE_URL
+    config_from_url = parse_db_url(Config.SQLALCHEMY_DATABASE_URI)
+    if config_from_url:
+        DEFAULT_CONFIG = config_from_url
+        logger.info(f"Parámetros extraídos de DATABASE_URL: {DEFAULT_CONFIG['host']}:{DEFAULT_CONFIG['port']}/{DEFAULT_CONFIG['dbname']}")
+    else:
+        # Si no se pudo extraer de DATABASE_URL, usar variables de entorno
+        DEFAULT_CONFIG = {
+            'host': os.environ.get('PGHOST', 'localhost'),
+            'port': int(os.environ.get('PGPORT', 5432)),
+            'user': os.environ.get('PGUSER', 'postgres'),
+            'password': os.environ.get('PGPASSWORD', 'postgres'),
+            'dbname': os.environ.get('PGDATABASE', 'productiva'),
+            'backup_file': None
+        }
+        logger.info("Usando variables de entorno para parámetros de conexión")
+        
+except ImportError:
+    logger.warning("No se pudo importar config.py, usando configuración por defecto")
+    # Obtener configuración desde variables de entorno
+    DEFAULT_CONFIG = {
         'host': os.environ.get('PGHOST', 'localhost'),
         'port': int(os.environ.get('PGPORT', 5432)),
         'user': os.environ.get('PGUSER', 'postgres'),
@@ -43,9 +132,6 @@ def get_env_config():
         'dbname': os.environ.get('PGDATABASE', 'productiva'),
         'backup_file': None  # Si es None, solo se crean las tablas sin importar datos
     }
-
-# Configuración por defecto
-DEFAULT_CONFIG = get_env_config()
 
 
 def parse_arguments():

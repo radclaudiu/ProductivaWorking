@@ -1,0 +1,549 @@
+<sh --restore --db productiva --host localhost --user productiva --force
+================== RESTAURACIÓN ====================
+Base de datos destino: productiva
+Servidor destino: localhost:5432
+Usuario: productiva
+
+Password for user productiva: 
+Password for user productiva: 
+La base de datos 'productiva' ya existe. Se eliminará...
+Password for user productiva: 
+DROP DATABASE
+Creando base de datos 'productiva'...
+Password for user productiva: 
+CREATE DATABASE
+Restaurando backup a 'productiva'...
+Password for user productiva: 
+BEGIN
+psql:/tmp/tmp.VKGK1NhGGv:11: error: invalid command \$
+psql:/tmp/tmp.VKGK1NhGGv:14: ERROR:  syntax error at or near "BEGIN"
+LINE 2: BEGIN
+        ^
+psql:/tmp/tmp.VKGK1NhGGv:15: ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+psql:/tmp/tmp.VKGK1NhGGv:18: ERROR:  syntax error at or near "IF"
+LINE 1: IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'contra...
+        ^
+psql:/tmp/tmp.VKGK1NhGGv:19: ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+psql:/tmp/tmp.VKGK1NhGGv:22: ERROR:  syntax error at or near "IF"
+LINE 1: IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'employ...
+        ^
+psql:/tmp/tmp.VKGK1NhGGv:23: ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+psql:/tmp/tmp.VKGK1NhGGv:26: ERROR:  syntax error at or near "IF"
+LINE 1: IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'week_d...
+        ^
+psql:/tmp/tmp.VKGK1NhGGv:27: ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+psql:/tmp/tmp.VKGK1NhGGv:30: ERROR:  syntax error at or near "IF"
+LINE 1: IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'vacati...
+        ^
+psql:/tmp/tmp.VKGK1NhGGv:31: ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+psql:/tmp/tmp.VKGK1NhGGv:34: ERROR:  syntax error at or near "IF"
+LINE 1: IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'checkp...
+        ^
+psql:/tmp/tmp.VKGK1NhGGv:35: ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+psql:/tmp/tmp.VKGK1NhGGv:38: ERROR:  syntax error at or near "IF"
+LINE 1: IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'checkp...
+        ^
+psql:/tmp/tmp.VKGK1NhGGv:39: ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+psql:/tmp/tmp.VKGK1NhGGv:42: ERROR:  syntax error at or near "IF"
+LINE 1: IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'task_p...
+        ^
+psql:/tmp/tmp.VKGK1NhGGv:43: ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+psql:/tmp/tmp.VKGK1NhGGv:46: ERROR:  syntax error at or near "IF"
+LINE 1: IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'task_f...
+        ^
+psql:/tmp/tmp.VKGK1NhGGv:47: ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+psql:/tmp/tmp.VKGK1NhGGv:50: ERROR:  syntax error at or near "IF"
+LINE 1: IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'task_s...
+        ^
+psql:/tmp/tmp.VKGK1NhGGv:51: ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+psql:/tmp/tmp.VKGK1NhGGv:52: error: invalid command \$
+psql:/tmp/tmp.VKGK1NhGGv:61: ERROR:  syntax error at or near "SET"
+LINE 7: SET statement_timeout = 0;
+        ^
+psql:/tmp/tmp.VKGK1NhGGv:62: ERROR:  current transaction is aborted, commands ignored until end of transacti
+on block
+psql:/tmp/tmp.VKGK1NhGGv:63: ERROR:  current transaction is aborted, commands ignored until end of transacti
+on block
+psql:/tmp/tmp.VKGK1NhGGv:64: ERROR:  current transaction is aborted, commands ignored until end of transacti
+on block
+psql:/tmp/tmp.VKGK1NhGGv:65: ERROR:  current transaction is aborted, commands ignored until end of transacti
+on block
+psql:/tmp/tmp.VKGK1NhGGv:66: ERROR:  current transaction is aborted, commands ignored until end of transacti
+on block
+psql:/tmp/tmp.VKGK1NhGGv:67: ERROR:  current transaction is aborted, commands ignored until end of transacti
+on block
+psql:/tmp/tmp.VKGK1NhGGv:68: ERROR:  current transaction is aborted, commands ignored until end of transacti
+on block
+psql:/tmp/tmp.VKGK1NhGGv:69: ERROR:  current transaction is aborted, commands ignored until end of transacti
+on block
+psql:/tmp/tmp.VKGK1NhGGv:70: ERROR:  current transaction is aborted, commands ignored until end of transacti
+on block
+psql:/tmp/tmp.VKGK1NhGGv:83: ERROR:  current transaction is aborted, commands ignored until end of transacti
+on block
+psql:/tmp/tmp.VKGK1NhGGv:94: ERROR:  current transaction is aborted, commands ignored until end of transacti
+on block
+psql:/tmp/tmp.VKGK1NhGGv:108: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:119: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:132: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:145: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:158: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:171: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:184: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:196: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:207: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:218: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:231: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:243: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:255: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:266: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:277: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:287: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:297: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:312: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:327: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:330: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:332: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:344: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:357: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:364: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:381: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:394: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:401: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:420: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:433: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:440: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:462: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:475: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:482: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:505: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:518: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:525: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:548: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:561: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:568: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:584: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:597: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:604: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:626: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:639: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:646: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:663: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:676: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:683: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:698: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:711: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:718: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:732: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:745: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:752: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:768: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:781: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:788: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:806: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:819: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:826: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:857: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:870: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:877: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:915: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:928: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:935: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:953: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:966: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:973: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:993: ERROR:  current transaction is aborted, commands ignored until end of transact
+ion block
+psql:/tmp/tmp.VKGK1NhGGv:1006: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1013: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1027: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1040: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1047: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1061: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1074: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1081: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1097: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1110: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1117: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1130: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1143: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1150: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1165: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1178: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1185: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1201: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1214: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1221: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1237: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1250: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1257: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1268: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1281: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1288: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1309: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1322: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1329: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1339: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1357: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1370: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1377: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1384: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1391: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1398: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1405: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1412: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1419: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1426: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1433: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1440: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1447: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1454: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1461: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1468: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1475: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1482: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1489: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1496: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1503: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1510: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1517: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1524: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1531: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1538: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1545: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1552: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1559: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1566: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1574: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1582: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1590: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1598: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1606: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1614: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1622: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1630: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1638: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1646: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1654: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1662: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1670: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1678: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1686: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1694: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1702: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1710: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1718: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1726: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1734: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1742: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1750: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1758: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1766: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1774: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1782: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1790: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1798: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1806: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1814: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1822: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1830: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1838: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1846: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1854: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1861: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1868: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1875: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1882: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1889: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1896: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1903: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1910: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1917: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1924: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1931: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1938: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1946: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1954: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1962: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1970: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1978: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1986: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:1994: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2002: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2010: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2018: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2026: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2034: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2042: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2050: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2058: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2066: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2074: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2082: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2090: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2098: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2106: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2114: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2122: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2130: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2138: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2146: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2154: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2162: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2170: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2178: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2186: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2194: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2202: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2210: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2218: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2226: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2234: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2242: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:2253: ERROR:  current transaction is aborted, commands ignored until end of transac
+tion block
+psql:/tmp/tmp.VKGK1NhGGv:5704: ERROR:  syntax error at or near "1"
+LINE 1: 1 admin admin@example.com scrypt:32768:8:1$iqZQqUfLcn3F3OGT$...
+        ^
+¡Backup restaurado exitosamente!
+Actualizando secuencias...
+Password for user productiva: 
+Restauración completada exitosamente.
+=================== ESTADÍSTICAS ===================
+Password for user productiva: 
+Tablas restauradas: 0
+Información de registros por tabla:

@@ -42,9 +42,78 @@ TEMP_SQL=$(mktemp)
 
 echo "Exportando estructura y datos de la base de datos..."
 
-# Generar dump SQL pero convirtiendo los tipos enumerados a VARCHAR para mayor compatibilidad
+# Generar encabezado para el SQL
+cat > "$TEMP_SQL" << 'EOL'
+-- Script SQL generado mediante pg_dump con mejoras para compatibilidad
+
+BEGIN;
+
+-- Creación de tipos enumerados necesarios
+CREATE OR REPLACE FUNCTION create_types_if_not_exist() RETURNS void AS $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
+        CREATE TYPE user_role AS ENUM ('admin', 'gerente', 'empleado');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'contract_type') THEN
+        CREATE TYPE contract_type AS ENUM ('INDEFINIDO', 'TEMPORAL', 'PRACTICAS', 'FORMACION', 'OBRA');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'employee_status') THEN
+        CREATE TYPE employee_status AS ENUM ('activo', 'baja_medica', 'excedencia', 'vacaciones', 'inactivo');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'week_day') THEN
+        CREATE TYPE week_day AS ENUM ('lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'vacation_status') THEN
+        CREATE TYPE vacation_status AS ENUM ('REGISTRADA', 'DISFRUTADA');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'checkpoint_status') THEN
+        CREATE TYPE checkpoint_status AS ENUM ('active', 'disabled', 'maintenance');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'checkpoint_incident_type') THEN
+        CREATE TYPE checkpoint_incident_type AS ENUM ('missed_checkout', 'late_checkin', 'early_checkout', 'overtime', 'manual_adjustment', 'contract_hours_adjustment');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'task_priority') THEN
+        CREATE TYPE task_priority AS ENUM ('alta', 'media', 'baja');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'task_frequency') THEN
+        CREATE TYPE task_frequency AS ENUM ('diaria', 'semanal', 'mensual', 'unica');
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'task_status') THEN
+        CREATE TYPE task_status AS ENUM ('pendiente', 'completada', 'cancelada');
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Ejecutar la función
+SELECT create_types_if_not_exist();
+
+-- Eliminar la función temporal
+DROP FUNCTION IF EXISTS create_types_if_not_exist();
+
+EOL
+
+# Añadir información de fecha y origen justo después
+cat >> "$TEMP_SQL" << EOL
+-- Fecha: $(date '+%Y-%m-%d %H:%M:%S')
+-- Base de datos origen: $DB_NAME
+-- Servidor origen: $DB_HOST:$DB_PORT
+
+EOL
+
+# Generar dump de la estructura de la base de datos (sin los tipos enumerados que ya se definieron arriba)
 pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" --no-owner --no-acl --schema-only "$DB_NAME" | \
-  sed 's/USER-DEFINED/VARCHAR(100)/g' > "$TEMP_SQL"
+  grep -v "CREATE TYPE" | \
+  grep -v "ALTER TYPE" | \
+  sed 's/USER-DEFINED/VARCHAR(100)/g' >> "$TEMP_SQL"
 
 # Agregar datos de las tablas en orden específico para respetar dependencias
 TABLES=(
@@ -197,7 +266,7 @@ extract_sql() {
 
 # Función para restaurar el backup
 restore_backup() {
-    DB_NAME="productivax"
+    DB_NAME="productiva"
     DB_HOST="localhost"
     DB_PORT="5432"
     DB_USER="productiva"
@@ -406,7 +475,7 @@ __SQL_DUMP_BELOW__
 BEGIN;
 
 -- Creación de tipos enumerados necesarios
-DO \$\$
+CREATE OR REPLACE FUNCTION create_types_if_not_exist() RETURNS void AS $create_types$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'user_role') THEN
         CREATE TYPE user_role AS ENUM ('admin', 'gerente', 'empleado');
@@ -447,7 +516,14 @@ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'task_status') THEN
         CREATE TYPE task_status AS ENUM ('pendiente', 'completada', 'cancelada');
     END IF;
-END \$\$;
+END;
+$create_types$ LANGUAGE plpgsql;
+
+-- Ejecutar la función
+SELECT create_types_if_not_exist();
+
+-- Eliminar la función temporal
+DROP FUNCTION IF EXISTS create_types_if_not_exist();
 
 HEADER
 

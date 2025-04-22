@@ -125,12 +125,30 @@ cat > "$BACKUP_FILE" << 'HEADER'
 #   --user USER   Usuario PostgreSQL (predeterminado: postgres)
 #   --no-data     Omitir los datos, restaurar solo la estructura
 #   --no-privs    Omitir los privilegios de usuarios
-#   --force       Sobrescribir la base de datos si ya existe
-#   --update      Modo de actualización: solo insertar registros nuevos y actualizar existentes
-#   --merge       Modo avanzado de fusión: conservar datos locales y solo agregar nuevos
-#   --compare     Solo mostrar diferencias entre backup y base de datos sin aplicar cambios
+#   --force       Sobrescribir la base de datos si ya existe (recomendado para actualizaciones)
 #   --help        Mostrar esta ayuda
-# ============================================================================
+# Cuando quieras actualizar la base de datos de desarrollo con #nuevos datos de producción:
+./backup_produccion_fecha.sh --restore --db nombre_bd_dev --force
+============================================================================
+#Cuando quieras actualizar la base de datos de desarrollo con nuevos #datos de producción:
+#./backup_produccion_fecha.sh --restore --db nombre_bd_dev --force
+#Esta aproximación:
+
+#Es más confiable (evita problemas de sincronización parcial)
+#Es más rápida de implementar
+#Evita inconsistencias en los datos
+#Garantiza que la base de datos de desarrollo sea una copia exacta #de producción
+#Para tu caso específico, cuando necesites actualizar una base de #datos DEV que ya tiene el 99% de los datos de ayer con nuevos datos #de producción, simplemente usarías:
+
+#./productiva_backup_executable_YYYYMMDD.sh --restore --db nombre_base_dev --force
+#El parámetro --force hará que se elimine la base de datos existente y se cree una nueva con los datos actualizados, garantizando que tengas una copia exacta de producción.
+
+#¿Te gustaría que mejore algo más en el script o está bien así?
+#
+#Claro, entiendo. Tienes razón que a veces la opción más simple es #simplemente borr#ar y volver a insertar todo, especialmente #considerando que# las opciones de actualización incremental pueden #ser muy compleja#s de implementar correctamente y podrían causar #inconsistencias.#
+#
+#Vamos a mantener la funcionalidad actual que tienes con --force que #elimina la base de datos existente y crea una nueva. Esta es #realmente la forma más segura y fiable de hacerlo:
+#=====================================================================#=======
 
 # Colores para los mensajes
 RED='\033[0;31m'
@@ -179,10 +197,10 @@ extract_sql() {
 
 # Función para restaurar el backup
 restore_backup() {
-    DB_NAME="productiva"
+    DB_NAME="productivax"
     DB_HOST="localhost"
     DB_PORT="5432"
-    DB_USER="postgres"
+    DB_USER="productiva"
     SKIP_DATA=0
     SKIP_PRIVS=0
     FORCE=0
@@ -226,10 +244,29 @@ restore_backup() {
     if psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -lqt | grep -w "$DB_NAME" &> /dev/null; then
         if [ $FORCE -eq 1 ]; then
             echo -e "${YELLOW}La base de datos '$DB_NAME' ya existe. Se eliminará...${NC}"
+
+            # Intentar cerrar conexiones activas antes de eliminar la base de datos
+            echo -e "Cerrando conexiones activas a la base de datos '$DB_NAME'..."
+            psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -c "
+                SELECT pg_terminate_backend(pg_stat_activity.pid) 
+                FROM pg_stat_activity 
+                WHERE pg_stat_activity.datname = '$DB_NAME'
+                AND pid <> pg_backend_pid();" postgres &> /dev/null
+            
+            # Esperar un momento para que las conexiones se cierren
+            sleep 2
+
+            # Intentar eliminar la base de datos
             if ! psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -c "DROP DATABASE IF EXISTS \"$DB_NAME\";" postgres; then
-                echo -e "${RED}Error al eliminar la base de datos existente${NC}"
+                echo -e "${RED}Error al eliminar la base de datos existente.${NC}"
+                echo -e "${YELLOW}La base de datos puede estar en uso por otras aplicaciones.${NC}"
+                echo -e "Sugerencias:"
+                echo -e " 1. Detenga todas las aplicaciones que estén usando la base de datos"
+                echo -e " 2. Intente nuevamente el comando de restauración"
+                echo -e " 3. Si el problema persiste, puede crear una base de datos con otro nombre"
                 exit 1
             fi
+            echo -e "${GREEN}Base de datos eliminada exitosamente.${NC}"
         else
             echo -e "${RED}Error: La base de datos '$DB_NAME' ya existe.${NC}"
             echo "Use --force para sobrescribirla o elija otro nombre con --db"

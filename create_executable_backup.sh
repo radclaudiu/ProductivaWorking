@@ -207,6 +207,15 @@ END;
 $$;
 EOL
 
+# Configuración para la conexión sin pedir contraseña varias veces
+# Crear archivo .pgpass temporal (se elimina al final)
+PGPASS_FILE="$HOME/.pgpass.temp"
+echo "$DB_HOST:$DB_PORT:$DB_NAME:$DB_USER:$DB_PASSWORD" > "$PGPASS_FILE"
+chmod 600 "$PGPASS_FILE"
+
+# Variable de entorno PGPASSFILE para usar nuestro archivo temporal
+export PGPASSFILE="$PGPASS_FILE"
+
 # Generar estructura de tablas (sin los tipos enumerados que ya se definieron arriba)
 echo "-- Generando estructura de tablas" >> "$PROCESSED_SQL"
 pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" --no-owner --no-acl --schema-only "$DB_NAME" | \
@@ -216,39 +225,40 @@ pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" --no-owner --no-acl --schema-o
   grep -v "^SET " | \
   grep -v "SELECT pg_catalog" >> "$PROCESSED_SQL"
 
-# Procesar cada tabla en el orden específico
+# Exportar las tablas de un modo más fiable
+echo " - Exportando datos de todas las tablas..."
+
+# Función para exportar tabla con formato COPY
+export_table_to_sql() {
+  local TABLE=$1
+  local OUTPUT_FILE=$2
+  
+  echo " - Exportando tabla $TABLE"
+  
+  # Añadir un encabezado para esta tabla
+  echo "-- Datos para tabla $TABLE" >> "$OUTPUT_FILE"
+  
+  # Usar pg_dump con formato COPY
+  pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" --no-owner --no-acl --data-only --table="$TABLE" "$DB_NAME" --format=plain >> "$OUTPUT_FILE"
+  
+  # Añadir un separador
+  echo "" >> "$OUTPUT_FILE"
+}
+
+# Primero las tablas en orden específico
 for TABLE in ${TABLES[@]}; do
-  echo " - Exportando y procesando datos de tabla $TABLE"
-  
-  # Usar COPY en lugar de INSERT para mayor compatibilidad
-  echo "-- Datos para tabla $TABLE" >> "$PROCESSED_SQL"
-  echo "COPY $TABLE FROM stdin;" >> "$PROCESSED_SQL"
-  
-  # Obtener los datos usando COPY formato texto
-  PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "COPY $TABLE TO STDOUT;" >> "$PROCESSED_SQL" || true
-  
-  # Finalizar COPY
-  echo "\." >> "$PROCESSED_SQL"
-  echo "" >> "$PROCESSED_SQL"
+  export_table_to_sql "$TABLE" "$PROCESSED_SQL" 
 done
 
-# Buscar tablas adicionales que no estén en nuestra lista
+# Ahora las tablas adicionales
 for TABLE in $ALL_TABLES; do
   if [[ ! " ${TABLES[@]} " =~ " $TABLE " ]]; then
-    echo " - Exportando y procesando datos de tabla adicional $TABLE"
-    
-    # Usar COPY en lugar de INSERT para mayor compatibilidad
-    echo "-- Datos para tabla $TABLE" >> "$PROCESSED_SQL"
-    echo "COPY $TABLE FROM stdin;" >> "$PROCESSED_SQL"
-    
-    # Obtener los datos usando COPY formato texto
-    PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "COPY $TABLE TO STDOUT;" >> "$PROCESSED_SQL" || true
-    
-    # Finalizar COPY incluso si no hay datos
-    echo "\." >> "$PROCESSED_SQL"
-    echo "" >> "$PROCESSED_SQL"
+    export_table_to_sql "$TABLE" "$PROCESSED_SQL"
   fi
 done
+
+# Eliminar el archivo .pgpass temporal
+rm -f "$PGPASS_FILE"
 
 # Agregar secuencias
 echo "-- Actualizar secuencias" >> "$PROCESSED_SQL"
@@ -420,10 +430,33 @@ restore_backup() {
         exit 1
     fi
     
+    # Crear archivo .pgpass temporal para restauración (se elimina al final)
+    PGPASS_FILE="$HOME/.pgpass.temp"
+    if [ -f "$PGPASS_FILE" ]; then
+        mv "$PGPASS_FILE" "${PGPASS_FILE}.bak"
+    fi
+    
+    # Preguntar contraseña una sola vez
+    read -s -p "Ingrese la contraseña para el usuario $DB_USER: " DB_PASSWORD
+    echo ""
+    
+    # Crear archivo pgpass para evitar preguntar la contraseña múltiples veces
+    echo "$DB_HOST:$DB_PORT:postgres:$DB_USER:$DB_PASSWORD" > "$PGPASS_FILE"
+    echo "$DB_HOST:$DB_PORT:$DB_NAME:$DB_USER:$DB_PASSWORD" >> "$PGPASS_FILE"
+    chmod 600 "$PGPASS_FILE"
+    
+    # Usar PGPASSFILE para evitar preguntar contraseña
+    export PGPASSFILE="$PGPASS_FILE"
+    
     # Verificar si se puede conectar al servidor
     if ! psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -c "SELECT 1" postgres &> /dev/null; then
         echo -e "${RED}Error al conectar con el servidor PostgreSQL${NC}"
         echo "Verifique los parámetros de conexión y que el servidor esté en ejecución"
+        # Limpiar archivos temporales
+        rm -f "$PGPASS_FILE"
+        if [ -f "${PGPASS_FILE}.bak" ]; then
+            mv "${PGPASS_FILE}.bak" "$PGPASS_FILE"
+        fi
         exit 1
     fi
     
@@ -527,6 +560,10 @@ restore_backup() {
     
     # Limpiar archivos temporales
     rm -f "$temp_sql"
+    rm -f "$PGPASS_FILE"
+    if [ -f "${PGPASS_FILE}.bak" ]; then
+        mv "${PGPASS_FILE}.bak" "$PGPASS_FILE"
+    fi
     
     echo -e "${GREEN}Restauración completada exitosamente.${NC}"
     echo -e "${BLUE}=================== ESTADÍSTICAS ===================${NC}"

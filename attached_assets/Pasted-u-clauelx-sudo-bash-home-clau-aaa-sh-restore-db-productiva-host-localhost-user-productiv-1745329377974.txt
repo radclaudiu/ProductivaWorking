@@ -1,0 +1,327 @@
+u@clauelx:~$ sudo bash /home/clau/aaa.sh --restore --db productiva --host localhost --user productiva --force
+/home/clau/aaa.sh: line 29: ./backup_produccion_fecha.sh: No such file or directory
+/home/clau/aaa.sh: line 30: ============================================================================: command not found
+================== RESTAURACIÓN ====================
+Base de datos destino: productiva
+Servidor destino: localhost:5432
+Usuario: productiva
+
+Password for user productiva: 
+Password for user productiva: 
+La base de datos 'productiva' ya existe. Se eliminará...
+Cerrando conexiones activas a la base de datos 'productiva'...
+Password for user productiva: 
+Password for user productiva: 
+DROP DATABASE
+Base de datos eliminada exitosamente.
+Creando base de datos 'productiva'...
+Password for user productiva: 
+CREATE DATABASE
+Restaurando backup a 'productiva'...
+Password for user productiva: 
+BEGIN
+CREATE FUNCTION
+ create_types_if_not_exist 
+---------------------------
+ 
+(1 row)
+
+DROP FUNCTION
+psql:/tmp/tmp.ZYR6QZH8cg:63: WARNING:  there is already a transaction in progress
+BEGIN
+CREATE FUNCTION
+ create_types_if_not_exist 
+---------------------------
+ 
+(1 row)
+
+DROP FUNCTION
+SET
+SET
+SET
+SET
+SET
+ set_config 
+------------
+ 
+(1 row)
+
+SET
+SET
+SET
+SET
+psql:/tmp/tmp.ZYR6QZH8cg:148: ERROR:  syntax error at or near "'missed_checkout'"
+LINE 1: 'missed_checkout',
+        ^
+psql:/tmp/tmp.ZYR6QZH8cg:158: ERROR:  syntax error at or near "'active'"
+LINE 1: 'active',
+        ^
+psql:/tmp/tmp.ZYR6QZH8cg:171: ERROR:  syntax error at or near "'MISSED_CHECKOUT'"
+LINE 1: 'MISSED_CHECKOUT',
+        ^
+psql:/tmp/tmp.ZYR6QZH8cg:181: ERROR:  syntax error at or near "'ACTIVE'"
+LINE 1: 'ACTIVE',
+        ^
+psql:/tmp/tmp.ZYR6QZH8cg:193: ERROR:  syntax error at or near "'DESCONGELACION'"
+LINE 1: 'DESCONGELACION',
+        ^
+psql:/tmp/tmp.ZYR6QZH8cg:205: ERROR:  syntax error at or near "'INDEFINIDO'"
+LINE 1: 'INDEFINIDO',
+        ^
+psql:/tmp/tmp.ZYR6QZH8cg:217: ERROR:  syntax error at or near "'INDEFINIDO'"
+LINE 1: 'INDEFINIDO',
+        ^
+psql:/tmp/tmp.ZYR6QZH8cg:229: ERROR:  syntax error at or near "'activo'"
+LINE 1: 'activo',
+        ^
+psql:/tmp/tmp.ZYR6QZH8cg:241: ERROR:  syntax error at or near "'ACTIVO'"
+LINE 1: 'ACTIVO',
+        ^
+psql:/tmp/tmp.ZYR6QZH8cg:252: ERROR:  syntax error at or near "'diaria'"
+LINE 1: 'diaria',
+        ^
+psql:/tmp/tmp.ZYR6QZH8cg:262: ERROR:  syntax error at or near "'alta'"
+LINE 1: 'alta',
+        ^
+psql:/tmp/tmp.ZYR6QZH8cg:272: ERROR:  syntax error at or near "'pendiente'"
+LINE 1: 'pendiente',
+        ^
+psql:/tmp/tmp.ZYR6QZH8cg:284: ERROR:  syntax error at or near "'DIARIA'"
+LINE 1: 'DIARIA',
+        ^
+psql:/tmp/tmp.ZYR6QZH8cg:295: ERROR:  syntax error at or near "'BAJA'"
+LINE 1: 'BAJA',
+        ^
+psql:/tmp/tmp.ZYR6QZH8cg:306: ERROR:  syntax error at or near "'PENDIENTE'"
+LINE 1: 'PENDIENTE',
+        ^
+psql:/tmp/tmp.ZYR6QZH8cg:316: ERROR:  syntax error at or near "'admin'"
+LINE 1: 'admin',
+        ^
+psql:/tmp/tmp.ZYR6QZH8cg:326: ERROR:  syntax error at or near "'ADMIN'"
+LINE 1: 'ADMIN',
+        ^
+psql:/tmp/tmp.ZYR6QZH8cg:335: ERROR:  syntax error at or near "'REGISTRADA'"
+LINE 1: 'REGISTRADA',
+        ^
+psql:/tmp/tmp.ZYR6QZH8cg:344: ERROR:  syntax error at or near "'REGISTRADA'"
+LINE 1: 'REGISTRADA',
+        ^
+psql:/tmp/tmp.ZYR6QZH8cg:358: ERROR:  syntax error at or near "'lunes'"
+LINE 1: 'lunes',
+        ^
+psql:/tmp/tmp.ZYR6QZH8cg:372: ERROR:  syntax error at or near "'LUNES'"
+LINE 1: 'LUNES',
+        ^
+psql:/tmp/tmp.ZYR6QZH8cg:375: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:377: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:389: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:402: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:409: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:426: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:439: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:446: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:465: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:478: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:485: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:507: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:520: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:527: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:550: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:563: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:570: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:593: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:606: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:613: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:629: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:642: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:649: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:671: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:684: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:691: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:708: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:721: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:728: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:743: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:756: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:763: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:777: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:790: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:797: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:813: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:826: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:833: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:851: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:864: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:871: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:902: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:915: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:922: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:960: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:973: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:980: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:998: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1011: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1018: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1038: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1051: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1058: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1072: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1085: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1092: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1106: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1119: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1126: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1142: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1155: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1162: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1175: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1188: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1195: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1210: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1223: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1230: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1246: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1259: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1266: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1282: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1295: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1302: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1313: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1326: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1333: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1354: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1367: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1374: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1384: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1402: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1415: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1422: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1429: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1436: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1443: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1450: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1457: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1464: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1471: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1478: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1485: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1492: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1499: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1506: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1513: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1520: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1527: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1534: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1541: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1548: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1555: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1562: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1569: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1576: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1583: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1590: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1597: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1604: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1611: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1619: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1627: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1635: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1643: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1651: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1659: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1667: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1675: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1683: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1691: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1699: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1707: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1715: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1723: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1731: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1739: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1747: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1755: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1763: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1771: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1779: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1787: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1795: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1803: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1811: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1819: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1827: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1835: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1843: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1851: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1859: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1867: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1875: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1883: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1891: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1899: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1906: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1913: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1920: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1927: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1934: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1941: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1948: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1955: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1962: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1969: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1976: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1983: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1991: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:1999: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2007: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2015: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2023: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2031: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2039: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2047: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2055: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2063: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2071: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2079: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2087: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2095: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2103: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2111: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2119: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2127: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2135: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2143: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2151: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2159: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2167: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2175: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2183: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2191: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2199: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2207: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2215: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2223: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2231: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2239: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2247: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2255: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2263: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2271: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2279: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2287: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:2298: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.ZYR6QZH8cg:5753: ERROR:  syntax error at or near "1"
+LINE 1: 1 admin admin@example.com scrypt:32768:8:1$iqZQqUfLcn3F3OGT$...
+        ^
+¡Backup restaurado exitosamente!
+Actualizando secuencias...
+Password for user productiva: 
+Restauración completada exitosamente.
+=================== ESTADÍSTICAS ===================
+Password for user productiva: 
+Tablas restauradas: 0
+Información de registros por tabla:
+Password for user productiva: 
+ERROR:  relation ""||tablename||"" does not exist
+LINE 4:             (SELECT count(*) FROM ONLY """||tablename||""") ...

@@ -152,20 +152,64 @@ echo "Exportando datos de las tablas en orden controlado..."
 # Obtener lista de todas las tablas para procesar las que no están en la lista explícita
 ALL_TABLES=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -t -c "SELECT tablename FROM pg_tables WHERE schemaname='public'" | tr -d ' ')
 
+# Función para corregir los INSERT de tipos enumerados
+fix_enum_inserts() {
+  local input_file="$1"
+  local output_file="${input_file}.fixed"
+  
+  # Crear un archivo temporal para las transformaciones
+  cat "$input_file" | sed -E 's/VALUES \(([^)]*)\);/VALUES (\1);/g' > "$output_file"
+  
+  # Mover el archivo fijo al original
+  mv "$output_file" "$input_file"
+}
+
+# Archivo temporal para los datos
+DATA_TEMP=$(mktemp)
+
 for TABLE in ${TABLES[@]}; do
   echo " - Exportando datos de tabla $TABLE"
+  
+  # Exportar a un archivo temporal primero
   pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" --no-owner --no-acl --data-only --table="$TABLE" "$DB_NAME" | \
-    grep -v "^--" | grep -v "^SET " | grep -v "^SELECT " >> "$TEMP_SQL"
+    grep -v "^--" | grep -v "^SET " | grep -v "^SELECT " > "$DATA_TEMP"
+  
+  # Corregir problemas con los tipos enumerados
+  fix_enum_inserts "$DATA_TEMP"
+  
+  # Convertir los valores de enum en cadenas literales para evitar problemas de sintaxis
+  sed -i -E "s/'([^']+)'::([a-z_]+)/'\\1'/g" "$DATA_TEMP"
+  
+  # Corregir formato de VALUES para INSERT de tipos enumerados
+  sed -i -E 's/\(([^)]*)\) VALUES \('\''/(\1) VALUES (/g' "$DATA_TEMP"
+  sed -i -E 's/'\''\);/);/g' "$DATA_TEMP"
+  
+  # Añadir al SQL principal
+  cat "$DATA_TEMP" >> "$TEMP_SQL"
 done
 
 # Buscar si hay tablas adicionales que no estén en nuestra lista y exportarlas al final
 for TABLE in $ALL_TABLES; do
   if [[ ! " ${TABLES[@]} " =~ " $TABLE " ]]; then
     echo " - Exportando datos de tabla adicional $TABLE"
+    
+    # Exportar a un archivo temporal primero
     pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" --no-owner --no-acl --data-only --table="$TABLE" "$DB_NAME" | \
-      grep -v "^--" | grep -v "^SET " | grep -v "^SELECT " >> "$TEMP_SQL"
+      grep -v "^--" | grep -v "^SET " | grep -v "^SELECT " > "$DATA_TEMP"
+    
+    # Corregir problemas con los tipos enumerados
+    fix_enum_inserts "$DATA_TEMP"
+    
+    # Convertir los valores de enum en cadenas literales para evitar problemas de sintaxis
+    sed -i -E "s/'([^']+)'::([a-z_]+)/'\\1'/g" "$DATA_TEMP"
+    
+    # Añadir al SQL principal
+    cat "$DATA_TEMP" >> "$TEMP_SQL"
   fi
 done
+
+# Limpiar archivo temporal
+rm -f "$DATA_TEMP"
 
 # Crear el script ejecutable
 cat > "$BACKUP_FILE" << 'HEADER'

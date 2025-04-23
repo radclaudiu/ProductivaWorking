@@ -1,0 +1,309 @@
+clau@clauelx:~$ sudo bash /home/clau/pbb.sh --restore --db productiva --host localhost --user productiva --force
+/home/clau/pbb.sh: line 29: ./backup_produccion_fecha.sh: No such file or directory
+/home/clau/pbb.sh: line 30: ============================================================================: command not found
+================== RESTAURACIÓN ====================
+Base de datos destino: productiva
+Servidor destino: localhost:5432
+Usuario: productiva
+
+Ingrese la contraseña para el usuario productiva:
+La base de datos 'productiva' ya existe. Se eliminará...
+Cerrando conexiones activas a la base de datos 'productiva'...
+DROP DATABASE
+Base de datos eliminada exitosamente.
+Creando base de datos 'productiva'...
+CREATE DATABASE
+Restaurando backup a 'productiva'...
+BEGIN
+CREATE FUNCTION
+ create_types_if_not_exist
+---------------------------
+
+(1 row)
+
+DROP FUNCTION
+DO
+psql:/tmp/tmp.epo2dCMxy5:119: ERROR:  syntax error at or near "'missed_checkout'"
+LINE 1: 'missed_checkout',
+        ^
+psql:/tmp/tmp.epo2dCMxy5:126: ERROR:  syntax error at or near "'active'"
+LINE 1: 'active',
+        ^
+psql:/tmp/tmp.epo2dCMxy5:136: ERROR:  syntax error at or near "'MISSED_CHECKOUT'"
+LINE 1: 'MISSED_CHECKOUT',
+        ^
+psql:/tmp/tmp.epo2dCMxy5:143: ERROR:  syntax error at or near "'ACTIVE'"
+LINE 1: 'ACTIVE',
+        ^
+psql:/tmp/tmp.epo2dCMxy5:152: ERROR:  syntax error at or near "'DESCONGELACION'"
+LINE 1: 'DESCONGELACION',
+        ^
+psql:/tmp/tmp.epo2dCMxy5:161: ERROR:  syntax error at or near "'INDEFINIDO'"
+LINE 1: 'INDEFINIDO',
+        ^
+psql:/tmp/tmp.epo2dCMxy5:170: ERROR:  syntax error at or near "'INDEFINIDO'"
+LINE 1: 'INDEFINIDO',
+        ^
+psql:/tmp/tmp.epo2dCMxy5:179: ERROR:  syntax error at or near "'activo'"
+LINE 1: 'activo',
+        ^
+psql:/tmp/tmp.epo2dCMxy5:188: ERROR:  syntax error at or near "'ACTIVO'"
+LINE 1: 'ACTIVO',
+        ^
+psql:/tmp/tmp.epo2dCMxy5:196: ERROR:  syntax error at or near "'diaria'"
+LINE 1: 'diaria',
+        ^
+psql:/tmp/tmp.epo2dCMxy5:203: ERROR:  syntax error at or near "'alta'"
+LINE 1: 'alta',
+        ^
+psql:/tmp/tmp.epo2dCMxy5:210: ERROR:  syntax error at or near "'pendiente'"
+LINE 1: 'pendiente',
+        ^
+psql:/tmp/tmp.epo2dCMxy5:219: ERROR:  syntax error at or near "'DIARIA'"
+LINE 1: 'DIARIA',
+        ^
+psql:/tmp/tmp.epo2dCMxy5:227: ERROR:  syntax error at or near "'BAJA'"
+LINE 1: 'BAJA',
+        ^
+psql:/tmp/tmp.epo2dCMxy5:235: ERROR:  syntax error at or near "'PENDIENTE'"
+LINE 1: 'PENDIENTE',
+        ^
+psql:/tmp/tmp.epo2dCMxy5:242: ERROR:  syntax error at or near "'admin'"
+LINE 1: 'admin',
+        ^
+psql:/tmp/tmp.epo2dCMxy5:249: ERROR:  syntax error at or near "'ADMIN'"
+LINE 1: 'ADMIN',
+        ^
+psql:/tmp/tmp.epo2dCMxy5:255: ERROR:  syntax error at or near "'REGISTRADA'"
+LINE 1: 'REGISTRADA',
+        ^
+psql:/tmp/tmp.epo2dCMxy5:261: ERROR:  syntax error at or near "'REGISTRADA'"
+LINE 1: 'REGISTRADA',
+        ^
+psql:/tmp/tmp.epo2dCMxy5:272: ERROR:  syntax error at or near "'lunes'"
+LINE 1: 'lunes',
+        ^
+psql:/tmp/tmp.epo2dCMxy5:283: ERROR:  syntax error at or near "'LUNES'"
+LINE 1: 'LUNES',
+        ^
+psql:/tmp/tmp.epo2dCMxy5:295: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:305: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:309: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:323: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:333: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:337: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:353: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:363: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:367: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:386: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:396: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:400: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:420: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:430: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:434: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:454: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:464: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:468: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:481: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:491: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:495: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:514: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:524: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:528: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:542: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:552: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:556: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:568: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:578: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:582: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:593: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:603: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:607: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:620: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:630: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:634: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:649: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:659: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:663: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:691: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:701: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:705: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:740: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:750: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:754: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:769: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:779: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:783: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:800: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:810: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:814: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:825: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:835: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:839: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:850: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:860: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:864: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:877: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:887: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:891: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:901: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:911: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:915: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:927: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:937: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:941: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:954: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:964: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:968: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:981: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:991: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:995: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1003: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1013: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1017: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1035: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1045: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1049: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1056: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1071: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1081: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1085: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1089: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1093: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1097: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1101: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1105: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1109: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1113: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1117: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1121: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1125: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1129: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1133: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1137: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1141: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1145: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1149: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1153: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1157: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1161: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1165: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1169: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1173: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1177: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1181: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1185: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1189: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1193: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1198: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1203: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1208: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1213: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1218: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1223: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1228: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1233: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1238: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1243: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1248: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1253: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1258: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1263: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1268: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1273: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1278: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1283: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1288: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1293: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1298: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1303: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1308: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1313: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1318: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1323: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1328: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1333: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1338: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1343: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1348: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1353: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1358: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1363: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1368: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1373: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1377: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1381: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1385: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1389: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1393: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1397: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1401: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1405: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1409: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1413: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1417: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1421: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1426: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1431: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1436: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1441: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1446: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1451: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1456: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1461: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1466: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1471: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1476: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1481: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1486: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1491: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1496: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1501: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1506: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1511: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1516: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1521: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1526: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1531: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1536: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1541: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1546: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1551: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1556: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1561: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1566: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1571: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1576: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1581: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1586: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1591: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1596: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1601: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1606: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1611: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1623: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1624: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1625: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1626: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1627: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1628: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1629: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1630: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1631: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1632: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:1638: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+psql:/tmp/tmp.epo2dCMxy5:5882: ERROR:  syntax error at or near "1"
+LINE 1: 1 admin admin@example.com scrypt:32768:8:1$iqZQqUfLcn3F3OGT$...
+        ^
+¡Backup restaurado exitosamente!
+Actualizando secuencias...
+Restauración completada exitosamente.
+=================== ESTADÍSTICAS ===================
+Password for user productiva:
+Tablas restauradas: 0
+Información de registros por tabla:
+Password for user productiva:
+ERROR:  relation ""||tablename||"" does not exist
+LINE 4:             (SELECT count(*) FROM ONLY """||tablename||""") ...
+                                               ^
+clau@clauelx:~$

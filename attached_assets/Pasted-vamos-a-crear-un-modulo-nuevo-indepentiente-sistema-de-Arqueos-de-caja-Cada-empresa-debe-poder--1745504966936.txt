@@ -1,0 +1,27 @@
+vamos a crear un modulo nuevo indepentiente sistema de Arqueos de caja 
+
+
+- Cada empresa debe poder agregar su cierre de caja diario con un sistema simple agregar arqueo, agregar fecha del arqueo, total - y luego el desglose del total: efectivo, tarjeta, delivery efectivo, delivery online cheques. Tambien debe haber un apartado de gastos para poder controlar el efectivo final basicamente para saber a donde ha salido el efectivo. Esto seria la estructura principal, ahora al entrar a Arqueos debemos tener primero arriba un menu deplegable para 
+elegir la empresa con la que queremos trabajar por si tenemos acceso a varias empresas, 
+al entrar al dashboard 
+     debemos tener boton para ver los arqueos modificarlos o editarlos tipo tablas olumnas con sus datos, deben haber celdas donde se se vayan sumándooslos los arqueos semanales, mensuales y anuales. Básicamente cuando se agrega un arqueo nuevo el total debe sumarse al dela semana donde se agrega y asi sucesivamente en mes y año
+             
+           
+ debemos poder exportar  informes de coste de personal por mes y por año, en el dashboard principal, esto se apoyara en coste por hora que se le haya asignado al empleado por empresa se apoyará en 	1	Tabla en la Base de Datos: company_work_hours
+1. Estructura de la tabla:
+    * id: Identificador único de cada registro
+    * company_id: ID de la empresa
+    * year: Año del registro (ej: 2025)
+    * month: Mes del registro (1-12)
+    * week_number: Número de semana ISO (1-53)
+    * weekly_hours: Horas acumuladas para la semana
+    * monthly_hours: Horas acumuladas para el mes
+    * created_at: Fecha de creación del registro
+    * updated_at: Fecha de última actualización de aquí se sacarían toda la información del dashboard simplemente se sacara el coste de personal por semana y se emparejara con la facturación de la semana y saldrá el porcentaje de personal sobre la facturación 
+
+
+
+tambien tenemos que tener sistema de subida de arqueo facil,  este sistema debemos poder darle un enlace a un empleado donde el pueda agregar un arqueo, digamos que el al cerrar la caja debe entrar a ese enlace y poner importe total  primero y luego desglosado efectivo …visa...... gastos.... y darle a enviar y que eso se suba a los arqueos diarios, tambien debe tener un boton de confirmar viendo todo lo que ha puesto antes.  todo esto sin que tenga que estar registrado en la pagina que sea un envio de datos a la base de datos seguro 
+
+
+despues debe haber un dashboard en la pagina principal de arqueos con facturacion apoyandonos en el coste por hora del personal en cada empresa  y apoyandonos tambien company_work_hours, debemos tener estadisticas de cuanto nos esta costando en % los empleados cada mes en el dashboard simplemte  cogemos arqueos totales del mes y horas totales del mes en  y sacamos el porcentaje tambien media anual y mas estadisticas reales utiles ya que tenemos mucha información la aprovechamos para enseñar información a tiempo real ya que sabemos cuanto facturamos y cuanto cuesta por hora una persona y cuantos fichajes hay todo esto se apoyara de las tablas columnas donde ya salgan todas las horas y todo sumada para que tenga  un buen rendimiento

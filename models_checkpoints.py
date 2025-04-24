@@ -216,6 +216,8 @@ class CheckPointOriginalRecord(db.Model):
     # Horas originales
     original_check_in_time = db.Column(db.DateTime, nullable=False)
     original_check_out_time = db.Column(db.DateTime)
+    # Horas trabajadas calculadas en este fichaje
+    hours_worked = db.Column(db.Float, default=0.0, nullable=False)
     # Firma original si existía
     original_signature_data = db.Column(db.Text)
     original_has_signature = db.Column(db.Boolean, default=False)

@@ -20,6 +20,7 @@ from models_checkpoints import (
 )
 from models import Employee
 from timezone_config import get_current_time, datetime_to_madrid, TIMEZONE
+from utils_work_hours import update_employee_work_hours
 
 # Configurar logging
 logging.basicConfig(
@@ -201,7 +202,31 @@ def auto_close_pending_records():
                     # Comprobar si el empleado tiene configuración de horas por contrato
                     contract_hours = EmployeeContractHours.query.filter_by(employee_id=record.employee_id).first()
                     if contract_hours:
-                        # Verificar si se debe ajustar el horario según configuración
+                        # En lugar de calcular las horas reales trabajadas,
+                        # asignar directamente las horas diarias del contrato
+                        daily_contract_hours = contract_hours.daily_hours
+                        
+                        # Actualizar el registro original con las horas por contrato
+                        if existing_original:
+                            existing_original.hours_worked = daily_contract_hours
+                            print(f"  ✓ Asignadas {daily_contract_hours} horas contractuales al registro original ID {existing_original.id}")
+                        else:
+                            original_record.hours_worked = daily_contract_hours
+                            print(f"  ✓ Asignadas {daily_contract_hours} horas contractuales al registro original")
+                            
+                        # Actualizar las tablas de acumulados de horas trabajadas
+                        update_success = update_employee_work_hours(
+                            employee_id=record.employee_id,
+                            check_in_time=record.check_in_time,
+                            hours_worked=daily_contract_hours
+                        )
+                        
+                        if update_success:
+                            print(f"  ✓ Acumulados de horas actualizados con {daily_contract_hours} horas para empleado ID {record.employee_id}")
+                        else:
+                            print(f"  ✗ Error al actualizar acumulados de horas para empleado ID {record.employee_id}")
+                            
+                        # Mantener el ajuste de la hora de salida si es necesario
                         check_in_original = record.check_in_time
                         check_out_original = record.check_out_time
                         

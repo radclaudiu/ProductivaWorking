@@ -60,10 +60,7 @@ class CashRegister(db.Model):
     # Token que creó este arqueo (puede ser nulo si se creó manualmente)
     token_id = Column(Integer, ForeignKey('cash_register_tokens.id'))
     
-    # Restricción única: una empresa solo puede tener un arqueo por fecha
-    __table_args__ = (
-        UniqueConstraint('company_id', 'date', name='uq_company_date'),
-    )
+    # Eliminada la restricción única para permitir múltiples arqueos por día
     
     def __repr__(self):
         return f'<CashRegister {self.date} - {self.company.name if self.company else "Unknown"}>'

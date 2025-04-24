@@ -330,17 +330,7 @@ def new_register(company_id):
         try:
             logger.info(f"Iniciando creación de nuevo arqueo para empresa {company_id}")
             
-            # Verificar si ya existe un arqueo para esta fecha
-            existing_register = CashRegister.query.filter_by(
-                company_id=company_id,
-                date=form.date.data
-            ).first()
-            
-            if existing_register:
-                logger.warning(f"Ya existe un arqueo para la fecha {form.date.data} en empresa {company_id}")
-                flash(f'Ya existe un arqueo para la fecha {form.date.data.strftime("%d/%m/%Y")}', 'danger')
-                return redirect(url_for('cash_register.company_dashboard', company_id=company_id))
-            
+            # Se permite crear múltiples arqueos por día
             logger.info(f"Creando nuevo arqueo: fecha={form.date.data}, total={form.total_amount.data}")
             
             # Crear nuevo arqueo
@@ -907,17 +897,7 @@ def public_register(token_str):
         try:
             logger.info(f"Iniciando creación de arqueo mediante token {token_str} para empresa {company.id}")
             
-            # Verificar si ya existe un arqueo para esta fecha
-            existing_register = CashRegister.query.filter_by(
-                company_id=company.id,
-                date=form.date.data
-            ).first()
-            
-            if existing_register:
-                logger.warning(f"Ya existe un arqueo para la fecha {form.date.data} en empresa {company.id}")
-                flash(f'Ya existe un arqueo para la fecha {form.date.data.strftime("%d/%m/%Y")}', 'danger')
-                return redirect(url_for('cash_register.public_register', token_str=token_str))
-            
+            # Se permite crear múltiples arqueos por día
             logger.info(f"Creando nuevo arqueo por token: fecha={form.date.data}, total={form.total_amount.data}")
             
             # Crear nuevo arqueo

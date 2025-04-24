@@ -1,0 +1,189 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="mb-0">
+                    <i class="bi bi-cash-stack me-2 text-success"></i>
+                    Detalles de Arqueo
+                </h1>
+                <div>
+                    <a href="{{ back_url or url_for('cash_register.company_dashboard', company_id=register.company_id) }}" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-left me-1"></i> Volver
+                    </a>
+                    <a href="{{ url_for('cash_register.edit_register', register_id=register.id) }}" class="btn btn-primary">
+                        <i class="bi bi-pencil me-1"></i> Editar
+                    </a>
+                </div>
+            </div>
+            <hr>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Información general -->
+        <div class="col-md-6">
+            <div class="card bg-dark border-success mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">Información General</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-dark table-hover">
+                        <tr>
+                            <th style="width: 35%">Empresa:</th>
+                            <td>{{ company.name }}</td>
+                        </tr>
+                        <tr>
+                            <th>Fecha:</th>
+                            <td>{{ register.date.strftime('%d/%m/%Y') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Creado por:</th>
+                            <td>
+                                {% if register.employee_name %}
+                                    {{ register.employee_name }}
+                                {% elif register.creator %}
+                                    {{ register.creator.username }}
+                                {% else %}
+                                    <span class="text-muted">Desconocido</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Fecha de creación:</th>
+                            <td>{{ register.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Última modificación:</th>
+                            <td>{{ register.updated_at.strftime('%d/%m/%Y %H:%M') if register.updated_at else 'Sin modificaciones' }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Desglose de importes -->
+        <div class="col-md-6">
+            <div class="card bg-dark border-info mb-4">
+                <div class="card-header bg-info text-dark">
+                    <h5 class="card-title mb-0">Desglose Financiero</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-dark table-hover">
+                        <tr>
+                            <th style="width: 40%">Efectivo:</th>
+                            <td>{{ format_currency(register.cash_amount) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Tarjeta:</th>
+                            <td>{{ format_currency(register.card_amount) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Delivery - Efectivo:</th>
+                            <td>{{ format_currency(register.delivery_cash_amount) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Delivery - Online:</th>
+                            <td>{{ format_currency(register.delivery_online_amount) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Cheque:</th>
+                            <td>{{ format_currency(register.check_amount) }}</td>
+                        </tr>
+                        <tr class="border-top border-light">
+                            <th>Subtotal ingresos:</th>
+                            <td class="text-info fw-bold">
+                                {{ format_currency(register.cash_amount + register.card_amount + register.delivery_cash_amount + register.delivery_online_amount + register.check_amount) }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Gastos:</th>
+                            <td class="text-warning">{{ format_currency(register.expenses_amount) }}</td>
+                        </tr>
+                        <tr class="bg-secondary text-white">
+                            <th>TOTAL:</th>
+                            <td class="text-success fw-bold fs-5">{{ format_currency(register.total_amount) }}</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notas y observaciones -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card bg-dark border-warning mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="card-title mb-0">Notas y Observaciones</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-light mb-3">Detalles de gastos:</h6>
+                            <div class="p-3 rounded bg-dark border border-secondary">
+                                {% if register.expenses_notes %}
+                                    {{ register.expenses_notes|nl2br }}
+                                {% else %}
+                                    <p class="text-muted mb-0">No se han registrado detalles sobre los gastos.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-light mb-3">Notas adicionales:</h6>
+                            <div class="p-3 rounded bg-dark border border-secondary">
+                                {% if register.notes %}
+                                    {{ register.notes|nl2br }}
+                                {% else %}
+                                    <p class="text-muted mb-0">No se han registrado notas adicionales.</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card bg-dark border-danger">
+                <div class="card-header bg-transparent text-danger border-bottom border-danger">
+                    <h5 class="card-title mb-0">Acciones</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('cash_register.edit_register', register_id=register.id) }}" class="btn btn-primary">
+                            <i class="bi bi-pencil me-1"></i> Editar Arqueo
+                        </a>
+                        <button type="button" class="btn btn-danger" 
+                                onclick="confirmDelete({{ register.id }}, '{{ register.date.strftime('%d/%m/%Y') }}')">
+                            <i class="bi bi-trash me-1"></i> Eliminar Arqueo
+                        </button>
+                        <a href="{{ url_for('cash_register.print_register', register_id=register.id) }}" class="btn btn-info">
+                            <i class="bi bi-printer me-1"></i> Imprimir
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Función para confirmar eliminación de arqueo
+    window.confirmDelete = function(registerId, registerDate) {
+        if (confirm(`¿Estás seguro de que deseas eliminar el arqueo del ${registerDate}? Esta acción no se puede deshacer.`)) {
+            // Si el usuario confirma, redirigir a la ruta de eliminación
+            window.location.href = `/cash-register/delete/${registerId}`;
+        }
+    };
+});
+</script>
+{% endblock %}

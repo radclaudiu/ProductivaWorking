@@ -204,6 +204,132 @@
         <!-- Se ha eliminado la sección "Arqueos Pendientes" ya que los arqueos no requieren confirmación -->
     </div>
 
+    <!-- Gestión Centralizada de Arqueos -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card bg-dark border-info">
+                <div class="card-header bg-info text-dark">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-table me-2"></i>
+                            Gestión de Arqueos de Caja
+                        </h5>
+                        <a href="{{ url_for('cash_register.new_register', company_id=company.id) }}" class="btn btn-sm btn-dark">
+                            <i class="bi bi-plus-circle me-1"></i> Nuevo Arqueo
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Filtros de búsqueda -->
+                    <form method="GET" action="{{ url_for('cash_register.manage_registers', company_id=company.id) }}" class="mb-4">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-3">
+                                <label class="form-label text-light">Mes</label>
+                                <select name="month" class="form-select bg-dark text-light border-secondary">
+                                    <option value="0">Todos</option>
+                                    <option value="1">Enero</option>
+                                    <option value="2">Febrero</option>
+                                    <option value="3">Marzo</option>
+                                    <option value="4">Abril</option>
+                                    <option value="5">Mayo</option>
+                                    <option value="6">Junio</option>
+                                    <option value="7">Julio</option>
+                                    <option value="8">Agosto</option>
+                                    <option value="9">Septiembre</option>
+                                    <option value="10">Octubre</option>
+                                    <option value="11">Noviembre</option>
+                                    <option value="12">Diciembre</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-light">Año</label>
+                                <input type="number" name="year" class="form-control bg-dark text-light border-secondary" 
+                                       value="{{ current_year }}" min="2020" max="2099">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label text-light">Mostrar</label>
+                                <select name="limit" class="form-select bg-dark text-light border-secondary">
+                                    <option value="10">10 registros</option>
+                                    <option value="25">25 registros</option>
+                                    <option value="50">50 registros</option>
+                                    <option value="100">100 registros</option>
+                                    <option value="0">Todos</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-search me-1"></i> Buscar
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Tabla de arqueos -->
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Efectivo</th>
+                                    <th>Tarjeta</th>
+                                    <th>Delivery</th>
+                                    <th>Cheque</th>
+                                    <th>Gastos</th>
+                                    <th>Total</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for register in recent_registers %}
+                                <tr>
+                                    <td>{{ register.date.strftime('%d/%m/%Y') }}</td>
+                                    <td>{{ format_currency(register.cash_amount) }}</td>
+                                    <td>{{ format_currency(register.card_amount) }}</td>
+                                    <td>{{ format_currency(register.delivery_cash_amount + register.delivery_online_amount) }}</td>
+                                    <td>{{ format_currency(register.check_amount) }}</td>
+                                    <td>{{ format_currency(register.expenses_amount) }}</td>
+                                    <td class="text-success fw-bold">{{ format_currency(register.total_amount) }}</td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{{ url_for('cash_register.edit_register', register_id=register.id) }}" 
+                                               class="btn btn-sm btn-primary" title="Editar">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="{{ url_for('cash_register.view_register', register_id=register.id) }}" 
+                                               class="btn btn-sm btn-info" title="Ver detalles">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-danger" 
+                                                    onclick="confirmDelete({{ register.id }}, '{{ register.date.strftime('%d/%m/%Y') }}')"
+                                                    title="Eliminar">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% if not recent_registers %}
+                    <div class="alert alert-info my-3">
+                        No se encontraron arqueos con los criterios especificados.
+                    </div>
+                    {% endif %}
+
+                    <!-- Paginación -->
+                    <div class="mt-3">
+                        <a href="{{ url_for('cash_register.manage_registers', company_id=company.id) }}" 
+                           class="btn btn-outline-light">
+                            <i class="bi bi-card-list me-1"></i> Ver todos los arqueos
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Tokens Activos -->
     <div class="row">
         <div class="col-md-12">
@@ -282,6 +408,13 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Función para confirmar eliminación de arqueo
+    window.confirmDelete = function(registerId, registerDate) {
+        if (confirm(`¿Estás seguro de que deseas eliminar el arqueo del ${registerDate}? Esta acción no se puede deshacer.`)) {
+            // Si el usuario confirma, redirigir a la ruta de eliminación
+            window.location.href = `/cash-register/delete/${registerId}`;
+        }
+    };
     // Configurar gráfico de métodos de pago
     {% if summary and summary.weekly_total > 0 %}
     const paymentMethodsData = {{ payment_methods_data|safe }};

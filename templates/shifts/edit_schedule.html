@@ -1,0 +1,730 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<!-- Estilos específicos para el editor de turnos -->
+<style>
+    .shift-editor {
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        min-height: 600px;
+    }
+    
+    .timetable-container {
+        overflow-x: auto;
+    }
+    
+    .timetable {
+        min-width: 800px;
+        border-collapse: collapse;
+    }
+    
+    .timetable th, .timetable td {
+        border: 1px solid #dee2e6;
+        padding: 0.5rem;
+        text-align: center;
+    }
+    
+    .timetable th {
+        background-color: #f8f9fa;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    
+    .timetable tr:nth-child(even) {
+        background-color: rgba(0,0,0,0.02);
+    }
+    
+    .timetable td:first-child {
+        background-color: #f8f9fa;
+        font-weight: bold;
+        position: sticky;
+        left: 0;
+        z-index: 5;
+    }
+    
+    .employee-list {
+        max-height: 600px;
+        overflow-y: auto;
+    }
+    
+    .employee-item {
+        cursor: pointer;
+        padding: 0.75rem;
+        border-radius: 0.375rem;
+        margin-bottom: 0.5rem;
+        transition: all 0.2s;
+    }
+    
+    .employee-item:hover {
+        background-color: #e9ecef;
+    }
+    
+    .employee-item.active {
+        background-color: #cfe2ff;
+        border-left: 4px solid #0d6efd;
+    }
+    
+    .shift-block {
+        background-color: #0d6efd;
+        color: white;
+        border-radius: 0.25rem;
+        padding: 0.25rem;
+        margin: 0.125rem;
+        cursor: pointer;
+        font-size: 0.875rem;
+    }
+    
+    .cell-drop {
+        min-height: 40px;
+        min-width: 80px;
+        transition: all 0.2s;
+    }
+    
+    .cell-drop.highlight {
+        background-color: rgba(13, 110, 253, 0.1);
+    }
+    
+    /* Colores para diferentes estados de turnos */
+    .shift-published {
+        background-color: #198754;
+    }
+    
+    .shift-draft {
+        background-color: #6c757d;
+    }
+    
+    .shift-conflict {
+        background-color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Cabecera -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="h3 fw-bold">Editor de turnos</h1>
+            <p class="lead text-muted">{{ schedule.name }} ({{ schedule.start_date }} a {{ schedule.end_date }})</p>
+        </div>
+        <div class="col-md-4 text-md-end d-flex align-items-center justify-content-md-end mt-3 mt-md-0">
+            <button id="btn-save-all" class="btn btn-success me-2">
+                <i class="fas fa-save me-1"></i> Guardar todos los cambios
+            </button>
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="fas fa-file-export me-1"></i> Exportar
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="exportDropdown">
+                    <li><a class="dropdown-item" href="{{ url_for('shifts.export_schedule', schedule_id=schedule.id, format='pdf') }}">
+                        <i class="fas fa-file-pdf me-1"></i> Exportar a PDF
+                    </a></li>
+                    <li><a class="dropdown-item" href="{{ url_for('shifts.export_schedule', schedule_id=schedule.id, format='excel') }}">
+                        <i class="fas fa-file-excel me-1"></i> Exportar a Excel
+                    </a></li>
+                </ul>
+            </div>
+            <a href="{{ url_for('shifts.view_schedule', schedule_id=schedule.id) }}" class="btn btn-outline-secondary ms-2">
+                <i class="fas fa-eye me-1"></i> Ver programación
+            </a>
+        </div>
+    </div>
+
+    <!-- Editor de turnos -->
+    <div class="row">
+        <!-- Panel de empleados -->
+        <div class="col-md-3 mb-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                    <h2 class="h5 mb-0">Empleados</h2>
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="show-only-active">
+                        <label class="form-check-label small" for="show-only-active">Solo activos</label>
+                    </div>
+                </div>
+                <div class="card-body p-2">
+                    <div class="input-group mb-2">
+                        <span class="input-group-text">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" class="form-control" id="employee-search" placeholder="Buscar empleado...">
+                    </div>
+                    
+                    <div class="employee-list" id="employee-list">
+                        {% for employee in employees %}
+                            <div class="employee-item" data-employee-id="{{ employee.id }}" draggable="true">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-bold">{{ employee.first_name }} {{ employee.last_name }}</div>
+                                        <div class="text-muted small">{{ employee.position or 'Sin posición' }}</div>
+                                    </div>
+                                    <span class="badge {% if employee.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                        {% if employee.is_active %}Activo{% else %}Inactivo{% endif %}
+                                    </span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Editor de horario -->
+        <div class="col-md-9 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h2 class="h5 mb-0">Horario semanal</h2>
+                        <div>
+                            <button class="btn btn-sm btn-outline-primary" id="btn-clear-all">
+                                <i class="fas fa-broom me-1"></i> Limpiar todo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="shift-editor p-2">
+                        <div class="alert alert-info mb-3">
+                            <i class="fas fa-info-circle me-1"></i> Arrastra empleados desde la lista de la izquierda y suéltalos en las celdas del horario para asignar turnos.
+                        </div>
+                        
+                        <div class="timetable-container">
+                            <table class="timetable" id="shift-timetable">
+                                <thead>
+                                    <tr>
+                                        <th style="min-width: 200px;">Empleado / Día</th>
+                                        {% set start_date = schedule.start_date|string %}
+                                        {% set days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] %}
+                                        
+                                        {% for i in range(7) %}
+                                            {% set current_date = (start_date|string|datetime_from_string + timedelta(days=i))|string|date_format %}
+                                            <th data-date="{{ current_date }}">
+                                                {{ days[i] }}<br>
+                                                <small>{{ current_date }}</small>
+                                            </th>
+                                        {% endfor %}
+                                    </tr>
+                                </thead>
+                                <tbody id="timetable-body">
+                                    <!-- Filas generadas dinámicamente por JavaScript -->
+                                    <tr>
+                                        <td colspan="8" class="text-center py-5">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Cargando...</span>
+                                            </div>
+                                            <p class="mt-2">Cargando horario...</p>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para editar turno -->
+<div class="modal fade" id="shift-modal" tabindex="-1" aria-labelledby="shift-modal-label" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="shift-modal-label">Editar turno</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="shift-id">
+                <input type="hidden" id="employee-id">
+                <input type="hidden" id="shift-date">
+                
+                <div class="mb-3">
+                    <label for="shift-employee-name" class="form-label">Empleado</label>
+                    <input type="text" class="form-control" id="shift-employee-name" readonly>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="shift-date-display" class="form-label">Fecha</label>
+                    <input type="text" class="form-control" id="shift-date-display" readonly>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col">
+                        <label for="shift-start-time" class="form-label">Hora inicio</label>
+                        <input type="time" class="form-control" id="shift-start-time" required>
+                    </div>
+                    <div class="col">
+                        <label for="shift-end-time" class="form-label">Hora fin</label>
+                        <input type="time" class="form-control" id="shift-end-time" required>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="shift-break-time" class="form-label">Tiempo de descanso (minutos)</label>
+                    <input type="number" class="form-control" id="shift-break-time" min="0" value="0">
+                </div>
+                
+                <div class="mb-3">
+                    <label for="shift-notes" class="form-label">Notas</label>
+                    <textarea class="form-control" id="shift-notes" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger me-auto" id="btn-delete-shift">
+                    <i class="fas fa-trash-alt me-1"></i> Eliminar
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="btn-save-shift">Guardar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // IDs y variables importantes
+        const scheduleId = {{ schedule.id }};
+        const employeeListElement = document.getElementById('employee-list');
+        const timetableBodyElement = document.getElementById('timetable-body');
+        const employeeSearchInput = document.getElementById('employee-search');
+        const showOnlyActiveCheckbox = document.getElementById('show-only-active');
+        
+        // Modal y sus elementos
+        const shiftModal = new bootstrap.Modal(document.getElementById('shift-modal'));
+        const shiftIdInput = document.getElementById('shift-id');
+        const employeeIdInput = document.getElementById('employee-id');
+        const shiftDateInput = document.getElementById('shift-date');
+        const employeeNameInput = document.getElementById('shift-employee-name');
+        const shiftDateDisplay = document.getElementById('shift-date-display');
+        const startTimeInput = document.getElementById('shift-start-time');
+        const endTimeInput = document.getElementById('shift-end-time');
+        const breakTimeInput = document.getElementById('shift-break-time');
+        const notesInput = document.getElementById('shift-notes');
+        const saveShiftButton = document.getElementById('btn-save-shift');
+        const deleteShiftButton = document.getElementById('btn-delete-shift');
+        
+        // Botones de acción
+        const saveAllButton = document.getElementById('btn-save-all');
+        const clearAllButton = document.getElementById('btn-clear-all');
+        
+        // Estado de la aplicación
+        let shifts = [];
+        let employees = [];
+        let pendingChanges = false;
+        
+        // Inicializar la aplicación
+        initApp();
+        
+        // Funciones principales
+        function initApp() {
+            // Cargar datos iniciales
+            loadEmployees();
+            loadShifts();
+            
+            // Inicializar eventos
+            initEvents();
+        }
+        
+        function loadEmployees() {
+            // Los empleados ya están cargados desde el servidor en la plantilla
+            // Solo necesitamos extraerlos para usar en JavaScript
+            employees = [];
+            
+            document.querySelectorAll('.employee-item').forEach(item => {
+                const id = parseInt(item.dataset.employeeId);
+                const name = item.querySelector('.fw-bold').textContent.trim();
+                const position = item.querySelector('.text-muted').textContent.trim();
+                const isActive = item.querySelector('.badge').textContent.trim() === 'Activo';
+                
+                employees.push({
+                    id,
+                    name,
+                    position,
+                    isActive
+                });
+            });
+        }
+        
+        function loadShifts() {
+            // Mostrar loading
+            timetableBodyElement.innerHTML = `
+                <tr>
+                    <td colspan="8" class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p class="mt-2">Cargando horario...</p>
+                    </td>
+                </tr>
+            `;
+            
+            // Realizar petición AJAX para obtener los turnos
+            fetch(`/shifts/api/schedules/${scheduleId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Error al cargar los datos');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    shifts = data.shifts;
+                    renderTimetable();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    timetableBodyElement.innerHTML = `
+                        <tr>
+                            <td colspan="8" class="text-center py-5 text-danger">
+                                <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                                <p>Error al cargar los datos. Por favor, recarga la página.</p>
+                            </td>
+                        </tr>
+                    `;
+                });
+        }
+        
+        function renderTimetable() {
+            // Generar filas para cada empleado
+            let html = '';
+            
+            employees.forEach(employee => {
+                html += `
+                    <tr data-employee-id="${employee.id}">
+                        <td>${employee.name}</td>
+                `;
+                
+                // Obtener las fechas de la semana
+                const dates = [];
+                const headerCells = document.querySelectorAll('#shift-timetable th[data-date]');
+                headerCells.forEach(cell => {
+                    dates.push(cell.dataset.date);
+                });
+                
+                // Generar celdas para cada día
+                dates.forEach(date => {
+                    const shift = shifts.find(s => 
+                        s.employee_id === employee.id && s.date === date
+                    );
+                    
+                    if (shift) {
+                        // Si ya hay un turno asignado
+                        html += `
+                            <td>
+                                <div class="shift-block" data-shift-id="${shift.id}" onclick="editShift(${shift.id})">
+                                    ${shift.start_time} - ${shift.end_time}
+                                    <br>
+                                    <small>${shift.notes ? '📝' : ''}</small>
+                                </div>
+                            </td>
+                        `;
+                    } else {
+                        // Celda vacía (para soltar empleados)
+                        html += `
+                            <td>
+                                <div class="cell-drop" data-employee-id="${employee.id}" data-date="${date}"></div>
+                            </td>
+                        `;
+                    }
+                });
+                
+                html += '</tr>';
+            });
+            
+            timetableBodyElement.innerHTML = html;
+            
+            // Inicializar eventos de arrastrar y soltar
+            initDragAndDrop();
+        }
+        
+        function initEvents() {
+            // Filtrado de empleados
+            employeeSearchInput.addEventListener('input', filterEmployees);
+            showOnlyActiveCheckbox.addEventListener('change', filterEmployees);
+            
+            // Eventos del modal
+            saveShiftButton.addEventListener('click', saveShift);
+            deleteShiftButton.addEventListener('click', deleteShift);
+            
+            // Botones de acción
+            saveAllButton.addEventListener('click', saveAllChanges);
+            clearAllButton.addEventListener('click', clearAllShifts);
+            
+            // Prevenir navegación si hay cambios pendientes
+            window.addEventListener('beforeunload', function(e) {
+                if (pendingChanges) {
+                    const message = 'Hay cambios sin guardar. ¿Seguro que quieres salir?';
+                    e.returnValue = message;
+                    return message;
+                }
+            });
+        }
+        
+        function filterEmployees() {
+            const searchText = employeeSearchInput.value.toLowerCase();
+            const showOnlyActive = showOnlyActiveCheckbox.checked;
+            
+            document.querySelectorAll('.employee-item').forEach(item => {
+                const name = item.querySelector('.fw-bold').textContent.toLowerCase();
+                const position = item.querySelector('.text-muted').textContent.toLowerCase();
+                const isActive = item.querySelector('.badge').textContent.trim() === 'Activo';
+                
+                const matchesSearch = name.includes(searchText) || position.includes(searchText);
+                const matchesActiveFilter = !showOnlyActive || isActive;
+                
+                if (matchesSearch && matchesActiveFilter) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+        
+        function initDragAndDrop() {
+            // Hacer que los elementos de empleado sean arrastrables
+            document.querySelectorAll('.employee-item').forEach(item => {
+                item.addEventListener('dragstart', function(e) {
+                    e.dataTransfer.setData('text/plain', item.dataset.employeeId);
+                    item.classList.add('active');
+                });
+                
+                item.addEventListener('dragend', function() {
+                    item.classList.remove('active');
+                });
+            });
+            
+            // Hacer que las celdas de la tabla acepten elementos soltados
+            document.querySelectorAll('.cell-drop').forEach(cell => {
+                cell.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    this.classList.add('highlight');
+                });
+                
+                cell.addEventListener('dragleave', function() {
+                    this.classList.remove('highlight');
+                });
+                
+                cell.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('highlight');
+                    
+                    const employeeId = e.dataTransfer.getData('text/plain');
+                    const date = this.dataset.date;
+                    
+                    // Crear un nuevo turno
+                    openShiftModal(null, employeeId, date);
+                });
+            });
+            
+            // Hacer que los turnos existentes sean editables al hacer clic
+            document.querySelectorAll('.shift-block').forEach(block => {
+                block.addEventListener('click', function() {
+                    const shiftId = this.dataset.shiftId;
+                    openShiftModal(shiftId);
+                });
+            });
+        }
+        
+        function openShiftModal(shiftId, employeeId, date) {
+            if (shiftId) {
+                // Editar turno existente
+                const shift = shifts.find(s => s.id == shiftId);
+                if (!shift) return;
+                
+                shiftIdInput.value = shift.id;
+                employeeIdInput.value = shift.employee_id;
+                shiftDateInput.value = shift.date;
+                employeeNameInput.value = shift.employee_name;
+                shiftDateDisplay.value = formatDate(shift.date);
+                startTimeInput.value = shift.start_time;
+                endTimeInput.value = shift.end_time;
+                breakTimeInput.value = shift.break_time || 0;
+                notesInput.value = shift.notes || '';
+                
+                deleteShiftButton.style.display = '';
+            } else {
+                // Crear nuevo turno
+                shiftIdInput.value = '';
+                employeeIdInput.value = employeeId;
+                shiftDateInput.value = date;
+                
+                const employee = employees.find(e => e.id == employeeId);
+                employeeNameInput.value = employee ? employee.name : 'Empleado desconocido';
+                shiftDateDisplay.value = formatDate(date);
+                
+                // Valores por defecto
+                startTimeInput.value = '09:00';
+                endTimeInput.value = '17:00';
+                breakTimeInput.value = '60';
+                notesInput.value = '';
+                
+                deleteShiftButton.style.display = 'none';
+            }
+            
+            shiftModal.show();
+        }
+        
+        function saveShift() {
+            const shiftId = shiftIdInput.value;
+            const employeeId = parseInt(employeeIdInput.value);
+            const date = shiftDateInput.value;
+            const startTime = startTimeInput.value;
+            const endTime = endTimeInput.value;
+            const breakTime = parseInt(breakTimeInput.value) || 0;
+            const notes = notesInput.value;
+            
+            if (!startTime || !endTime) {
+                alert('Por favor, completa los campos obligatorios.');
+                return;
+            }
+            
+            const shiftData = {
+                schedule_id: scheduleId,
+                employee_id: employeeId,
+                date: date,
+                start_time: startTime,
+                end_time: endTime,
+                break_time: breakTime,
+                notes: notes
+            };
+            
+            if (shiftId) {
+                // Actualizar turno existente
+                fetch(`/shifts/api/shifts/${shiftId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    },
+                    body: JSON.stringify(shiftData)
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Error al actualizar el turno');
+                    return response.json();
+                })
+                .then(data => {
+                    // Actualizar shift en el array
+                    const index = shifts.findIndex(s => s.id == shiftId);
+                    if (index !== -1) {
+                        shifts[index] = data;
+                    }
+                    
+                    renderTimetable();
+                    shiftModal.hide();
+                    pendingChanges = true;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al guardar el turno. Por favor, inténtalo de nuevo.');
+                });
+            } else {
+                // Crear nuevo turno
+                fetch('/shifts/api/shifts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCsrfToken()
+                    },
+                    body: JSON.stringify(shiftData)
+                })
+                .then(response => {
+                    if (!response.ok) throw new Error('Error al crear el turno');
+                    return response.json();
+                })
+                .then(data => {
+                    // Añadir nuevo shift al array
+                    shifts.push(data);
+                    
+                    renderTimetable();
+                    shiftModal.hide();
+                    pendingChanges = true;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al crear el turno. Por favor, inténtalo de nuevo.');
+                });
+            }
+        }
+        
+        function deleteShift() {
+            const shiftId = shiftIdInput.value;
+            if (!shiftId) return;
+            
+            if (!confirm('¿Estás seguro de que quieres eliminar este turno?')) {
+                return;
+            }
+            
+            fetch(`/shifts/api/shifts/${shiftId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': getCsrfToken()
+                }
+            })
+            .then(response => {
+                if (!response.ok) throw new Error('Error al eliminar el turno');
+                return response.json();
+            })
+            .then(() => {
+                // Eliminar shift del array
+                shifts = shifts.filter(s => s.id != shiftId);
+                
+                renderTimetable();
+                shiftModal.hide();
+                pendingChanges = true;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al eliminar el turno. Por favor, inténtalo de nuevo.');
+            });
+        }
+        
+        function saveAllChanges() {
+            alert('Todos los cambios han sido guardados correctamente.');
+            pendingChanges = false;
+        }
+        
+        function clearAllShifts() {
+            if (!confirm('¿Estás seguro de que quieres eliminar TODOS los turnos de esta programación? Esta acción no se puede deshacer.')) {
+                return;
+            }
+            
+            // En una implementación real, esto haría una petición al servidor
+            // En esta demo, simplemente limpiamos el array y redibujamos
+            shifts = [];
+            renderTimetable();
+            pendingChanges = true;
+            
+            alert('Todos los turnos han sido eliminados.');
+        }
+        
+        // Funciones auxiliares
+        function formatDate(dateStr) {
+            // Convertir YYYY-MM-DD a formato más legible
+            if (!dateStr) return '';
+            
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return dateStr;
+            
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        
+        function getCsrfToken() {
+            // Obtener el token CSRF de la cookie o de un campo oculto
+            return document.querySelector('input[name="csrf_token"]')?.value || '';
+        }
+        
+        // Exponer funciones para uso global (para eventos onclick en plantilla)
+        window.editShift = function(shiftId) {
+            openShiftModal(shiftId);
+        };
+    });
+</script>
+{% endblock %}

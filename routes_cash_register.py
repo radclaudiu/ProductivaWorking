@@ -232,7 +232,7 @@ def new_register(company_id):
     
     # Cargar lista de empleados para el selector
     employees = Employee.query.filter_by(company_id=company_id, is_active=True).all()
-    employee_choices = [(0, 'Sin asignar')] + [(e.id, f"{e.name} {e.last_name}") for e in employees]
+    employee_choices = [(0, 'Sin asignar')] + [(e.id, f"{e.first_name} {e.last_name}") for e in employees]
     form.employee_id.choices = employee_choices
     
     if form.validate_on_submit():
@@ -327,7 +327,7 @@ def edit_register(register_id):
     
     # Cargar lista de empleados para el selector
     employees = Employee.query.filter_by(company_id=company.id, is_active=True).all()
-    employee_choices = [(0, 'Sin asignar')] + [(e.id, f"{e.name} {e.last_name}") for e in employees]
+    employee_choices = [(0, 'Sin asignar')] + [(e.id, f"{e.first_name} {e.last_name}") for e in employees]
     form.employee_id.choices = employee_choices
     
     if form.validate_on_submit():
@@ -373,6 +373,9 @@ def confirm_register(register_id):
     Args:
         register_id: ID del arqueo a confirmar
     """
+    # Importar modelos para evitar problemas de importación circular
+    from models_cash_register import CashRegister
+    
     # Obtener arqueo y verificar permisos
     register = CashRegister.query.get_or_404(register_id)
     company = register.company
@@ -430,6 +433,9 @@ def delete_register(register_id):
     Args:
         register_id: ID del arqueo a eliminar
     """
+    # Importar modelos para evitar problemas de importación circular
+    from models_cash_register import CashRegister
+    
     # Obtener arqueo y verificar permisos
     register = CashRegister.query.get_or_404(register_id)
     company = register.company
@@ -474,6 +480,10 @@ def company_report(company_id):
     Args:
         company_id: ID de la empresa
     """
+    # Importar modelos para evitar problemas de importación circular
+    from models import Company
+    from models_cash_register import CashRegister
+    
     # Verificar acceso a la empresa
     company = Company.query.get_or_404(company_id)
     if not current_user.is_admin() and company not in current_user.companies:
@@ -606,6 +616,10 @@ def manage_tokens(company_id):
     Args:
         company_id: ID de la empresa
     """
+    # Importar modelos para evitar problemas de importación circular
+    from models import Company, Employee
+    from models_cash_register import CashRegisterToken
+    
     # Verificar acceso a la empresa
     company = Company.query.get_or_404(company_id)
     if not current_user.is_admin() and company not in current_user.companies:
@@ -619,7 +633,7 @@ def manage_tokens(company_id):
     
     # Cargar lista de empleados para el selector
     employees = Employee.query.filter_by(company_id=company_id, is_active=True).all()
-    employee_choices = [(0, 'Sin asignar')] + [(e.id, f"{e.name} {e.last_name}") for e in employees]
+    employee_choices = [(0, 'Sin asignar')] + [(e.id, f"{e.first_name} {e.last_name}") for e in employees]
     form.employee_id.choices = employee_choices
     
     if form.validate_on_submit():
@@ -693,6 +707,10 @@ def token_created(company_id, token_id):
         company_id: ID de la empresa
         token_id: ID del token creado
     """
+    # Importar modelos para evitar problemas de importación circular
+    from models import Company
+    from models_cash_register import CashRegisterToken
+    
     # Verificar acceso a la empresa
     company = Company.query.get_or_404(company_id)
     if not current_user.is_admin() and company not in current_user.companies:
@@ -737,6 +755,9 @@ def public_register(token_str):
     Args:
         token_str: String del token de acceso
     """
+    # Importar modelos para evitar problemas de importación circular
+    from models_cash_register import CashRegister, CashRegisterToken
+    
     # Verificar token
     token = CashRegisterToken.query.filter_by(token=token_str).first()
     

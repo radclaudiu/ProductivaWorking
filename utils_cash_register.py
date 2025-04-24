@@ -127,6 +127,7 @@ def calculate_weekly_summary(company_id, year, week_number):
         # Calcular totales semanales
         for register in registers:
             # Sumar totales
+            # Nota: Los gastos no se restan del total, solo se registran
             summary.weekly_total += register.total_amount
             summary.weekly_cash += register.cash_amount
             summary.weekly_card += register.card_amount

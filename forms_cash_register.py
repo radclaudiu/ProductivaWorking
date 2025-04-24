@@ -18,6 +18,10 @@ from wtforms.validators import DataRequired, Optional, ValidationError, Length
 class CashRegisterForm(FlaskForm):
     """
     Formulario para registrar un arqueo de caja diario.
+    
+    Los gastos se registran como información adicional pero no afectan
+    al total del arqueo, que solo incluye los ingresos por diferentes
+    métodos de pago.
     """
     company_id = HiddenField('ID de Empresa', validators=[DataRequired()])
     date = DateField('Fecha', validators=[DataRequired()], format='%Y-%m-%d', default=date.today)
@@ -152,6 +156,10 @@ class PinVerificationForm(FlaskForm):
 class PublicCashRegisterForm(FlaskForm):
     """
     Formulario público para que empleados envíen datos de arqueo mediante token.
+    
+    Los gastos se registran como información adicional pero no afectan
+    al total del arqueo, que solo incluye los ingresos por diferentes
+    métodos de pago.
     """
     token = HiddenField('Token', validators=[DataRequired()])
     date = DateField('Fecha', validators=[DataRequired()], format='%Y-%m-%d', default=date.today)

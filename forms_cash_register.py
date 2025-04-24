@@ -60,7 +60,8 @@ class CashRegisterForm(FlaskForm):
     
     def validate_total_amount(self, field):
         """Validación del importe total."""
-        # Calcular la suma de todos los métodos de pago
+        # Calcular la suma de todos los métodos de pago (no incluye gastos)
+        # Los gastos se registran como información adicional pero no afectan al total
         total_payments = (
             self.cash_amount.data +
             self.card_amount.data +
@@ -194,10 +195,10 @@ class PublicCashRegisterForm(FlaskForm):
     employee_name = StringField('Tu Nombre', validators=[DataRequired(), Length(max=100)])
     
     submit = SubmitField('Enviar Arqueo')
-    
     def validate_total_amount(self, field):
         """Validación del importe total."""
-        # Calcular la suma de todos los métodos de pago
+        # Calcular la suma de todos los métodos de pago (no incluye gastos)
+        # Los gastos se registran como información adicional pero no afectan al total
         total_payments = (
             self.cash_amount.data +
             self.card_amount.data +

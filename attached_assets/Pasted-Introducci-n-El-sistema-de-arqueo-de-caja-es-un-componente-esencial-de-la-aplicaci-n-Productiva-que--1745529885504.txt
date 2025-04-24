@@ -1,0 +1,143 @@
+Introducción
+El sistema de arqueo de caja es un componente esencial de la aplicación Productiva que permite gestionar, controlar y auditar los movimientos de efectivo en las cajas registradoras. Proporciona un mecanismo para verificar que el dinero físico coincide con los registros del sistema, facilitando la detección de discrepancias y la rendición de cuentas.
+
+Concepto General
+Un arqueo de caja es un procedimiento de verificación donde se confronta el dinero físico existente en caja contra los registros contables. El sistema permite:
+
+Registrar el estado inicial de una caja al comenzar un turno
+Documentar todas las transacciones durante un período operativo
+Realizar un cierre con verificación de dinero físico al finalizar un turno
+Identificar y registrar discrepancias con sus justificaciones
+Generar reportes detallados para auditoría
+Arquitectura del Sistema
+El sistema de arqueo se basa en una arquitectura modular que consta de:
+
+Componentes de Base de Datos
+Tablas Principales:
+cash_registers: Almacena información sobre las cajas registradoras físicas
+cash_register_sessions: Registra las sesiones de apertura y cierre de caja
+cash_transactions: Guarda cada movimiento (entrada/salida) de dinero
+cash_reconciliations: Almacena los arqueos realizados con sus resultados
+Componentes de Interfaz
+Panel de Administración de Cajas: Gestión de cajas registradoras físicas
+Interfaz de Apertura de Caja: Proceso de inicio de sesión y registro de saldo inicial
+Interfaz de Transacciones: Registro de movimientos de efectivo
+Interfaz de Cierre y Arqueo: Proceso de conteo físico y conciliación
+Panel de Reportes: Visualización y exportación de informes
+Flujo de Trabajo
+1. Apertura de Caja
+El usuario autorizado inicia sesión en el sistema
+Selecciona "Apertura de Caja" y elige una caja registradora disponible
+Registra el dinero inicial disponible, desglosado por denominaciones
+El sistema crea una nueva sesión de caja vinculada al usuario
+Se genera un comprobante de apertura (opcional: impresión física)
+2. Operación Durante el Turno
+El sistema registra automáticamente las transacciones de venta
+El usuario puede registrar manualmente entradas/salidas extraordinarias de dinero
+Cada transacción queda vinculada a la sesión de caja actual
+El sistema mantiene un saldo teórico actualizado en tiempo real
+3. Proceso de Arqueo y Cierre
+Al finalizar el turno, el usuario selecciona "Cierre de Caja"
+Registra el conteo físico del dinero presente en caja por denominaciones
+El sistema calcula automáticamente:
+Saldo inicial + Entradas - Salidas = Saldo teórico final
+Saldo físico contado - Saldo teórico = Diferencia
+Si existe diferencia, se solicita justificación
+Se genera un comprobante de cierre con todos los detalles
+La sesión de caja queda cerrada y bloqueada para ediciones posteriores
+Entidades Principales
+Cash Register (Caja Registradora)
+Representa un punto físico de cobro/pago con las siguientes características:
+
+Identificador único
+Nombre/Código descriptivo
+Ubicación física
+Estado (activa/inactiva)
+Restricciones de acceso (usuarios autorizados)
+Cash Register Session (Sesión de Caja)
+Registra un período operativo de una caja con:
+
+Fecha/hora de apertura
+Usuario responsable de la apertura
+Saldo inicial (desglosado por denominaciones)
+Estado actual (abierta/cerrada)
+Fecha/hora de cierre (si aplica)
+Usuario responsable del cierre
+Saldo teórico final
+Saldo físico contado
+Diferencia detectada
+Cash Transaction (Transacción de Efectivo)
+Documenta cada movimiento de dinero:
+
+Tipo (entrada/salida)
+Monto
+Concepto/Categoría
+Referencia (venta, devolución, retiro, etc.)
+Fecha/hora
+Usuario que registra
+Sesión de caja asociada
+Cash Reconciliation (Arqueo)
+Almacena la verificación física del dinero:
+
+Sesión de caja asociada
+Fecha/hora del arqueo
+Usuario que realiza el arqueo
+Desglose del dinero contado por denominación
+Saldo teórico al momento del arqueo
+Diferencia detectada
+Justificación (en caso de diferencia)
+Estado (correcto/con discrepancia)
+Reportes y Análisis
+El sistema ofrece distintos tipos de reportes para análisis y auditoría:
+
+Reportes Operativos
+Arqueo Diario: Detalle de aperturas y cierres por día
+Histórico de Transacciones: Listado cronológico filtrable
+Resumen por Caja: Actividad consolidada por caja registradora
+Reportes de Gestión
+Resumen de Diferencias: Análisis de discrepancias detectadas
+Movimientos por Usuario: Actividad clasificada por operador
+Balance de Efectivo: Evolución del flujo de dinero
+Reportes de Auditoría
+Log de Operaciones: Registro completo de acciones en el sistema
+Informe de Incidencias: Consolidado de situaciones irregulares
+Conciliación con Ventas: Comparativa entre transacciones y ventas registradas
+Integración con el Sistema Principal
+El sistema de arqueo está integrado con:
+
+Sistema de Ventas
+Registra automáticamente las ventas en efectivo como entradas
+Registra devoluciones como salidas
+Mantiene trazabilidad entre venta y movimiento de caja
+Sistema de Usuarios y Permisos
+Controla el acceso según roles predefinidos
+Registra qué usuario realiza cada operación
+Permite configurar aprobaciones para operaciones sensibles
+Sistema de Contabilidad
+Proporciona datos para asientos contables
+Facilita la conciliación bancaria
+Genera información para cierres contables
+Consideraciones de Seguridad
+El sistema implementa múltiples medidas de seguridad:
+
+Autenticación y Autorización
+Acceso restringido según roles (cajero, supervisor, administrador)
+Registro de hora y usuario para cada operación
+Bloqueo de sesiones inactivas
+Integridad de Datos
+Transacciones atómicas para evitar inconsistencias
+Validación de datos en tiempo real
+Historial de cambios con auditoría
+Prevención de Fraude
+Alertas automáticas ante patrones sospechosos
+Requerimiento de aprobación para operaciones de alto riesgo
+Imposibilidad de eliminar transacciones (solo anulación controlada)
+Glosario de Términos
+Arqueo: Procedimiento de verificación donde se confronta el dinero físico existente en caja contra los registros contables.
+Denominación: Valor facial de billetes y monedas (ej. billetes de 5€, 10€, 20€).
+Discrepancia: Diferencia entre el saldo teórico y el saldo físico contado.
+Fondo fijo: Cantidad de dinero establecida para iniciar operaciones.
+Saldo teórico: Cantidad que debería existir según los registros de transacciones.
+Saldo físico: Cantidad real de dinero presente en la caja tras el conteo.
+Sesión de caja: Periodo operativo desde la apertura hasta el cierre de una caja.
+Z-Cierre: Informe final de cierre que totaliza todas las operaciones realizadas.

@@ -46,6 +46,11 @@
                             <i class="bi bi-clock-history"></i> Punto de Fichaje
                         </a>
                     </li>
+                    <li class="nav-item mx-1">
+                        <a class="btn btn-info fw-bold" href="{{ url_for('tasks.index') }}">
+                            <i class="bi bi-list-check"></i> Panel de Tareas
+                        </a>
+                    </li>
                 </ul>
                 
                 <form class="d-flex ms-auto" id="searchForm" action="{{ url_for('main.search') }}" method="get">

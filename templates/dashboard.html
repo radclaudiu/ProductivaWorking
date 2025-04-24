@@ -6,10 +6,7 @@
         <h1 class="h2 mb-0">
             <i class="bi bi-speedometer"></i> Dashboard
         </h1>
-        <div class="d-flex align-items-center gap-3">
-            <a href="{{ url_for('tasks.index') }}" class="btn btn-primary">
-                <i class="bi bi-list-check"></i> Panel de Tareas
-            </a>
+        <div class="d-flex align-items-center">
             <span class="text-muted">Última actualización: {{ datetime.now().strftime('%d/%m/%Y %H:%M') }}</span>
         </div>
     </div>

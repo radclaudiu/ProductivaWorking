@@ -873,10 +873,8 @@ def public_register(token_str):
         flash('Token expirado o desactivado', 'danger')
         return redirect(url_for('auth.login'))
     
-    # Verificar que no se haya usado ya para un arqueo
-    if token.cash_register_id:
-        flash('Este token ya ha sido utilizado', 'warning')
-        return redirect(url_for('auth.login'))
+    # Verificar que el token esté activo (no comprobamos cash_register_id para permitir múltiples envíos)
+    # Sólo verificamos su estado y fecha de expiración
     
     # Obtener la empresa
     company = token.company
@@ -922,18 +920,18 @@ def public_register(token_str):
             logger.info("Añadiendo registro a la sesión de base de datos")
             db.session.add(register)
             
-            # Actualizar token
+            # Actualizar el token para registrar que se ha usado
             logger.info(f"Actualizando estado del token {token.id}")
             token.used_at = datetime.now()
-            token.is_active = False
+            # Ya no marcamos el token como inactivo para permitir múltiples usos
+            # token.is_active = False
             
-            # Primero hacemos commit para obtener el ID del registro
+            # Asignar el token al registro
+            logger.info(f"Asignando token {token.id} al arqueo")
+            register.token_id = token.id
+            
+            # Guardar los cambios
             logger.info("Ejecutando commit para guardar el arqueo")
-            db.session.commit()
-            
-            # Ahora actualizamos el token con el ID del registro
-            logger.info(f"Asignando arqueo {register.id} al token")
-            token.cash_register_id = register.id
             db.session.commit()
             
             # Actualizar resumen semanal y mensual

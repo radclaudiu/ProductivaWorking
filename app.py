@@ -84,15 +84,6 @@ def create_app(config_class='config.Config'):
     except ImportError as e:
         cash_register_bp = None
         logger.warning(f"No se pudo importar el blueprint de arqueos de caja: {str(e)}")
-        
-    # Importar blueprint de sistema de turnos
-    try:
-        from routes_shifts import shifts_bp, init_shifts_module
-        logger.info("Blueprint de sistema de turnos importado correctamente")
-    except ImportError as e:
-        shifts_bp = None
-        init_shifts_module = None
-        logger.warning(f"No se pudo importar el blueprint de sistema de turnos: {str(e)}")
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -112,12 +103,6 @@ def create_app(config_class='config.Config'):
     if cash_register_bp is not None:
         app.register_blueprint(cash_register_bp)
         logger.info("Blueprint de arqueos de caja registrado correctamente")
-        
-    # Registrar e inicializar el blueprint del sistema de turnos
-    if shifts_bp is not None and init_shifts_module is not None:
-        app.register_blueprint(shifts_bp)
-        init_shifts_module(app)
-        logger.info("Blueprint de sistema de turnos registrado correctamente")
     
     # Inicializar el sistema de puntos de fichaje
     init_checkpoints_app(app)

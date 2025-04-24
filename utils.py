@@ -14,9 +14,7 @@ from fpdf import FPDF
 import shutil
 
 from app import db
-from models import User, Employee, EmployeeHistory, UserRole, ActivityLog, EmployeeDocument, Company
-from flask import abort
-from flask_login import current_user
+from models import User, Employee, EmployeeHistory, UserRole, ActivityLog, EmployeeDocument
 
 def create_admin_user():
     """Create admin user if not exists."""
@@ -96,38 +94,6 @@ def log_activity(action, user_id=None):
     except Exception as e:
         # Si hay cualquier error, que no impacte el flujo principal de la aplicación
         current_app.logger.error(f"Error general en log_activity: {e}")
-
-def check_company_access(company_id):
-    """
-    Verifica si el usuario actual puede acceder a la empresa especificada.
-    
-    Si no tiene acceso, aborta la solicitud con un error 403.
-    
-    Args:
-        company_id: ID de la empresa a verificar
-        
-    Returns:
-        Company: Objeto de la empresa si tiene acceso
-    """
-    if not current_user.is_authenticated:
-        abort(403, description="Debe iniciar sesión para acceder a esta página")
-    
-    # Convertir company_id a entero para asegurar comparación correcta
-    try:
-        company_id_int = int(company_id)
-    except (ValueError, TypeError):
-        abort(404, description="Empresa no encontrada")
-    
-    # Buscar la empresa
-    company = Company.query.get(company_id_int)
-    if not company:
-        abort(404, description="Empresa no encontrada")
-    
-    # Verificar permisos
-    if not can_manage_company(company_id_int):
-        abort(403, description="No tiene permiso para acceder a esta empresa")
-        
-    return company
 
 def can_manage_company(company_id):
     """Check if current user can manage the company."""

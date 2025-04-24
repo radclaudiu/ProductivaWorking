@@ -1,6 +1,5 @@
 {pkgs}: {
   deps = [
-    pkgs.nodejs
     pkgs.zlib
     pkgs.tk
     pkgs.tcl

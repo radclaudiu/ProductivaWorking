@@ -22,8 +22,8 @@ from flask_login import login_required, current_user
 from werkzeug.security import safe_join
 
 # Imports de modelos, formularios y utilidades
-from models import Company, Employee, User
-from models_cash_register import CashRegister, CashRegisterSummary, CashRegisterToken
+from app import db
+# Importamos los modelos dentro de las funciones para evitar importaciones circulares
 from forms_cash_register import (
     CashRegisterForm, CashRegisterSearchForm, CashRegisterConfirmForm,
     CashRegisterTokenForm, PublicCashRegisterForm

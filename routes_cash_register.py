@@ -237,6 +237,8 @@ def new_register(company_id):
     
     if form.validate_on_submit():
         try:
+            logger.info(f"Iniciando creación de nuevo arqueo para empresa {company_id}")
+            
             # Verificar si ya existe un arqueo para esta fecha
             existing_register = CashRegister.query.filter_by(
                 company_id=company_id,
@@ -244,8 +246,11 @@ def new_register(company_id):
             ).first()
             
             if existing_register:
+                logger.warning(f"Ya existe un arqueo para la fecha {form.date.data} en empresa {company_id}")
                 flash(f'Ya existe un arqueo para la fecha {form.date.data.strftime("%d/%m/%Y")}', 'danger')
                 return redirect(url_for('cash_register.company_dashboard', company_id=company_id))
+            
+            logger.info(f"Creando nuevo arqueo: fecha={form.date.data}, total={form.total_amount.data}")
             
             # Crear nuevo arqueo
             register = CashRegister(
@@ -265,20 +270,27 @@ def new_register(company_id):
             
             # Asignar empleado si se seleccionó
             if form.employee_id.data != 0:
+                logger.info(f"Asignando empleado ID {form.employee_id.data} al arqueo")
                 register.employee_id = form.employee_id.data
             
             # Guardar nombre de empleado si se proporciona
             if form.employee_name.data:
+                logger.info(f"Guardando nombre de empleado: {form.employee_name.data}")
                 register.employee_name = form.employee_name.data
             
+            logger.info("Añadiendo registro a la sesión de base de datos")
             db.session.add(register)
+            
+            logger.info("Ejecutando commit para guardar el arqueo")
             db.session.commit()
             
             # Actualizar resumen semanal y mensual
             year = form.date.data.year
             week_number = get_week_number(form.date.data)
+            logger.info(f"Actualizando resumen semanal: año={year}, semana={week_number}")
             calculate_weekly_summary(company_id, year, week_number)
             
+            logger.info("Arqueo registrado correctamente")
             flash('Arqueo de caja registrado correctamente', 'success')
             return redirect(url_for('cash_register.company_dashboard', company_id=company_id))
             
@@ -640,7 +652,9 @@ def manage_tokens(company_id):
         try:
             # Generar nuevo token
             employee_id = form.employee_id.data if form.employee_id.data != 0 else None
-            expiry_days = form.expiry_days.data
+            expiry_days = form.expiry_days.data or 7  # Valor por defecto: 7 días
+            
+            logger.info(f"Generando token para empresa {company_id}, empleado {employee_id}, expiración {expiry_days} días")
             
             # Usar método del modelo para generar token
             token = CashRegisterToken.generate_token(
@@ -784,6 +798,8 @@ def public_register(token_str):
     
     if form.validate_on_submit():
         try:
+            logger.info(f"Iniciando creación de arqueo mediante token {token_str} para empresa {company.id}")
+            
             # Verificar si ya existe un arqueo para esta fecha
             existing_register = CashRegister.query.filter_by(
                 company_id=company.id,
@@ -791,8 +807,11 @@ def public_register(token_str):
             ).first()
             
             if existing_register:
+                logger.warning(f"Ya existe un arqueo para la fecha {form.date.data} en empresa {company.id}")
                 flash(f'Ya existe un arqueo para la fecha {form.date.data.strftime("%d/%m/%Y")}', 'danger')
                 return redirect(url_for('cash_register.public_register', token_str=token_str))
+            
+            logger.info(f"Creando nuevo arqueo por token: fecha={form.date.data}, total={form.total_amount.data}")
             
             # Crear nuevo arqueo
             register = CashRegister(
@@ -811,19 +830,30 @@ def public_register(token_str):
                 employee_name=form.employee_name.data
             )
             
+            logger.info("Añadiendo registro a la sesión de base de datos")
             db.session.add(register)
             
             # Actualizar token
+            logger.info(f"Actualizando estado del token {token.id}")
             token.used_at = datetime.now()
             token.is_active = False
-            token.cash_register_id = register.id
             
+            # Primero hacemos commit para obtener el ID del registro
+            logger.info("Ejecutando commit para guardar el arqueo")
+            db.session.commit()
+            
+            # Ahora actualizamos el token con el ID del registro
+            logger.info(f"Asignando arqueo {register.id} al token")
+            token.cash_register_id = register.id
             db.session.commit()
             
             # Actualizar resumen semanal y mensual
             year = form.date.data.year
             week_number = get_week_number(form.date.data)
+            logger.info(f"Actualizando resumen semanal: año={year}, semana={week_number}")
             calculate_weekly_summary(company.id, year, week_number)
+            
+            logger.info("Arqueo por token registrado correctamente")
             
             # Mostrar página de confirmación
             return render_template(
@@ -857,6 +887,9 @@ def deactivate_token(token_id):
     Args:
         token_id: ID del token a desactivar
     """
+    # Importar modelos para evitar problemas de importación circular
+    from models_cash_register import CashRegisterToken
+    
     # Obtener token
     token = CashRegisterToken.query.get_or_404(token_id)
     

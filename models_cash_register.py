@@ -159,13 +159,23 @@ class CashRegisterToken(db.Model):
             company_id: ID de la empresa
             employee_id: ID del empleado asignado (opcional)
             created_by_id: ID del usuario que crea el token
-            expiry_days: Días hasta la expiración del token
+            expiry_days: Días hasta la expiración del token (valor por defecto: 7)
             
         Returns:
             Instancia de CashRegisterToken
         """
+        import logging
+        logger = logging.getLogger(__name__)
+        
+        # Asegurar que expiry_days sea un entero válido
+        if expiry_days is None or not isinstance(expiry_days, int) or expiry_days <= 0:
+            logger.warning(f"expiry_days inválido: {expiry_days}. Usando valor por defecto (7).")
+            expiry_days = 7
+            
         token = secrets.token_hex(32)  # 64 caracteres
         expires_at = datetime.utcnow() + timedelta(days=expiry_days)
+        
+        logger.info(f"Generando token para empresa {company_id}, expira el {expires_at}")
         
         new_token = CashRegisterToken(
             token=token,
@@ -178,4 +188,5 @@ class CashRegisterToken(db.Model):
         db.session.add(new_token)
         db.session.commit()
         
+        logger.info(f"Token generado correctamente: {new_token.id}")
         return new_token

@@ -1,221 +1,181 @@
 """
 Modelos para el sistema de Arqueos de Caja.
 
-Este módulo contiene los modelos necesarios para gestionar arqueos diarios,
-incluyendo desglose de ingresos, gastos y estadísticas asociadas.
+Este módulo define los modelos para gestionar los arqueos de caja diarios,
+resúmenes acumulados y tokens de acceso para empleados.
 """
 
-from datetime import datetime
-from sqlalchemy import UniqueConstraint, Index
+import secrets
+from datetime import datetime, timedelta
+from sqlalchemy import Column, Integer, Float, String, Boolean, Date, Text, ForeignKey, UniqueConstraint
+from sqlalchemy.orm import relationship
 from app import db
-from models import Employee
+
 
 class CashRegister(db.Model):
     """
-    Modelo principal para los arqueos de caja.
-    Almacena un registro por cada arqueo diario realizado en una empresa.
+    Modelo para los arqueos de caja diarios.
+    
+    Cada registro representa un arqueo de caja para una empresa en una fecha específica.
+    Registra los importes por método de pago, gastos y notas.
     """
     __tablename__ = 'cash_registers'
     
-    id = db.Column(db.Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)
+    date = Column(Date, nullable=False)
+    created_at = Column(db.DateTime, default=datetime.utcnow)
+    updated_at = Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Fecha y hora del arqueo
-    date = db.Column(db.Date, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # Campos de importes
+    total_amount = Column(Float, nullable=False, default=0.0)
+    cash_amount = Column(Float, nullable=False, default=0.0)
+    card_amount = Column(Float, nullable=False, default=0.0)
+    delivery_cash_amount = Column(Float, nullable=False, default=0.0)
+    delivery_online_amount = Column(Float, nullable=False, default=0.0)
+    check_amount = Column(Float, nullable=False, default=0.0)
+    expenses_amount = Column(Float, nullable=False, default=0.0)
     
-    # Desglose de importes
-    total_amount = db.Column(db.Float, nullable=False, default=0.0)
-    cash_amount = db.Column(db.Float, nullable=False, default=0.0)
-    card_amount = db.Column(db.Float, nullable=False, default=0.0)
-    delivery_cash_amount = db.Column(db.Float, nullable=False, default=0.0)
-    delivery_online_amount = db.Column(db.Float, nullable=False, default=0.0)
-    check_amount = db.Column(db.Float, nullable=False, default=0.0)
+    # Campos de notas
+    expenses_notes = Column(Text)
+    notes = Column(Text)
     
-    # Información de gastos para controlar salidas de efectivo
-    expenses_amount = db.Column(db.Float, nullable=False, default=0.0)
-    expenses_notes = db.Column(db.Text)
+    # Campos de confirmación
+    is_confirmed = Column(Boolean, default=False)
+    confirmed_at = Column(db.DateTime)
+    confirmed_by_id = Column(Integer, ForeignKey('users.id'))
+    confirmed_by = relationship('User', foreign_keys=[confirmed_by_id])
     
-    # Notas generales del arqueo
-    notes = db.Column(db.Text)
+    # Campos de relación
+    company_id = Column(Integer, ForeignKey('companies.id'), nullable=False)
+    company = relationship('Company', backref='cash_registers')
     
-    # Estado del arqueo
-    is_confirmed = db.Column(db.Boolean, default=False)
-    confirmed_at = db.Column(db.DateTime)
-    confirmed_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    created_by_id = Column(Integer, ForeignKey('users.id'))
+    created_by = relationship('User', foreign_keys=[created_by_id])
     
-    # Relaciones
-    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
-    created_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+    employee_id = Column(Integer, ForeignKey('employees.id'))
+    employee = relationship('Employee')
     
-    # En caso de ser creado por un empleado sin registro
-    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'))
-    employee_name = db.Column(db.String(100))  # Para casos donde no hay ID de empleado
+    employee_name = Column(String(100))
     
-    # Relaciones con SQLAlchemy
-    company = db.relationship('Company', backref=db.backref('cash_registers', lazy=True))
-    created_by = db.relationship('User', foreign_keys=[created_by_id])
-    confirmed_by = db.relationship('User', foreign_keys=[confirmed_by_id])
-    employee = db.relationship('Employee', foreign_keys=[employee_id])
+    # Token de acceso vinculado
+    tokens = relationship('CashRegisterToken', backref='cash_register')
     
-    # Restricciones e índices
+    # Restricción única: una empresa solo puede tener un arqueo por fecha
     __table_args__ = (
-        # No puede haber más de un arqueo por día y empresa
         UniqueConstraint('company_id', 'date', name='uq_company_date'),
-        # Índices para búsquedas comunes
-        Index('idx_cash_register_company', 'company_id'),
-        Index('idx_cash_register_date', 'date'),
     )
     
     def __repr__(self):
-        return f'<Arqueo {self.id}: {self.date} - {self.total_amount}€>'
-    
-    @property
-    def week_number(self):
-        """Devuelve el número de semana ISO del arqueo"""
-        return self.date.isocalendar()[1]
-    
-    @property
-    def year(self):
-        """Devuelve el año del arqueo"""
-        return self.date.year
-    
-    @property
-    def month(self):
-        """Devuelve el mes del arqueo"""
-        return self.date.month
-    
-    @property
-    def verified_amounts(self):
-        """
-        Verifica que el desglose de importes cuadre con el total.
-        Retorna True si el total es igual a la suma de los importes desglosados menos gastos.
-        """
-        sum_amounts = (
-            self.cash_amount +
-            self.card_amount +
-            self.delivery_cash_amount +
-            self.delivery_online_amount +
-            self.check_amount
-        )
-        return abs(self.total_amount - sum_amounts) < 0.01  # Tolerancia de 1 céntimo
-    
-    @property
-    def net_cash(self):
-        """
-        Calcula el efectivo neto después de descontar gastos.
-        """
-        return self.cash_amount - self.expenses_amount
+        return f'<CashRegister {self.date} - {self.company.name if self.company else "Unknown"}>'
 
 
 class CashRegisterSummary(db.Model):
     """
-    Almacena resúmenes acumulados de arqueos por periodo (semana, mes, año).
-    Se crea un registro por cada combinación única de empresa, año, mes y semana.
+    Modelo para los resúmenes acumulados de arqueos de caja.
+    
+    Almacena los totales acumulados semanales, mensuales y anuales para facilitar
+    la generación de informes y evitar recálculos.
     """
     __tablename__ = 'cash_register_summaries'
     
-    id = db.Column(db.Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)
+    year = Column(Integer, nullable=False)
+    month = Column(Integer, nullable=False)
+    week_number = Column(Integer, nullable=False)
     
-    # Periodo al que corresponde el resumen
-    year = db.Column(db.Integer, nullable=False)
-    month = db.Column(db.Integer, nullable=False)  # 1-12
-    week_number = db.Column(db.Integer, nullable=False)  # 1-53 (semana ISO)
+    # Totales acumulados
+    weekly_total = Column(Float, nullable=False, default=0.0)
+    monthly_total = Column(Float, nullable=False, default=0.0)
+    yearly_total = Column(Float, nullable=False, default=0.0)
     
-    # Acumulados por periodo
-    weekly_total = db.Column(db.Float, default=0.0, nullable=False)
-    monthly_total = db.Column(db.Float, default=0.0, nullable=False)
-    yearly_total = db.Column(db.Float, default=0.0, nullable=False)
+    # Desglose por tipo de pago (semanal)
+    weekly_cash = Column(Float, nullable=False, default=0.0)
+    weekly_card = Column(Float, nullable=False, default=0.0)
+    weekly_delivery_cash = Column(Float, nullable=False, default=0.0)
+    weekly_delivery_online = Column(Float, nullable=False, default=0.0)
+    weekly_check = Column(Float, nullable=False, default=0.0)
+    weekly_expenses = Column(Float, nullable=False, default=0.0)
     
-    # Desglose de acumulados semanales
-    weekly_cash = db.Column(db.Float, default=0.0, nullable=False)
-    weekly_card = db.Column(db.Float, default=0.0, nullable=False)
-    weekly_delivery_cash = db.Column(db.Float, default=0.0, nullable=False)
-    weekly_delivery_online = db.Column(db.Float, default=0.0, nullable=False)
-    weekly_check = db.Column(db.Float, default=0.0, nullable=False)
-    weekly_expenses = db.Column(db.Float, default=0.0, nullable=False)
+    # Datos de coste de personal
+    weekly_staff_cost = Column(Float, nullable=False, default=0.0)
+    monthly_staff_cost = Column(Float, nullable=False, default=0.0)
+    weekly_staff_cost_percentage = Column(Float, nullable=False, default=0.0)
+    monthly_staff_cost_percentage = Column(Float, nullable=False, default=0.0)
     
-    # Costes de personal (se calculan a partir de las horas trabajadas)
-    weekly_staff_cost = db.Column(db.Float, default=0.0, nullable=False)
-    monthly_staff_cost = db.Column(db.Float, default=0.0, nullable=False)
+    # Metadatos
+    created_at = Column(db.DateTime, default=datetime.utcnow)
+    updated_at = Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Porcentajes de coste de personal sobre facturación
-    weekly_staff_cost_percentage = db.Column(db.Float, default=0.0, nullable=False)
-    monthly_staff_cost_percentage = db.Column(db.Float, default=0.0, nullable=False)
+    # Relación con la empresa
+    company_id = Column(Integer, ForeignKey('companies.id'), nullable=False)
+    company = relationship('Company', backref='cash_register_summaries')
     
-    # Metadata
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Relaciones
-    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
-    
-    # Relaciones con SQLAlchemy
-    company = db.relationship('Company', backref=db.backref('cash_register_summaries', lazy=True))
-    
-    # Restricciones e índices
+    # Restricción única: solo un resumen por empresa, año, mes y semana
     __table_args__ = (
-        # Clave única para evitar duplicados
         UniqueConstraint('company_id', 'year', 'month', 'week_number', name='uq_summary_period'),
-        # Índices para búsquedas comunes
-        Index('idx_summary_company', 'company_id'),
-        Index('idx_summary_year_month', 'year', 'month'),
     )
     
     def __repr__(self):
-        return f'<Resumen Arqueo: {self.company.name} - {self.year}-W{self.week_number:02d}>'
-    
-    @property
-    def staff_cost_warning(self):
-        """
-        Indica si el porcentaje de coste de personal está por encima del umbral recomendado.
-        Por lo general, se considera alto un porcentaje > 30% de la facturación.
-        """
-        return self.weekly_staff_cost_percentage > 30.0
+        return f'<CashRegisterSummary {self.company.name if self.company else "Unknown"} - W{self.week_number}/{self.month}/{self.year}>'
 
 
 class CashRegisterToken(db.Model):
     """
-    Tokens para permitir a empleados sin acceso a la plataforma registrar arqueos.
+    Modelo para los tokens de acceso de empleados a arqueos de caja.
+    
+    Permite a empleados sin acceso completo al sistema enviar datos
+    de arqueos de caja mediante un token temporal.
     """
     __tablename__ = 'cash_register_tokens'
     
-    id = db.Column(db.Integer, primary_key=True)
-    token = db.Column(db.String(64), unique=True, nullable=False)
-    
-    # Validez del token
-    is_active = db.Column(db.Boolean, default=True)
-    expires_at = db.Column(db.DateTime)
-    
-    # Metadatos
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    used_at = db.Column(db.DateTime)
+    id = Column(Integer, primary_key=True)
+    token = Column(String(64), unique=True, nullable=False)
+    is_active = Column(Boolean, default=True)
+    expires_at = Column(db.DateTime)
+    created_at = Column(db.DateTime, default=datetime.utcnow)
+    used_at = Column(db.DateTime)
     
     # Relaciones
-    company_id = db.Column(db.Integer, db.ForeignKey('companies.id'), nullable=False)
-    created_by_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'))
+    company_id = Column(Integer, ForeignKey('companies.id'), nullable=False)
+    company = relationship('Company', backref='cash_register_tokens')
     
-    # Si se ha usado para crear un arqueo
-    cash_register_id = db.Column(db.Integer, db.ForeignKey('cash_registers.id'))
+    created_by_id = Column(Integer, ForeignKey('users.id'))
+    created_by = relationship('User')
     
-    # Relaciones con SQLAlchemy
-    company = db.relationship('Company', backref=db.backref('cash_register_tokens', lazy=True))
-    created_by = db.relationship('User', foreign_keys=[created_by_id])
-    employee = db.relationship('Employee', foreign_keys=[employee_id])
-    cash_register = db.relationship('CashRegister', backref=db.backref('token', uselist=False))
+    employee_id = Column(Integer, ForeignKey('employees.id'))
+    employee = relationship('Employee')
+    
+    cash_register_id = Column(Integer, ForeignKey('cash_registers.id'))
     
     def __repr__(self):
-        status = "activo" if self.is_active else "inactivo"
-        return f'<Token Arqueo: {self.token[:8]}... ({status})>'
+        return f'<CashRegisterToken {self.token[:8]}... - {self.company.name if self.company else "Unknown"}>'
     
-    @property
-    def is_valid(self):
+    @staticmethod
+    def generate_token(company_id, employee_id=None, created_by_id=None, expiry_days=7):
         """
-        Comprueba si el token está activo y no ha expirado.
+        Genera un nuevo token para acceso a arqueos de caja.
+        
+        Args:
+            company_id: ID de la empresa
+            employee_id: ID del empleado asignado (opcional)
+            created_by_id: ID del usuario que crea el token
+            expiry_days: Días hasta la expiración del token
+            
+        Returns:
+            Instancia de CashRegisterToken
         """
-        if not self.is_active:
-            return False
-        if self.expires_at and self.expires_at < datetime.utcnow():
-            return False
-        return True
+        token = secrets.token_hex(32)  # 64 caracteres
+        expires_at = datetime.utcnow() + timedelta(days=expiry_days)
+        
+        new_token = CashRegisterToken(
+            token=token,
+            company_id=company_id,
+            employee_id=employee_id,
+            created_by_id=created_by_id,
+            expires_at=expires_at
+        )
+        
+        db.session.add(new_token)
+        db.session.commit()
+        
+        return new_token

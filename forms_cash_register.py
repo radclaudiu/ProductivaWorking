@@ -1,182 +1,196 @@
 """
 Formularios para el módulo de Arqueos de Caja.
 
-Este módulo contiene los formularios necesarios para:
-- Crear y editar arqueos
-- Filtrar listados de arqueos
-- Generar tokens para empleados
-- Formulario público para empleados sin registro
+Este módulo define los formularios necesarios para la gestión de arqueos de caja,
+incluyendo el formulario de arqueo diario, búsqueda y filtrado, y generación de tokens.
 """
 
-from datetime import date, datetime, timedelta
-from flask_wtf import FlaskForm
+from datetime import datetime, date
+from decimal import Decimal
 from wtforms import (
-    StringField, DecimalField, DateField, TextAreaField, SubmitField,
-    SelectField, BooleanField, IntegerField, HiddenField
+    StringField, DateField, FloatField, TextAreaField, BooleanField,
+    SelectField, HiddenField, SubmitField, IntegerField, validators
 )
-from wtforms.validators import DataRequired, Optional, Length, NumberRange, ValidationError
+from flask_wtf import FlaskForm
+from wtforms.validators import DataRequired, Optional, ValidationError, Length
+
 
 class CashRegisterForm(FlaskForm):
     """
-    Formulario para crear y editar arqueos de caja.
+    Formulario para registrar un arqueo de caja diario.
     """
-    date = DateField('Fecha', validators=[DataRequired()], format='%Y-%m-%d')
+    company_id = HiddenField('ID de Empresa', validators=[DataRequired()])
+    date = DateField('Fecha', validators=[DataRequired()], format='%Y-%m-%d', default=date.today)
     
-    total_amount = DecimalField('Importe Total (€)', 
-                              validators=[DataRequired(), NumberRange(min=0)],
-                              places=2, default=0)
+    # Campos de importes
+    total_amount = FloatField('Importe Total (€)', default=0, 
+                              validators=[validators.NumberRange(min=0)])
     
-    cash_amount = DecimalField('Efectivo (€)', 
-                            validators=[DataRequired(), NumberRange(min=0)],
-                            places=2, default=0)
+    cash_amount = FloatField('Efectivo (€)', default=0, 
+                             validators=[validators.NumberRange(min=0)])
     
-    card_amount = DecimalField('Tarjeta (€)', 
-                            validators=[Optional(), NumberRange(min=0)],
-                            places=2, default=0)
+    card_amount = FloatField('Tarjeta (€)', default=0, 
+                             validators=[validators.NumberRange(min=0)])
     
-    delivery_cash_amount = DecimalField('Delivery Efectivo (€)', 
-                                     validators=[Optional(), NumberRange(min=0)],
-                                     places=2, default=0)
+    delivery_cash_amount = FloatField('Delivery - Efectivo (€)', default=0, 
+                                     validators=[validators.NumberRange(min=0)])
     
-    delivery_online_amount = DecimalField('Delivery Online (€)', 
-                                       validators=[Optional(), NumberRange(min=0)],
-                                       places=2, default=0)
+    delivery_online_amount = FloatField('Delivery - Online (€)', default=0, 
+                                       validators=[validators.NumberRange(min=0)])
     
-    check_amount = DecimalField('Cheques (€)', 
-                             validators=[Optional(), NumberRange(min=0)],
-                             places=2, default=0)
+    check_amount = FloatField('Cheque (€)', default=0, 
+                             validators=[validators.NumberRange(min=0)])
     
-    expenses_amount = DecimalField('Gastos (€)', 
-                                validators=[Optional(), NumberRange(min=0)],
-                                places=2, default=0)
+    expenses_amount = FloatField('Gastos (€)', default=0, 
+                                validators=[validators.NumberRange(min=0)])
     
-    expenses_notes = TextAreaField('Notas de Gastos', 
-                                validators=[Optional(), Length(max=500)])
+    # Campos de notas
+    expenses_notes = TextAreaField('Detalle de Gastos', validators=[Optional(), Length(max=500)])
+    notes = TextAreaField('Notas', validators=[Optional(), Length(max=500)])
     
-    notes = TextAreaField('Notas Generales', 
-                        validators=[Optional(), Length(max=500)])
+    # Campos adicionales
+    employee_id = SelectField('Empleado', coerce=int, validators=[Optional()])
+    employee_name = StringField('Nombre del Empleado', validators=[Optional(), Length(max=100)])
     
     submit = SubmitField('Guardar Arqueo')
     
-    def validate(self, extra_validators=None):
-        """Validación personalizada para verificar que la suma de los importes coincide con el total."""
-        if not super().validate(extra_validators):
+    def validate_total_amount(self, field):
+        """Validación del importe total."""
+        # Calcular la suma de todos los métodos de pago
+        total_payments = (
+            self.cash_amount.data +
+            self.card_amount.data +
+            self.delivery_cash_amount.data +
+            self.delivery_online_amount.data +
+            self.check_amount.data
+        )
+        
+        # Verificar que coincida con el total declarado
+        if abs(field.data - total_payments) > 0.01:  # Permitir pequeñas diferencias por redondeo
+            field.errors = list(field.errors)
+            field.errors.append(
+                f"El importe total ({field.data:.2f} €) no coincide con la suma de los métodos de pago ({total_payments:.2f} €)"
+            )
             return False
-            
-        total = self.total_amount.data
-        sum_parts = (self.cash_amount.data + 
-                    self.card_amount.data + 
-                    self.delivery_cash_amount.data + 
-                    self.delivery_online_amount.data + 
-                    self.check_amount.data)
-                    
-        # Permitir una pequeña diferencia por redondeo (máximo 1 céntimo)
-        if abs(total - sum_parts) > 0.01:
-            self.total_amount.errors.append(
-                f'El importe total ({total:.2f}€) debe ser igual a la suma de los desgloses ({sum_parts:.2f}€)')
-            return False
-            
+        
         return True
 
-class CashRegisterFilterForm(FlaskForm):
+
+class CashRegisterSearchForm(FlaskForm):
     """
-    Formulario para filtrar arqueos en el dashboard.
+    Formulario para búsqueda y filtrado de arqueos de caja.
     """
-    start_date = DateField('Desde', format='%Y-%m-%d', 
-                        validators=[Optional()],
-                        default=lambda: date.today() - timedelta(days=7))
+    company_id = SelectField('Empresa', coerce=int, validators=[DataRequired()])
+    start_date = DateField('Fecha Desde', format='%Y-%m-%d', validators=[Optional()])
+    end_date = DateField('Fecha Hasta', format='%Y-%m-%d', validators=[Optional()])
+    is_confirmed = SelectField('Estado', choices=[
+        ('all', 'Todos'),
+        ('true', 'Confirmados'),
+        ('false', 'Pendientes')
+    ], default='all')
     
-    end_date = DateField('Hasta', format='%Y-%m-%d', 
-                       validators=[Optional()],
-                       default=date.today)
+    year = IntegerField('Año', validators=[Optional()])
+    month = SelectField('Mes', choices=[
+        (0, 'Todos'),
+        (1, 'Enero'),
+        (2, 'Febrero'),
+        (3, 'Marzo'),
+        (4, 'Abril'),
+        (5, 'Mayo'),
+        (6, 'Junio'),
+        (7, 'Julio'),
+        (8, 'Agosto'),
+        (9, 'Septiembre'),
+        (10, 'Octubre'),
+        (11, 'Noviembre'),
+        (12, 'Diciembre')
+    ], coerce=int, default=0)
     
-    submit = SubmitField('Filtrar')
+    week = IntegerField('Semana', validators=[Optional()])
     
-    def validate(self, extra_validators=None):
-        """Validación personalizada para asegurar que la fecha de inicio no es posterior a la fecha de fin."""
-        if not super().validate(extra_validators):
-            return False
-            
-        if self.start_date.data and self.end_date.data and self.start_date.data > self.end_date.data:
-            self.start_date.errors.append('La fecha de inicio no puede ser posterior a la fecha de fin')
-            return False
-            
-        return True
+    submit = SubmitField('Buscar')
+    
+    def validate_start_date(self, field):
+        """Validación de fecha inicio < fecha fin."""
+        if field.data and self.end_date.data and field.data > self.end_date.data:
+            raise ValidationError('La fecha de inicio no puede ser posterior a la fecha de fin')
+
+
+class CashRegisterConfirmForm(FlaskForm):
+    """
+    Formulario para confirmar un arqueo de caja.
+    """
+    cash_register_id = HiddenField('ID de Arqueo', validators=[DataRequired()])
+    confirm = SubmitField('Confirmar Arqueo')
+    cancel = SubmitField('Cancelar')
+
 
 class CashRegisterTokenForm(FlaskForm):
     """
-    Formulario para crear tokens de acceso para empleados sin registro.
+    Formulario para generar tokens de acceso para empleados.
     """
+    company_id = SelectField('Empresa', coerce=int, validators=[DataRequired()])
     employee_id = SelectField('Empleado', coerce=int, validators=[Optional()])
-    
-    expiry_days = IntegerField('Días de validez', 
-                            validators=[DataRequired(), NumberRange(min=1, max=30)],
-                            default=1)
+    expiry_days = IntegerField('Días de validez', validators=[DataRequired()], default=7)
     
     submit = SubmitField('Generar Token')
 
+
 class PublicCashRegisterForm(FlaskForm):
     """
-    Formulario público para que empleados sin acceso puedan registrar arqueos.
+    Formulario público para que empleados envíen datos de arqueo mediante token.
     """
-    employee_name = StringField('Tu nombre', 
-                             validators=[Optional(), Length(max=100)],
-                             render_kw={"placeholder": "Opcional si ya estás asignado al token"})
+    token = HiddenField('Token', validators=[DataRequired()])
+    date = DateField('Fecha', validators=[DataRequired()], format='%Y-%m-%d', default=date.today)
     
-    date = DateField('Fecha', validators=[DataRequired()], format='%Y-%m-%d',
-                  default=date.today)
+    # Campos de importes
+    total_amount = FloatField('Importe Total (€)', default=0, 
+                              validators=[validators.NumberRange(min=0)])
     
-    total_amount = DecimalField('Importe Total (€)', 
-                             validators=[DataRequired(), NumberRange(min=0)],
-                             places=2, default=0)
+    cash_amount = FloatField('Efectivo (€)', default=0, 
+                             validators=[validators.NumberRange(min=0)])
     
-    cash_amount = DecimalField('Efectivo (€)', 
-                            validators=[DataRequired(), NumberRange(min=0)],
-                            places=2, default=0)
+    card_amount = FloatField('Tarjeta (€)', default=0, 
+                             validators=[validators.NumberRange(min=0)])
     
-    card_amount = DecimalField('Tarjeta (€)', 
-                            validators=[Optional(), NumberRange(min=0)],
-                            places=2, default=0)
+    delivery_cash_amount = FloatField('Delivery - Efectivo (€)', default=0, 
+                                     validators=[validators.NumberRange(min=0)])
     
-    delivery_cash_amount = DecimalField('Delivery Efectivo (€)', 
-                                     validators=[Optional(), NumberRange(min=0)],
-                                     places=2, default=0)
+    delivery_online_amount = FloatField('Delivery - Online (€)', default=0, 
+                                       validators=[validators.NumberRange(min=0)])
     
-    delivery_online_amount = DecimalField('Delivery Online (€)', 
-                                       validators=[Optional(), NumberRange(min=0)],
-                                       places=2, default=0)
+    check_amount = FloatField('Cheque (€)', default=0, 
+                             validators=[validators.NumberRange(min=0)])
     
-    check_amount = DecimalField('Cheques (€)', 
-                             validators=[Optional(), NumberRange(min=0)],
-                             places=2, default=0)
+    expenses_amount = FloatField('Gastos (€)', default=0, 
+                                validators=[validators.NumberRange(min=0)])
     
-    expenses_amount = DecimalField('Gastos (€)', 
-                               validators=[Optional(), NumberRange(min=0)],
-                               places=2, default=0)
+    # Campos de notas
+    expenses_notes = TextAreaField('Detalle de Gastos', validators=[Optional(), Length(max=500)])
+    notes = TextAreaField('Notas', validators=[Optional(), Length(max=500)])
     
-    expenses_notes = TextAreaField('Notas de Gastos (explicar para qué se ha usado el dinero)', 
-                                validators=[Optional(), Length(max=500)])
-    
-    confirm = BooleanField('Confirmo que los datos son correctos', validators=[DataRequired()])
+    # Nombre del empleado (por si no tiene cuenta)
+    employee_name = StringField('Tu Nombre', validators=[DataRequired(), Length(max=100)])
     
     submit = SubmitField('Enviar Arqueo')
     
-    def validate(self, extra_validators=None):
-        """Validación personalizada para verificar que la suma de los importes coincide con el total."""
-        if not super().validate(extra_validators):
+    def validate_total_amount(self, field):
+        """Validación del importe total."""
+        # Calcular la suma de todos los métodos de pago
+        total_payments = (
+            self.cash_amount.data +
+            self.card_amount.data +
+            self.delivery_cash_amount.data +
+            self.delivery_online_amount.data +
+            self.check_amount.data
+        )
+        
+        # Verificar que coincida con el total declarado
+        if abs(field.data - total_payments) > 0.01:  # Permitir pequeñas diferencias por redondeo
+            field.errors = list(field.errors)
+            field.errors.append(
+                f"El importe total ({field.data:.2f} €) no coincide con la suma de los métodos de pago ({total_payments:.2f} €)"
+            )
             return False
-            
-        total = self.total_amount.data
-        sum_parts = (self.cash_amount.data + 
-                    self.card_amount.data + 
-                    self.delivery_cash_amount.data + 
-                    self.delivery_online_amount.data + 
-                    self.check_amount.data)
-                    
-        # Permitir una pequeña diferencia por redondeo (máximo 1 céntimo)
-        if abs(total - sum_parts) > 0.01:
-            self.total_amount.errors.append(
-                f'El importe total ({total:.2f}€) debe ser igual a la suma de los desgloses ({sum_parts:.2f}€)')
-            return False
-            
+        
         return True

@@ -1,0 +1,415 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h1 class="mb-0">
+                    <i class="bi bi-cash-coin me-2 text-warning"></i>
+                    Arqueos de Caja - {{ company.name }}
+                </h1>
+                <div>
+                    <a href="{{ url_for('cash_register.dashboard') }}" class="btn btn-outline-secondary me-2">
+                        <i class="bi bi-arrow-left me-1"></i> Volver
+                    </a>
+                    <a href="{{ url_for('cash_register.new_register', company_id=company.id) }}" class="btn btn-success">
+                        <i class="bi bi-plus-circle me-1"></i> Nuevo Arqueo
+                    </a>
+                </div>
+            </div>
+            <hr>
+        </div>
+    </div>
+
+    <!-- Resumen semanal -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card bg-dark border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-calendar-week me-2"></i>
+                        Resumen Semana {{ current_week }} ({{ week_start }} - {{ week_end }})
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if summary %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-group list-group-flush bg-transparent">
+                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
+                                    <span>Total Semanal:</span>
+                                    <span class="fw-bold text-success">{{ format_currency(summary.weekly_total) }}</span>
+                                </li>
+                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
+                                    <span>Total Mensual:</span>
+                                    <span class="fw-bold text-success">{{ format_currency(summary.monthly_total) }}</span>
+                                </li>
+                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
+                                    <span>Total Anual:</span>
+                                    <span class="fw-bold text-success">{{ format_currency(summary.yearly_total) }}</span>
+                                </li>
+                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
+                                    <span>Gastos Semanales:</span>
+                                    <span class="fw-bold text-danger">{{ format_currency(summary.weekly_expenses) }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-group list-group-flush bg-transparent">
+                                {% if staff_cost %}
+                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
+                                    <span>Horas Trabajadas (Semana):</span>
+                                    <span class="fw-bold">{{ staff_cost.weekly_hours }} h</span>
+                                </li>
+                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
+                                    <span>Coste Personal (Semana):</span>
+                                    <span class="fw-bold text-danger">{{ format_currency(staff_cost.weekly_cost) }}</span>
+                                </li>
+                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
+                                    <span>% Coste/Ingresos (Semana):</span>
+                                    <span class="fw-bold {% if summary.weekly_staff_cost_percentage > 30 %}text-danger{% else %}text-warning{% endif %}">
+                                        {{ format_percentage(summary.weekly_staff_cost_percentage) }}
+                                    </span>
+                                </li>
+                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
+                                    <span>% Coste/Ingresos (Mes):</span>
+                                    <span class="fw-bold {% if summary.monthly_staff_cost_percentage > 30 %}text-danger{% else %}text-warning{% endif %}">
+                                        {{ format_percentage(summary.monthly_staff_cost_percentage) }}
+                                    </span>
+                                </li>
+                                {% else %}
+                                <li class="list-group-item bg-dark border-secondary">
+                                    <span class="text-muted">No hay datos de coste de personal disponibles</span>
+                                </li>
+                                {% endif %}
+                            </ul>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        No hay datos para la semana actual. Comience registrando arqueos diarios.
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-transparent border-top border-secondary">
+                    <a href="{{ url_for('cash_register.company_report', company_id=company.id) }}" class="btn btn-outline-warning btn-sm">
+                        <i class="bi bi-graph-up me-1"></i> Ver Informe Completo
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <!-- Métodos de pago (gráfico) -->
+        <div class="col-md-6">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-header bg-transparent border-bottom border-secondary">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-pie-chart me-2"></i>
+                        Métodos de Pago (Semana)
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if summary and summary.weekly_total > 0 %}
+                    <canvas id="paymentMethodsChart" width="100" height="100"></canvas>
+                    {% else %}
+                    <div class="alert alert-warning">
+                        No hay datos suficientes para mostrar el gráfico.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Acciones Rápidas -->
+        <div class="col-md-6">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-header bg-transparent border-bottom border-secondary">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-lightning-charge me-2"></i>
+                        Acciones Rápidas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('cash_register.new_register', company_id=company.id) }}" class="btn btn-success">
+                            <i class="bi bi-plus-circle me-2"></i> Nuevo Arqueo
+                        </a>
+                        <a href="{{ url_for('cash_register.company_report', company_id=company.id) }}" class="btn btn-primary">
+                            <i class="bi bi-graph-up me-2"></i> Ver Reportes
+                        </a>
+                        <a href="{{ url_for('cash_register.manage_tokens', company_id=company.id) }}" class="btn btn-warning">
+                            <i class="bi bi-key me-2"></i> Gestionar Tokens de Acceso
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Arqueos Recientes -->
+        <div class="col-md-6">
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-transparent border-bottom border-secondary">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-clock-history me-2"></i>
+                        Arqueos Recientes
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if recent_registers %}
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover table-striped mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Total</th>
+                                    <th>Estado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for register in recent_registers %}
+                                <tr>
+                                    <td>{{ register.date.strftime('%d/%m/%Y') }}</td>
+                                    <td class="text-success">{{ format_currency(register.total_amount) }}</td>
+                                    <td>
+                                        {% if register.is_confirmed %}
+                                        <span class="badge bg-success">Confirmado</span>
+                                        {% else %}
+                                        <span class="badge bg-warning">Pendiente</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('cash_register.edit_register', register_id=register.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        {% if not register.is_confirmed %}
+                                        <a href="{{ url_for('cash_register.confirm_register', register_id=register.id) }}" class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-check-lg"></i>
+                                        </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-3">
+                        <div class="alert alert-warning mb-0">
+                            No hay arqueos registrados.
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Arqueos Pendientes -->
+        <div class="col-md-6">
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-transparent border-bottom border-secondary">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-exclamation-circle me-2 text-warning"></i>
+                        Arqueos Pendientes de Confirmar
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if pending_registers %}
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover table-striped mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Total</th>
+                                    <th>Creado Por</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for register in pending_registers %}
+                                <tr>
+                                    <td>{{ register.date.strftime('%d/%m/%Y') }}</td>
+                                    <td class="text-success">{{ format_currency(register.total_amount) }}</td>
+                                    <td>
+                                        {% if register.created_by %}
+                                        {{ register.created_by.username }}
+                                        {% elif register.employee_name %}
+                                        {{ register.employee_name }}
+                                        {% else %}
+                                        <span class="text-muted">Desconocido</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('cash_register.confirm_register', register_id=register.id) }}" class="btn btn-sm btn-success">
+                                            Confirmar
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-3">
+                        <div class="alert alert-success mb-0">
+                            No hay arqueos pendientes de confirmar.
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tokens Activos -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-transparent border-bottom border-secondary">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-key me-2 text-warning"></i>
+                            Tokens de Acceso Activos
+                        </h5>
+                        <a href="{{ url_for('cash_register.manage_tokens', company_id=company.id) }}" class="btn btn-sm btn-outline-warning">
+                            Gestionar Tokens
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if active_tokens %}
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover table-striped mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Creado</th>
+                                    <th>Expira</th>
+                                    <th>Empleado</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for token in active_tokens %}
+                                <tr>
+                                    <td>{{ token.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                                    <td>
+                                        {% if token.expires_at %}
+                                        {{ token.expires_at.strftime('%d/%m/%Y') }}
+                                        {% else %}
+                                        <span class="text-muted">Sin expiración</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if token.employee %}
+                                        {{ token.employee.name }} {{ token.employee.last_name }}
+                                        {% else %}
+                                        <span class="text-muted">Sin asignar</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-info copy-token" 
+                                                data-token-url="{{ url_for('cash_register.public_register', token_str=token.token, _external=True) }}">
+                                            <i class="bi bi-clipboard"></i> Copiar URL
+                                        </button>
+                                        <form action="{{ url_for('cash_register.deactivate_token', token_id=token.id) }}" method="POST" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('¿Desactivar este token?')">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-3">
+                        <div class="alert alert-info mb-0">
+                            No hay tokens de acceso activos. Cree tokens para que empleados puedan enviar arqueos.
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Configurar gráfico de métodos de pago
+    {% if summary and summary.weekly_total > 0 %}
+    const paymentMethodsData = {{ payment_methods_data|safe }};
+    const ctx = document.getElementById('paymentMethodsChart').getContext('2d');
+    
+    const paymentMethodsChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: paymentMethodsData.labels,
+            datasets: [{
+                data: paymentMethodsData.data,
+                backgroundColor: [
+                    '#28a745',  // Efectivo - Verde
+                    '#007bff',  // Tarjeta - Azul
+                    '#17a2b8',  // Delivery Efectivo - Cyan
+                    '#6f42c1',  // Delivery Online - Púrpura
+                    '#ffc107'   // Cheque - Amarillo
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: '#fff'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            let value = context.raw || 0;
+                            let total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                            let percentage = Math.round((value / total) * 100);
+                            return `${label}: ${value.toFixed(2)} € (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+    
+    // Configurar botones de copia de URL de token
+    document.querySelectorAll('.copy-token').forEach(button => {
+        button.addEventListener('click', function() {
+            const url = this.getAttribute('data-token-url');
+            navigator.clipboard.writeText(url).then(() => {
+                // Cambiar temporalmente el texto del botón
+                const originalHtml = this.innerHTML;
+                this.innerHTML = '<i class="bi bi-check"></i> Copiado';
+                this.classList.remove('btn-outline-info');
+                this.classList.add('btn-success');
+                
+                // Restaurar después de 2 segundos
+                setTimeout(() => {
+                    this.innerHTML = originalHtml;
+                    this.classList.remove('btn-success');
+                    this.classList.add('btn-outline-info');
+                }, 2000);
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

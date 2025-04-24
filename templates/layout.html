@@ -51,6 +51,11 @@
                             <i class="bi bi-list-check"></i> Panel de Tareas
                         </a>
                     </li>
+                    <li class="nav-item mx-1">
+                        <a class="btn btn-warning fw-bold" href="{{ url_for('cash_register.dashboard') }}">
+                            <i class="bi bi-cash-coin"></i> Arqueos de Caja
+                        </a>
+                    </li>
                 </ul>
                 
                 <form class="d-flex ms-auto" id="searchForm" action="{{ url_for('main.search') }}" method="get">

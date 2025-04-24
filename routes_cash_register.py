@@ -1,693 +1,800 @@
 """
 Rutas para el módulo de Arqueos de Caja.
 
-Este módulo contiene las rutas para:
-- Dashboard de arqueos
-- Gestión de arqueos (crear, editar, eliminar)
-- Generación de informes
-- Sistema de tokens para empleados
+Este módulo define las rutas y vistas para la gestión de arqueos de caja,
+incluyendo el dashboard, CRUD de arqueos, reportes y acceso mediante tokens.
 """
 
-import os
+import logging
 from datetime import datetime, date, timedelta
-import uuid
-from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, current_app, abort
+import calendar
+import os
+from decimal import Decimal
+import secrets
+import json
+
+# Imports de Flask y extensiones
+from flask import (
+    Blueprint, render_template, request, redirect, url_for, flash, 
+    jsonify, current_app, abort, session
+)
 from flask_login import login_required, current_user
-from werkzeug.security import generate_password_hash
-from app import db
-from models import Company, User, Employee
-from models_work_hours import CompanyWorkHours
+from werkzeug.security import safe_join
+
+# Imports de modelos, formularios y utilidades
+from models import Company, Employee, User
 from models_cash_register import CashRegister, CashRegisterSummary, CashRegisterToken
-from utils_cash_register import (
-    update_register_summary, update_staff_costs_for_summary,
-    generate_token, validate_token, mark_token_used
-)
-from helpers import (
-    admin_required, manager_required, company_membership_required, save_activity_log
-)
 from forms_cash_register import (
-    CashRegisterForm, CashRegisterFilterForm, CashRegisterTokenForm,
-    PublicCashRegisterForm
+    CashRegisterForm, CashRegisterSearchForm, CashRegisterConfirmForm,
+    CashRegisterTokenForm, PublicCashRegisterForm
 )
+from utils_cash_register import (
+    calculate_weekly_summary, calculate_staff_cost, calculate_monthly_revenue,
+    calculate_yearly_revenue, format_currency, format_percentage,
+    get_current_week_number, get_week_dates, get_week_number, get_date_range,
+    generate_token_url
+)
+from app import db
+import helpers
+from decorators import admin_required, gerente_required
 
-# Crear el blueprint
-cash_register_bp = Blueprint('cash_register', __name__, url_prefix='/arqueos')
+# Configurar logging
+logger = logging.getLogger(__name__)
 
-@cash_register_bp.route('/')
+# Crear Blueprint
+cash_register_bp = Blueprint('cash_register', __name__, url_prefix='/cash-register')
+
+
+@cash_register_bp.route('/dashboard')
 @login_required
-def index():
+def dashboard():
     """
-    Dashboard principal del módulo de arqueos.
-    Muestra un resumen de los arqueos por empresa y permite filtrar.
+    Dashboard principal de arqueos de caja.
+    
+    Muestra listado de empresas para acceder a sus datos de arqueo.
     """
-    # Obtener todas las empresas a las que tiene acceso el usuario
+    # Obtener empresas a las que tiene acceso el usuario
     if current_user.is_admin():
-        companies = Company.query.all()
+        companies = Company.query.order_by(Company.name).all()
     else:
         companies = current_user.companies
     
     if not companies:
-        flash('No tiene acceso a ninguna empresa para gestionar arqueos.', 'warning')
+        flash('No tiene acceso a ninguna empresa', 'warning')
         return redirect(url_for('main.index'))
-    
-    # Si solo tiene acceso a una empresa, redirigir directamente a su dashboard
-    if len(companies) == 1:
-        return redirect(url_for('cash_register.company_dashboard', company_id=companies[0].id))
-    
-    # Si tiene acceso a varias, mostrar selector de empresa
-    return render_template(
-        'cash_register/index.html',
-        companies=companies,
-        title='Arqueos de Caja - Seleccionar Empresa'
-    )
-
-@cash_register_bp.route('/empresa/<int:company_id>')
-@login_required
-@company_membership_required
-def company_dashboard(company_id):
-    """
-    Dashboard de arqueos para una empresa específica.
-    """
-    company = Company.query.get_or_404(company_id)
-    
-    # Obtener fecha actual y determinar rango de fechas para mostrar (por defecto última semana)
-    today = date.today()
-    end_date = today
-    start_date = today - timedelta(days=6)  # Última semana
-    
-    # Permitir cambiar el rango por parámetros
-    if request.args.get('start_date'):
-        try:
-            start_date = datetime.strptime(request.args.get('start_date'), '%Y-%m-%d').date()
-        except ValueError:
-            flash('Formato de fecha inválido', 'danger')
-    
-    if request.args.get('end_date'):
-        try:
-            end_date = datetime.strptime(request.args.get('end_date'), '%Y-%m-%d').date()
-        except ValueError:
-            flash('Formato de fecha inválido', 'danger')
-    
-    # Obtener los arqueos en el rango de fechas
-    registers = CashRegister.query.filter(
-        CashRegister.company_id == company_id,
-        CashRegister.date >= start_date,
-        CashRegister.date <= end_date
-    ).order_by(CashRegister.date.desc()).all()
-    
-    # Obtener el resumen semanal actual
-    current_week = today.isocalendar()[1]
-    current_year = today.isocalendar()[0]
-    
-    summary = CashRegisterSummary.query.filter_by(
-        company_id=company_id,
-        year=current_year,
-        week_number=current_week
-    ).first()
-    
-    # Si no existe el resumen, crear uno temporal para mostrar
-    if not summary:
-        summary = CashRegisterSummary(
-            company_id=company_id,
-            year=current_year,
-            week_number=current_week,
-            month=today.month
-        )
-    
-    # Obtener datos de coste de personal
-    work_hours = CompanyWorkHours.query.filter_by(
-        company_id=company_id,
-        year=current_year,
-        week_number=current_week
-    ).first()
-    
-    # Formulario de filtro
-    filter_form = CashRegisterFilterForm()
     
     return render_template(
         'cash_register/dashboard.html',
-        company=company,
-        registers=registers,
-        summary=summary,
-        work_hours=work_hours,
-        start_date=start_date,
-        end_date=end_date,
-        filter_form=filter_form,
-        title=f'Arqueos - {company.name}'
+        title='Dashboard de Arqueos de Caja',
+        companies=companies
     )
 
-@cash_register_bp.route('/empresa/<int:company_id>/nuevo', methods=['GET', 'POST'])
+
+@cash_register_bp.route('/company/<int:company_id>')
 @login_required
-@company_membership_required
+def company_dashboard(company_id):
+    """
+    Dashboard de arqueos de caja para una empresa específica.
+    
+    Muestra resumen de arqueos recientes, totales y gráficos.
+    
+    Args:
+        company_id: ID de la empresa
+    """
+    # Verificar acceso a la empresa
+    company = Company.query.get_or_404(company_id)
+    if not current_user.is_admin() and company not in current_user.companies:
+        flash('No tiene acceso a esta empresa', 'danger')
+        return redirect(url_for('cash_register.dashboard'))
+    
+    # Obtener el año y semana actuales
+    current_year = datetime.now().year
+    current_week = get_current_week_number()
+    current_month = datetime.now().month
+    
+    # Obtener fechas de inicio y fin de la semana actual
+    week_start, week_end = get_week_dates(current_year, current_week)
+    
+    # Calcular o actualizar el resumen semanal
+    summary = calculate_weekly_summary(company_id, current_year, current_week)
+    
+    # Obtener arqueos recientes
+    recent_registers = CashRegister.query.filter_by(company_id=company_id)\
+        .order_by(CashRegister.date.desc())\
+        .limit(10).all()
+    
+    # Obtener arqueos pendientes (no confirmados)
+    pending_registers = CashRegister.query.filter_by(
+        company_id=company_id, 
+        is_confirmed=False
+    ).all()
+    
+    # Obtener tokens activos
+    active_tokens = CashRegisterToken.query.filter_by(
+        company_id=company_id,
+        is_active=True,
+        cash_register_id=None
+    ).all()
+    
+    # Preparar datos para gráfico de métodos de pago de la semana actual
+    payment_methods_data = {}
+    if summary:
+        payment_methods_data = {
+            'labels': [
+                'Efectivo', 'Tarjeta', 'Delivery - Efectivo', 
+                'Delivery - Online', 'Cheque'
+            ],
+            'data': [
+                float(summary.weekly_cash),
+                float(summary.weekly_card),
+                float(summary.weekly_delivery_cash),
+                float(summary.weekly_delivery_online),
+                float(summary.weekly_check)
+            ]
+        }
+    
+    # Obtener datos de horas trabajadas y calcular coste
+    staff_cost = calculate_staff_cost(
+        company_id, current_year, current_month, current_week
+    )
+    
+    return render_template(
+        'cash_register/company_dashboard.html',
+        title=f'Arqueos de Caja - {company.name}',
+        company=company,
+        summary=summary,
+        recent_registers=recent_registers,
+        pending_registers=pending_registers,
+        active_tokens=active_tokens,
+        payment_methods_data=json.dumps(payment_methods_data),
+        staff_cost=staff_cost,
+        week_start=week_start,
+        week_end=week_end,
+        current_year=current_year,
+        current_week=current_week,
+        format_currency=format_currency,
+        format_percentage=format_percentage
+    )
+
+
+@cash_register_bp.route('/company/<int:company_id>/register', methods=['GET', 'POST'])
+@login_required
 def new_register(company_id):
     """
-    Formulario para crear un nuevo arqueo.
+    Crear un nuevo arqueo de caja para una empresa.
+    
+    Args:
+        company_id: ID de la empresa
     """
+    # Verificar acceso a la empresa
     company = Company.query.get_or_404(company_id)
+    if not current_user.is_admin() and company not in current_user.companies:
+        flash('No tiene acceso a esta empresa', 'danger')
+        return redirect(url_for('cash_register.dashboard'))
+    
+    # Crear formulario
     form = CashRegisterForm()
     
+    # Cargar lista de empleados para el selector
+    employees = Employee.query.filter_by(company_id=company_id, is_active=True).all()
+    employee_choices = [(0, 'Sin asignar')] + [(e.id, f"{e.name} {e.last_name}") for e in employees]
+    form.employee_id.choices = employee_choices
+    
     if form.validate_on_submit():
-        # Verificar si ya existe un arqueo para esta fecha y empresa
-        existing = CashRegister.query.filter_by(
-            company_id=company_id,
-            date=form.date.data
-        ).first()
-        
-        if existing:
-            flash(f'Ya existe un arqueo para la fecha {form.date.data.strftime("%d/%m/%Y")}', 'danger')
-            return redirect(url_for('cash_register.edit_register', register_id=existing.id))
-        
-        # Crear nuevo arqueo
-        register = CashRegister(
-            company_id=company_id,
-            date=form.date.data,
-            total_amount=form.total_amount.data,
-            cash_amount=form.cash_amount.data,
-            card_amount=form.card_amount.data,
-            delivery_cash_amount=form.delivery_cash_amount.data,
-            delivery_online_amount=form.delivery_online_amount.data,
-            check_amount=form.check_amount.data,
-            expenses_amount=form.expenses_amount.data,
-            expenses_notes=form.expenses_notes.data,
-            notes=form.notes.data,
-            created_by_id=current_user.id,
-            is_confirmed=True,
-            confirmed_at=datetime.utcnow(),
-            confirmed_by_id=current_user.id
-        )
-        
-        db.session.add(register)
-        
         try:
+            # Verificar si ya existe un arqueo para esta fecha
+            existing_register = CashRegister.query.filter_by(
+                company_id=company_id,
+                date=form.date.data
+            ).first()
+            
+            if existing_register:
+                flash(f'Ya existe un arqueo para la fecha {form.date.data.strftime("%d/%m/%Y")}', 'danger')
+                return redirect(url_for('cash_register.company_dashboard', company_id=company_id))
+            
+            # Crear nuevo arqueo
+            register = CashRegister(
+                company_id=company_id,
+                date=form.date.data,
+                total_amount=form.total_amount.data,
+                cash_amount=form.cash_amount.data,
+                card_amount=form.card_amount.data,
+                delivery_cash_amount=form.delivery_cash_amount.data,
+                delivery_online_amount=form.delivery_online_amount.data,
+                check_amount=form.check_amount.data,
+                expenses_amount=form.expenses_amount.data,
+                expenses_notes=form.expenses_notes.data,
+                notes=form.notes.data,
+                created_by_id=current_user.id
+            )
+            
+            # Asignar empleado si se seleccionó
+            if form.employee_id.data != 0:
+                register.employee_id = form.employee_id.data
+            
+            # Guardar nombre de empleado si se proporciona
+            if form.employee_name.data:
+                register.employee_name = form.employee_name.data
+            
+            db.session.add(register)
             db.session.commit()
             
-            # Actualizar resúmenes
-            update_register_summary(company_id, form.date.data)
+            # Actualizar resumen semanal y mensual
+            year = form.date.data.year
+            week_number = get_week_number(form.date.data)
+            calculate_weekly_summary(company_id, year, week_number)
             
-            flash('Arqueo creado correctamente', 'success')
-            save_activity_log('Arqueo creado', f'Arqueo para {form.date.data.strftime("%d/%m/%Y")} - {company.name}')
-            
+            flash('Arqueo de caja registrado correctamente', 'success')
             return redirect(url_for('cash_register.company_dashboard', company_id=company_id))
+            
         except Exception as e:
             db.session.rollback()
-            current_app.logger.error(f"Error creando arqueo: {str(e)}")
-            flash('Error al crear el arqueo', 'danger')
-    
-    # Por defecto, la fecha es hoy
-    if request.method == 'GET':
-        form.date.data = date.today()
+            logger.error(f"Error al crear arqueo: {str(e)}")
+            flash(f'Error al crear arqueo: {str(e)}', 'danger')
     
     return render_template(
         'cash_register/register_form.html',
+        title='Nuevo Arqueo de Caja',
         form=form,
         company=company,
-        title='Nuevo Arqueo',
         is_new=True
     )
 
-@cash_register_bp.route('/editar/<int:register_id>', methods=['GET', 'POST'])
+
+@cash_register_bp.route('/register/<int:register_id>', methods=['GET', 'POST'])
 @login_required
 def edit_register(register_id):
     """
-    Formulario para editar un arqueo existente.
+    Editar un arqueo de caja existente.
+    
+    Args:
+        register_id: ID del arqueo a editar
     """
+    # Obtener arqueo y verificar permisos
     register = CashRegister.query.get_or_404(register_id)
+    company = register.company
     
-    # Verificar permisos
-    if not current_user.is_admin() and register.company_id not in [c.id for c in current_user.companies]:
-        flash('No tiene permiso para editar este arqueo', 'danger')
-        return redirect(url_for('cash_register.index'))
+    if not current_user.is_admin() and company not in current_user.companies:
+        flash('No tiene acceso a este arqueo', 'danger')
+        return redirect(url_for('cash_register.dashboard'))
     
+    # No permitir editar registros confirmados excepto a administradores
+    if register.is_confirmed and not current_user.is_admin():
+        flash('No se puede editar un arqueo ya confirmado', 'warning')
+        return redirect(url_for('cash_register.company_dashboard', company_id=company.id))
+    
+    # Crear formulario y poblarlo con datos existentes
     form = CashRegisterForm(obj=register)
     
+    # Cargar lista de empleados para el selector
+    employees = Employee.query.filter_by(company_id=company.id, is_active=True).all()
+    employee_choices = [(0, 'Sin asignar')] + [(e.id, f"{e.name} {e.last_name}") for e in employees]
+    form.employee_id.choices = employee_choices
+    
     if form.validate_on_submit():
-        # Actualizar datos del arqueo
-        register.date = form.date.data
-        register.total_amount = form.total_amount.data
-        register.cash_amount = form.cash_amount.data
-        register.card_amount = form.card_amount.data
-        register.delivery_cash_amount = form.delivery_cash_amount.data
-        register.delivery_online_amount = form.delivery_online_amount.data
-        register.check_amount = form.check_amount.data
-        register.expenses_amount = form.expenses_amount.data
-        register.expenses_notes = form.expenses_notes.data
-        register.notes = form.notes.data
-        register.updated_at = datetime.utcnow()
-        
         try:
+            # Guardar cambios
+            form.populate_obj(register)
+            
+            # Manejar empleado especial "Sin asignar"
+            if form.employee_id.data == 0:
+                register.employee_id = None
+            
             db.session.commit()
             
-            # Actualizar resúmenes
-            update_register_summary(register.company_id, register.date)
+            # Actualizar resumen semanal y mensual
+            year = register.date.year
+            week_number = get_week_number(register.date)
+            calculate_weekly_summary(company.id, year, week_number)
             
             flash('Arqueo actualizado correctamente', 'success')
-            save_activity_log('Arqueo actualizado', f'Arqueo ID {register.id}')
+            return redirect(url_for('cash_register.company_dashboard', company_id=company.id))
             
-            return redirect(url_for('cash_register.company_dashboard', company_id=register.company_id))
         except Exception as e:
             db.session.rollback()
-            current_app.logger.error(f"Error actualizando arqueo: {str(e)}")
-            flash('Error al actualizar el arqueo', 'danger')
-    
-    # Mostrar la empresa
-    company = Company.query.get(register.company_id)
+            logger.error(f"Error al actualizar arqueo: {str(e)}")
+            flash(f'Error al actualizar arqueo: {str(e)}', 'danger')
     
     return render_template(
         'cash_register/register_form.html',
+        title='Editar Arqueo de Caja',
         form=form,
         register=register,
         company=company,
-        title='Editar Arqueo',
         is_new=False
     )
 
-@cash_register_bp.route('/eliminar/<int:register_id>', methods=['POST'])
+
+@cash_register_bp.route('/register/<int:register_id>/confirm', methods=['GET', 'POST'])
+@login_required
+def confirm_register(register_id):
+    """
+    Confirmar un arqueo de caja.
+    
+    Args:
+        register_id: ID del arqueo a confirmar
+    """
+    # Obtener arqueo y verificar permisos
+    register = CashRegister.query.get_or_404(register_id)
+    company = register.company
+    
+    if not current_user.is_admin() and company not in current_user.companies:
+        flash('No tiene acceso a este arqueo', 'danger')
+        return redirect(url_for('cash_register.dashboard'))
+    
+    # Verificar si ya está confirmado
+    if register.is_confirmed:
+        flash('Este arqueo ya ha sido confirmado', 'info')
+        return redirect(url_for('cash_register.company_dashboard', company_id=company.id))
+    
+    # Crear formulario
+    form = CashRegisterConfirmForm()
+    form.cash_register_id.data = register_id
+    
+    if form.validate_on_submit():
+        if form.cancel.data:
+            return redirect(url_for('cash_register.company_dashboard', company_id=company.id))
+        
+        if form.confirm.data:
+            try:
+                # Confirmar arqueo
+                register.is_confirmed = True
+                register.confirmed_at = datetime.now()
+                register.confirmed_by_id = current_user.id
+                
+                db.session.commit()
+                
+                flash('Arqueo confirmado correctamente', 'success')
+                return redirect(url_for('cash_register.company_dashboard', company_id=company.id))
+                
+            except Exception as e:
+                db.session.rollback()
+                logger.error(f"Error al confirmar arqueo: {str(e)}")
+                flash(f'Error al confirmar arqueo: {str(e)}', 'danger')
+    
+    return render_template(
+        'cash_register/confirm_register.html',
+        title='Confirmar Arqueo de Caja',
+        form=form,
+        register=register,
+        company=company,
+        format_currency=format_currency
+    )
+
+
+@cash_register_bp.route('/register/<int:register_id>/delete', methods=['POST'])
 @login_required
 def delete_register(register_id):
     """
-    Eliminar un arqueo existente.
+    Eliminar un arqueo de caja.
+    
+    Args:
+        register_id: ID del arqueo a eliminar
     """
+    # Obtener arqueo y verificar permisos
     register = CashRegister.query.get_or_404(register_id)
+    company = register.company
     
-    # Verificar permisos (solo admin o manager)
-    if not current_user.is_admin() and not current_user.is_manager():
-        flash('No tiene permiso para eliminar arqueos', 'danger')
-        return redirect(url_for('cash_register.company_dashboard', company_id=register.company_id))
+    if not current_user.is_admin() and company not in current_user.companies:
+        flash('No tiene acceso a este arqueo', 'danger')
+        return redirect(url_for('cash_register.dashboard'))
     
-    # Verificar permisos de empresa
-    if not current_user.is_admin() and register.company_id not in [c.id for c in current_user.companies]:
-        flash('No tiene permiso para eliminar este arqueo', 'danger')
-        return redirect(url_for('cash_register.index'))
-    
-    company_id = register.company_id
-    register_date = register.date
+    # No permitir eliminar registros confirmados excepto a administradores
+    if register.is_confirmed and not current_user.is_admin():
+        flash('No se puede eliminar un arqueo ya confirmado', 'warning')
+        return redirect(url_for('cash_register.company_dashboard', company_id=company.id))
     
     try:
+        # Obtener datos para actualizar sumarios después
+        company_id = register.company_id
+        year = register.date.year
+        week_number = get_week_number(register.date)
+        
+        # Eliminar arqueo
         db.session.delete(register)
         db.session.commit()
         
-        # Actualizar resúmenes
-        update_register_summary(company_id, register_date)
+        # Actualizar resumen semanal y mensual
+        calculate_weekly_summary(company_id, year, week_number)
         
         flash('Arqueo eliminado correctamente', 'success')
-        save_activity_log('Arqueo eliminado', f'Arqueo para {register_date.strftime("%d/%m/%Y")}')
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Error eliminando arqueo: {str(e)}")
-        flash('Error al eliminar el arqueo', 'danger')
+        logger.error(f"Error al eliminar arqueo: {str(e)}")
+        flash(f'Error al eliminar arqueo: {str(e)}', 'danger')
     
-    return redirect(url_for('cash_register.company_dashboard', company_id=company_id))
+    return redirect(url_for('cash_register.company_dashboard', company_id=company.id))
 
-@cash_register_bp.route('/empresa/<int:company_id>/tokens')
+
+@cash_register_bp.route('/company/<int:company_id>/report', methods=['GET', 'POST'])
 @login_required
-@company_membership_required
-@manager_required
-def list_tokens(company_id):
+def company_report(company_id):
     """
-    Listar tokens de acceso para empleados.
+    Generar informe de arqueos para una empresa.
+    
+    Args:
+        company_id: ID de la empresa
     """
+    # Verificar acceso a la empresa
     company = Company.query.get_or_404(company_id)
+    if not current_user.is_admin() and company not in current_user.companies:
+        flash('No tiene acceso a esta empresa', 'danger')
+        return redirect(url_for('cash_register.dashboard'))
+    
+    # Crear formulario de búsqueda
+    form = CashRegisterSearchForm()
+    form.company_id.data = company_id
+    form.company_id.choices = [(company.id, company.name)]
+    
+    # Establecer valores predeterminados
+    current_year = datetime.now().year
+    current_month = datetime.now().month
+    
+    if not form.year.data:
+        form.year.data = current_year
+    
+    if form.month.data is None:
+        form.month.data = current_month
+    
+    # Construir la consulta base
+    query = CashRegister.query.filter_by(company_id=company_id)
+    
+    # Aplicar filtros si se enviaron
+    if request.method == 'POST' and form.validate():
+        # Filtrar por año
+        if form.year.data:
+            year = form.year.data
+            
+            # Filtrar por mes
+            if form.month.data > 0:
+                month = form.month.data
+                start_date, end_date = get_date_range(year, month)
+                query = query.filter(
+                    CashRegister.date >= start_date,
+                    CashRegister.date <= end_date
+                )
+            # Filtrar por semana
+            elif form.week.data:
+                week = form.week.data
+                start_date, end_date = get_date_range(year, week=week)
+                query = query.filter(
+                    CashRegister.date >= start_date,
+                    CashRegister.date <= end_date
+                )
+            # Filtrar por año completo
+            else:
+                start_date, end_date = get_date_range(year)
+                query = query.filter(
+                    CashRegister.date >= start_date,
+                    CashRegister.date <= end_date
+                )
+        
+        # Filtrar por fechas específicas
+        elif form.start_date.data or form.end_date.data:
+            if form.start_date.data:
+                query = query.filter(CashRegister.date >= form.start_date.data)
+            if form.end_date.data:
+                query = query.filter(CashRegister.date <= form.end_date.data)
+        
+        # Filtrar por estado (confirmado/pendiente)
+        if form.is_confirmed.data != 'all':
+            is_confirmed = form.is_confirmed.data == 'true'
+            query = query.filter(CashRegister.is_confirmed == is_confirmed)
+    else:
+        # Por defecto, mostrar el mes actual
+        start_date, end_date = get_date_range(current_year, current_month)
+        query = query.filter(
+            CashRegister.date >= start_date,
+            CashRegister.date <= end_date
+        )
+    
+    # Ejecutar la consulta
+    registers = query.order_by(CashRegister.date.desc()).all()
+    
+    # Calcular totales
+    totals = {
+        'total_amount': sum(r.total_amount for r in registers),
+        'cash_amount': sum(r.cash_amount for r in registers),
+        'card_amount': sum(r.card_amount for r in registers),
+        'delivery_cash_amount': sum(r.delivery_cash_amount for r in registers),
+        'delivery_online_amount': sum(r.delivery_online_amount for r in registers),
+        'check_amount': sum(r.check_amount for r in registers),
+        'expenses_amount': sum(r.expenses_amount for r in registers)
+    }
+    
+    # Calcular datos para gráfico
+    payment_methods_data = {
+        'labels': [
+            'Efectivo', 'Tarjeta', 'Delivery - Efectivo', 
+            'Delivery - Online', 'Cheque'
+        ],
+        'data': [
+            float(totals['cash_amount']),
+            float(totals['card_amount']),
+            float(totals['delivery_cash_amount']),
+            float(totals['delivery_online_amount']),
+            float(totals['check_amount'])
+        ]
+    }
+    
+    # Obtener datos de personal si tenemos año y mes específicos
+    staff_cost = None
+    if form.year.data and form.month.data > 0:
+        staff_cost = calculate_staff_cost(
+            company_id, form.year.data, form.month.data, form.week.data or None
+        )
+    
+    return render_template(
+        'cash_register/company_report.html',
+        title=f'Informe de Arqueos - {company.name}',
+        form=form,
+        company=company,
+        registers=registers,
+        totals=totals,
+        payment_methods_data=json.dumps(payment_methods_data),
+        staff_cost=staff_cost,
+        format_currency=format_currency,
+        format_percentage=format_percentage
+    )
+
+
+@cash_register_bp.route('/company/<int:company_id>/tokens', methods=['GET', 'POST'])
+@login_required
+def manage_tokens(company_id):
+    """
+    Gestionar tokens de acceso para una empresa.
+    
+    Args:
+        company_id: ID de la empresa
+    """
+    # Verificar acceso a la empresa
+    company = Company.query.get_or_404(company_id)
+    if not current_user.is_admin() and company not in current_user.companies:
+        flash('No tiene acceso a esta empresa', 'danger')
+        return redirect(url_for('cash_register.dashboard'))
+    
+    # Crear formulario para generar tokens
+    form = CashRegisterTokenForm()
+    form.company_id.data = company_id
+    form.company_id.choices = [(company.id, company.name)]
+    
+    # Cargar lista de empleados para el selector
+    employees = Employee.query.filter_by(company_id=company_id, is_active=True).all()
+    employee_choices = [(0, 'Sin asignar')] + [(e.id, f"{e.name} {e.last_name}") for e in employees]
+    form.employee_id.choices = employee_choices
+    
+    if form.validate_on_submit():
+        try:
+            # Generar nuevo token
+            employee_id = form.employee_id.data if form.employee_id.data != 0 else None
+            expiry_days = form.expiry_days.data
+            
+            # Usar método del modelo para generar token
+            token = CashRegisterToken.generate_token(
+                company_id=company_id,
+                employee_id=employee_id,
+                created_by_id=current_user.id,
+                expiry_days=expiry_days
+            )
+            
+            # Generar URL para compartir
+            base_url = request.host_url.rstrip('/')
+            token_url = generate_token_url(token.token, base_url)
+            
+            flash('Token generado correctamente', 'success')
+            
+            # Redirigir a la página de tokens con el nuevo token marcado
+            return redirect(url_for('cash_register.token_created', 
+                                   company_id=company_id, 
+                                   token_id=token.id))
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error al generar token: {str(e)}")
+            flash(f'Error al generar token: {str(e)}', 'danger')
     
     # Obtener tokens activos
     active_tokens = CashRegisterToken.query.filter_by(
         company_id=company_id,
         is_active=True
-    ).order_by(CashRegisterToken.created_at.desc()).all()
+    ).all()
     
-    # Obtener tokens usados recientes (últimos 30)
+    # Obtener tokens usados
     used_tokens = CashRegisterToken.query.filter_by(
         company_id=company_id,
         is_active=False
-    ).order_by(CashRegisterToken.used_at.desc()).limit(30).all()
+    ).filter(CashRegisterToken.used_at.isnot(None)).all()
     
-    # Obtener empleados de la empresa para el formulario
-    employees = Employee.query.filter_by(company_id=company_id).all()
-    
-    # Formulario para crear token
-    form = CashRegisterTokenForm()
-    form.employee_id.choices = [(0, 'Sin asignar')] + [(e.id, f"{e.first_name} {e.last_name}") for e in employees]
+    # Obtener tokens expirados
+    expired_tokens = CashRegisterToken.query.filter_by(
+        company_id=company_id,
+        is_active=True
+    ).filter(CashRegisterToken.expires_at < datetime.now()).all()
     
     return render_template(
-        'cash_register/tokens.html',
+        'cash_register/manage_tokens.html',
+        title=f'Gestión de Tokens - {company.name}',
+        form=form,
         company=company,
         active_tokens=active_tokens,
         used_tokens=used_tokens,
-        form=form,
-        title='Tokens de Arqueo'
+        expired_tokens=expired_tokens,
+        base_url=request.host_url.rstrip('/'),
+        generate_token_url=generate_token_url
     )
 
-@cash_register_bp.route('/empresa/<int:company_id>/tokens/nuevo', methods=['POST'])
-@login_required
-@company_membership_required
-@manager_required
-def create_token(company_id):
-    """
-    Crear un nuevo token para un empleado.
-    """
-    form = CashRegisterTokenForm()
-    
-    # Obtener empleados de la empresa para validación
-    employees = Employee.query.filter_by(company_id=company_id).all()
-    form.employee_id.choices = [(0, 'Sin asignar')] + [(e.id, f"{e.first_name} {e.last_name}") for e in employees]
-    
-    if form.validate_on_submit():
-        # Determinar el ID del empleado (puede ser None)
-        employee_id = form.employee_id.data if form.employee_id.data > 0 else None
-        
-        # Generar el token
-        token = generate_token(
-            company_id=company_id,
-            employee_id=employee_id,
-            expiry_days=form.expiry_days.data
-        )
-        
-        if token:
-            # Asignar el usuario que lo creó
-            token.created_by_id = current_user.id
-            db.session.commit()
-            
-            flash('Token generado correctamente', 'success')
-            save_activity_log('Token de arqueo creado', f'Para empresa ID {company_id}')
-        else:
-            flash('Error al generar el token', 'danger')
-    else:
-        for field, errors in form.errors.items():
-            for error in errors:
-                flash(f'Error en el campo {field}: {error}', 'danger')
-    
-    return redirect(url_for('cash_register.list_tokens', company_id=company_id))
 
-@cash_register_bp.route('/empresa/<int:company_id>/tokens/<int:token_id>/invalidar', methods=['POST'])
+@cash_register_bp.route('/company/<int:company_id>/tokens/<int:token_id>')
 @login_required
-@company_membership_required
-@manager_required
-def invalidate_token(company_id, token_id):
+def token_created(company_id, token_id):
     """
-    Invalidar un token existente.
+    Mostrar detalles de un token recién creado.
+    
+    Args:
+        company_id: ID de la empresa
+        token_id: ID del token creado
     """
+    # Verificar acceso a la empresa
+    company = Company.query.get_or_404(company_id)
+    if not current_user.is_admin() and company not in current_user.companies:
+        flash('No tiene acceso a esta empresa', 'danger')
+        return redirect(url_for('cash_register.dashboard'))
+    
+    # Obtener token
     token = CashRegisterToken.query.get_or_404(token_id)
     
     # Verificar que el token pertenece a la empresa
     if token.company_id != company_id:
         flash('Token no válido para esta empresa', 'danger')
-        return redirect(url_for('cash_register.list_tokens', company_id=company_id))
+        return redirect(url_for('cash_register.manage_tokens', company_id=company_id))
     
-    token.is_active = False
-    db.session.commit()
+    # Generar URL para compartir
+    base_url = request.host_url.rstrip('/')
+    token_url = generate_token_url(token.token, base_url)
     
-    flash('Token invalidado correctamente', 'success')
-    save_activity_log('Token de arqueo invalidado', f'Token ID {token_id}')
-    
-    return redirect(url_for('cash_register.list_tokens', company_id=company_id))
-
-@cash_register_bp.route('/empresa/<int:company_id>/informes')
-@login_required
-@company_membership_required
-def reports(company_id):
-    """
-    Generar informes de arqueos y costes de personal.
-    """
-    company = Company.query.get_or_404(company_id)
-    
-    # Obtener año y mes actual
-    today = date.today()
-    current_year = today.year
-    current_month = today.month
-    
-    # Permitir cambiar año y mes por parámetros
-    year = request.args.get('year', current_year, type=int)
-    month = request.args.get('month', current_month, type=int)
-    
-    # Obtener todos los resúmenes del mes
-    summaries = CashRegisterSummary.query.filter_by(
+    # Obtener tokens activos (para mostrar en la misma página)
+    active_tokens = CashRegisterToken.query.filter_by(
         company_id=company_id,
-        year=year,
-        month=month
-    ).order_by(CashRegisterSummary.week_number).all()
-    
-    # Obtener arqueos individuales del mes
-    start_date = date(year, month, 1)
-    if month < 12:
-        end_date = date(year, month + 1, 1) - timedelta(days=1)
-    else:
-        end_date = date(year + 1, 1, 1) - timedelta(days=1)
-    
-    registers = CashRegister.query.filter(
-        CashRegister.company_id == company_id,
-        CashRegister.date >= start_date,
-        CashRegister.date <= end_date
-    ).order_by(CashRegister.date).all()
-    
-    # Calcular totales generales
-    total_income = sum(r.total_amount for r in registers)
-    total_expenses = sum(r.expenses_amount for r in registers)
-    
-    # Obtener datos de personal del mes
-    work_hours = CompanyWorkHours.query.filter_by(
-        company_id=company_id,
-        year=year,
-        month=month
+        is_active=True
     ).all()
     
-    total_hours = sum(wh.monthly_hours for wh in work_hours)
-    
-    # Calcular coste total de personal
-    staff_cost = 0
-    if company.hourly_employee_cost and company.hourly_employee_cost > 0:
-        staff_cost = total_hours * company.hourly_employee_cost
-    
-    # Calcular porcentaje de coste de personal sobre facturación
-    staff_cost_percentage = 0
-    if total_income > 0:
-        staff_cost_percentage = (staff_cost / total_income) * 100
-    
     return render_template(
-        'cash_register/reports.html',
+        'cash_register/token_created.html',
+        title=f'Token Generado - {company.name}',
         company=company,
-        year=year,
-        month=month,
-        registers=registers,
-        summaries=summaries,
-        total_income=total_income,
-        total_expenses=total_expenses,
-        total_hours=total_hours,
-        staff_cost=staff_cost,
-        staff_cost_percentage=staff_cost_percentage,
-        title=f'Informes de Arqueos - {company.name}'
+        token=token,
+        token_url=token_url,
+        active_tokens=active_tokens,
+        base_url=request.host_url.rstrip('/'),
+        generate_token_url=generate_token_url
     )
 
-# Rutas públicas para empleados sin acceso
 
-@cash_register_bp.route('/acceso/<token>')
-def public_access(token):
+@cash_register_bp.route('/token/<string:token_str>', methods=['GET', 'POST'])
+def public_register(token_str):
     """
     Acceso público para empleados mediante token.
+    
+    Args:
+        token_str: String del token de acceso
     """
-    # Validar el token
-    token_obj = validate_token(token)
-    if not token_obj:
-        return render_template('cash_register/public/invalid_token.html')
+    # Verificar token
+    token = CashRegisterToken.query.filter_by(token=token_str).first()
     
-    # Si el token es válido, mostrar formulario de arqueo
-    company = Company.query.get_or_404(token_obj.company_id)
+    if not token:
+        flash('Token no válido o expirado', 'danger')
+        return redirect(url_for('auth.login'))
     
+    # Verificar que el token esté activo y no haya expirado
+    if not token.is_active or (token.expires_at and token.expires_at < datetime.now()):
+        flash('Token expirado o desactivado', 'danger')
+        return redirect(url_for('auth.login'))
+    
+    # Verificar que no se haya usado ya para un arqueo
+    if token.cash_register_id:
+        flash('Este token ya ha sido utilizado', 'warning')
+        return redirect(url_for('auth.login'))
+    
+    # Obtener la empresa
+    company = token.company
+    
+    # Crear formulario
     form = PublicCashRegisterForm()
-    
-    # Si hay un empleado asociado al token, mostrar su información
-    employee = None
-    if token_obj.employee_id:
-        employee = Employee.query.get(token_obj.employee_id)
-    
-    return render_template(
-        'cash_register/public/register_form.html',
-        token=token_obj,
-        company=company,
-        employee=employee,
-        form=form
-    )
-
-@cash_register_bp.route('/acceso/<token>/guardar', methods=['POST'])
-def public_save_register(token):
-    """
-    Guardar arqueo desde acceso público.
-    """
-    # Validar el token
-    token_obj = validate_token(token)
-    if not token_obj:
-        return render_template('cash_register/public/invalid_token.html')
-    
-    company = Company.query.get_or_404(token_obj.company_id)
-    
-    form = PublicCashRegisterForm()
+    form.token.data = token_str
     
     if form.validate_on_submit():
-        # Verificar si ya existe un arqueo para esta fecha y empresa
-        existing = CashRegister.query.filter_by(
-            company_id=company.id,
-            date=form.date.data
-        ).first()
-        
-        if existing:
-            flash(f'Ya existe un arqueo para la fecha {form.date.data.strftime("%d/%m/%Y")}', 'danger')
-            return redirect(url_for('cash_register.public_access', token=token))
-        
-        # Crear nuevo arqueo
-        register = CashRegister(
-            company_id=company.id,
-            date=form.date.data,
-            total_amount=form.total_amount.data,
-            cash_amount=form.cash_amount.data,
-            card_amount=form.card_amount.data,
-            delivery_cash_amount=form.delivery_cash_amount.data,
-            delivery_online_amount=form.delivery_online_amount.data,
-            check_amount=form.check_amount.data,
-            expenses_amount=form.expenses_amount.data,
-            expenses_notes=form.expenses_notes.data,
-            employee_id=token_obj.employee_id,
-            is_confirmed=False  # Requiere confirmación de un manager
-        )
-        
-        # Si hay un empleado asociado, usar su nombre
-        if token_obj.employee:
-            register.employee_name = f"{token_obj.employee.first_name} {token_obj.employee.last_name}"
-        else:
-            register.employee_name = form.employee_name.data
-        
-        db.session.add(register)
-        
         try:
+            # Verificar si ya existe un arqueo para esta fecha
+            existing_register = CashRegister.query.filter_by(
+                company_id=company.id,
+                date=form.date.data
+            ).first()
+            
+            if existing_register:
+                flash(f'Ya existe un arqueo para la fecha {form.date.data.strftime("%d/%m/%Y")}', 'danger')
+                return redirect(url_for('cash_register.public_register', token_str=token_str))
+            
+            # Crear nuevo arqueo
+            register = CashRegister(
+                company_id=company.id,
+                date=form.date.data,
+                total_amount=form.total_amount.data,
+                cash_amount=form.cash_amount.data,
+                card_amount=form.card_amount.data,
+                delivery_cash_amount=form.delivery_cash_amount.data,
+                delivery_online_amount=form.delivery_online_amount.data,
+                check_amount=form.check_amount.data,
+                expenses_amount=form.expenses_amount.data,
+                expenses_notes=form.expenses_notes.data,
+                notes=form.notes.data,
+                employee_id=token.employee_id,
+                employee_name=form.employee_name.data
+            )
+            
+            db.session.add(register)
+            
+            # Actualizar token
+            token.used_at = datetime.now()
+            token.is_active = False
+            token.cash_register_id = register.id
+            
             db.session.commit()
             
-            # Marcar el token como usado
-            mark_token_used(token_obj, register.id)
+            # Actualizar resumen semanal y mensual
+            year = form.date.data.year
+            week_number = get_week_number(form.date.data)
+            calculate_weekly_summary(company.id, year, week_number)
             
-            # Actualizar resúmenes (aunque el arqueo no esté confirmado)
-            update_register_summary(company.id, form.date.data)
-            
-            # Mostrar pantalla de confirmación
+            # Mostrar página de confirmación
             return render_template(
-                'cash_register/public/success.html',
+                'cash_register/public_success.html',
+                title='Arqueo Enviado',
                 company=company,
-                register=register
+                register=register,
+                format_currency=format_currency
             )
             
         except Exception as e:
             db.session.rollback()
-            current_app.logger.error(f"Error en arqueo público: {str(e)}")
-            flash('Error al guardar el arqueo', 'danger')
-    else:
-        for field, errors in form.errors.items():
-            for error in errors:
-                flash(f'Error en el campo {field}: {error}', 'danger')
-    
-    # En caso de error, volver al formulario
-    employee = None
-    if token_obj.employee_id:
-        employee = Employee.query.get(token_obj.employee_id)
+            logger.error(f"Error al crear arqueo: {str(e)}")
+            flash(f'Error al crear arqueo: {str(e)}', 'danger')
     
     return render_template(
-        'cash_register/public/register_form.html',
-        token=token_obj,
+        'cash_register/public_register.html',
+        title='Enviar Arqueo de Caja',
+        form=form,
         company=company,
-        employee=employee,
-        form=form
+        token=token
     )
 
-# API AJAX para reportes dinámicos
 
-@cash_register_bp.route('/api/empresa/<int:company_id>/datos_mensuales/<int:year>')
+@cash_register_bp.route('/token/<int:token_id>/deactivate', methods=['POST'])
 @login_required
-@company_membership_required
-def api_monthly_data(company_id, year):
+def deactivate_token(token_id):
     """
-    API: Obtener datos mensuales de arqueos y costes para charts.
+    Desactivar un token de acceso.
+    
+    Args:
+        token_id: ID del token a desactivar
     """
-    # Validar que la empresa existe
-    Company.query.get_or_404(company_id)
+    # Obtener token
+    token = CashRegisterToken.query.get_or_404(token_id)
     
-    # Array para almacenar los datos de cada mes
-    monthly_data = []
-    
-    for month in range(1, 13):
-        # Obtener todos los arqueos del mes
-        start_date = date(year, month, 1)
-        if month < 12:
-            end_date = date(year, month + 1, 1) - timedelta(days=1)
-        else:
-            end_date = date(year + 1, 1, 1) - timedelta(days=1)
-        
-        # Total de ingresos del mes
-        monthly_income = db.session.query(db.func.sum(CashRegister.total_amount)).filter(
-            CashRegister.company_id == company_id,
-            CashRegister.date >= start_date,
-            CashRegister.date <= end_date
-        ).scalar() or 0
-        
-        # Horas trabajadas del mes
-        monthly_hours = db.session.query(db.func.sum(CompanyWorkHours.monthly_hours)).filter(
-            CompanyWorkHours.company_id == company_id,
-            CompanyWorkHours.year == year,
-            CompanyWorkHours.month == month
-        ).scalar() or 0
-        
-        # Obtener coste por hora de la empresa
-        company = Company.query.get(company_id)
-        hourly_cost = company.hourly_employee_cost or 0
-        
-        # Calcular coste de personal
-        staff_cost = monthly_hours * hourly_cost
-        
-        # Calcular porcentaje
-        percentage = 0
-        if monthly_income > 0:
-            percentage = (staff_cost / monthly_income) * 100
-        
-        # Agregar datos al array
-        monthly_data.append({
-            'month': month,
-            'month_name': date(year, month, 1).strftime('%B'),
-            'income': round(monthly_income, 2),
-            'hours': round(monthly_hours, 2),
-            'staff_cost': round(staff_cost, 2),
-            'percentage': round(percentage, 2)
-        })
-    
-    return jsonify({
-        'success': True,
-        'data': monthly_data
-    })
-
-@cash_register_bp.route('/api/check_register_exists')
-def api_check_register_exists():
-    """
-    API: Verificar si ya existe un arqueo para una fecha y empresa.
-    """
-    # Obtener parámetros
-    company_id = request.args.get('company_id', type=int)
-    date_str = request.args.get('date')
-    
-    if not company_id or not date_str:
-        return jsonify({'success': False, 'message': 'Parámetros incompletos'})
+    # Verificar permisos
+    company = token.company
+    if not current_user.is_admin() and company not in current_user.companies:
+        flash('No tiene permisos para esta acción', 'danger')
+        return redirect(url_for('cash_register.dashboard'))
     
     try:
-        register_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-    except ValueError:
-        return jsonify({'success': False, 'message': 'Formato de fecha inválido'})
+        # Desactivar token
+        token.is_active = False
+        db.session.commit()
+        
+        flash('Token desactivado correctamente', 'success')
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error al desactivar token: {str(e)}")
+        flash(f'Error al desactivar token: {str(e)}', 'danger')
     
-    # Verificar si existe un arqueo
-    existing = CashRegister.query.filter_by(
-        company_id=company_id,
-        date=register_date
-    ).first()
-    
-    if existing:
-        return jsonify({
-            'success': True,
-            'exists': True,
-            'register_id': existing.id
-        })
-    
-    return jsonify({
-        'success': True,
-        'exists': False
-    })
+    return redirect(url_for('cash_register.manage_tokens', company_id=token.company_id))

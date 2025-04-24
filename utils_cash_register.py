@@ -209,11 +209,11 @@ def calculate_staff_cost(company_id, year, month=None, week=None):
             week_record = CompanyWorkHours.query.filter_by(
                 company_id=company_id,
                 year=year,
-                week=week
+                week_number=week
             ).first()
             
             if week_record:
-                weekly_hours = week_record.total_hours
+                weekly_hours = week_record.weekly_hours
         
         # Obtener horas trabajadas mensuales
         monthly_hours = 0
@@ -225,7 +225,7 @@ def calculate_staff_cost(company_id, year, month=None, week=None):
         ).all()
         
         for record in month_records:
-            monthly_hours += record.total_hours
+            monthly_hours += record.monthly_hours
         
         # Calcular costes
         weekly_cost = weekly_hours * hourly_cost

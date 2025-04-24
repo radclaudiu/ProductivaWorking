@@ -1,396 +1,193 @@
 {% extends "layout.html" %}
 
-{% block title %}{{ title }}{% endblock %}
+{% block title %}Ver Programación - {{ schedule.name }}{% endblock %}
 
 {% block styles %}
 {{ super() }}
 <style>
-    .timetable-container {
-        overflow-x: auto;
-    }
-    
-    .timetable {
-        min-width: 800px;
-        border-collapse: collapse;
-        width: 100%;
-    }
-    
-    .timetable th, .timetable td {
-        border: 1px solid #dee2e6;
-        padding: 0.5rem;
+    .schedule-table th {
         text-align: center;
+        vertical-align: middle;
     }
     
-    .timetable th {
-        background-color: #f8f9fa;
-        position: sticky;
-        top: 0;
-        z-index: 10;
+    .schedule-table td {
+        height: 100px;
+        vertical-align: top;
+        padding: 8px;
     }
     
-    .timetable tr:nth-child(even) {
-        background-color: rgba(0,0,0,0.02);
-    }
-    
-    .timetable td:first-child {
-        background-color: #f8f9fa;
+    .schedule-table .employee-name {
+        width: 150px;
         font-weight: bold;
-        position: sticky;
-        left: 0;
-        z-index: 5;
+        vertical-align: middle;
+        background-color: #f8f9fa;
     }
     
-    .shift-block {
-        background-color: #0d6efd;
-        color: white;
-        border-radius: 0.25rem;
-        padding: 0.25rem;
-        margin: 0.125rem;
-        font-size: 0.875rem;
+    .shift-card {
+        background-color: #e7f5ff;
+        border-left: 4px solid #0d6efd;
+        border-radius: 4px;
+        padding: 8px;
+        margin-bottom: 5px;
+        font-size: 0.85rem;
     }
     
-    .empty-cell {
-        min-height: 40px;
-        min-width: 80px;
+    .shift-time {
+        font-weight: bold;
     }
     
-    .stats-card {
-        transition: all 0.3s;
+    .shift-break {
+        font-size: 0.75rem;
+        color: #6c757d;
     }
     
-    .stats-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    .shift-notes {
+        font-style: italic;
+        font-size: 0.75rem;
+        margin-top: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
     
-    .employee-info-tooltip {
-        cursor: help;
-        border-bottom: 1px dotted #6c757d;
-    }
-    
-    @media print {
-        .no-print {
-            display: none !important;
-        }
-        
-        .container-fluid {
-            width: 100%;
-            padding: 0;
-        }
-        
-        .timetable th, .timetable td {
-            padding: 5px;
-            font-size: 10px;
-        }
-        
-        .shift-block {
-            padding: 2px;
-            font-size: 9px;
-        }
+    .date-header {
+        min-width: 120px;
+        background-color: #f8f9fa;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <!-- Cabecera -->
-    <div class="row mb-4 no-print">
-        <div class="col-md-8">
-            <h1 class="h3 fw-bold">{{ schedule.name }}</h1>
-            <p class="lead text-muted">Periodo: {{ schedule.start_date }} a {{ schedule.end_date }}</p>
-        </div>
-        <div class="col-md-4 text-md-end d-flex align-items-center justify-content-md-end mt-3 mt-md-0">
-            <a href="{{ url_for('shifts.edit_schedule', schedule_id=schedule.id) }}" class="btn btn-primary me-2">
-                <i class="fas fa-edit me-1"></i> Editar programación
-            </a>
-            <div class="dropdown me-2">
-                <button class="btn btn-outline-primary dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i class="fas fa-file-export me-1"></i> Exportar
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="exportDropdown">
-                    <li><a class="dropdown-item" href="{{ url_for('shifts.export_schedule', schedule_id=schedule.id, format='pdf') }}">
-                        <i class="fas fa-file-pdf me-1"></i> Exportar a PDF
-                    </a></li>
-                    <li><a class="dropdown-item" href="{{ url_for('shifts.export_schedule', schedule_id=schedule.id, format='excel') }}">
-                        <i class="fas fa-file-excel me-1"></i> Exportar a Excel
-                    </a></li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item" href="javascript:window.print()">
-                        <i class="fas fa-print me-1"></i> Imprimir
-                    </a></li>
-                </ul>
+<div class="container-fluid px-4">
+    <h1 class="mt-4 mb-4">
+        <i class="fas fa-calendar-alt me-2"></i> {{ schedule.name }}
+    </h1>
+
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('shifts.index') }}">Sistema de Turnos</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('shifts.company_dashboard', company_id=company.id) }}">{{ company.name }}</a></li>
+            <li class="breadcrumb-item active">{{ schedule.name }}</li>
+        </ol>
+    </nav>
+    
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <div>
+                <i class="fas fa-info-circle me-1"></i>
+                Detalles de la Programación
             </div>
-            <a href="{{ url_for('shifts.company_dashboard', company_id=company.id) }}" class="btn btn-outline-secondary">
-                <i class="fas fa-arrow-left me-1"></i> Volver
-            </a>
+            <div>
+                <a href="{{ url_for('shifts.edit_schedule', schedule_id=schedule.id) }}" class="btn btn-sm btn-warning me-2">
+                    <i class="fas fa-edit me-1"></i> Editar
+                </a>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-sm btn-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                        <i class="fas fa-download me-1"></i> Exportar
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('shifts.export_schedule', schedule_id=schedule.id, format='pdf') }}">Exportar PDF</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('shifts.export_schedule', schedule_id=schedule.id, format='excel') }}">Exportar Excel</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Empresa:</strong> {{ company.name }}</p>
+                    <p><strong>Período:</strong> {{ schedule.start_date|date_format }} - {{ schedule.end_date|date_format }}</p>
+                </div>
+                <div class="col-md-6">
+                    <p>
+                        <strong>Estado:</strong>
+                        {% if schedule.status == 'draft' %}
+                        <span class="badge bg-warning text-dark">Borrador</span>
+                        {% elif schedule.status == 'published' %}
+                        <span class="badge bg-success">Publicado</span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ schedule.status }}</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>Creado:</strong> {{ schedule.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+                </div>
+                {% if schedule.description %}
+                <div class="col-md-12 mt-2">
+                    <p><strong>Descripción:</strong> {{ schedule.description }}</p>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
-
-    <!-- Información de la empresa para impresión -->
-    <div class="d-none d-print-block mb-4">
-        <h1 class="h3 text-center">{{ company.name }}</h1>
-        <h2 class="h4 text-center">{{ schedule.name }} ({{ schedule.start_date }} a {{ schedule.end_date }})</h2>
-    </div>
-
-    <!-- Tabla de turnos -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-header bg-light d-flex justify-content-between align-items-center no-print">
-                    <h2 class="h5 mb-0">Programación semanal</h2>
-                    <div class="form-check form-switch">
-                        <input class="form-check-input" type="checkbox" id="show-only-assigned">
-                        <label class="form-check-label small" for="show-only-assigned">Solo con turnos asignados</label>
-                    </div>
-                </div>
-                <div class="card-body p-0">
-                    <div class="timetable-container">
-                        <table class="timetable" id="shift-timetable">
-                            <thead>
-                                <tr>
-                                    <th style="min-width: 200px;">Empleado / Día</th>
-                                    {% set start_date = schedule.start_date|string %}
-                                    {% set days = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'] %}
-                                    
-                                    {% for i in range(7) %}
-                                        {% set current_date = (start_date|string|datetime_from_string + timedelta(days=i))|string|date_format %}
-                                        <th data-date="{{ current_date }}">
-                                            {{ days[i] }}<br>
-                                            <small>{{ current_date }}</small>
-                                        </th>
-                                    {% endfor %}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for employee in employees %}
-                                    <tr data-employee-id="{{ employee.id }}" class="employee-row">
-                                        <td>{{ employee.first_name }} {{ employee.last_name }}</td>
-                                        
-                                        {% set start_date = schedule.start_date|string %}
-                                        
-                                        {% for i in range(7) %}
-                                            {% set current_date = (start_date|string|datetime_from_string + timedelta(days=i))|string|date_format %}
-                                            
-                                            <td>
-                                                {% if shifts_by_date.get(current_date, {}).get(employee.id) %}
-                                                    {% set shift = shifts_by_date.get(current_date, {}).get(employee.id) %}
-                                                    <div class="shift-block" title="{{ shift.notes if shift.notes else 'Sin notas' }}">
-                                                        {{ shift.start_time }} - {{ shift.end_time }}
-                                                        {% if shift.break_time and shift.break_time > 0 %}
-                                                            <br><small>Descanso: {{ shift.break_time }} min</small>
-                                                        {% endif %}
-                                                    </div>
-                                                {% else %}
-                                                    <div class="empty-cell">&nbsp;</div>
-                                                {% endif %}
-                                            </td>
-                                        {% endfor %}
-                                    </tr>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-table me-1"></i>
+            Programación de Turnos
+        </div>
+        <div class="card-body">
+            {% if employees and schedule.start_date and schedule.end_date %}
+                {% set start_date = schedule.start_date|datetime_from_string %}
+                {% set end_date = schedule.end_date|datetime_from_string %}
+                {% set date_range = [] %}
+                {% set current_date = start_date %}
+                
+                {# Generar rango de fechas #}
+                {% for day in range((end_date - start_date).days + 1) %}
+                    {% set _ = date_range.append(current_date) %}
+                    {% set current_date = current_date + timedelta(days=1) %}
+                {% endfor %}
+                
+                <div class="table-responsive">
+                    <table class="table table-bordered schedule-table">
+                        <thead>
+                            <tr>
+                                <th>Empleado</th>
+                                {% for date in date_range %}
+                                <th class="date-header">
+                                    {{ date.strftime('%d/%m/%Y') }}<br>
+                                    <small>{{ ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'][date.weekday()] }}</small>
+                                </th>
                                 {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for employee in employees %}
+                            <tr>
+                                <td class="employee-name">{{ employee.first_name }} {{ employee.last_name }}</td>
+                                {% for date in date_range %}
+                                <td>
+                                    {% set date_str = date.strftime('%Y-%m-%d') %}
+                                    {% if shifts_by_date.get(date_str) and shifts_by_date[date_str].get(employee.id) %}
+                                        {% set shift = shifts_by_date[date_str][employee.id] %}
+                                        <div class="shift-card">
+                                            <div class="shift-time">{{ shift.start_time }} - {{ shift.end_time }}</div>
+                                            {% if shift.break_time %}
+                                            <div class="shift-break">Descanso: {{ shift.break_time }} min</div>
+                                            {% endif %}
+                                            {% if shift.notes %}
+                                            <div class="shift-notes" title="{{ shift.notes }}">{{ shift.notes }}</div>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Estadísticas y resumen -->
-    <div class="row mb-5 no-print">
-        <div class="col-md-4 mb-3">
-            <div class="card shadow-sm stats-card">
-                <div class="card-body">
-                    <h5 class="card-title">Resumen de turnos</h5>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Total empleados:</span>
-                        <span class="fw-bold">{{ employees|length }}</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Empleados con turnos:</span>
-                        <span class="fw-bold" id="employees-with-shifts">Calculando...</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Total turnos asignados:</span>
-                        <span class="fw-bold" id="total-shifts">Calculando...</span>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span>Horas programadas:</span>
-                        <span class="fw-bold" id="total-hours">Calculando...</span>
-                    </div>
+            {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-1"></i>
+                    {% if not employees %}
+                    No hay empleados activos en esta empresa.
+                    {% else %}
+                    No se ha definido un período para esta programación.
+                    {% endif %}
                 </div>
-            </div>
+            {% endif %}
         </div>
-        
-        <div class="col-md-4 mb-3">
-            <div class="card shadow-sm stats-card">
-                <div class="card-body">
-                    <h5 class="card-title">Distribución por día</h5>
-                    <div id="day-distribution">
-                        <div class="d-flex justify-content-center align-items-center h-100">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Cargando...</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-4 mb-3">
-            <div class="card shadow-sm stats-card">
-                <div class="card-body">
-                    <h5 class="card-title">Costo estimado</h5>
-                    <p class="text-muted small mb-3">Basado en el costo por hora de cada empleado</p>
-                    
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Costo total:</span>
-                        <span class="fw-bold" id="total-cost">Calculando...</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span>Costo por día:</span>
-                        <span class="fw-bold" id="day-cost">Calculando...</span>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span>Costo por hora:</span>
-                        <span class="fw-bold" id="hour-cost">Calculando...</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Leyenda para impresión -->
-    <div class="d-none d-print-block mt-4">
-        <h5>Leyenda</h5>
-        <p><small>Documento generado el {{ now().strftime('%d/%m/%Y %H:%M') }}</small></p>
     </div>
 </div>
-{% endblock %}
-
-{% block scripts %}
-{{ super() }}
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Filtro para mostrar solo empleados con turnos asignados
-        const showOnlyAssignedCheckbox = document.getElementById('show-only-assigned');
-        
-        if (showOnlyAssignedCheckbox) {
-            showOnlyAssignedCheckbox.addEventListener('change', function() {
-                const employeeRows = document.querySelectorAll('.employee-row');
-                
-                employeeRows.forEach(row => {
-                    if (this.checked) {
-                        // Verificar si el empleado tiene al menos un turno asignado
-                        const hasShift = Array.from(row.querySelectorAll('td')).slice(1).some(cell => {
-                            return cell.querySelector('.shift-block') !== null;
-                        });
-                        
-                        row.style.display = hasShift ? '' : 'none';
-                    } else {
-                        row.style.display = '';
-                    }
-                });
-            });
-        }
-        
-        // Calcular estadísticas
-        calculateStats();
-        
-        function calculateStats() {
-            // Contar empleados con turnos
-            const employeeRows = document.querySelectorAll('.employee-row');
-            let employeesWithShifts = 0;
-            let totalShifts = 0;
-            let totalHours = 0;
-            let shiftsByDay = [0, 0, 0, 0, 0, 0, 0]; // Lun, Mar, Mié, Jue, Vie, Sáb, Dom
-            
-            employeeRows.forEach(row => {
-                let hasShift = false;
-                const cells = Array.from(row.querySelectorAll('td')).slice(1); // Excluir primera celda (nombre)
-                
-                cells.forEach((cell, index) => {
-                    const shiftBlock = cell.querySelector('.shift-block');
-                    if (shiftBlock) {
-                        hasShift = true;
-                        totalShifts++;
-                        shiftsByDay[index]++;
-                        
-                        // Calcular horas
-                        const timeText = shiftBlock.textContent.split('-')[0].trim();
-                        const endText = shiftBlock.textContent.split('-')[1].trim().split('\n')[0];
-                        
-                        if (timeText && endText) {
-                            const startHours = parseInt(timeText.split(':')[0]);
-                            const startMinutes = parseInt(timeText.split(':')[1]);
-                            const endHours = parseInt(endText.split(':')[0]);
-                            const endMinutes = parseInt(endText.split(':')[1]);
-                            
-                            // Calcular duración en horas (decimal)
-                            let duration = (endHours - startHours) + (endMinutes - startMinutes) / 60;
-                            
-                            // Si es negativo, asumir que cruza la medianoche
-                            if (duration < 0) {
-                                duration += 24;
-                            }
-                            
-                            // Restar tiempo de descanso si existe
-                            const breakText = shiftBlock.textContent.match(/Descanso: (\d+) min/);
-                            if (breakText) {
-                                const breakMinutes = parseInt(breakText[1]);
-                                duration -= breakMinutes / 60;
-                            }
-                            
-                            totalHours += duration;
-                        }
-                    }
-                });
-                
-                if (hasShift) {
-                    employeesWithShifts++;
-                }
-            });
-            
-            // Actualizar estadísticas
-            document.getElementById('employees-with-shifts').textContent = employeesWithShifts;
-            document.getElementById('total-shifts').textContent = totalShifts;
-            document.getElementById('total-hours').textContent = totalHours.toFixed(1) + ' h';
-            
-            // Estimar costos (usando un valor fijo por simplicidad)
-            const hourlyRate = {{ company.hourly_employee_cost|default(12) }}; // Usar costo por hora de la empresa
-            const totalCost = totalHours * hourlyRate;
-            
-            document.getElementById('total-cost').textContent = totalCost.toFixed(2) + ' €';
-            document.getElementById('day-cost').textContent = (totalCost / 7).toFixed(2) + ' €';
-            document.getElementById('hour-cost').textContent = hourlyRate.toFixed(2) + ' €';
-            
-            // Generar gráfico de distribución por día
-            generateDayDistribution(shiftsByDay);
-        }
-        
-        function generateDayDistribution(shiftsByDay) {
-            const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-            let html = '<div class="row">';
-            
-            shiftsByDay.forEach((count, index) => {
-                const percentage = Math.round((count / Math.max(...shiftsByDay)) * 100) || 0;
-                
-                html += `
-                    <div class="col text-center">
-                        <div class="fw-bold">${days[index]}</div>
-                        <div class="d-flex flex-column align-items-center">
-                            <div style="height: 100px" class="d-flex align-items-end">
-                                <div style="height: ${percentage}%; width: 30px; background-color: #0d6efd;" class="rounded-top"></div>
-                            </div>
-                            <div class="mt-1">${count}</div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            html += '</div>';
-            
-            document.getElementById('day-distribution').innerHTML = html;
-        }
-    });
-</script>
 {% endblock %}

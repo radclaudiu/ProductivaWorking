@@ -1,53 +1,45 @@
 {% extends "layout.html" %}
 
-{% block title %}{{ title }}{% endblock %}
+{% block title %}Sistema de Turnos{% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col-12">
-            <h1 class="display-5 fw-bold">Sistema de Creación de Turnos</h1>
-            <p class="lead text-muted">Crea y gestiona los horarios de tus empleados de forma sencilla</p>
-        </div>
-    </div>
-
-    {% if companies|length == 0 %}
-        <div class="alert alert-info">
-            <p>No tienes empresas asignadas. Contacta con un administrador para obtener acceso.</p>
-        </div>
-    {% else %}
-        {% if companies|length == 1 %}
-            {# Si el usuario solo tiene una empresa, redirigir directamente al dashboard de esa empresa #}
-            <script>
-                window.location.href = "{{ url_for('shifts.company_dashboard', company_id=companies[0].id) }}";
-            </script>
-        {% else %}
-            <div class="row mb-4">
-                <div class="col-12">
-                    <h2 class="h4 mb-3">Selecciona una empresa para gestionar sus turnos</h2>
+<div class="container-fluid px-4">
+    <h1 class="mt-4 mb-4">Sistema de Turnos</h1>
+    
+    <div class="row">
+        <div class="col-xl-12">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-building me-1"></i>
+                    Seleccione una empresa
                 </div>
-            </div>
-
-            <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-5">
-                {% for company in companies %}
-                    <div class="col">
-                        <div class="card h-100 shadow-sm">
-                            <div class="card-body">
-                                <h5 class="card-title">{{ company.name }}</h5>
-                                <p class="card-text text-muted">
-                                    <small>{{ company.employees|length }} empleados</small>
-                                </p>
-                            </div>
-                            <div class="card-footer bg-transparent border-0">
-                                <a href="{{ url_for('shifts.company_dashboard', company_id=company.id) }}" class="btn btn-primary w-100">
-                                    <i class="fas fa-calendar-alt me-1"></i> Ver turnos
-                                </a>
+                <div class="card-body">
+                    {% if companies %}
+                    <div class="row">
+                        {% for company in companies %}
+                        <div class="col-md-4 col-sm-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ company.name }}</h5>
+                                    <p class="card-text text-muted">{{ company.address }}</p>
+                                </div>
+                                <div class="card-footer bg-transparent border-top-0">
+                                    <a href="{{ url_for('shifts.company_dashboard', company_id=company.id) }}" class="btn btn-primary w-100">
+                                        <i class="fas fa-calendar-alt me-1"></i> Ver Turnos
+                                    </a>
+                                </div>
                             </div>
                         </div>
+                        {% endfor %}
                     </div>
-                {% endfor %}
+                    {% else %}
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-1"></i> No hay empresas disponibles para gestionar turnos.
+                    </div>
+                    {% endif %}
+                </div>
             </div>
-        {% endif %}
-    {% endif %}
+        </div>
+    </div>
 </div>
 {% endblock %}

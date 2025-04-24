@@ -2,103 +2,68 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="row">
-        <div class="col-12">
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h3 class="card-title mb-0">{{ title | default('Depuración') }}</h3>
-                </div>
-                <div class="card-body">
-                    <h4>Información General</h4>
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <tbody>
-                                {% for key, value in debug_info.general.items() %}
-                                <tr>
-                                    <th width="200">{{ key }}</th>
-                                    <td>
-                                        {% if value is iterable and value is not string %}
-                                            <ul class="mb-0">
-                                                {% for item in value %}
-                                                    <li>{{ item }}</li>
-                                                {% endfor %}
-                                            </ul>
-                                        {% else %}
-                                            {{ value }}
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+    <div class="card mb-4">
+        <div class="card-header bg-danger text-white">
+            <h4 class="mb-0"><i class="bi bi-tools me-2"></i> Página de Depuración - {{ title }}</h4>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-warning">
+                <p><i class="bi bi-exclamation-triangle-fill me-2"></i> <strong>Precaución:</strong> Esta página está destinada solo para fines de depuración técnica.</p>
+                <p class="mb-0">Contiene información que puede ser útil para diagnosticar problemas con la aplicación.</p>
+            </div>
+            
+            {% for section_name, section_data in debug_info.items() %}
+                <div class="card mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">{{ section_name|title }}</h5>
                     </div>
-
-                    <h4 class="mt-4">Estado de Modelos</h4>
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th width="200">Modelo</th>
-                                    <th>Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for model, status in debug_info.models.items() %}
-                                <tr>
-                                    <td>{{ model }}</td>
-                                    <td>
-                                        {% if status.startswith('OK') %}
-                                            <span class="text-success">{{ status }}</span>
-                                        {% else %}
-                                            <span class="text-danger">{{ status }}</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <h4 class="mt-4">Importaciones</h4>
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th width="200">Módulo</th>
-                                    <th>Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for module, status in debug_info.imports.items() %}
-                                <tr>
-                                    <td>{{ module }}</td>
-                                    <td>
-                                        {% if status == 'OK' %}
-                                            <span class="text-success">{{ status }}</span>
-                                        {% else %}
-                                            <span class="text-danger">{{ status }}</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <h4 class="mt-4">Entorno</h4>
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <tbody>
-                                {% for key, value in debug_info.environment.items() %}
-                                <tr>
-                                    <th width="200">{{ key }}</th>
-                                    <td>{{ value }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                    <div class="card-body">
+                        <dl class="row">
+                            {% for key, value in section_data.items() %}
+                                <dt class="col-sm-3">{{ key|title }}</dt>
+                                <dd class="col-sm-9">
+                                    {% if value is string and value.startswith('ERROR') %}
+                                        <span class="text-danger">{{ value }}</span>
+                                    {% elif value is string and value.startswith('OK') %}
+                                        <span class="text-success">{{ value }}</span>
+                                    {% elif value is iterable and value is not string %}
+                                        <ul class="list-group">
+                                            {% for item in value %}
+                                                <li class="list-group-item">{{ item }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        {{ value }}
+                                    {% endif %}
+                                </dd>
+                            {% endfor %}
+                        </dl>
                     </div>
                 </div>
+            {% endfor %}
+            
+            <h5 class="mt-4 mb-3">Rutas disponibles:</h5>
+            <div class="table-responsive">
+                <table class="table table-striped table-sm">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Ruta</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for route in debug_info.general.bp_routes %}
+                            <tr>
+                                <td>{{ route }}</td>
+                                <td>
+                                    <a href="{{ route }}" class="btn btn-sm btn-primary" target="_blank">
+                                        <i class="bi bi-box-arrow-up-right"></i> Abrir
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
             
             <div class="mt-4">

@@ -12,6 +12,8 @@ import os
 from decimal import Decimal
 import secrets
 import json
+import sys
+import traceback
 
 # Imports de Flask y extensiones
 from flask import (
@@ -105,7 +107,7 @@ def debug_cash_register():
             'general': {
                 'módulo': 'Arqueos de Caja',
                 'fecha_hora': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'bp_routes': [rule.rule for rule in cash_register_bp.url_map.iter_rules()]
+                'bp_routes': [f"/cash-register{rule.rule}" for rule in current_app.url_map.iter_rules() if rule.rule.startswith('/cash-register')]
             }
         }
         

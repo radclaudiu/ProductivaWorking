@@ -61,15 +61,9 @@
                 <div class="row">
                     <div class="col-md-6">
                         <div class="mb-3">
-                            {{ form.name.label(class="form-label") }}
-                            {{ form.name(class="form-control") }}
-                            {% if form.name.errors %}
-                                <div class="invalid-feedback d-block">
-                                    {% for error in form.name.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
+                            <label class="form-label">Empresa</label>
+                            <input type="text" class="form-control" readonly value="{{ company.name }}">
+                            {{ form.company_id(type="hidden", value=company.id) }}
                         </div>
                     </div>
                     <div class="col-md-6">
@@ -87,6 +81,25 @@
                         </div>
                     </div>
                 </div>
+                
+                {% if form.employee_id %}
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            {{ form.employee_id.label(class="form-label") }}
+                            {{ form.employee_id(class="form-control") }}
+                            {% if form.employee_id.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.employee_id.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            <small class="text-muted">Opcional - si selecciona un empleado, el token se asociará a él</small>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
                 
                 <div class="d-flex justify-content-end">
                     <button type="submit" class="btn btn-primary">

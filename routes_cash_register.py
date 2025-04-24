@@ -836,7 +836,11 @@ def token_created(company_id, token_id):
     
     # Generar URL para compartir
     base_url = request.host_url.rstrip('/')
-    token_url = generate_token_url(token.token, base_url)
+    # Si tiene PIN, dirigir a la pantalla de verificación; de lo contrario, al formulario directamente
+    if token.pin:
+        token_url = url_for('cash_register.verify_pin', token_str=token.token, _external=True)
+    else:
+        token_url = url_for('cash_register.public_register', token_str=token.token, _external=True)
     
     # Obtener tokens activos (para mostrar en la misma página)
     active_tokens = CashRegisterToken.query.filter_by(
@@ -1093,7 +1097,11 @@ def generate_token_qr(token_id):
     
     try:
         # Generar URL del token
-        token_url = url_for('cash_register.public_register', token_str=token.token, _external=True)
+        # Si tiene PIN, dirigir a la pantalla de verificación; de lo contrario, al formulario directamente
+        if token.pin:
+            token_url = url_for('cash_register.verify_pin', token_str=token.token, _external=True)
+        else:
+            token_url = url_for('cash_register.public_register', token_str=token.token, _external=True)
         
         # Crear código QR
         qr = qrcode.QRCode(

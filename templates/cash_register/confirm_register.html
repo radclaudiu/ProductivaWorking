@@ -1,0 +1,94 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0"><i class="bi bi-shield-check me-2"></i> Confirmar Arqueo de Caja</h4>
+            <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id) }}" class="btn btn-light btn-sm">
+                <i class="bi bi-arrow-left"></i> Volver
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <p><i class="bi bi-info-circle-fill me-2"></i> Está a punto de confirmar este arqueo de caja. Una vez confirmado, no podrá ser modificado.</p>
+                <p class="mb-0">Por favor, revise que toda la información sea correcta antes de confirmar.</p>
+            </div>
+            
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0">Detalles del Arqueo</h5>
+                </div>
+                <div class="card-body">
+                    <table class="table table-bordered">
+                        <tbody>
+                            <tr>
+                                <th style="width: 30%">Empresa:</th>
+                                <td>{{ company.name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Fecha:</th>
+                                <td>{{ register.date.strftime('%d/%m/%Y') }}</td>
+                            </tr>
+                            <tr>
+                                <th>Importe total:</th>
+                                <td>{{ format_currency(register.total_amount) }}€</td>
+                            </tr>
+                            <tr>
+                                <th>Efectivo:</th>
+                                <td>{{ format_currency(register.cash_amount) }}€</td>
+                            </tr>
+                            <tr>
+                                <th>Tarjeta:</th>
+                                <td>{{ format_currency(register.card_amount) }}€</td>
+                            </tr>
+                            <tr>
+                                <th>Delivery - Efectivo:</th>
+                                <td>{{ format_currency(register.delivery_cash_amount) }}€</td>
+                            </tr>
+                            <tr>
+                                <th>Delivery - Online:</th>
+                                <td>{{ format_currency(register.delivery_online_amount) }}€</td>
+                            </tr>
+                            <tr>
+                                <th>Cheque:</th>
+                                <td>{{ format_currency(register.check_amount) }}€</td>
+                            </tr>
+                            <tr>
+                                <th>Gastos:</th>
+                                <td>{{ format_currency(register.expenses_amount) }}€</td>
+                            </tr>
+                            {% if register.expenses_notes %}
+                            <tr>
+                                <th>Detalle de gastos:</th>
+                                <td>{{ register.expenses_notes }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if register.notes %}
+                            <tr>
+                                <th>Notas adicionales:</th>
+                                <td>{{ register.notes }}</td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <th>Empleado:</th>
+                                <td>{{ register.employee.first_name }} {{ register.employee.last_name }} {% if register.employee_name %}({{ register.employee_name }}){% endif %}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <form method="POST">
+                {{ form.csrf_token }}
+                {{ form.cash_register_id(value=register.id) }}
+                
+                <div class="d-flex">
+                    {{ form.confirm(class="btn btn-success me-2") }}
+                    {{ form.cancel(class="btn btn-secondary", formnovalidate=true) }}
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

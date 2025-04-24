@@ -107,9 +107,19 @@ def debug_cash_register():
             'general': {
                 'módulo': 'Arqueos de Caja',
                 'fecha_hora': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'bp_routes': [f"/cash-register{rule.rule}" for rule in current_app.url_map.iter_rules() if rule.rule.startswith('/cash-register')]
+                'bp_routes': []  # Lo llenaremos manualmente
             }
         }
+        
+        # Añadir rutas principales del módulo
+        debug_info['general']['bp_routes'] = [
+            '/cash-register/dashboard',
+            '/cash-register/debug',
+            '/cash-register/company/1',  # Ejemplo con ID 1
+            '/cash-register/company/1/tokens',
+            '/cash-register/company/1/register',
+            '/cash-register/company/1/report'
+        ]
         
         # Comprobamos acceso a modelos
         try:

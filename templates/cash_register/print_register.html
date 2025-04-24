@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arqueo de Caja - {{ register.date.strftime('%d/%m/%Y') }} - {{ company.name }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 15px;
+        }
+        .header h1 {
+            margin-bottom: 5px;
+            font-size: 24px;
+        }
+        .header p {
+            margin: 5px 0;
+            font-size: 16px;
+            color: #555;
+        }
+        .info-section {
+            margin-bottom: 25px;
+        }
+        .info-section h2 {
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table th, table td {
+            padding: 8px 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        table th {
+            background-color: #f5f5f5;
+        }
+        .total-row th, .total-row td {
+            font-weight: bold;
+            border-top: 2px solid #333;
+            border-bottom: 2px solid #333;
+        }
+        .notes-box {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .notes-box h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .notes-box p {
+            margin: 5px 0;
+            white-space: pre-wrap;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+        .signatures {
+            margin-top: 50px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .signature-block {
+            width: 45%;
+            text-align: center;
+        }
+        .signature-line {
+            width: 100%;
+            border-bottom: 1px solid #333;
+            margin-bottom: 5px;
+            height: 40px;
+        }
+        @media print {
+            body {
+                padding: 0;
+                margin: 0;
+            }
+            .no-print {
+                display: none;
+            }
+            @page {
+                margin: 1.5cm;
+            }
+        }
+        .no-print {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .no-print button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        .no-print button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print">
+        <button onclick="window.print()">Imprimir Documento</button>
+        <button onclick="window.history.back()">Volver</button>
+    </div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>ARQUEO DE CAJA</h1>
+            <p><strong>{{ company.name }}</strong></p>
+            <p>Fecha: <strong>{{ register.date.strftime('%d/%m/%Y') }}</strong></p>
+            <p>Registro #{{ register.id }}</p>
+        </div>
+        
+        <div class="info-section">
+            <h2>Información General</h2>
+            <table>
+                <tr>
+                    <th style="width: 40%;">Registrado por:</th>
+                    <td>
+                        {% if register.employee_name %}
+                            {{ register.employee_name }}
+                        {% elif register.creator %}
+                            {{ register.creator.username }}
+                        {% else %}
+                            No especificado
+                        {% endif %}
+                    </td>
+                </tr>
+                <tr>
+                    <th>Fecha de registro:</th>
+                    <td>{{ register.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
+                </tr>
+                <tr>
+                    <th>Última modificación:</th>
+                    <td>{{ register.updated_at.strftime('%d/%m/%Y %H:%M') if register.updated_at else 'Sin modificaciones' }}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="info-section">
+            <h2>Detalle Financiero</h2>
+            <table>
+                <tr>
+                    <th style="width: 60%;">Efectivo:</th>
+                    <td>{{ format_currency(register.cash_amount) }}</td>
+                </tr>
+                <tr>
+                    <th>Tarjeta:</th>
+                    <td>{{ format_currency(register.card_amount) }}</td>
+                </tr>
+                <tr>
+                    <th>Delivery - Efectivo:</th>
+                    <td>{{ format_currency(register.delivery_cash_amount) }}</td>
+                </tr>
+                <tr>
+                    <th>Delivery - Online:</th>
+                    <td>{{ format_currency(register.delivery_online_amount) }}</td>
+                </tr>
+                <tr>
+                    <th>Cheque:</th>
+                    <td>{{ format_currency(register.check_amount) }}</td>
+                </tr>
+                <tr>
+                    <th>Subtotal (ingresos):</th>
+                    <td>{{ format_currency(register.cash_amount + register.card_amount + register.delivery_cash_amount + register.delivery_online_amount + register.check_amount) }}</td>
+                </tr>
+                <tr>
+                    <th>Gastos:</th>
+                    <td>{{ format_currency(register.expenses_amount) }}</td>
+                </tr>
+                <tr class="total-row">
+                    <th>TOTAL:</th>
+                    <td>{{ format_currency(register.total_amount) }}</td>
+                </tr>
+            </table>
+        </div>
+        
+        {% if register.expenses_notes %}
+        <div class="info-section">
+            <h2>Detalle de Gastos</h2>
+            <div class="notes-box">
+                <p>{{ register.expenses_notes }}</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if register.notes %}
+        <div class="info-section">
+            <h2>Notas Adicionales</h2>
+            <div class="notes-box">
+                <p>{{ register.notes }}</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="signatures">
+            <div class="signature-block">
+                <div class="signature-line"></div>
+                <p>Firma Responsable</p>
+            </div>
+            <div class="signature-block">
+                <div class="signature-line"></div>
+                <p>Firma Gerencia</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Documento generado por: {{ current_user.username }} - {{ datetime.now().strftime('%d/%m/%Y %H:%M') }}</p>
+            <p>Productiva - Sistema de Gestión Empresarial</p>
+        </div>
+    </div>
+</body>
+</html>

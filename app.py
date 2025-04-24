@@ -302,3 +302,8 @@ def manifest():
     """Sirve el manifest.json para la funcionalidad PWA."""
     from flask import send_from_directory
     return send_from_directory('static', 'manifest.json')
+
+# Registrar filtros personalizados para Jinja2
+from utils_jinja import month_name_filter, format_currency_filter
+app.jinja_env.filters['month_name'] = month_name_filter
+app.jinja_env.filters['currency'] = format_currency_filter

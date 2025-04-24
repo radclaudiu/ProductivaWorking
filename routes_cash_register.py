@@ -28,7 +28,7 @@ from app import db
 # Importamos los modelos dentro de las funciones para evitar importaciones circulares
 from forms_cash_register import (
     CashRegisterForm, CashRegisterSearchForm, CashRegisterConfirmForm,
-    CashRegisterTokenForm, PublicCashRegisterForm
+    CashRegisterTokenForm, PublicCashRegisterForm, PinVerificationForm
 )
 from utils_cash_register import (
     calculate_weekly_summary, calculate_staff_cost, calculate_monthly_revenue,
@@ -885,6 +885,11 @@ def public_register(token_str):
     # Obtener la empresa
     company = token.company
     
+    # Si el token tiene PIN, verificar que el usuario lo haya ingresado
+    # El PIN se verifica en la sesión para no tener que pedirlo múltiples veces
+    if token.pin and session.get(f'pin_verified_{token_str}') != True:
+        return redirect(url_for('cash_register.verify_pin', token_str=token_str))
+    
     # Crear formulario
     form = PublicCashRegisterForm()
     form.token.data = token_str
@@ -1004,6 +1009,62 @@ def deactivate_token(token_id):
         flash(f'Error al desactivar token: {str(e)}', 'danger')
     
     return redirect(url_for('cash_register.manage_tokens', company_id=token.company_id))
+
+
+@cash_register_bp.route('/token/<string:token_str>/verify_pin', methods=['GET', 'POST'])
+def verify_pin(token_str):
+    """
+    Verificar el PIN de acceso para un token.
+    
+    Args:
+        token_str: String del token de acceso
+    """
+    # Importar modelos para evitar problemas de importación circular
+    from models_cash_register import CashRegisterToken
+    
+    # Verificar token
+    token = CashRegisterToken.query.filter_by(token=token_str).first()
+    
+    if not token:
+        flash('Token no válido o expirado', 'danger')
+        return redirect(url_for('auth.login'))
+    
+    # Verificar que el token esté activo y no haya expirado
+    if not token.is_active or (token.expires_at and token.expires_at < datetime.now()):
+        flash('Token expirado o desactivado', 'danger')
+        return redirect(url_for('auth.login'))
+    
+    # Si no tiene PIN, redirigir directamente al formulario
+    if not token.pin:
+        session[f'pin_verified_{token_str}'] = True
+        return redirect(url_for('cash_register.public_register', token_str=token_str))
+    
+    # Crear formulario de verificación
+    form = PinVerificationForm()
+    form.token.data = token_str
+    
+    # Si envió el formulario, verificar PIN
+    if form.validate_on_submit():
+        entered_pin = form.pin.data
+        if entered_pin == token.pin:
+            # PIN correcto, marcar como verificado en la sesión
+            session[f'pin_verified_{token_str}'] = True
+            return redirect(url_for('cash_register.public_register', token_str=token_str))
+        else:
+            # PIN incorrecto
+            return render_template(
+                'cash_register/pin_verification.html',
+                title='Verificación de PIN',
+                form=form,
+                pin_error='PIN incorrecto. Por favor, inténtalo de nuevo.'
+            )
+    
+    # Mostrar formulario de verificación
+    return render_template(
+        'cash_register/pin_verification.html',
+        title='Verificación de PIN',
+        form=form
+    )
 
 
 @cash_register_bp.route('/token/<int:token_id>/qr', methods=['GET'])

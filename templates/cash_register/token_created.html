@@ -44,6 +44,23 @@
                                 <td>{{ token.employee.first_name }} {{ token.employee.last_name }}</td>
                             </tr>
                             {% endif %}
+                            <tr>
+                                <th>PIN de acceso:</th>
+                                <td>
+                                    {% if token.pin %}
+                                    <span class="badge bg-warning text-dark">Protegido con PIN</span>
+                                    <span class="ms-2 fw-bold">{{ token.pin }}</span>
+                                    <div class="text-muted small mt-1">
+                                        <i class="bi bi-info-circle"></i> Deberá proporcionar este PIN al empleado para que pueda acceder al formulario.
+                                    </div>
+                                    {% else %}
+                                    <span class="badge bg-secondary">Sin PIN</span>
+                                    <div class="text-muted small mt-1">
+                                        <i class="bi bi-info-circle"></i> Cualquier persona con acceso al enlace podrá enviar datos.
+                                    </div>
+                                    {% endif %}
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>

@@ -35,8 +35,52 @@ from utils_cash_register import (
     generate_token_url
 )
 from app import db
-import helpers
-from decorators import admin_required, gerente_required
+
+# Definimos las funciones de helpers aquí mismo para evitar importaciones adicionales
+def is_valid_url(url):
+    """Validar si una URL es válida y segura"""
+    import re
+    pattern = re.compile(r'^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$')
+    return bool(pattern.match(url))
+    
+def sanitize_filename(filename):
+    """Sanitizar nombre de archivo para que sea seguro"""
+    import re
+    # Reemplazar caracteres no alfanuméricos excepto algunos permitidos
+    return re.sub(r'[^a-zA-Z0-9_.-]', '_', filename)
+
+# Definimos los decoradores que necesitamos
+def admin_required(f):
+    """Decorador que requiere que el usuario sea administrador"""
+    from functools import wraps
+    from flask import flash, redirect, url_for
+    from flask_login import current_user
+    
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('auth.login', next=request.url))
+        if not current_user.is_admin():
+            flash('Acceso restringido. Se requieren permisos de administrador.', 'danger')
+            return redirect(url_for('main.index'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def gerente_required(f):
+    """Decorador que requiere que el usuario sea gerente o administrador"""
+    from functools import wraps
+    from flask import flash, redirect, url_for
+    from flask_login import current_user
+    
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('auth.login', next=request.url))
+        if not (current_user.is_gerente() or current_user.is_admin()):
+            flash('Acceso restringido. Se requieren permisos de gerente.', 'danger')
+            return redirect(url_for('main.index'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # Configurar logging
 logger = logging.getLogger(__name__)
@@ -53,6 +97,9 @@ def dashboard():
     
     Muestra listado de empresas para acceder a sus datos de arqueo.
     """
+    # Importamos Company aquí para evitar importaciones circulares
+    from models import Company
+    
     # Obtener empresas a las que tiene acceso el usuario
     if current_user.is_admin():
         companies = Company.query.order_by(Company.name).all()
@@ -81,6 +128,10 @@ def company_dashboard(company_id):
     Args:
         company_id: ID de la empresa
     """
+    # Importamos los modelos dentro de la función para evitar importaciones circulares
+    from models import Company
+    from models_cash_register import CashRegister, CashRegisterSummary, CashRegisterToken
+    
     # Verificar acceso a la empresa
     company = Company.query.get_or_404(company_id)
     if not current_user.is_admin() and company not in current_user.companies:
@@ -166,6 +217,10 @@ def new_register(company_id):
     Args:
         company_id: ID de la empresa
     """
+    # Importamos los modelos dentro de la función para evitar importaciones circulares
+    from models import Company, Employee
+    from models_cash_register import CashRegister
+    
     # Verificar acceso a la empresa
     company = Company.query.get_or_404(company_id)
     if not current_user.is_admin() and company not in current_user.companies:
@@ -250,6 +305,10 @@ def edit_register(register_id):
     Args:
         register_id: ID del arqueo a editar
     """
+    # Importamos los modelos dentro de la función para evitar importaciones circulares
+    from models import Employee
+    from models_cash_register import CashRegister
+    
     # Obtener arqueo y verificar permisos
     register = CashRegister.query.get_or_404(register_id)
     company = register.company

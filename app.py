@@ -80,9 +80,10 @@ def create_app(config_class='config.Config'):
     # Importar blueprint de arqueos de caja
     try:
         from routes_cash_register import cash_register_bp
-    except ImportError:
+        logger.info("Blueprint de arqueos de caja importado correctamente")
+    except ImportError as e:
         cash_register_bp = None
-        logger.warning("No se pudo importar el blueprint de arqueos de caja")
+        logger.warning(f"No se pudo importar el blueprint de arqueos de caja: {str(e)}")
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)

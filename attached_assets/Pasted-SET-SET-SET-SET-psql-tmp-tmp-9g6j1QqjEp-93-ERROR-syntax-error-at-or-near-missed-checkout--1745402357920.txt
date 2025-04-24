@@ -1,0 +1,68 @@
+SET
+SET
+SET
+SET
+psql:/tmp/tmp.9g6j1QqjEp:93: ERROR:  syntax error at or near "'missed_checkout'"
+LINE 1: 'missed_checkout',
+        ^
+psql:/tmp/tmp.9g6j1QqjEp:103: ERROR:  syntax error at or near "'active'"
+LINE 1: 'active',
+        ^
+psql:/tmp/tmp.9g6j1QqjEp:116: ERROR:  syntax error at or near "'MISSED_CHECKOUT'"
+LINE 1: 'MISSED_CHECKOUT',
+        ^
+psql:/tmp/tmp.9g6j1QqjEp:126: ERROR:  syntax error at or near "'ACTIVE'"
+LINE 1: 'ACTIVE',
+        ^
+psql:/tmp/tmp.9g6j1QqjEp:138: ERROR:  syntax error at or near "'DESCONGELACION'"
+LINE 1: 'DESCONGELACION',
+        ^
+psql:/tmp/tmp.9g6j1QqjEp:150: ERROR:  syntax error at or near "'INDEFINIDO'"
+LINE 1: 'INDEFINIDO',
+        ^
+psql:/tmp/tmp.9g6j1QqjEp:162: ERROR:  syntax error at or near "'INDEFINIDO'"
+LINE 1: 'INDEFINIDO',
+        ^
+psql:/tmp/tmp.9g6j1QqjEp:174: ERROR:  syntax error at or near "'activo'"
+LINE 1: 'activo',
+        ^
+psql:/tmp/tmp.9g6j1QqjEp:186: ERROR:  syntax error at or near "'ACTIVO'"
+LINE 1: 'ACTIVO',
+        ^
+psql:/tmp/tmp.9g6j1QqjEp:197: ERROR:  syntax error at or near "'diaria'"
+LINE 1: 'diaria',
+        ^
+psql:/tmp/tmp.9g6j1QqjEp:207: ERROR:  syntax error at or near "'alta'"
+LINE 1: 'alta',
+        ^
+psql:/tmp/tmp.9g6j1QqjEp:217: ERROR:  syntax error at or near "'pendiente'"
+LINE 1: 'pendiente',
+        ^
+psql:/tmp/tmp.9g6j1QqjEp:229: ERROR:  syntax error at or near "'DIARIA'"
+LINE 1: 'DIARIA',
+        ^
+psql:/tmp/tmp.9g6j1QqjEp:240: ERROR:  syntax error at or near "'BAJA'"
+LINE 1: 'BAJA',
+        ^
+psql:/tmp/tmp.9g6j1QqjEp:251: ERROR:  syntax error at or near "'PENDIENTE'"
+LINE 1: 'PENDIENTE',
+        ^
+psql:/tmp/tmp.9g6j1QqjEp:261: ERROR:  syntax error at or near "'admin'"
+LINE 1: 'admin',
+        ^
+psql:/tmp/tmp.9g6j1QqjEp:271: ERROR:  syntax error at or near "'ADMIN'"
+LINE 1: 'ADMIN',
+        ^
+psql:/tmp/tmp.9g6j1QqjEp:280: ERROR:  syntax error at or near "'REGISTRADA'"
+LINE 1: 'REGISTRADA',
+        ^
+psql:/tmp/tmp.9g6j1QqjEp:289: ERROR:  syntax error at or near "'REGISTRADA'"
+LINE 1: 'REGISTRADA',
+        ^
+psql:/tmp/tmp.9g6j1QqjEp:303: ERROR:  syntax error at or near "'lunes'"
+LINE 1: 'lunes',
+        ^
+psql:/tmp/tmp.9g6j1QqjEp:317: ERROR:  syntax error at or near "'LUNES'"
+LINE 1: 'LUNES',
+        ^
+psql:/tmp/tmp.9g6j1QqjEp:320: ERROR:  current transaction is aborted, commands ignored until end of transaction block

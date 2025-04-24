@@ -27,7 +27,7 @@ from werkzeug.security import safe_join
 from app import db
 # Importamos los modelos dentro de las funciones para evitar importaciones circulares
 from forms_cash_register import (
-    CashRegisterForm, CashRegisterSearchForm, CashRegisterConfirmForm,
+    CashRegisterForm, CashRegisterSearchForm,
     CashRegisterTokenForm, PublicCashRegisterForm, PinVerificationForm
 )
 from utils_cash_register import (
@@ -243,11 +243,8 @@ def company_dashboard(company_id):
         .order_by(CashRegister.date.desc())\
         .limit(10).all()
     
-    # Obtener arqueos pendientes (no confirmados)
-    pending_registers = CashRegister.query.filter_by(
-        company_id=company_id, 
-        is_confirmed=False
-    ).all()
+    # Ya no hay arqueos pendientes ya que no existe el sistema de confirmación
+    pending_registers = []
     
     # Obtener tokens activos
     active_tokens = CashRegisterToken.query.filter_by(

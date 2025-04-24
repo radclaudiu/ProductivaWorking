@@ -1,0 +1,16 @@
+vamos a crear un modulo nuevo indepentiente sistema de Arqueos de caja 
+
+
+- Cada empresa debe poder agregar su cierre de caja diario con un sistema simple agregar arqueo, agregar fecha del arqueo, efectivo, tarjeta, delivery efectivo, delivery online. Tambien debe haber un apartado de gastos para poder controlar el efectivo final basicamente para saber a donde ha salido el efectivo. Esto seria la estructura principal, ahora al entrar a Arqueos debemos tener primero arriba un menu deplegable para 
+elegir la empresa con la que queremos trabajar por si tenemos acceso a varias empresas, 
+al entrar al dashboard 
+             debemos tener boton para ver los arqueos modificarlos o editarlos tipo tablas olumnas con sus datos,
+             tambien debemos poder generar informes con arqueos por fechas, por meses, por año.
+           
+ debemos tener informes de coste de personal por mes y por año, para ello deben acceder a los fichajes y sumar todos los fichajes del mes los fichajes de la tabla checkpoint_original unicamente o tambien al fichar la gente podemos agregar que al finalizar el fichaje agregue en una celda el tiempo trabajado en ese fichaje para que el sistema de arqueos le sea mas facil sacar la informacion y no tardar mucho, tambien debemos agregar al fichar la salida de un fichaje debe haber un conteo de horas por empleado por mes para que sacar estos informes sea mas rapido y eficiente la cosa es que debe haber un conteo en la base de datos por empresa por mes y por año por ejemplo para que sea mas facil luego hacer un porcentaje de coste de empleados por mes y por año y no tener que sumar todos los fichajes al generar un informe
+
+
+tambien tenemos que tener sistema de subida de arqueo facil, te explico como debe funcionar este sistema debemos poder darle un enlace a un empleado donde el pueda agregar un arqueo, digamos que el al cerrar la caja debe entrar a ese enlace y poner importe total visa...... gastos.... y darle a enviar y que eso se suba a los arqueos diarios, tambien debe tener un boton de confirmar viendo todo lo que ha puesto antes.  todo esto sin que tenga que estar registrado en la pagina si es posiblepero que sea un envio de datos a la base de datos seguro 
+
+
+despues debe haber un dashboard con facturacion ese dasboard estara bajo en la primera pagina de arqueos, apoyandonos en el coste por hora del personal en cada empresa en la base de datos en HOURLT_EMPLOYEE_COST y apoyandonos tambien en el sistema de fichaje en las sumas de horas mensuales, debemos tener estadisticas de cuanto nos esta costando en % los empleados cada mes en el dashboard simplemte  cogemos arqueos totales del mes y horas totales del mes en fichajes y sacamos el porcentaje tambien media anual y mas estadisticas reales utiles

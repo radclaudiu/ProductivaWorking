@@ -1,284 +1,208 @@
-{% extends 'layout.html' %}
+{% extends "layout.html" %}
 
 {% block content %}
-<div class="container my-4">
-    <div class="row mb-4">
-        <div class="col-md-12 text-center">
-            <h1 class="mb-3">
-                <i class="bi bi-cash-coin me-2 text-warning"></i>
-                Arqueo de Caja
-            </h1>
-            <h4 class="text-muted">{{ company.name }}</h4>
-            <hr>
+<div class="container mt-4">
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Formulario de Arqueo de Caja - {{ token.company.name }}</h4>
         </div>
-    </div>
-
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <div class="card bg-dark border-warning">
-                <div class="card-header bg-warning text-dark">
-                    <h5 class="mb-0">Enviar Arqueo de Caja</h5>
-                </div>
-                <div class="card-body">
-                    <form method="POST" class="needs-validation" novalidate>
-                        {{ form.hidden_tag() }}
-                        {{ form.token }}
-
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    {{ form.date.label(class="form-label") }}
-                                    {{ form.date(class="form-control", type="date") }}
-                                    {% if form.date.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in form.date.errors %}
-                                        {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    {{ form.employee_name.label(class="form-label") }}
-                                    {{ form.employee_name(class="form-control", placeholder="Su nombre") }}
-                                    {% if form.employee_name.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in form.employee_name.errors %}
-                                        {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                    {% endif %}
-                                    <small class="form-text text-muted">Introduzca su nombre completo</small>
-                                </div>
-                            </div>
-                        </div>
-
-                        <h5 class="mt-4 mb-3 border-bottom pb-2">Ingresos por Método de Pago</h5>
-                        
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    {{ form.cash_amount.label(class="form-label") }}
-                                    <div class="input-group">
-                                        {{ form.cash_amount(class="form-control", placeholder="0.00") }}
-                                        <span class="input-group-text">€</span>
-                                    </div>
-                                    {% if form.cash_amount.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in form.cash_amount.errors %}
-                                        {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    {{ form.card_amount.label(class="form-label") }}
-                                    <div class="input-group">
-                                        {{ form.card_amount(class="form-control", placeholder="0.00") }}
-                                        <span class="input-group-text">€</span>
-                                    </div>
-                                    {% if form.card_amount.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in form.card_amount.errors %}
-                                        {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    {{ form.delivery_cash_amount.label(class="form-label") }}
-                                    <div class="input-group">
-                                        {{ form.delivery_cash_amount(class="form-control", placeholder="0.00") }}
-                                        <span class="input-group-text">€</span>
-                                    </div>
-                                    {% if form.delivery_cash_amount.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in form.delivery_cash_amount.errors %}
-                                        {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    {{ form.delivery_online_amount.label(class="form-label") }}
-                                    <div class="input-group">
-                                        {{ form.delivery_online_amount(class="form-control", placeholder="0.00") }}
-                                        <span class="input-group-text">€</span>
-                                    </div>
-                                    {% if form.delivery_online_amount.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in form.delivery_online_amount.errors %}
-                                        {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    {{ form.check_amount.label(class="form-label") }}
-                                    <div class="input-group">
-                                        {{ form.check_amount(class="form-control", placeholder="0.00") }}
-                                        <span class="input-group-text">€</span>
-                                    </div>
-                                    {% if form.check_amount.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in form.check_amount.errors %}
-                                        {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    {{ form.expenses_amount.label(class="form-label") }}
-                                    <div class="input-group">
-                                        {{ form.expenses_amount(class="form-control", placeholder="0.00") }}
-                                        <span class="input-group-text">€</span>
-                                    </div>
-                                    {% if form.expenses_amount.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in form.expenses_amount.errors %}
-                                        {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-3">
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    {{ form.total_amount.label(class="form-label") }}
-                                    <div class="input-group">
-                                        {{ form.total_amount(class="form-control bg-dark text-success", placeholder="0.00", id="totalAmount") }}
-                                        <span class="input-group-text">€</span>
-                                    </div>
-                                    {% if form.total_amount.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in form.total_amount.errors %}
-                                        {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                    {% endif %}
-                                    <small class="form-text text-muted">El total debe coincidir con la suma de todos los métodos de pago (sin contar gastos).</small>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <h5 class="mt-4 mb-3 border-bottom pb-2">Notas</h5>
-                        
-                        <div class="row mb-3">
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    {{ form.expenses_notes.label(class="form-label") }}
-                                    {{ form.expenses_notes(class="form-control", rows=3, placeholder="Detalle de los gastos") }}
-                                    {% if form.expenses_notes.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in form.expenses_notes.errors %}
-                                        {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row mb-4">
-                            <div class="col-md-12">
-                                <div class="form-group">
-                                    {{ form.notes.label(class="form-label") }}
-                                    {{ form.notes(class="form-control", rows=3, placeholder="Notas generales sobre este arqueo") }}
-                                    {% if form.notes.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in form.notes.errors %}
-                                        {{ error }}
-                                        {% endfor %}
-                                    </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="d-grid gap-2">
-                            {{ form.submit(class="btn btn-warning btn-lg") }}
-                        </div>
-                    </form>
-                </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <p><i class="bi bi-info-circle-fill me-2"></i> Este formulario le permite enviar los datos de arqueo de caja del día.</p>
+                <p class="mb-0">Una vez enviado el formulario, no podrá volver a utilizarse este enlace.</p>
             </div>
+            
+            <form method="POST" class="mt-4" id="registerForm">
+                {{ form.csrf_token }}
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.date.label(class="form-label") }}
+                            {{ form.date(class="form-control", readonly=true) }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.employee_name.label(class="form-label") }}
+                            {{ form.employee_name(class="form-control") }}
+                            {% if form.employee_name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.employee_name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <h5 class="card-title mt-4">Ingresos por Método de Pago</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.cash_amount.label(class="form-label") }}
+                            {{ form.cash_amount(class="form-control payment-amount") }}
+                            {% if form.cash_amount.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.cash_amount.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.card_amount.label(class="form-label") }}
+                            {{ form.card_amount(class="form-control payment-amount") }}
+                            {% if form.card_amount.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.card_amount.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.check_amount.label(class="form-label") }}
+                            {{ form.check_amount(class="form-control payment-amount") }}
+                            {% if form.check_amount.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.check_amount.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.delivery_cash_amount.label(class="form-label") }}
+                            {{ form.delivery_cash_amount(class="form-control payment-amount") }}
+                            {% if form.delivery_cash_amount.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.delivery_cash_amount.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.delivery_online_amount.label(class="form-label") }}
+                            {{ form.delivery_online_amount(class="form-control payment-amount") }}
+                            {% if form.delivery_online_amount.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.delivery_online_amount.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row mb-2">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.expenses_amount.label(class="form-label") }}
+                            {{ form.expenses_amount(class="form-control", id="expenses_amount") }}
+                            {% if form.expenses_amount.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.expenses_amount.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.total_amount.label(class="form-label") }}
+                            {{ form.total_amount(class="form-control", readonly=true, id="total_amount") }}
+                            {% if form.total_amount.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.total_amount.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.expenses_notes.label(class="form-label") }}
+                            {{ form.expenses_notes(class="form-control", rows=3) }}
+                            {% if form.expenses_notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.expenses_notes.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            {{ form.notes.label(class="form-label") }}
+                            {{ form.notes(class="form-control", rows=3) }}
+                            {% if form.notes.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.notes.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-center mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-send"></i> Enviar Arqueo
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
-{% endblock %}
 
-{% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Función para calcular el total de métodos de pago
+    // Función para calcular el total
     function calculateTotal() {
-        try {
-            const cashAmount = parseFloat(document.getElementById('cash_amount').value) || 0;
-            const cardAmount = parseFloat(document.getElementById('card_amount').value) || 0;
-            const deliveryCashAmount = parseFloat(document.getElementById('delivery_cash_amount').value) || 0;
-            const deliveryOnlineAmount = parseFloat(document.getElementById('delivery_online_amount').value) || 0;
-            const checkAmount = parseFloat(document.getElementById('check_amount').value) || 0;
-            
-            console.log(`Calculando total: Efectivo=${cashAmount}, Tarjeta=${cardAmount}, Delivery Efectivo=${deliveryCashAmount}, Delivery Online=${deliveryOnlineAmount}, Cheque=${checkAmount}`);
-            
-            const total = cashAmount + cardAmount + deliveryCashAmount + deliveryOnlineAmount + checkAmount;
-            console.log(`Total calculado: ${total.toFixed(2)}`);
-            
-            // Actualizar ambos campos: el visible (totalAmount) y el campo oculto del formulario (total_amount)
-            document.getElementById('totalAmount').value = total.toFixed(2);
-            document.getElementById('total_amount').value = total.toFixed(2);
-        } catch (error) {
-            console.error('Error al calcular el total:', error);
-        }
+        let total = 0;
+        
+        // Sumar todos los campos de pago
+        document.querySelectorAll('.payment-amount').forEach(function(input) {
+            const value = parseFloat(input.value) || 0;
+            total += value;
+        });
+        
+        // Restar gastos
+        const expenses = parseFloat(document.getElementById('expenses_amount').value) || 0;
+        
+        // Actualizar campo de total
+        document.getElementById('total_amount').value = (total - expenses).toFixed(2);
     }
     
-    try {
-        // Asignar eventos a todos los campos de importe
-        document.getElementById('cash_amount').addEventListener('input', calculateTotal);
-        document.getElementById('card_amount').addEventListener('input', calculateTotal);
-        document.getElementById('delivery_cash_amount').addEventListener('input', calculateTotal);
-        document.getElementById('delivery_online_amount').addEventListener('input', calculateTotal);
-        document.getElementById('check_amount').addEventListener('input', calculateTotal);
-        
-        // Verificar que se han asignado correctamente los event listeners
-        console.log('Event listeners asignados correctamente a los campos de importe');
-        
-        // Calcular total inicial
-        calculateTotal();
-        
-        // Validación del formulario
-        document.querySelector('.needs-validation').addEventListener('submit', function(event) {
-            // Recalcular el total una vez más antes de enviar
-            calculateTotal();
-            
-            if (!this.checkValidity()) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-            this.classList.add('was-validated');
-        });
-    } catch (error) {
-        console.error('Error al inicializar los cálculos de totales:', error);
-    }
+    // Calcular total al cargar la página
+    calculateTotal();
+    
+    // Añadir event listeners para recalcular cuando cambie cualquier campo
+    document.querySelectorAll('.payment-amount, #expenses_amount').forEach(function(input) {
+        input.addEventListener('input', calculateTotal);
+    });
 });
 </script>
 {% endblock %}

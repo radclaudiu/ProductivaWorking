@@ -1471,7 +1471,25 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
                         f"Jornada con {overtime_hours:.2f} horas extra sobre el límite diario de {contract_hours.daily_hours} horas"
                     )
             
-            # 3. Actualizar estado del empleado
+            # 3. Calcular y actualizar las horas trabajadas
+            # Importar las funciones necesarias
+            from utils_work_hours import calculate_hours_worked, update_employee_work_hours
+            
+            # Calculamos las horas trabajadas con los valores reales (originales)
+            hours_worked = calculate_hours_worked(original_checkin, original_checkout)
+            
+            # Actualizamos el valor en el registro original
+            if existing_original:
+                existing_original.hours_worked = hours_worked
+                db.session.add(existing_original)
+            elif 'original_record' in locals():
+                original_record.hours_worked = hours_worked
+                db.session.add(original_record)
+            
+            # Actualizar los acumulados de horas trabajadas
+            update_result = update_employee_work_hours(employee.id, original_checkin, hours_worked)
+            
+            # 4. Actualizar estado del empleado
             employee.is_on_shift = False
             db.session.add(employee)
             
@@ -1481,6 +1499,7 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
             # Log detallado post-transacción
             print(f"✅ CHECKOUT: Empleado ID {employee.id} - Estado: {old_status} → {employee.is_on_shift}")
             print(f"   Registro ID: {record_id}, Salida: {pending_record.check_out_time}")
+            print(f"   Horas trabajadas: {hours_worked:.2f}h, Actualización de acumulados: {'✓ Exitosa' if update_result else '✗ Fallida'}")
             
             # Redirigir directamente a la página de firma sin mostrar mensaje (eliminado a petición del cliente)
             return redirect(url_for('checkpoints.checkpoint_record_signature', id=pending_record.id))
@@ -1752,7 +1771,34 @@ def record_checkout(id):
                     f"Jornada con {overtime_hours:.2f} horas extra sobre el límite diario de {contract_hours.daily_hours} horas"
                 )
         
-        # 3. Actualizar el estado del empleado
+        # 3. Calcular y actualizar las horas trabajadas
+        # Importar las funciones necesarias
+        from utils_work_hours import calculate_hours_worked, update_employee_work_hours
+        
+        # Obtenemos el registro original para los tiempos exactos
+        original_record = None
+        if hasattr(record, 'original_records') and record.original_records:
+            original_record = record.original_records[0]
+        
+        # Calculamos las horas trabajadas con los valores originales
+        if original_record:
+            original_checkin = original_record.original_check_in_time
+            original_checkout = original_record.original_check_out_time
+            hours_worked = calculate_hours_worked(original_checkin, original_checkout)
+            
+            # Guardamos las horas trabajadas en el registro original
+            original_record.hours_worked = hours_worked
+            db.session.add(original_record)
+            
+            # Actualizamos los acumulados de horas trabajadas
+            update_result = update_employee_work_hours(employee.id, original_checkin, hours_worked)
+        else:
+            # Si no hay registro original (caso raro), usamos los valores del registro regular
+            hours_worked = calculate_hours_worked(record.check_in_time, record.check_out_time)
+            # No podemos guardar en original_record pero sí actualizar acumulados
+            update_result = update_employee_work_hours(employee.id, record.check_in_time, hours_worked)
+        
+        # 4. Actualizar el estado del empleado
         employee.is_on_shift = False
         db.session.add(employee)
         
@@ -1763,6 +1809,7 @@ def record_checkout(id):
         # Log básico de la acción
         print(f"✅ CHECKOUT (pantalla detalles): Empleado ID {employee.id} - Estado: {old_status} → {employee.is_on_shift}")
         print(f"   Registro ID: {record.id}")
+        print(f"   Horas trabajadas: {hours_worked:.2f}h, Actualización de acumulados: {'✓ Exitosa' if update_result else '✗ Fallida'}")
         
         # Redirigir directamente a la página de firma sin mostrar mensaje (eliminado a petición del cliente)
         return redirect(url_for('checkpoints.checkpoint_record_signature', id=record.id))

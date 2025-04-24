@@ -25,9 +25,10 @@ def add_hours_worked_column():
         # 2. Si no existe, la añadimos usando SQL directo
         try:
             print("➕ Añadiendo columna 'hours_worked' a la tabla checkpoint_original_records...")
-            db.session.execute(
-                "ALTER TABLE checkpoint_original_records ADD COLUMN hours_worked FLOAT DEFAULT 0.0 NOT NULL"
-            )
+            # Usar text() de SQLAlchemy para la sentencia SQL
+            from sqlalchemy import text
+            sql = text("ALTER TABLE checkpoint_original_records ADD COLUMN hours_worked FLOAT DEFAULT 0.0 NOT NULL")
+            db.session.execute(sql)
             db.session.commit()
             print("✅ Columna añadida correctamente")
         except Exception as e:

@@ -121,13 +121,7 @@ class CashRegisterSearchForm(FlaskForm):
             raise ValidationError('La fecha de inicio no puede ser posterior a la fecha de fin')
 
 
-class CashRegisterConfirmForm(FlaskForm):
-    """
-    Formulario para confirmar un arqueo de caja.
-    """
-    cash_register_id = HiddenField('ID de Arqueo', validators=[DataRequired()])
-    confirm = SubmitField('Confirmar Arqueo')
-    cancel = SubmitField('Cancelar')
+# Eliminado el formulario CashRegisterConfirmForm ya que ya no es necesario
 
 
 class CashRegisterTokenForm(FlaskForm):

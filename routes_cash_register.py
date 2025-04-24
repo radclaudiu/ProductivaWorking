@@ -410,10 +410,7 @@ def edit_register(register_id):
         flash('No tiene acceso a este arqueo', 'danger')
         return redirect(url_for('cash_register.dashboard'))
     
-    # No permitir editar registros confirmados excepto a administradores
-    if register.is_confirmed and not current_user.is_admin():
-        flash('No se puede editar un arqueo ya confirmado', 'warning')
-        return redirect(url_for('cash_register.company_dashboard', company_id=company.id))
+    # Todos los arqueos son editables (eliminado el sistema de confirmación)
     
     # Crear formulario y poblarlo con datos existentes
     form = CashRegisterForm(obj=register)
@@ -464,10 +461,11 @@ def edit_register(register_id):
 @login_required
 def confirm_register(register_id):
     """
-    Confirmar un arqueo de caja.
+    Redirección para compatibilidad con código existente, ya que se ha
+    eliminado el sistema de confirmación de arqueos.
     
     Args:
-        register_id: ID del arqueo a confirmar
+        register_id: ID del arqueo
     """
     # Importar modelos para evitar problemas de importación circular
     from models_cash_register import CashRegister
@@ -476,48 +474,9 @@ def confirm_register(register_id):
     register = CashRegister.query.get_or_404(register_id)
     company = register.company
     
-    if not current_user.is_admin() and company not in current_user.companies:
-        flash('No tiene acceso a este arqueo', 'danger')
-        return redirect(url_for('cash_register.dashboard'))
-    
-    # Verificar si ya está confirmado
-    if register.is_confirmed:
-        flash('Este arqueo ya ha sido confirmado', 'info')
-        return redirect(url_for('cash_register.company_dashboard', company_id=company.id))
-    
-    # Crear formulario
-    form = CashRegisterConfirmForm()
-    form.cash_register_id.data = register_id
-    
-    if form.validate_on_submit():
-        if form.cancel.data:
-            return redirect(url_for('cash_register.company_dashboard', company_id=company.id))
-        
-        if form.confirm.data:
-            try:
-                # Confirmar arqueo
-                register.is_confirmed = True
-                register.confirmed_at = datetime.now()
-                register.confirmed_by_id = current_user.id
-                
-                db.session.commit()
-                
-                flash('Arqueo confirmado correctamente', 'success')
-                return redirect(url_for('cash_register.company_dashboard', company_id=company.id))
-                
-            except Exception as e:
-                db.session.rollback()
-                logger.error(f"Error al confirmar arqueo: {str(e)}")
-                flash(f'Error al confirmar arqueo: {str(e)}', 'danger')
-    
-    return render_template(
-        'cash_register/confirm_register.html',
-        title='Confirmar Arqueo de Caja',
-        form=form,
-        register=register,
-        company=company,
-        format_currency=format_currency
-    )
+    # Redirigir directamente a la página del dashboard
+    flash('Los arqueos ya no requieren confirmación.', 'info')
+    return redirect(url_for('cash_register.company_dashboard', company_id=company.id))
 
 
 @cash_register_bp.route('/register/<int:register_id>/delete', methods=['POST'])
@@ -540,10 +499,7 @@ def delete_register(register_id):
         flash('No tiene acceso a este arqueo', 'danger')
         return redirect(url_for('cash_register.dashboard'))
     
-    # No permitir eliminar registros confirmados excepto a administradores
-    if register.is_confirmed and not current_user.is_admin():
-        flash('No se puede eliminar un arqueo ya confirmado', 'warning')
-        return redirect(url_for('cash_register.company_dashboard', company_id=company.id))
+    # Todos los arqueos son eliminables (se eliminó el sistema de confirmación)
     
     try:
         # Obtener datos para actualizar sumarios después

@@ -39,9 +39,10 @@ class CashRegister(db.Model):
     expenses_notes = Column(Text)
     notes = Column(Text)
     
-    # Campos de confirmación
-    is_confirmed = Column(Boolean, default=False)
-    confirmed_at = Column(db.DateTime)
+    # Mantenemos los campos para compatibilidad con código existente,
+    # pero establecemos todos a valores por defecto para no requerir confirmación
+    is_confirmed = Column(Boolean, default=True)
+    confirmed_at = Column(db.DateTime, default=datetime.utcnow)
     confirmed_by_id = Column(Integer, ForeignKey('users.id'))
     confirmed_by = relationship('User', foreign_keys=[confirmed_by_id])
     

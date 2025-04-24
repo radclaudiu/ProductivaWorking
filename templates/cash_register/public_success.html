@@ -22,8 +22,14 @@
                     <div class="alert alert-info mt-4">
                         <p class="mb-0">
                             <i class="bi bi-info-circle-fill me-2"></i> 
-                            Este enlace ya no puede utilizarse de nuevo. Si necesita enviar otro arqueo, solicite un nuevo enlace.
+                            Este enlace sigue disponible. Puede usarlo para enviar más arqueos mientras esté activo.
                         </p>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <a href="{{ url_for('cash_register.public_register', token_str=register.token.token) }}" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i>Enviar otro arqueo
+                        </a>
                     </div>
                     
                     <div class="mt-4">

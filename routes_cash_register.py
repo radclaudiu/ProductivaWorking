@@ -998,3 +998,57 @@ def deactivate_token(token_id):
         flash(f'Error al desactivar token: {str(e)}', 'danger')
     
     return redirect(url_for('cash_register.manage_tokens', company_id=token.company_id))
+
+
+@cash_register_bp.route('/token/<int:token_id>/qr', methods=['GET'])
+@login_required
+def generate_token_qr(token_id):
+    """
+    Genera un código QR para un token de acceso.
+    
+    Args:
+        token_id: ID del token para el que generar el QR
+    """
+    # Importar modelos para evitar problemas de importación circular
+    from models_cash_register import CashRegisterToken
+    import qrcode
+    import io
+    from flask import send_file
+    
+    # Obtener token
+    token = CashRegisterToken.query.get_or_404(token_id)
+    
+    # Verificar permisos
+    company = token.company
+    if not current_user.is_admin() and company not in current_user.companies:
+        flash('No tiene permisos para esta acción', 'danger')
+        return redirect(url_for('cash_register.dashboard'))
+    
+    try:
+        # Generar URL del token
+        token_url = url_for('cash_register.public_register', token_str=token.token, _external=True)
+        
+        # Crear código QR
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(token_url)
+        qr.make(fit=True)
+        
+        # Crear imagen
+        img = qr.make_image(fill_color="black", back_color="white")
+        
+        # Guardar imagen en buffer
+        img_io = io.BytesIO()
+        img.save(img_io, 'PNG')
+        img_io.seek(0)
+        
+        # Enviar imagen como respuesta
+        return send_file(img_io, mimetype='image/png', download_name=f'token_qr_{token_id}.png')
+    except Exception as e:
+        logger.error(f"Error al generar QR para token {token_id}: {str(e)}")
+        flash(f'Error al generar código QR: {str(e)}', 'danger')
+        return redirect(url_for('cash_register.manage_tokens', company_id=token.company_id))

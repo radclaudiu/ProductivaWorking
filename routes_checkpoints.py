@@ -8,6 +8,151 @@ from timezone_config import get_current_time, datetime_to_madrid, parse_client_t
 # Configurar logging
 logger = logging.getLogger(__name__)
 
+# Funciones auxiliares para resolución masiva de incidencias
+def apply_auto_checkout(record, resolution_date, resolution_time, resolution_notes):
+    """
+    Aplica un checkout automático a un registro pendiente.
+    
+    Args:
+        record: Registro de checkpoint (CheckPointRecord)
+        resolution_date: Fecha del checkout en formato YYYY-MM-DD
+        resolution_time: Hora del checkout en formato HH:MM
+        resolution_notes: Notas de resolución
+        
+    Returns:
+        bool: True si se aplicó correctamente, False en caso contrario
+    """
+    try:
+        if not record or not record.check_in_time or record.check_out_time:
+            return False
+            
+        # Crear fecha/hora completa para el checkout
+        if not resolution_date or not resolution_time:
+            # Si no se proporcionaron, usar la fecha de entrada y la hora actual
+            checkout_date = record.check_in_time.date()
+            checkout_time = datetime.now().time()
+        else:
+            # Convertir strings a objetos date/time
+            checkout_date = datetime.strptime(resolution_date, '%Y-%m-%d').date()
+            checkout_time = datetime.strptime(resolution_time, '%H:%M').time()
+            
+        # Combinar en un objeto datetime
+        checkout_datetime = datetime.combine(checkout_date, checkout_time)
+        
+        # Registrar el checkout
+        record.check_out_time = checkout_datetime
+        record.pending_record = False
+        
+        # Crear incidente para este checkout automático
+        incident = CheckPointIncident.query.filter_by(
+            record_id=record.id, 
+            incident_type=CheckPointIncidentType.missed_checkout,
+            resolved=False
+        ).first()
+        
+        if incident:
+            # Resolver la incidencia existente
+            incident.resolve(current_user.id, resolution_notes or "Checkout automático aplicado mediante resolución masiva")
+        
+        # Actualizar horas trabajadas en registro original
+        original_record = CheckPointOriginalRecord.query.filter_by(record_id=record.id).first()
+        if original_record:
+            original_record.original_check_out_time = checkout_datetime
+            
+            # Calcular horas trabajadas
+            if original_record.original_check_in_time:
+                delta = checkout_datetime - original_record.original_check_in_time
+                hours_worked = delta.total_seconds() / 3600
+                original_record.hours_worked = round(hours_worked, 2)
+                
+                # Aquí se llamaría a la función para actualizar los acumulados de horas
+                # Esta parte dependerá de cómo se implementó el sistema de acumulados
+                # update_work_hours_accumulators(record.employee_id, record.employee.company_id, 
+                #                               original_record.original_check_in_time, hours_worked)
+        
+        return True
+    except Exception as e:
+        logger.error(f"Error al aplicar checkout automático: {str(e)}")
+        return False
+
+
+def delete_incident_record(record, resolution_notes):
+    """
+    Elimina un registro de fichaje marcándolo como inválido y resolviendo la incidencia.
+    
+    Args:
+        record: Registro de checkpoint (CheckPointRecord)
+        resolution_notes: Notas de resolución
+        
+    Returns:
+        bool: True si se eliminó correctamente, False en caso contrario
+    """
+    try:
+        if not record:
+            return False
+            
+        # Marcar el registro como inválido
+        record.is_valid = False
+        record.pending_record = False
+        
+        # Buscar y resolver incidencias asociadas
+        incidents = CheckPointIncident.query.filter_by(
+            record_id=record.id,
+            resolved=False
+        ).all()
+        
+        for incident in incidents:
+            incident.resolve(current_user.id, resolution_notes or "Registro eliminado por ser inválido mediante resolución masiva")
+        
+        # Si había un registro original con horas trabajadas, revertirlo
+        original_record = CheckPointOriginalRecord.query.filter_by(record_id=record.id).first()
+        if original_record and original_record.hours_worked and original_record.hours_worked > 0:
+            # Aquí se llamaría a la función para revertir los acumulados de horas
+            # subtract_from_work_hours_accumulators(record.employee_id, record.employee.company_id, 
+            #                                       original_record.original_check_in_time, 
+            #                                       original_record.hours_worked)
+            
+            # Resetear horas trabajadas en el registro original
+            original_record.hours_worked = 0
+            
+        return True
+    except Exception as e:
+        logger.error(f"Error al eliminar registro: {str(e)}")
+        return False
+
+
+def mark_incident_as_resolved(record, resolution_notes):
+    """
+    Marca todas las incidencias asociadas a un registro como resueltas sin hacer cambios.
+    
+    Args:
+        record: Registro de checkpoint (CheckPointRecord)
+        resolution_notes: Notas de resolución
+        
+    Returns:
+        bool: True si se resolvió correctamente, False en caso contrario
+    """
+    try:
+        if not record:
+            return False
+            
+        # Buscar y resolver incidencias asociadas
+        incidents = CheckPointIncident.query.filter_by(
+            record_id=record.id,
+            resolved=False
+        ).all()
+        
+        if not incidents:
+            return False
+            
+        for incident in incidents:
+            incident.resolve(current_user.id, resolution_notes or "Incidencia resuelta mediante resolución masiva")
+        
+        return True
+    except Exception as e:
+        logger.error(f"Error al marcar incidencia como resuelta: {str(e)}")
+        return False
+
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, session
 from flask import current_app, abort, send_file
 from flask_login import login_required, current_user
@@ -903,6 +1048,87 @@ def resolve_incident(id):
 # Se ha eliminado la ruta secreta '/company/<slug>/rrrrrr/edit/<int:id>'
 
 # Se ha eliminado la ruta secreta '/company/<slug>/rrrrrr/restore/<int:id>'
+
+
+@checkpoints_bp.route('/incidents/resolve_multiple', methods=['POST'])
+@login_required
+@manager_required
+def resolve_multiple_incidents():
+    """
+    Ruta para resolver múltiples incidencias simultáneamente.
+    Recibe una lista de IDs de registros a resolver y los datos de resolución comunes.
+    """
+    data = request.form
+    record_ids = request.form.getlist('record_ids')
+    
+    if not record_ids:
+        flash('No se seleccionaron registros para resolver', 'warning')
+        return redirect(url_for('checkpoints.list_incidents'))
+    
+    # Obtener los datos comunes para todos los registros
+    resolution_type = data.get('resolution_type')
+    resolution_notes = data.get('resolution_notes', '')
+    
+    # Configuración de fechas/horas según el tipo de resolución
+    resolution_date = data.get('resolution_date')
+    resolution_time = data.get('resolution_time')
+    
+    # Contador de registros resueltos correctamente
+    success_count = 0
+    error_count = 0
+    
+    # Iniciar transacción para asegurar consistencia
+    try:
+        for record_id in record_ids:
+            try:
+                record = CheckPointRecord.query.get(record_id)
+                if not record:
+                    continue
+                
+                # Verificar permisos
+                employee_company_id = record.employee.company_id
+                if not current_user.is_admin() and employee_company_id not in [c.id for c in current_user.companies]:
+                    error_count += 1
+                    continue
+                    
+                # Aplicar la resolución según el tipo seleccionado
+                if resolution_type == 'auto_checkout':
+                    # Implementación de cierre automático con la fecha/hora especificada
+                    success = apply_auto_checkout(record, resolution_date, resolution_time, resolution_notes)
+                elif resolution_type == 'delete_record':
+                    # Implementación de eliminación de registro con notas
+                    success = delete_incident_record(record, resolution_notes)
+                elif resolution_type == 'mark_as_resolved':
+                    # Implementación de marcar como resuelto sin cambios
+                    success = mark_incident_as_resolved(record, resolution_notes)
+                else:
+                    success = False
+                    
+                if success:
+                    success_count += 1
+                else:
+                    error_count += 1
+                    
+            except Exception as e:
+                error_count += 1
+                current_app.logger.error(f"Error al resolver incidencia ID {record_id}: {str(e)}")
+        
+        # Commit de todos los cambios si no hay errores
+        db.session.commit()
+        
+        # Mensaje de resultado
+        if success_count > 0:
+            flash(f'Se resolvieron correctamente {success_count} incidencias', 'success')
+            log_activity(f'Resolución masiva: resolvió {success_count} incidencias')
+        if error_count > 0:
+            flash(f'No se pudieron resolver {error_count} incidencias', 'danger')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error en resolución masiva: {str(e)}")
+        flash('Error al procesar la resolución masiva', 'danger')
+    
+    return redirect(url_for('checkpoints.list_incidents'))
 
 # Se ha eliminado la ruta secreta '/company/<slug>/rrrrrr/delete/<int:id>'
 

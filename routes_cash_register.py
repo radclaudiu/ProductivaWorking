@@ -736,10 +736,11 @@ def manage_tokens(company_id):
         try:
             # Generar nuevo token
             employee_id = form.employee_id.data if form.employee_id.data != 0 else None
-            expiry_days = form.expiry_days.data or 7  # Valor por defecto: 7 días
+            expiry_days = form.expiry_days.data if form.expiry_days.data is not None else 7  # Permitir 0 para token sin caducidad
             pin = form.pin.data if form.pin.data else None
             
-            logger.info(f"Generando token para empresa {company_id}, empleado {employee_id}, expiración {expiry_days} días, PIN: {'Sí' if pin else 'No'}")
+            expiry_text = "sin caducidad" if expiry_days == 0 else f"{expiry_days} días"
+            logger.info(f"Generando token para empresa {company_id}, empleado {employee_id}, expiración {expiry_text}, PIN: {'Sí' if pin else 'No'}")
             
             # Usar método del modelo para generar token
             token = CashRegisterToken.generate_token(

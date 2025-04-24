@@ -170,12 +170,18 @@ class CashRegisterToken(db.Model):
         logger = logging.getLogger(__name__)
         
         # Asegurar que expiry_days sea un entero válido
-        if expiry_days is None or not isinstance(expiry_days, int) or expiry_days <= 0:
+        if expiry_days is None or not isinstance(expiry_days, int) or expiry_days < 0:
             logger.warning(f"expiry_days inválido: {expiry_days}. Usando valor por defecto (7).")
             expiry_days = 7
             
         token = secrets.token_hex(32)  # 64 caracteres
-        expires_at = datetime.utcnow() + timedelta(days=expiry_days)
+        
+        # Si expiry_days es 0, creamos un token sin fecha de caducidad
+        if expiry_days == 0:
+            logger.info("Creando token sin fecha de caducidad")
+            expires_at = None
+        else:
+            expires_at = datetime.utcnow() + timedelta(days=expiry_days)
         
         logger.info(f"Generando token para empresa {company_id}, expira el {expires_at}")
         

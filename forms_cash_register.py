@@ -136,7 +136,8 @@ class CashRegisterTokenForm(FlaskForm):
     """
     company_id = SelectField('Empresa', coerce=int, validators=[DataRequired()])
     employee_id = SelectField('Empleado', coerce=int, validators=[Optional()])
-    expiry_days = IntegerField('Días de validez', validators=[DataRequired()], default=7)
+    expiry_days = IntegerField('Días de validez', validators=[Optional()], default=7,
+                              description="Deja en 0 para crear un token sin caducidad")
     pin = StringField('PIN de acceso (opcional)', validators=[Optional(), Length(min=4, max=6)],
                      description="PIN numérico simple para acceder al formulario (4-6 dígitos)")
     

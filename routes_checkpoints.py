@@ -59,16 +59,27 @@ def apply_auto_checkout(record, resolution_date, resolution_time, resolution_not
         if original_record:
             original_record.original_check_out_time = checkout_datetime
             
-            # Calcular horas trabajadas
+            # Importar funciones de cálculo de horas
+            from utils_work_hours import calculate_hours_worked, update_employee_work_hours
+            
+            # Calcular horas trabajadas con la función especializada
             if original_record.original_check_in_time:
-                delta = checkout_datetime - original_record.original_check_in_time
-                hours_worked = delta.total_seconds() / 3600
-                original_record.hours_worked = round(hours_worked, 2)
+                hours_worked = calculate_hours_worked(
+                    original_record.original_check_in_time, 
+                    checkout_datetime
+                )
                 
-                # Aquí se llamaría a la función para actualizar los acumulados de horas
-                # Esta parte dependerá de cómo se implementó el sistema de acumulados
-                # update_work_hours_accumulators(record.employee_id, record.employee.company_id, 
-                #                               original_record.original_check_in_time, hours_worked)
+                # Guardar las horas trabajadas en el registro original
+                original_record.hours_worked = hours_worked
+                
+                # Actualizar los acumulados de horas trabajadas
+                if hours_worked > 0:
+                    update_result = update_employee_work_hours(
+                        record.employee_id, 
+                        original_record.original_check_in_time, 
+                        hours_worked
+                    )
+                    logger.info(f"Actualización de horas trabajadas: {hours_worked:.2f}h para empleado {record.employee_id} - Resultado: {update_result}")
         
         return True
     except Exception as e:
@@ -107,10 +118,20 @@ def delete_incident_record(record, resolution_notes):
         # Si había un registro original con horas trabajadas, revertirlo
         original_record = CheckPointOriginalRecord.query.filter_by(record_id=record.id).first()
         if original_record and original_record.hours_worked and original_record.hours_worked > 0:
-            # Aquí se llamaría a la función para revertir los acumulados de horas
-            # subtract_from_work_hours_accumulators(record.employee_id, record.employee.company_id, 
-            #                                       original_record.original_check_in_time, 
-            #                                       original_record.hours_worked)
+            # Importar la función para actualizar acumulados
+            from utils_work_hours import update_employee_work_hours
+            
+            # Restar las horas trabajadas de los acumulados enviando un valor negativo
+            # Esto hace que la función reste en lugar de sumar
+            hours_to_subtract = -original_record.hours_worked  # Valor negativo para restar
+            
+            update_result = update_employee_work_hours(
+                record.employee_id,
+                original_record.original_check_in_time,
+                hours_to_subtract  # Valor negativo
+            )
+            
+            logger.info(f"Eliminando horas trabajadas: {original_record.hours_worked:.2f}h para empleado {record.employee_id} - Resultado: {update_result}")
             
             # Resetear horas trabajadas en el registro original
             original_record.hours_worked = 0

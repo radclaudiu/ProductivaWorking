@@ -90,6 +90,16 @@ logger = logging.getLogger(__name__)
 # Crear Blueprint
 cash_register_bp = Blueprint('cash_register', __name__, url_prefix='/cash-register')
 
+# Importar e integrar rutas adicionales del módulo de arqueos
+try:
+    from routes_cash_register_additional import register_routes
+    register_routes(cash_register_bp)
+    logger.info("Rutas adicionales de arqueos de caja registradas correctamente")
+except ImportError as e:
+    logger.error(f"Error al importar rutas adicionales de arqueos: {str(e)}")
+except Exception as e:
+    logger.error(f"Error al registrar rutas adicionales de arqueos: {str(e)}")
+
 
 @cash_register_bp.route('/debug')
 def debug_cash_register():

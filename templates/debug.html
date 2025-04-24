@@ -1,0 +1,112 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="card-title mb-0">{{ title | default('Depuración') }}</h3>
+                </div>
+                <div class="card-body">
+                    <h4>Información General</h4>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <tbody>
+                                {% for key, value in debug_info.general.items() %}
+                                <tr>
+                                    <th width="200">{{ key }}</th>
+                                    <td>
+                                        {% if value is iterable and value is not string %}
+                                            <ul class="mb-0">
+                                                {% for item in value %}
+                                                    <li>{{ item }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% else %}
+                                            {{ value }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h4 class="mt-4">Estado de Modelos</h4>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th width="200">Modelo</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for model, status in debug_info.models.items() %}
+                                <tr>
+                                    <td>{{ model }}</td>
+                                    <td>
+                                        {% if status.startswith('OK') %}
+                                            <span class="text-success">{{ status }}</span>
+                                        {% else %}
+                                            <span class="text-danger">{{ status }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <h4 class="mt-4">Importaciones</h4>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th width="200">Módulo</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for module, status in debug_info.imports.items() %}
+                                <tr>
+                                    <td>{{ module }}</td>
+                                    <td>
+                                        {% if status == 'OK' %}
+                                            <span class="text-success">{{ status }}</span>
+                                        {% else %}
+                                            <span class="text-danger">{{ status }}</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <h4 class="mt-4">Entorno</h4>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <tbody>
+                                {% for key, value in debug_info.environment.items() %}
+                                <tr>
+                                    <th width="200">{{ key }}</th>
+                                    <td>{{ value }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <a href="{{ url_for('cash_register.dashboard') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver al Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

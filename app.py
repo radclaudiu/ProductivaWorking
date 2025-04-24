@@ -118,7 +118,10 @@ def create_app(config_class='config.Config'):
         
     @app.errorhandler(500)
     def server_error_page(error):
-        return render_template('errors/500.html'), 500
+        import traceback
+        error_traceback = traceback.format_exc()
+        logger.error(f"Error 500: {str(error)}\n{error_traceback}")
+        return render_template('errors/500.html', error=error, traceback=error_traceback), 500
     
     # Cargar ubicaciones disponibles para menú de navegación
     @app.before_request
@@ -199,6 +202,13 @@ app = create_app()
 app.secret_key = 'development-secret-key-2025-secure'
 app.config['SECRET_KEY'] = app.secret_key
 app.config['WTF_CSRF_SECRET_KEY'] = app.secret_key
+
+# Configurar el modo DEBUG y otras opciones para ayudar a la depuración
+app.config['DEBUG'] = True
+app.config['PROPAGATE_EXCEPTIONS'] = True
+app.config['PRESERVE_CONTEXT_ON_EXCEPTION'] = True
+app.config['EXPLAIN_TEMPLATE_LOADING'] = True
+app.config['TESTING'] = True
 
 # El servicio de cierre automático se inicia en main.py
 

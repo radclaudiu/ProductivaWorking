@@ -89,6 +89,82 @@ logger = logging.getLogger(__name__)
 cash_register_bp = Blueprint('cash_register', __name__, url_prefix='/cash-register')
 
 
+@cash_register_bp.route('/debug')
+def debug_cash_register():
+    """
+    Ruta de depuración para el módulo de arqueos de caja.
+    Muestra información útil para diagnosticar problemas.
+    """
+    try:
+        # Importamos modelos aquí para evitar problemas de importación circular
+        from models import Company, Employee, User
+        from models_cash_register import CashRegister, CashRegisterSummary, CashRegisterToken
+        
+        # Información general
+        debug_info = {
+            'general': {
+                'módulo': 'Arqueos de Caja',
+                'fecha_hora': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'bp_routes': [rule.rule for rule in cash_register_bp.url_map.iter_rules()]
+            }
+        }
+        
+        # Comprobamos acceso a modelos
+        try:
+            num_companies = Company.query.count()
+            debug_info['models'] = {
+                'Company': f'OK - {num_companies} registros',
+            }
+        except Exception as e:
+            debug_info['models'] = {
+                'Company': f'ERROR - {str(e)}',
+            }
+            
+        try:
+            num_registers = CashRegister.query.count()
+            debug_info['models']['CashRegister'] = f'OK - {num_registers} registros'
+        except Exception as e:
+            debug_info['models']['CashRegister'] = f'ERROR - {str(e)}'
+            
+        try:
+            num_summaries = CashRegisterSummary.query.count()
+            debug_info['models']['CashRegisterSummary'] = f'OK - {num_summaries} registros'
+        except Exception as e:
+            debug_info['models']['CashRegisterSummary'] = f'ERROR - {str(e)}'
+            
+        try:
+            num_tokens = CashRegisterToken.query.count()
+            debug_info['models']['CashRegisterToken'] = f'OK - {num_tokens} registros'
+        except Exception as e:
+            debug_info['models']['CashRegisterToken'] = f'ERROR - {str(e)}'
+            
+        # Mostrar errores de importación
+        debug_info['imports'] = {}
+        try:
+            import forms_cash_register
+            debug_info['imports']['forms_cash_register'] = 'OK'
+        except Exception as e:
+            debug_info['imports']['forms_cash_register'] = f'ERROR - {str(e)}'
+            
+        # Información del entorno
+        debug_info['environment'] = {
+            'Flask DEBUG': current_app.config.get('DEBUG', 'No configurado'),
+            'SQLALCHEMY_DATABASE_URI': current_app.config.get('SQLALCHEMY_DATABASE_URI', 'No configurado'),
+            'PROPAGATE_EXCEPTIONS': current_app.config.get('PROPAGATE_EXCEPTIONS', 'No configurado'),
+        }
+        
+        return render_template(
+            'debug.html',
+            title='Debug - Arqueos de Caja',
+            debug_info=debug_info
+        )
+        
+    except Exception as e:
+        # Si falla algo, mostrar el error directamente
+        import traceback
+        error_trace = traceback.format_exc()
+        return f'<pre>ERROR EN DEPURACIÓN: {str(e)}\n\n{error_trace}</pre>'
+
 @cash_register_bp.route('/dashboard')
 @login_required
 def dashboard():
@@ -115,6 +191,7 @@ def dashboard():
         title='Dashboard de Arqueos de Caja',
         companies=companies
     )
+
 
 
 @cash_register_bp.route('/company/<int:company_id>')

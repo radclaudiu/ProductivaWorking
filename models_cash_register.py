@@ -135,6 +135,9 @@ class CashRegisterToken(db.Model):
     created_at = Column(db.DateTime, default=datetime.utcnow)
     used_at = Column(db.DateTime)
     
+    # PIN de acceso simple (opcional)
+    pin = Column(String(10), nullable=True)
+    
     # Relaciones
     company_id = Column(Integer, ForeignKey('companies.id'), nullable=False)
     company = relationship('Company', backref='cash_register_tokens')

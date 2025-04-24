@@ -742,8 +742,9 @@ def manage_tokens(company_id):
             # Generar nuevo token
             employee_id = form.employee_id.data if form.employee_id.data != 0 else None
             expiry_days = form.expiry_days.data or 7  # Valor por defecto: 7 días
+            pin = form.pin.data if form.pin.data else None
             
-            logger.info(f"Generando token para empresa {company_id}, empleado {employee_id}, expiración {expiry_days} días")
+            logger.info(f"Generando token para empresa {company_id}, empleado {employee_id}, expiración {expiry_days} días, PIN: {'Sí' if pin else 'No'}")
             
             # Usar método del modelo para generar token
             token = CashRegisterToken.generate_token(
@@ -752,6 +753,11 @@ def manage_tokens(company_id):
                 created_by_id=current_user.id,
                 expiry_days=expiry_days
             )
+            
+            # Guardar el PIN si se ha proporcionado
+            if pin:
+                token.pin = pin
+                db.session.commit()
             
             # Generar URL para compartir
             base_url = request.host_url.rstrip('/')

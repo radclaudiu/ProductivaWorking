@@ -1,0 +1,61 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0">Verificación de Acceso</h3>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-4">
+                        <i class="bi bi-shield-lock" style="font-size: 4rem; color: #6c757d;"></i>
+                        <h4 class="mt-3">Introduce el PIN de Acceso</h4>
+                        <p class="text-muted">
+                            Para acceder al formulario de arqueo de caja, introduce el PIN que te han proporcionado.
+                        </p>
+                    </div>
+                    
+                    <form method="post">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="form-group">
+                            <div class="input-group mb-3">
+                                <span class="input-group-text"><i class="bi bi-key"></i></span>
+                                {{ form.pin(class="form-control text-center", style="font-size: 1.5rem; letter-spacing: 0.5rem;", autocomplete="off", placeholder="• • • •", pattern="[0-9]{4,6}") }}
+                            </div>
+                            {% if form.pin.errors %}
+                                <div class="alert alert-danger">
+                                    {% for error in form.pin.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                            {% if pin_error %}
+                                <div class="alert alert-danger">
+                                    {{ pin_error }}
+                                </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                {{ form.pin.description }}
+                            </small>
+                        </div>
+                        
+                        <div class="d-grid gap-2 mt-4">
+                            {{ form.submit(class="btn btn-primary btn-lg") }}
+                        </div>
+                    </form>
+                    
+                    <div class="mt-4 text-center">
+                        <p class="text-muted small">
+                            <i class="bi bi-info-circle-fill me-1"></i>
+                            Este PIN es necesario para proteger el acceso al formulario. Si no lo conoces, ponte en contacto con tu supervisor.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -132,8 +132,21 @@ class CashRegisterTokenForm(FlaskForm):
     company_id = SelectField('Empresa', coerce=int, validators=[DataRequired()])
     employee_id = SelectField('Empleado', coerce=int, validators=[Optional()])
     expiry_days = IntegerField('Días de validez', validators=[DataRequired()], default=7)
+    pin = StringField('PIN de acceso (opcional)', validators=[Optional(), Length(min=4, max=6)],
+                     description="PIN numérico simple para acceder al formulario (4-6 dígitos)")
     
     submit = SubmitField('Generar Token')
+
+
+class PinVerificationForm(FlaskForm):
+    """
+    Formulario para verificar el PIN de acceso de un token.
+    """
+    token = HiddenField('Token', validators=[DataRequired()])
+    pin = StringField('PIN de acceso', validators=[DataRequired(), Length(min=4, max=6)],
+                     description="Introduce el PIN que te han proporcionado para acceder al formulario")
+    
+    submit = SubmitField('Verificar')
 
 
 class PublicCashRegisterForm(FlaskForm):

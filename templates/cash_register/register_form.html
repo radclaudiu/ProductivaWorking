@@ -1,0 +1,386 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+    .form-section {
+        background-color: #f8f9fc;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .form-section-title {
+        margin-bottom: 20px;
+        font-weight: 600;
+        color: #4e73df;
+    }
+    .register-form label {
+        font-weight: 500;
+    }
+    .total-summary {
+        border-top: 1px solid #e3e6f0;
+        margin-top: 15px;
+        padding-top: 15px;
+    }
+    .verification-badge {
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .verification-badge.valid {
+        background-color: #1cc88a;
+        color: white;
+    }
+    .verification-badge.invalid {
+        background-color: #e74a3b;
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Encabezado -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">
+                {% if is_new %}
+                <i class="fas fa-plus-circle mr-2"></i> Nuevo Arqueo
+                {% else %}
+                <i class="fas fa-edit mr-2"></i> Editar Arqueo
+                {% endif %}
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb bg-transparent p-0">
+                    <li class="breadcrumb-item"><a href="{{ url_for('cash_register.index') }}">Arqueos</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('cash_register.company_dashboard', company_id=company.id) }}">{{ company.name }}</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">
+                        {% if is_new %}Nuevo Arqueo{% else %}Editar Arqueo{% endif %}
+                    </li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Formulario -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">
+                {% if is_new %}
+                    Registrar nuevo arqueo para {{ company.name }}
+                {% else %}
+                    Editar arqueo del {{ form.date.data.strftime('%d/%m/%Y') }}
+                {% endif %}
+            </h6>
+        </div>
+        <div class="card-body">
+            <form method="post" class="register-form">
+                {{ form.hidden_tag() }}
+
+                <!-- Sección Fecha e Importe Total -->
+                <div class="form-section">
+                    <h5 class="form-section-title">Información General</h5>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            {{ form.date.label }}
+                            {{ form.date(class="form-control date-picker", required=true) }}
+                            {% if form.date.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.date.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group col-md-6">
+                            {{ form.total_amount.label }}
+                            <div class="input-group">
+                                {{ form.total_amount(class="form-control", step="0.01", required=true) }}
+                                <div class="input-group-append">
+                                    <span class="input-group-text">€</span>
+                                    <span class="input-group-text verification-badge" id="verification-badge">
+                                        <i class="fas fa-check"></i>
+                                    </span>
+                                </div>
+                            </div>
+                            {% if form.total_amount.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.total_amount.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">Importe total facturado en el día</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección Desglose de Importes -->
+                <div class="form-section">
+                    <h5 class="form-section-title">Desglose de Importes</h5>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            {{ form.cash_amount.label }}
+                            <div class="input-group">
+                                {{ form.cash_amount(class="form-control payment-type", step="0.01", required=true) }}
+                                <div class="input-group-append">
+                                    <span class="input-group-text">€</span>
+                                </div>
+                            </div>
+                            {% if form.cash_amount.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.cash_amount.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group col-md-6">
+                            {{ form.card_amount.label }}
+                            <div class="input-group">
+                                {{ form.card_amount(class="form-control payment-type", step="0.01") }}
+                                <div class="input-group-append">
+                                    <span class="input-group-text">€</span>
+                                </div>
+                            </div>
+                            {% if form.card_amount.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.card_amount.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            {{ form.delivery_cash_amount.label }}
+                            <div class="input-group">
+                                {{ form.delivery_cash_amount(class="form-control payment-type", step="0.01") }}
+                                <div class="input-group-append">
+                                    <span class="input-group-text">€</span>
+                                </div>
+                            </div>
+                            {% if form.delivery_cash_amount.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.delivery_cash_amount.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group col-md-6">
+                            {{ form.delivery_online_amount.label }}
+                            <div class="input-group">
+                                {{ form.delivery_online_amount(class="form-control payment-type", step="0.01") }}
+                                <div class="input-group-append">
+                                    <span class="input-group-text">€</span>
+                                </div>
+                            </div>
+                            {% if form.delivery_online_amount.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.delivery_online_amount.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            {{ form.check_amount.label }}
+                            <div class="input-group">
+                                {{ form.check_amount(class="form-control payment-type", step="0.01") }}
+                                <div class="input-group-append">
+                                    <span class="input-group-text">€</span>
+                                </div>
+                            </div>
+                            {% if form.check_amount.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.check_amount.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="form-group col-md-6">
+                            <div class="total-summary">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="font-weight-bold">Suma de Importes:</span>
+                                    <span class="font-weight-bold" id="sum-amount">0.00€</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <span class="font-weight-bold">Total Declarado:</span>
+                                    <span class="font-weight-bold" id="declared-amount">0.00€</span>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <span class="font-weight-bold">Diferencia:</span>
+                                    <span class="font-weight-bold" id="difference-amount">0.00€</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección Gastos -->
+                <div class="form-section">
+                    <h5 class="form-section-title">Control de Gastos</h5>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            {{ form.expenses_amount.label }}
+                            <div class="input-group">
+                                {{ form.expenses_amount(class="form-control", step="0.01") }}
+                                <div class="input-group-append">
+                                    <span class="input-group-text">€</span>
+                                </div>
+                            </div>
+                            {% if form.expenses_amount.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.expenses_amount.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">Gastos pagados con el efectivo de caja</small>
+                        </div>
+                        <div class="form-group col-md-6">
+                            {{ form.expenses_notes.label }}
+                            {{ form.expenses_notes(class="form-control", rows=2) }}
+                            {% if form.expenses_notes.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.expenses_notes.errors %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">Detalle para qué se utilizó el dinero</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección Notas -->
+                <div class="form-section">
+                    <h5 class="form-section-title">Notas Adicionales</h5>
+                    <div class="form-group">
+                        {{ form.notes.label }}
+                        {{ form.notes(class="form-control", rows=3) }}
+                        {% if form.notes.errors %}
+                        <div class="invalid-feedback d-block">
+                            {% for error in form.notes.errors %}
+                            {{ error }}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <small class="form-text text-muted">Cualquier información adicional relevante para este arqueo</small>
+                    </div>
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="form-group d-flex justify-content-between">
+                    <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id) }}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left mr-1"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save mr-1"></i> Guardar Arqueo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar el selector de fechas
+        flatpickr(".date-picker", {
+            dateFormat: "Y-m-d",
+            locale: "es",
+            allowInput: true
+        });
+        
+        // Función para validar que los importes coinciden
+        function validateAmounts() {
+            const totalAmount = parseFloat(document.getElementById('total_amount').value) || 0;
+            const cashAmount = parseFloat(document.getElementById('cash_amount').value) || 0;
+            const cardAmount = parseFloat(document.getElementById('card_amount').value) || 0;
+            const deliveryCashAmount = parseFloat(document.getElementById('delivery_cash_amount').value) || 0;
+            const deliveryOnlineAmount = parseFloat(document.getElementById('delivery_online_amount').value) || 0;
+            const checkAmount = parseFloat(document.getElementById('check_amount').value) || 0;
+            
+            const sumAmount = cashAmount + cardAmount + deliveryCashAmount + deliveryOnlineAmount + checkAmount;
+            const difference = Math.abs(totalAmount - sumAmount);
+            
+            // Actualizar los elementos de la interfaz
+            document.getElementById('sum-amount').textContent = sumAmount.toFixed(2) + '€';
+            document.getElementById('declared-amount').textContent = totalAmount.toFixed(2) + '€';
+            document.getElementById('difference-amount').textContent = difference.toFixed(2) + '€';
+            
+            const badge = document.getElementById('verification-badge');
+            
+            // Verificar si la diferencia es menor a 0.01 (tolerancia por redondeo)
+            if (difference < 0.01) {
+                badge.classList.add('valid');
+                badge.classList.remove('invalid');
+                badge.innerHTML = '<i class="fas fa-check"></i>';
+            } else {
+                badge.classList.add('invalid');
+                badge.classList.remove('valid');
+                badge.innerHTML = '<i class="fas fa-times"></i>';
+            }
+        }
+        
+        // Agregar eventos a los campos de importe
+        document.getElementById('total_amount').addEventListener('input', validateAmounts);
+        document.querySelectorAll('.payment-type').forEach(input => {
+            input.addEventListener('input', validateAmounts);
+        });
+        
+        // Validar al cargar la página
+        validateAmounts();
+        
+        // Verificar disponibilidad de la fecha al cambiar
+        document.getElementById('date').addEventListener('change', function(e) {
+            const date = e.target.value;
+            const companyId = {{ company.id }};
+            
+            {% if not is_new %}
+            // Si estamos editando, ignorar la verificación
+            return;
+            {% endif %}
+            
+            // Verificar si ya existe un arqueo para esta fecha
+            fetch(`{{ url_for('cash_register.api_check_register_exists') }}?company_id=${companyId}&date=${date}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.exists) {
+                        // Mostrar alerta si ya existe
+                        Swal.fire({
+                            title: 'Fecha ya registrada',
+                            text: 'Ya existe un arqueo para esta fecha. ¿Desea editarlo?',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Editar',
+                            cancelButtonText: 'Cancelar'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                window.location.href = `{{ url_for('cash_register.edit_register', register_id=0) }}`.replace('0', data.register_id);
+                            }
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al verificar la fecha:', error);
+                });
+        });
+    });
+</script>
+{% endblock %}

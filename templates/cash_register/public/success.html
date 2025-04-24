@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arqueo Registrado - {{ company.name }}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fc;
+            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .page-header {
+            background-color: #4e73df;
+            color: white;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .success-container {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-bottom: 30px;
+        }
+        .success-icon {
+            font-size: 64px;
+            color: #1cc88a;
+            margin-bottom: 20px;
+        }
+        .detail-row {
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #4e73df;
+        }
+        .footer {
+            background-color: #f8f9fc;
+            padding: 20px 0;
+            margin-top: auto;
+            border-top: 1px solid #eaecf4;
+        }
+    </style>
+</head>
+<body>
+    <!-- Cabecera -->
+    <header class="page-header">
+        <div class="container text-center">
+            <h1 class="mb-2">Arqueo Registrado</h1>
+            <h2 class="h4 mb-0">{{ company.name }}</h2>
+        </div>
+    </header>
+
+    <div class="container">
+        <div class="success-container text-center">
+            <div class="success-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3 class="mb-4">¡Arqueo Registrado Correctamente!</h3>
+            <p class="lead mb-4">Tu arqueo ha sido recibido y será revisado por el administrador.</p>
+            
+            <div class="alert alert-info">
+                <p class="mb-0">Este enlace ya no es válido y no puede utilizarse de nuevo. Solicita un nuevo enlace para futuros arqueos.</p>
+            </div>
+        </div>
+
+        <div class="success-container">
+            <h4 class="mb-3">Detalles del Arqueo</h4>
+            
+            <div class="row detail-row">
+                <div class="col-md-4 detail-label">Fecha</div>
+                <div class="col-md-8">{{ register.date.strftime('%d/%m/%Y') }}</div>
+            </div>
+            
+            <div class="row detail-row">
+                <div class="col-md-4 detail-label">Total</div>
+                <div class="col-md-8">{{ "%.2f"|format(register.total_amount) }}€</div>
+            </div>
+            
+            <div class="row detail-row">
+                <div class="col-md-4 detail-label">Efectivo</div>
+                <div class="col-md-8">{{ "%.2f"|format(register.cash_amount) }}€</div>
+            </div>
+            
+            <div class="row detail-row">
+                <div class="col-md-4 detail-label">Tarjeta</div>
+                <div class="col-md-8">{{ "%.2f"|format(register.card_amount) }}€</div>
+            </div>
+            
+            <div class="row detail-row">
+                <div class="col-md-4 detail-label">Delivery Efectivo</div>
+                <div class="col-md-8">{{ "%.2f"|format(register.delivery_cash_amount) }}€</div>
+            </div>
+            
+            <div class="row detail-row">
+                <div class="col-md-4 detail-label">Delivery Online</div>
+                <div class="col-md-8">{{ "%.2f"|format(register.delivery_online_amount) }}€</div>
+            </div>
+            
+            <div class="row detail-row">
+                <div class="col-md-4 detail-label">Cheques</div>
+                <div class="col-md-8">{{ "%.2f"|format(register.check_amount) }}€</div>
+            </div>
+            
+            <div class="row detail-row">
+                <div class="col-md-4 detail-label">Gastos</div>
+                <div class="col-md-8">{{ "%.2f"|format(register.expenses_amount) }}€</div>
+            </div>
+            
+            {% if register.expenses_notes %}
+            <div class="row detail-row">
+                <div class="col-md-4 detail-label">Notas de Gastos</div>
+                <div class="col-md-8">{{ register.expenses_notes }}</div>
+            </div>
+            {% endif %}
+            
+            <div class="row detail-row">
+                <div class="col-md-4 detail-label">Registrado por</div>
+                <div class="col-md-8">
+                    {% if register.employee %}
+                    {{ register.employee.first_name }} {{ register.employee.last_name }}
+                    {% else %}
+                    {{ register.employee_name or 'No especificado' }}
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="row detail-row">
+                <div class="col-md-4 detail-label">Estado</div>
+                <div class="col-md-8">
+                    {% if register.is_confirmed %}
+                    <span class="badge badge-success">Confirmado</span>
+                    {% else %}
+                    <span class="badge badge-warning">Pendiente de confirmación</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center mb-5">
+            <button class="btn btn-primary" onclick="window.print()">
+                <i class="fas fa-print mr-1"></i> Imprimir comprobante
+            </button>
+        </div>
+    </div>
+
+    <!-- Pie de página -->
+    <footer class="footer">
+        <div class="container text-center">
+            <p class="mb-0 text-muted">
+                <small>&copy; {{ company.name }} - {{ register.date.year }}</small>
+            </p>
+        </div>
+    </footer>
+</body>
+</html>

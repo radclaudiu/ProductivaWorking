@@ -157,6 +157,7 @@ cat > "$BACKUP_SCRIPT" << SCRIPT_HEADER
 # =============================================================================
 #
 # Este script contiene un backup completo de PostgreSQL y comandos para restaurarlo.
+# Versión: 1.1.0 (2025-04-24)
 #
 # MODO DE USO:
 #
@@ -382,3 +383,20 @@ echo -e "  ${YELLOW}./$BACKUP_SCRIPT --info${NC}"
 echo ""
 echo -e "Para restaurar el backup, ejecute:"
 echo -e "  ${YELLOW}./$BACKUP_SCRIPT --restore [--db NOMBRE] [--host HOST] [--user USUARIO]${NC}"
+
+# Crear un archivo informativo
+info_file="backup_info_${DATE_STAMP}.txt"
+cat > "$info_file" << INFO_FILE
+Información del backup
+====================
+Fecha: $(date '+%Y-%m-%d %H:%M:%S')
+Archivo SQL: $DUMP_FILE ($DUMP_SIZE)
+Archivo Ejecutable: $BACKUP_SCRIPT ($DUMP_SIZE)
+Tablas: $TABLE_COUNT
+Registros: $RECORD_COUNT
+Versión PostgreSQL: $PG_VERSION
+
+Para restaurar, ejecute:
+  ./$BACKUP_SCRIPT --restore
+INFO_FILE
+echo -e "Se ha creado un archivo informativo: ${GREEN}$info_file${NC}"

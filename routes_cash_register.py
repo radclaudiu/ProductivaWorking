@@ -252,8 +252,7 @@ def company_dashboard(company_id):
     # Obtener tokens activos
     active_tokens = CashRegisterToken.query.filter_by(
         company_id=company_id,
-        is_active=True,
-        cash_register_id=None
+        is_active=True
     ).all()
     
     # Preparar datos para gráfico de métodos de pago de la semana actual

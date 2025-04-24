@@ -318,6 +318,9 @@ def new_register(company_id):
     # Crear formulario
     form = CashRegisterForm()
     
+    # Establecer el ID de la empresa en el formulario
+    form.company_id.data = company_id
+    
     # Cargar lista de empleados para el selector
     employees = Employee.query.filter_by(company_id=company_id, is_active=True).all()
     employee_choices = [(0, 'Sin asignar')] + [(e.id, f"{e.first_name} {e.last_name}") for e in employees]
@@ -424,6 +427,9 @@ def edit_register(register_id):
     
     # Crear formulario y poblarlo con datos existentes
     form = CashRegisterForm(obj=register)
+    
+    # Asegurar que el ID de la empresa está en el formulario
+    form.company_id.data = company.id
     
     # Cargar lista de empleados para el selector
     employees = Employee.query.filter_by(company_id=company.id, is_active=True).all()

@@ -90,8 +90,7 @@ class CashRegisterSearchForm(FlaskForm):
     end_date = DateField('Fecha Hasta', format='%Y-%m-%d', validators=[Optional()])
     is_confirmed = SelectField('Estado', choices=[
         ('all', 'Todos'),
-        ('true', 'Confirmados'),
-        ('false', 'Pendientes')
+        ('true', 'Activos')
     ], default='all')
     
     year = IntegerField('Año', validators=[Optional()])

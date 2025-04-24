@@ -150,11 +150,7 @@
                                     <td>{{ format_currency(register.expenses_amount) }}</td>
                                     <td class="fw-bold">{{ format_currency(register.total_amount) }}</td>
                                     <td>
-                                        {% if register.is_confirmed %}
-                                            <span class="badge bg-success">Confirmado</span>
-                                        {% else %}
-                                            <span class="badge bg-warning text-dark">Pendiente</span>
-                                        {% endif %}
+                                        <span class="badge bg-success">Activo</span>
                                     </td>
                                     <td>
                                         <a href="{{ url_for('cash_register.edit_register', register_id=register.id) }}" class="btn btn-sm btn-primary">

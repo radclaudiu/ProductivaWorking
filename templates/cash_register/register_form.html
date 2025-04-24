@@ -173,6 +173,7 @@
                                         {{ form.expenses_amount(class="form-control", placeholder="0.00") }}
                                         <span class="input-group-text">€</span>
                                     </div>
+                                    <small class="form-text text-muted">Los gastos no se restan del total, solo se registran.</small>
                                     {% if form.expenses_amount.errors %}
                                     <div class="invalid-feedback d-block">
                                         {% for error in form.expenses_amount.errors %}

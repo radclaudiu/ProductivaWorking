@@ -114,6 +114,7 @@
                         <div class="mb-3">
                             {{ form.expenses_amount.label(class="form-label") }}
                             {{ form.expenses_amount(class="form-control", id="expenses_amount") }}
+                            <small class="form-text text-muted">Los gastos no se restan del total, solo se registran.</small>
                             {% if form.expenses_amount.errors %}
                                 <div class="invalid-feedback d-block">
                                     {% for error in form.expenses_amount.errors %}
@@ -189,18 +190,17 @@ document.addEventListener('DOMContentLoaded', function() {
             total += value;
         });
         
-        // Restar gastos
-        const expenses = parseFloat(document.getElementById('expenses_amount').value) || 0;
+        // Los gastos no se restan del total (cambio de regla de negocio)
         
         // Actualizar campo de total
-        document.getElementById('total_amount').value = (total - expenses).toFixed(2);
+        document.getElementById('total_amount').value = total.toFixed(2);
     }
     
     // Calcular total al cargar la página
     calculateTotal();
     
     // Añadir event listeners para recalcular cuando cambie cualquier campo
-    document.querySelectorAll('.payment-amount, #expenses_amount').forEach(function(input) {
+    document.querySelectorAll('.payment-amount').forEach(function(input) {
         input.addEventListener('input', calculateTotal);
     });
 });

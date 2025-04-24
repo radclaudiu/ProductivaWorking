@@ -102,6 +102,10 @@ class Company(db.Model):
     email = db.Column(db.String(120))
     website = db.Column(db.String(128))
     bank_account = db.Column(db.String(24))  # Agregar campo de cuenta bancaria
+    
+    # Coste por hora de los empleados (para cálculos de arqueos)
+    hourly_employee_cost = db.Column(db.Float, default=12.0)  # Coste medio por hora de los empleados
+    
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
@@ -134,6 +138,7 @@ class Company(db.Model):
             'email': self.email,
             'website': self.website,
             'bank_account': self.bank_account,
+            'hourly_employee_cost': self.hourly_employee_cost,
             'is_active': self.is_active,
             'employee_count': len(self.employees)
         }

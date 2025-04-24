@@ -76,6 +76,13 @@ def create_app(config_class='config.Config'):
         from routes_checkpoints_new import checkpoints_bp as checkpoints_new_bp
     except ImportError:
         checkpoints_new_bp = None
+        
+    # Importar blueprint de arqueos de caja
+    try:
+        from routes_cash_register import cash_register_bp
+    except ImportError:
+        cash_register_bp = None
+        logger.warning("No se pudo importar el blueprint de arqueos de caja")
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -90,6 +97,11 @@ def create_app(config_class='config.Config'):
     # Registrar el blueprint de routes_checkpoints_new.py solo si está disponible
     if checkpoints_new_bp is not None:
         app.register_blueprint(checkpoints_new_bp)
+        
+    # Registrar el blueprint de arqueos de caja
+    if cash_register_bp is not None:
+        app.register_blueprint(cash_register_bp)
+        logger.info("Blueprint de arqueos de caja registrado correctamente")
     
     # Inicializar el sistema de puntos de fichaje
     init_checkpoints_app(app)

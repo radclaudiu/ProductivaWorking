@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { z } from "zod";
 import { insertEmployeeSchema, insertShiftSchema, insertScheduleSchema, insertCompanySchema, insertScheduleTemplateSchema } from "@shared/schema";
 import { setupAuth, isAuthenticated, isAdmin } from "./auth";
+import { syncAll, syncCompanies, syncEmployees, syncUsers, syncUserCompanies, truncateTables } from "./sync";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configurar autenticación
@@ -692,6 +693,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).end();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete schedule" });
+    }
+  });
+
+  // ================================================
+  // Endpoints de sincronización con Productiva
+  // ================================================
+
+  // Endpoint de sincronización completa (limpia todas las tablas y sincroniza)
+  app.post("/api/sync", isAdmin, async (req, res) => {
+    try {
+      const results = await syncAll();
+      res.json({ success: true, results });
+    } catch (error) {
+      console.error("Error en sincronización:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Error en sincronización", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+
+  // Endpoints individuales para sincronización por entidad
+  app.post("/api/sync/users", isAdmin, async (req, res) => {
+    try {
+      const results = await syncUsers();
+      res.json({ success: true, results });
+    } catch (error) {
+      res.status(500).json({ 
+        success: false, 
+        message: "Error al sincronizar usuarios", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+
+  app.post("/api/sync/companies", isAdmin, async (req, res) => {
+    try {
+      const results = await syncCompanies();
+      res.json({ success: true, results });
+    } catch (error) {
+      res.status(500).json({ 
+        success: false, 
+        message: "Error al sincronizar empresas", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+
+  app.post("/api/sync/employees", isAdmin, async (req, res) => {
+    try {
+      const results = await syncEmployees();
+      res.json({ success: true, results });
+    } catch (error) {
+      res.status(500).json({ 
+        success: false, 
+        message: "Error al sincronizar empleados", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+
+  app.post("/api/sync/relations", isAdmin, async (req, res) => {
+    try {
+      const results = await syncUserCompanies();
+      res.json({ success: true, results });
+    } catch (error) {
+      res.status(500).json({ 
+        success: false, 
+        message: "Error al sincronizar relaciones usuario-empresa", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+
+  // Endpoint para limpiar todas las tablas
+  app.post("/api/sync/truncate", isAdmin, async (req, res) => {
+    try {
+      const result = await truncateTables();
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ 
+        success: false, 
+        message: "Error al limpiar tablas", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
     }
   });
 

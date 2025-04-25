@@ -1,0 +1,209 @@
+import { db } from './db';
+import { Pool } from '@neondatabase/serverless';
+import { sql } from 'drizzle-orm';
+import { companies, employees, users, userCompanies } from '@shared/schema';
+import { eq } from 'drizzle-orm';
+
+// Conexión a Productiva
+export const productivaDb = new Pool({ 
+  connectionString: process.env.PRODUCTIVA_DB_URL 
+});
+
+// Función de limpieza de tablas para reinicio completo
+export async function truncateTables() {
+  await db.execute(sql`TRUNCATE TABLE user_companies CASCADE`);
+  await db.execute(sql`TRUNCATE TABLE shifts CASCADE`);
+  await db.execute(sql`TRUNCATE TABLE employees CASCADE`);
+  await db.execute(sql`TRUNCATE TABLE companies CASCADE`);
+  await db.execute(sql`TRUNCATE TABLE users CASCADE`);
+  return { success: true, message: "Tablas limpiadas" };
+}
+
+// Función principal de sincronización
+export async function syncAll() {
+  // Limpiar tablas existentes
+  await truncateTables();
+  
+  // Sincronizar en el orden correcto
+  const userStats = await syncUsers();
+  const companyStats = await syncCompanies();
+  const employeeStats = await syncEmployees();
+  const relationStats = await syncUserCompanies();
+  
+  // Actualizar secuencias
+  await updateSequences();
+  
+  return {
+    users: userStats,
+    companies: companyStats,
+    employees: employeeStats,
+    userCompanies: relationStats
+  };
+}
+
+// Sincronizar usuarios
+export async function syncUsers() {
+  const stats = { added: 0, errors: 0, total: 0 };
+  
+  const { rows: productivaUsers } = await productivaDb.query(`
+    SELECT id, username, password_hash as password, email, 
+           CONCAT(first_name, ' ', last_name) as full_name, 
+           role
+    FROM users
+    WHERE is_active = TRUE
+  `);
+  
+  for (const user of productivaUsers) {
+    stats.total++;
+    try {
+      await db.insert(users).values({
+        id: user.id,
+        username: user.username,
+        password: user.password,
+        email: user.email,
+        fullName: user.full_name,
+        role: user.role === 'admin' ? 'admin' : 'user',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      stats.added++;
+    } catch (error) {
+      console.error(`Error al sincronizar usuario ${user.id}:`, error);
+      stats.errors++;
+    }
+  }
+  
+  return stats;
+}
+
+// Sincronizar empresas
+export async function syncCompanies() {
+  const stats = { added: 0, errors: 0, total: 0 };
+  
+  const { rows: productivaCompanies } = await productivaDb.query(`
+    SELECT id, name, address, phone, email, website, tax_id
+    FROM companies
+    WHERE is_active = TRUE
+  `);
+  
+  for (const company of productivaCompanies) {
+    stats.total++;
+    try {
+      await db.insert(companies).values({
+        id: company.id,
+        name: company.name,
+        address: company.address || null,
+        phone: company.phone || null,
+        email: company.email || null,
+        website: company.website || null,
+        taxId: company.tax_id || null,
+        isActive: true,
+        startHour: 9, // Valores por defecto
+        endHour: 18,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      stats.added++;
+    } catch (error) {
+      console.error(`Error al sincronizar empresa ${company.id}:`, error);
+      stats.errors++;
+    }
+  }
+  
+  return stats;
+}
+
+// Sincronizar empleados
+export async function syncEmployees() {
+  const stats = { added: 0, errors: 0, total: 0 };
+  
+  const { rows: productivaEmployees } = await productivaDb.query(`
+    SELECT id, first_name, last_name, company_id, position, 
+           email, phone_number as phone, address, hire_date,
+           is_active, notes
+    FROM employees
+    WHERE is_active = TRUE
+  `);
+  
+  for (const emp of productivaEmployees) {
+    stats.total++;
+    try {
+      const fullName = `${emp.first_name} ${emp.last_name}`.trim();
+      
+      await db.insert(employees).values({
+        id: emp.id,
+        name: fullName,
+        role: emp.position || "",
+        companyId: emp.company_id,
+        email: emp.email || null,
+        phone: emp.phone || null,
+        address: emp.address || null,
+        hireDate: emp.hire_date ? new Date(emp.hire_date) : null,
+        isActive: true,
+        notes: emp.notes || null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      stats.added++;
+    } catch (error) {
+      console.error(`Error al sincronizar empleado ${emp.id}:`, error);
+      stats.errors++;
+    }
+  }
+  
+  return stats;
+}
+
+// Sincronizar relaciones usuario-empresa
+export async function syncUserCompanies() {
+  const stats = { added: 0, errors: 0, total: 0 };
+  
+  const { rows: productivaRelations } = await productivaDb.query(`
+    SELECT user_id, company_id, access_level as role
+    FROM user_company_access
+    WHERE is_active = TRUE
+  `);
+  
+  for (const rel of productivaRelations) {
+    stats.total++;
+    try {
+      // Mapear roles: admin, manager o member
+      let role = "member";
+      if (rel.role === "admin") role = "owner";
+      else if (rel.role === "manager") role = "manager";
+      
+      await db.insert(userCompanies).values({
+        userId: rel.user_id,
+        companyId: rel.company_id,
+        role: role,
+        createdAt: new Date()
+      });
+      stats.added++;
+    } catch (error) {
+      console.error(`Error al sincronizar relación ${rel.user_id}-${rel.company_id}:`, error);
+      stats.errors++;
+    }
+  }
+  
+  return stats;
+}
+
+// Actualizar secuencias
+async function getMaxId(table: string) {
+  const result = await db.execute(sql`SELECT COALESCE(MAX(id), 0) as max_id FROM ${sql.raw(table)}`);
+  return parseInt(result.rows[0].max_id, 10);
+}
+
+async function updateSequences() {
+  const tables = ['users', 'companies', 'employees', 'user_companies'];
+  
+  for (const table of tables) {
+    const maxId = await getMaxId(table);
+    if (maxId > 0) {
+      await db.execute(sql`
+        SELECT setval(pg_get_serial_sequence('${sql.raw(table)}', 'id'), 
+        ${maxId + 1}, false)
+      `);
+    }
+  }
+}

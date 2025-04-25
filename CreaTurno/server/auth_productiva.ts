@@ -7,7 +7,7 @@
 
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { db } from "./storage_productiva";
+import { db } from "./storage_productiva.js";
 
 // Interfaces
 interface User {

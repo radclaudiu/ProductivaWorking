@@ -1,9 +1,9 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { ProductivaAdapter } from "./storage_productiva";
+import { ProductivaAdapter } from "./storage_productiva.js";
 import { z } from "zod";
-import { insertEmployeeSchema, insertShiftSchema, insertScheduleSchema, insertCompanySchema, insertScheduleTemplateSchema } from "@shared/schema";
-import { setupAuth, isAuthenticated, isAdmin } from "./auth_productiva";
+import { insertEmployeeSchema, insertShiftSchema, insertScheduleSchema, insertCompanySchema, insertScheduleTemplateSchema } from "@shared/schema.js";
+import { setupAuth, isAuthenticated, isAdmin } from "./auth_productiva.js";
 
 // Crear el adaptador para la base de datos de Productiva
 const storage = new ProductivaAdapter();

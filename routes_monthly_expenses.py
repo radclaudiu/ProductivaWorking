@@ -25,6 +25,36 @@ from forms_monthly_expenses import ExpenseCategoryForm, FixedExpenseForm, Monthl
 # Crear Blueprint para las rutas de gastos mensuales
 monthly_expenses_bp = Blueprint('monthly_expenses', __name__, url_prefix='/monthly-expenses')
 
+# Ruta para seleccionar empresa
+@monthly_expenses_bp.route('/')
+@login_required
+def select_company():
+    """
+    Permite seleccionar una empresa para acceder a sus gastos mensuales.
+    Si el usuario solo tiene una empresa, redirecciona directamente a ella.
+    """
+    # Obtener las empresas del usuario
+    if current_user.is_admin():
+        companies = Company.query.all()
+    else:
+        companies = current_user.companies
+
+    # Si no hay empresas disponibles, mostrar error
+    if not companies:
+        flash('No tiene empresas asignadas. Contacte con el administrador.', 'danger')
+        return redirect(url_for('main.dashboard'))
+
+    # Si solo hay una empresa, redireccionar directamente
+    if len(companies) == 1:
+        return redirect(url_for('monthly_expenses.company_dashboard', company_id=companies[0].id))
+
+    # Mostrar lista de empresas para seleccionar
+    return render_template(
+        'monthly_expenses/select_company.html',
+        companies=companies,
+        title="Seleccionar Empresa"
+    )
+
 
 # Utilidades y funciones auxiliares
 def format_currency(amount):

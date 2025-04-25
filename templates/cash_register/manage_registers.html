@@ -209,7 +209,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.confirmDelete = function(registerId, registerDate) {
         if (confirm(`¿Estás seguro de que deseas eliminar el arqueo del ${registerDate}? Esta acción no se puede deshacer.`)) {
             // Si el usuario confirma, redirigir a la ruta de eliminación
-            window.location.href = `/cash-register/delete/${registerId}`;
+            window.location.href = `/cash-register/delete_register/${registerId}`;
         }
     };
 });

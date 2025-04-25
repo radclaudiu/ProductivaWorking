@@ -14,7 +14,7 @@ import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
 import { createServer } from "http";
 import { isAuthenticated, isAdmin, hasCompanyAccess, getCurrentUser } from "./auth_productiva.js";
-import { db, employees, locations, companies, creaturnoShifts, creaturnoShiftTemplates, creaturnoShiftRoles, eq, and, gte, lte } from "./storage_productiva.js";
+import { db, employees, locations, companies, creaturnoShifts, creaturnoShiftTemplates, creaturnoShiftRoles, eq, and, gte, lte, inArray } from "./storage_productiva.js";
 
 // Obtener la ruta del directorio actual en ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -41,8 +41,10 @@ const server = createServer(app);
 app.use(express.json());
 app.use(cookieParser());
 app.use(cors({
-  origin: true,
+  origin: '*',
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Configurar Vite para desarrollo

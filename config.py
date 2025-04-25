@@ -40,6 +40,9 @@ class Config:
     MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16MB max upload size
     ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'}
     
+    # Configuración para limpieza de imágenes
+    RECEIPT_IMAGES_RETENTION_DAYS = 10  # Días antes de eliminar las imágenes de recibos
+    
     # JWT configuration
     JWT_SECRET_KEY = os.environ.get('SESSION_SECRET', 'dev-key-for-development')
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)

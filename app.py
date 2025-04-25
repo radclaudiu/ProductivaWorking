@@ -117,13 +117,15 @@ def create_app(config_class='config.Config'):
         app.register_blueprint(creaturno_bp)
         logger.info("Blueprint de CreaTurno registrado correctamente")
         
-        # Inicializar CreaTurno (crear tablas e iniciar servidor)
+        # Inicializar CreaTurno inmediatamente (en el momento del registro del blueprint)
         try:
-            from routes_creaturno import setup_creaturno
-            if setup_creaturno():
-                logger.info("CreaTurno inicializado correctamente")
-            else:
-                logger.warning("No se pudo inicializar CreaTurno completamente")
+            # Inicializar CreaTurno directamente con el contexto de la aplicación
+            with app.app_context():
+                from routes_creaturno import setup_creaturno
+                if setup_creaturno():
+                    logger.info("CreaTurno inicializado correctamente al iniciar la aplicación")
+                else:
+                    logger.warning("No se pudo inicializar CreaTurno completamente al iniciar la aplicación")
         except Exception as e:
             logger.error(f"Error al inicializar CreaTurno: {str(e)}")
     

@@ -165,6 +165,9 @@
                                 </div>
                                 {{ form.category_id(type="hidden") }}
                             </div>
+                            {% else %}
+                                {# No mostramos el selector de categoría incluso si no hay token - lo manejaremos en el backend #}
+                                {{ form.category_id(type="hidden") }}
                             {% endif %}
                             
                             <div class="mb-3">

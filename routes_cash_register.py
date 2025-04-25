@@ -293,7 +293,7 @@ def company_dashboard(company_id):
     )
 
 
-@cash_register_bp.route('/company/<int:company_id>/register', methods=['GET', 'POST'])
+@cash_register_bp.route('/company/<int:company_id>/new', methods=['GET', 'POST'])
 @login_required
 def new_register(company_id):
     """

@@ -163,13 +163,13 @@
                         <tfoot class="table-dark">
                             <tr>
                                 <th>TOTALES</th>
-                                <th>{{ format_currency(totals.cash) }}</th>
-                                <th>{{ format_currency(totals.card) }}</th>
-                                <th>{{ format_currency(totals.delivery_cash) }}</th>
-                                <th>{{ format_currency(totals.delivery_online) }}</th>
-                                <th>{{ format_currency(totals.check) }}</th>
-                                <th>{{ format_currency(totals.expenses) }}</th>
-                                <th>{{ format_currency(totals.total) }}</th>
+                                <th>{{ format_currency(totals.cash_amount) }}</th>
+                                <th>{{ format_currency(totals.card_amount) }}</th>
+                                <th>{{ format_currency(totals.delivery_cash_amount) }}</th>
+                                <th>{{ format_currency(totals.delivery_online_amount) }}</th>
+                                <th>{{ format_currency(totals.check_amount) }}</th>
+                                <th>{{ format_currency(totals.expenses_amount) }}</th>
+                                <th>{{ format_currency(totals.total_amount) }}</th>
                                 <th colspan="2"></th>
                             </tr>
                         </tfoot>
@@ -198,15 +198,15 @@
                                     <tbody>
                                         <tr>
                                             <th>Ingresos Totales:</th>
-                                            <td>{{ format_currency(totals.revenue) }}</td>
+                                            <td>{{ format_currency(totals.total_amount) }}</td>
                                         </tr>
                                         <tr>
                                             <th>Gastos Totales:</th>
-                                            <td>{{ format_currency(totals.expenses) }}</td>
+                                            <td>{{ format_currency(totals.expenses_amount) }}</td>
                                         </tr>
                                         <tr>
                                             <th>Proporción de Gastos:</th>
-                                            <td>{{ format_percentage(totals.expenses_ratio) }}</td>
+                                            <td>{{ format_percentage(totals.expenses_amount / totals.total_amount if totals.total_amount != 0 else 0) }}</td>
                                         </tr>
                                         {% if staff_cost %}
                                         <tr>
@@ -262,11 +262,11 @@
                 labels: ['Efectivo', 'Tarjeta', 'Delivery - Efectivo', 'Delivery - Online', 'Cheque'],
                 datasets: [{
                     data: [
-                        {{ totals.cash }}, 
-                        {{ totals.card }}, 
-                        {{ totals.delivery_cash }},
-                        {{ totals.delivery_online }},
-                        {{ totals.check }}
+                        {{ totals.cash_amount }}, 
+                        {{ totals.card_amount }}, 
+                        {{ totals.delivery_cash_amount }},
+                        {{ totals.delivery_online_amount }},
+                        {{ totals.check_amount }}
                     ],
                     backgroundColor: [
                         'rgba(75, 192, 192, 0.7)',

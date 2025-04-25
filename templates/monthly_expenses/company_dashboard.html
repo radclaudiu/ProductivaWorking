@@ -89,13 +89,16 @@
         <div class="col-12 mb-3">
             <div class="btn-group w-100">
                 <a href="{{ url_for('monthly_expenses.new_monthly_expense', company_id=company.id, year=current_year, month=current_month) }}" class="btn btn-success">
-                    <i class="bi bi-plus-circle me-1"></i> Nuevo Gasto
+                    <i class="bi bi-plus-circle me-1"></i> Nuevo Gasto Variable
+                </a>
+                <a href="{{ url_for('monthly_expenses.manage_fixed_expenses', company_id=company.id) }}" class="btn btn-primary">
+                    <i class="bi bi-repeat me-1"></i> Gastos Fijos
                 </a>
                 <a href="{{ url_for('monthly_expenses.manage_categories', company_id=company.id) }}" class="btn btn-warning text-dark">
-                    <i class="bi bi-tags me-1"></i> Gestionar Categorías
+                    <i class="bi bi-tags me-1"></i> Categorías
                 </a>
                 <a href="{{ url_for('monthly_expenses.manage_tokens', company_id=company.id) }}" class="btn btn-info text-dark">
-                    <i class="bi bi-key me-1"></i> Tokens de Gastos
+                    <i class="bi bi-key me-1"></i> Tokens
                 </a>
             </div>
         </div>
@@ -163,8 +166,8 @@
                     {% else %}
                         <div class="alert alert-warning m-3">
                             No hay gastos fijos para este mes.
-                            <a href="{{ url_for('monthly_expenses.new_monthly_expense', company_id=company.id, year=current_year, month=current_month) }}" class="alert-link">
-                                Agregar un gasto fijo
+                            <a href="{{ url_for('monthly_expenses.manage_fixed_expenses', company_id=company.id) }}" class="alert-link">
+                                Ir a Gestión de Gastos Fijos
                             </a>
                         </div>
                     {% endif %}

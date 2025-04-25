@@ -943,6 +943,183 @@ def employee_submit_expense():
     return render_template('monthly_expenses/employee_submit.html', form=form)
 
 
+# Rutas para gestión de gastos fijos
+@monthly_expenses_bp.route('/fixed-expenses/<int:company_id>', methods=['GET', 'POST'])
+@login_required
+def manage_fixed_expenses(company_id):
+    """
+    Gestiona los gastos fijos de una empresa.
+    Muestra, añade, edita y elimina gastos fijos.
+    """
+    # Verificar permisos
+    if not current_user.is_admin() and not current_user.has_company_access(company_id):
+        flash('No tiene permisos para acceder a esta empresa.', 'danger')
+        return redirect(url_for('main.dashboard'))
+    
+    # Obtener la empresa
+    company = Company.query.get_or_404(company_id)
+    
+    # Obtener todos los gastos fijos
+    fixed_expenses = FixedExpense.query.filter_by(
+        company_id=company_id
+    ).order_by(FixedExpense.name).all()
+    
+    # Preparar categorías para el selector
+    categories = ExpenseCategory.query.filter(
+        (ExpenseCategory.company_id == company_id) | (ExpenseCategory.is_system == True)
+    ).order_by(ExpenseCategory.name).all()
+    
+    # Preparar formulario para nuevo gasto fijo
+    form = FixedExpenseForm()
+    form.company_id.data = company_id
+    form.category_id.choices = [(c.id, c.name) for c in categories]
+    
+    # Procesar formulario
+    if form.validate_on_submit():
+        try:
+            # Crear nuevo gasto fijo
+            fixed_expense = FixedExpense(
+                company_id=company_id,
+                name=form.name.data,
+                description=form.description.data,
+                amount=form.amount.data,
+                category_id=form.category_id.data,
+                is_active=form.is_active.data
+            )
+            db.session.add(fixed_expense)
+            db.session.commit()
+            
+            flash(f'Gasto fijo "{fixed_expense.name}" creado correctamente.', 'success')
+            return redirect(url_for('monthly_expenses.manage_fixed_expenses', company_id=company_id))
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            flash(f'Error al crear el gasto fijo: {str(e)}', 'danger')
+    
+    # Calcular total gastos fijos activos
+    total_active = sum(expense.amount for expense in fixed_expenses if expense.is_active)
+    
+    return render_template(
+        'monthly_expenses/fixed_expenses.html',
+        company=company,
+        fixed_expenses=fixed_expenses,
+        form=form,
+        total_active=total_active,
+        format_currency=format_currency
+    )
+
+
+@monthly_expenses_bp.route('/fixed-expenses/edit/<int:expense_id>', methods=['GET', 'POST'])
+@login_required
+def edit_fixed_expense(expense_id):
+    """
+    Edita un gasto fijo existente.
+    """
+    # Obtener el gasto fijo
+    fixed_expense = FixedExpense.query.get_or_404(expense_id)
+    
+    # Verificar permisos
+    if not current_user.is_admin() and not current_user.has_company_access(fixed_expense.company_id):
+        flash('No tiene permisos para editar este gasto fijo.', 'danger')
+        return redirect(url_for('main.dashboard'))
+    
+    # Obtener la empresa
+    company = Company.query.get_or_404(fixed_expense.company_id)
+    
+    # Preparar categorías para el selector
+    categories = ExpenseCategory.query.filter(
+        (ExpenseCategory.company_id == company.id) | (ExpenseCategory.is_system == True)
+    ).order_by(ExpenseCategory.name).all()
+    
+    # Preparar formulario
+    form = FixedExpenseForm(obj=fixed_expense)
+    form.category_id.choices = [(c.id, c.name) for c in categories]
+    
+    # Procesar formulario
+    if form.validate_on_submit():
+        try:
+            # Actualizar gasto fijo
+            fixed_expense.name = form.name.data
+            fixed_expense.description = form.description.data
+            fixed_expense.amount = form.amount.data
+            fixed_expense.category_id = form.category_id.data
+            fixed_expense.is_active = form.is_active.data
+            fixed_expense.updated_at = datetime.datetime.utcnow()
+            
+            db.session.commit()
+            
+            flash(f'Gasto fijo "{fixed_expense.name}" actualizado correctamente.', 'success')
+            return redirect(url_for('monthly_expenses.manage_fixed_expenses', company_id=fixed_expense.company_id))
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            flash(f'Error al actualizar el gasto fijo: {str(e)}', 'danger')
+    
+    return render_template(
+        'monthly_expenses/fixed_expense_edit.html',
+        company=company,
+        expense=fixed_expense,
+        form=form
+    )
+
+
+@monthly_expenses_bp.route('/fixed-expenses/delete/<int:expense_id>', methods=['POST'])
+@login_required
+def delete_fixed_expense(expense_id):
+    """
+    Elimina un gasto fijo existente.
+    """
+    # Obtener el gasto fijo
+    fixed_expense = FixedExpense.query.get_or_404(expense_id)
+    
+    # Verificar permisos
+    if not current_user.is_admin() and not current_user.has_company_access(fixed_expense.company_id):
+        flash('No tiene permisos para eliminar este gasto fijo.', 'danger')
+        return redirect(url_for('main.dashboard'))
+    
+    # Almacenar datos para redirección después de eliminar
+    company_id = fixed_expense.company_id
+    expense_name = fixed_expense.name
+    
+    try:
+        # Eliminar el gasto fijo
+        db.session.delete(fixed_expense)
+        db.session.commit()
+        
+        flash(f'Gasto fijo "{expense_name}" eliminado correctamente.', 'success')
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        flash(f'Error al eliminar el gasto fijo: {str(e)}', 'danger')
+    
+    return redirect(url_for('monthly_expenses.manage_fixed_expenses', company_id=company_id))
+
+
+@monthly_expenses_bp.route('/fixed-expenses/toggle/<int:expense_id>')
+@login_required
+def toggle_fixed_expense(expense_id):
+    """
+    Activa o desactiva un gasto fijo.
+    """
+    # Obtener el gasto fijo
+    fixed_expense = FixedExpense.query.get_or_404(expense_id)
+    
+    # Verificar permisos
+    if not current_user.is_admin() and not current_user.has_company_access(fixed_expense.company_id):
+        flash('No tiene permisos para modificar este gasto fijo.', 'danger')
+        return redirect(url_for('main.dashboard'))
+    
+    try:
+        # Cambiar estado del gasto fijo
+        fixed_expense.is_active = not fixed_expense.is_active
+        db.session.commit()
+        
+        status = "activado" if fixed_expense.is_active else "desactivado"
+        flash(f'Gasto fijo "{fixed_expense.name}" {status} correctamente.', 'success')
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        flash(f'Error al cambiar el estado del gasto fijo: {str(e)}', 'danger')
+    
+    return redirect(url_for('monthly_expenses.manage_fixed_expenses', company_id=fixed_expense.company_id))
+
+
 # Rutas para reportes y estadísticas
 @monthly_expenses_bp.route('/report/<int:company_id>')
 @login_required

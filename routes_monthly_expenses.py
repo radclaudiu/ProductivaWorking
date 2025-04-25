@@ -11,15 +11,17 @@ import json
 import calendar
 from datetime import date
 
-from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, abort
+from flask import Blueprint, render_template, redirect, url_for, request, flash, jsonify, abort, current_app
 from flask_login import login_required, current_user
 from sqlalchemy import extract, func, desc, asc
 from sqlalchemy.exc import SQLAlchemyError
+from werkzeug.utils import secure_filename
 
 from app import db
 from models import Company
-from models_monthly_expenses import ExpenseCategory, FixedExpense, MonthlyExpense, MonthlyExpenseSummary
+from models_monthly_expenses import ExpenseCategory, FixedExpense, MonthlyExpense, MonthlyExpenseSummary, MonthlyExpenseToken
 from forms_monthly_expenses import ExpenseCategoryForm, FixedExpenseForm, MonthlyExpenseForm, PeriodSelectorForm, MonthlyExpenseSearchForm
+from forms_monthly_expenses import MonthlyExpenseTokenForm, EmployeeExpenseForm
 
 
 # Crear Blueprint para las rutas de gastos mensuales
@@ -620,6 +622,324 @@ def delete_monthly_expense(expense_id):
         year=year,
         month=month
     ))
+
+
+# Rutas para la gestión de tokens de gastos
+@monthly_expenses_bp.route('/tokens/<int:company_id>', methods=['GET', 'POST'])
+@login_required
+def manage_tokens(company_id):
+    """
+    Gestiona los tokens para que los empleados puedan enviar gastos.
+    Permite crear, editar, activar/desactivar tokens.
+    """
+    # Verificar permisos
+    if not current_user.is_admin() and not current_user.has_company_access(company_id):
+        flash('No tiene permisos para acceder a esta empresa.', 'danger')
+        return redirect(url_for('main.dashboard'))
+    
+    # Obtener la empresa
+    company = Company.query.get_or_404(company_id)
+    
+    # Obtener todos los tokens de la empresa
+    tokens = MonthlyExpenseToken.query.filter_by(
+        company_id=company_id
+    ).order_by(MonthlyExpenseToken.name).all()
+    
+    # Preparar categorías para el selector
+    categories = ExpenseCategory.query.filter(
+        (ExpenseCategory.company_id == company_id) | (ExpenseCategory.is_system == True)
+    ).order_by(ExpenseCategory.name).all()
+    
+    # Preparar formulario para nuevo token
+    form = MonthlyExpenseTokenForm()
+    form.category_id.choices = [(c.id, c.name) for c in categories]
+    form.category_id.choices.insert(0, (0, 'Ninguna (el empleado seleccionará)'))
+    
+    # Procesar formulario
+    if form.validate_on_submit():
+        try:
+            # Crear nuevo token
+            token = MonthlyExpenseToken(
+                company_id=company_id,
+                token=MonthlyExpenseToken.generate_token(),
+                name=form.name.data,
+                description=form.description.data,
+                is_active=form.is_active.data,
+                category_id=form.category_id.data if form.category_id.data != 0 else None
+            )
+            db.session.add(token)
+            db.session.commit()
+            
+            flash(f'Token "{token.name}" creado correctamente: {token.token}', 'success')
+            return redirect(url_for('monthly_expenses.manage_tokens', company_id=company_id))
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            flash(f'Error al crear el token: {str(e)}', 'danger')
+    
+    return render_template(
+        'monthly_expenses/tokens.html',
+        company=company,
+        tokens=tokens,
+        form=form
+    )
+
+
+@monthly_expenses_bp.route('/tokens/edit/<int:token_id>', methods=['GET', 'POST'])
+@login_required
+def edit_token(token_id):
+    """
+    Edita un token existente.
+    """
+    # Obtener el token
+    token = MonthlyExpenseToken.query.get_or_404(token_id)
+    
+    # Verificar permisos
+    if not current_user.is_admin() and not current_user.has_company_access(token.company_id):
+        flash('No tiene permisos para editar este token.', 'danger')
+        return redirect(url_for('main.dashboard'))
+    
+    # Obtener la empresa
+    company = Company.query.get_or_404(token.company_id)
+    
+    # Preparar categorías para el selector
+    categories = ExpenseCategory.query.filter(
+        (ExpenseCategory.company_id == company.id) | (ExpenseCategory.is_system == True)
+    ).order_by(ExpenseCategory.name).all()
+    
+    # Preparar formulario
+    form = MonthlyExpenseTokenForm(obj=token)
+    form.category_id.choices = [(c.id, c.name) for c in categories]
+    form.category_id.choices.insert(0, (0, 'Ninguna (el empleado seleccionará)'))
+    
+    # Si el token no tiene categoría asignada, seleccionar la opción 0
+    if not token.category_id and not form.is_submitted():
+        form.category_id.data = 0
+    
+    # Procesar formulario
+    if form.validate_on_submit():
+        try:
+            # Actualizar token
+            token.name = form.name.data
+            token.description = form.description.data
+            token.is_active = form.is_active.data
+            token.category_id = form.category_id.data if form.category_id.data != 0 else None
+            token.updated_at = datetime.datetime.utcnow()
+            
+            db.session.commit()
+            
+            flash(f'Token "{token.name}" actualizado correctamente.', 'success')
+            return redirect(url_for('monthly_expenses.manage_tokens', company_id=token.company_id))
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            flash(f'Error al actualizar el token: {str(e)}', 'danger')
+    
+    return render_template(
+        'monthly_expenses/token_edit.html',
+        company=company,
+        token=token,
+        form=form
+    )
+
+
+@monthly_expenses_bp.route('/tokens/toggle/<int:token_id>')
+@login_required
+def toggle_token(token_id):
+    """
+    Activa o desactiva un token.
+    """
+    # Obtener el token
+    token = MonthlyExpenseToken.query.get_or_404(token_id)
+    
+    # Verificar permisos
+    if not current_user.is_admin() and not current_user.has_company_access(token.company_id):
+        flash('No tiene permisos para modificar este token.', 'danger')
+        return redirect(url_for('main.dashboard'))
+    
+    try:
+        # Cambiar estado del token
+        token.is_active = not token.is_active
+        db.session.commit()
+        
+        status = "activado" if token.is_active else "desactivado"
+        flash(f'Token "{token.name}" {status} correctamente.', 'success')
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        flash(f'Error al cambiar el estado del token: {str(e)}', 'danger')
+    
+    return redirect(url_for('monthly_expenses.manage_tokens', company_id=token.company_id))
+
+
+@monthly_expenses_bp.route('/tokens/regenerate/<int:token_id>')
+@login_required
+def regenerate_token(token_id):
+    """
+    Regenera el código de un token existente.
+    """
+    # Obtener el token
+    token = MonthlyExpenseToken.query.get_or_404(token_id)
+    
+    # Verificar permisos
+    if not current_user.is_admin() and not current_user.has_company_access(token.company_id):
+        flash('No tiene permisos para modificar este token.', 'danger')
+        return redirect(url_for('main.dashboard'))
+    
+    try:
+        # Generar nuevo código de token
+        token.token = MonthlyExpenseToken.generate_token()
+        db.session.commit()
+        
+        flash(f'Token "{token.name}" regenerado: {token.token}', 'success')
+    except SQLAlchemyError as e:
+        db.session.rollback()
+        flash(f'Error al regenerar el token: {str(e)}', 'danger')
+    
+    return redirect(url_for('monthly_expenses.manage_tokens', company_id=token.company_id))
+
+
+@monthly_expenses_bp.route('/employee/submit', methods=['GET', 'POST'])
+def employee_submit_expense():
+    """
+    Página pública para que los empleados envíen gastos usando un token.
+    No requiere autenticación, solo un token válido.
+    """
+    # Preparar formulario
+    form = EmployeeExpenseForm()
+    
+    # Verificar si hay un token en los parámetros de la URL
+    token_param = request.args.get('token', '')
+    if token_param and not form.is_submitted():
+        form.token.data = token_param
+    
+    # Obtener fecha actual para el campo de fecha
+    today = datetime.datetime.now().strftime('%d-%m-%Y')
+    if not form.expense_date.data:
+        form.expense_date.data = today
+    
+    # Procesar formulario
+    if form.validate_on_submit():
+        # Buscar el token
+        token_code = form.token.data.strip().upper()
+        token = MonthlyExpenseToken.query.filter_by(
+            token=token_code,
+            is_active=True
+        ).first()
+        
+        # Verificar token válido
+        if not token:
+            flash('El token proporcionado no es válido o está desactivado.', 'danger')
+            return render_template('monthly_expenses/employee_submit.html', form=form)
+        
+        # Determinar categoría
+        category_id = form.category_id.data if form.category_id.data else token.category_id
+        
+        # Si la categoría no está especificada y el token no tiene categoría predeterminada
+        if not category_id:
+            # Usar categoría "Otros" del sistema
+            category = ExpenseCategory.query.filter_by(name='Otros', is_system=True).first()
+            if category:
+                category_id = category.id
+            else:
+                flash('Error: No se pudo determinar la categoría del gasto.', 'danger')
+                return render_template('monthly_expenses/employee_submit.html', form=form)
+        
+        try:
+            # Determinar el año y mes del gasto (actual si no se especifica)
+            expense_date = form.expense_date.data
+            today = datetime.datetime.now()
+            year = today.year
+            month = today.month
+            
+            # Si se proporcionó una fecha válida, extraer año y mes
+            if expense_date:
+                try:
+                    # Intentar parsear la fecha en formato DD-MM-YYYY
+                    expense_date_parts = expense_date.split('-')
+                    if len(expense_date_parts) == 3:
+                        date_obj = datetime.datetime(
+                            int(expense_date_parts[2]),  # Año
+                            int(expense_date_parts[1]),  # Mes
+                            int(expense_date_parts[0])   # Día
+                        )
+                        year = date_obj.year
+                        month = date_obj.month
+                except (ValueError, IndexError):
+                    # Si hay error al parsear la fecha, usar fecha actual
+                    pass
+            
+            # Guardar la imagen del recibo si se proporciona
+            receipt_image_path = None
+            if form.receipt_image.data:
+                file = form.receipt_image.data
+                filename = secure_filename(file.filename)
+                # Crear directorio para gastos si no existe
+                receipts_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'expense_receipts')
+                if not os.path.exists(receipts_dir):
+                    os.makedirs(receipts_dir)
+                
+                # Crear directorio para la empresa si no existe
+                company_dir = os.path.join(receipts_dir, str(token.company_id))
+                if not os.path.exists(company_dir):
+                    os.makedirs(company_dir)
+                
+                # Guardar el archivo con timestamp para evitar duplicados
+                timestamp = datetime.datetime.now().strftime('%Y%m%d%H%M%S')
+                filename = f"{timestamp}_{filename}"
+                file_path = os.path.join(company_dir, filename)
+                file.save(file_path)
+                
+                # Guardar ruta relativa
+                receipt_image_path = os.path.join('expense_receipts', str(token.company_id), filename)
+            
+            # Crear nuevo gasto
+            expense = MonthlyExpense(
+                name=form.name.data,
+                description=form.description.data,
+                amount=form.amount.data,
+                company_id=token.company_id,
+                category_id=category_id,
+                year=year,
+                month=month,
+                expense_date=form.expense_date.data,
+                submitted_by_employee=True,
+                employee_name=form.employee_name.data,
+                receipt_image=receipt_image_path,
+                is_fixed=False
+            )
+            db.session.add(expense)
+            
+            # Actualizar información del token
+            token.last_used_at = datetime.datetime.utcnow()
+            token.total_uses += 1
+            
+            # Actualizar resumen mensual
+            summary = get_or_create_summary(token.company_id, year, month)
+            
+            db.session.commit()
+            
+            flash('¡Gasto enviado correctamente! Gracias por tu colaboración.', 'success')
+            return redirect(url_for('monthly_expenses.employee_submit_expense', token=token.token))
+        
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            flash(f'Error al enviar el gasto: {str(e)}', 'danger')
+    
+    # Si hay token en el formulario, cargar las categorías disponibles
+    if form.token.data:
+        token = MonthlyExpenseToken.query.filter_by(
+            token=form.token.data.strip().upper(),
+            is_active=True
+        ).first()
+        
+        if token:
+            # Cargar categorías para el selector
+            categories = ExpenseCategory.query.filter(
+                (ExpenseCategory.company_id == token.company_id) | (ExpenseCategory.is_system == True)
+            ).order_by(ExpenseCategory.name).all()
+            
+            form.category_id.choices = [(c.id, c.name) for c in categories]
+            form.category_id.choices.insert(0, (0, '-- Seleccionar categoría --'))
+    
+    return render_template('monthly_expenses/employee_submit.html', form=form)
 
 
 # Rutas para reportes y estadísticas

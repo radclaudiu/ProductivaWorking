@@ -148,3 +148,67 @@ class MonthlyExpenseSearchForm(FlaskForm):
     end_date = StringField('Hasta (MM/YYYY)', validators=[Optional()])
     
     submit = SubmitField('Buscar')
+
+
+class MonthlyExpenseTokenForm(FlaskForm):
+    """
+    Formulario para crear o editar tokens de envío de gastos por empleados.
+    """
+    name = StringField('Nombre descriptivo', validators=[
+        DataRequired(message="El nombre es obligatorio."),
+        Length(min=2, max=100, message="El nombre debe tener entre 2 y 100 caracteres.")
+    ])
+    
+    description = TextAreaField('Descripción', validators=[
+        Optional(),
+        Length(max=500, message="La descripción no puede exceder los 500 caracteres.")
+    ])
+    
+    category_id = SelectField('Categoría predeterminada', coerce=int, validators=[Optional()])
+    
+    is_active = BooleanField('Activo', default=True)
+    
+    submit = SubmitField('Guardar Token')
+
+
+class EmployeeExpenseForm(FlaskForm):
+    """
+    Formulario para que los empleados envíen gastos usando un token.
+    """
+    token = StringField('Token de Acceso', validators=[
+        DataRequired(message="El token es obligatorio."),
+        Length(max=20, message="El token no puede exceder los 20 caracteres.")
+    ])
+    
+    name = StringField('Concepto del Gasto', validators=[
+        DataRequired(message="El concepto es obligatorio."),
+        Length(min=2, max=100, message="El concepto debe tener entre 2 y 100 caracteres.")
+    ])
+    
+    description = TextAreaField('Descripción o Detalles', validators=[
+        Optional(),
+        Length(max=500, message="La descripción no puede exceder los 500 caracteres.")
+    ])
+    
+    amount = FloatField('Importe (€)', validators=[
+        DataRequired(message="El importe es obligatorio."),
+        NumberRange(min=0, message="El importe no puede ser negativo.")
+    ])
+    
+    employee_name = StringField('Tu Nombre', validators=[
+        DataRequired(message="Tu nombre es obligatorio."),
+        Length(min=2, max=100, message="El nombre debe tener entre 2 y 100 caracteres.")
+    ])
+    
+    category_id = SelectField('Categoría', coerce=int, validators=[Optional()])
+    
+    expense_date = StringField('Fecha del Gasto (DD-MM-YYYY)', validators=[Optional()])
+    
+    receipt_image = FileField('Imagen del Recibo/Factura (opcional)', 
+                             validators=[
+                                 Optional(),
+                                 FileAllowed(['jpg', 'jpeg', 'png', 'pdf'], 
+                                            'Solo se permiten archivos de imagen (JPG, PNG) o PDF')
+                             ])
+    
+    submit = SubmitField('Enviar Gasto')

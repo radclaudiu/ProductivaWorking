@@ -1,0 +1,232 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <h1 class="display-5 text-white mb-0">
+                <i class="bi bi-receipt me-2"></i>
+                Gestión de Tokens para Gastos
+            </h1>
+            <p class="text-muted">Empresa: {{ company.name }}</p>
+            
+            <div class="mb-3 mt-3">
+                <a href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id) }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Volver al Dashboard
+                </a>
+                
+                <a href="{{ url_for('monthly_expenses.select_company') }}" class="btn btn-outline-secondary ms-2">
+                    <i class="bi bi-buildings"></i> Cambiar Empresa
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Lista de tokens existentes -->
+        <div class="col-md-7">
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-dark border-secondary">
+                    <h5 class="card-title mb-0">Tokens Disponibles</h5>
+                </div>
+                <div class="card-body">
+                    {% if tokens %}
+                    <div class="table-responsive">
+                        <table class="table table-dark table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Token</th>
+                                    <th>Categoría</th>
+                                    <th>Estado</th>
+                                    <th>Usos</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for token in tokens %}
+                                <tr>
+                                    <td>{{ token.name }}</td>
+                                    <td>
+                                        <span class="badge bg-primary">{{ token.token }}</span>
+                                    </td>
+                                    <td>
+                                        {% if token.category %}
+                                            {{ token.category.name }}
+                                        {% else %}
+                                            <span class="text-muted">No predefinida</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if token.is_active %}
+                                            <span class="badge bg-success">Activo</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Inactivo</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ token.total_uses }}</td>
+                                    <td>
+                                        <div class="btn-group">
+                                            <a href="{{ url_for('monthly_expenses.edit_token', token_id=token.id) }}" class="btn btn-sm btn-primary">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="{{ url_for('monthly_expenses.toggle_token', token_id=token.id) }}" class="btn btn-sm btn-warning">
+                                                {% if token.is_active %}
+                                                    <i class="bi bi-pause-fill"></i>
+                                                {% else %}
+                                                    <i class="bi bi-play-fill"></i>
+                                                {% endif %}
+                                            </a>
+                                            <a href="{{ url_for('monthly_expenses.regenerate_token', token_id=token.id) }}" class="btn btn-sm btn-danger" 
+                                               onclick="return confirm('¿Estás seguro de regenerar el token? El anterior dejará de funcionar.')">
+                                                <i class="bi bi-arrow-repeat"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        No hay tokens creados para esta empresa. Crea un nuevo token utilizando el formulario.
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Enlaces directos para empleados -->
+            {% if tokens %}
+            <div class="card bg-dark border-secondary mb-4">
+                <div class="card-header bg-dark border-secondary">
+                    <h5 class="card-title mb-0">Enlaces directos para empleados</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        Comparte cualquiera de estos enlaces con tus empleados para que puedan enviar gastos sin necesidad de iniciar sesión.
+                    </div>
+                    <div class="list-group">
+                        {% for token in tokens %}
+                        {% if token.is_active %}
+                        <div class="list-group-item bg-dark border-secondary">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ token.name }}</strong>
+                                </div>
+                                <div class="btn-group">
+                                    <button type="button" class="btn btn-sm btn-outline-primary copy-link" 
+                                            data-link="{{ url_for('monthly_expenses.employee_submit_expense', token=token.token, _external=True) }}">
+                                        <i class="bi bi-clipboard"></i> Copiar enlace
+                                    </button>
+                                    <a href="{{ url_for('monthly_expenses.employee_submit_expense', token=token.token) }}" 
+                                       class="btn btn-sm btn-primary" target="_blank">
+                                        <i class="bi bi-box-arrow-up-right"></i> Abrir
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Formulario para crear un nuevo token -->
+        <div class="col-md-5">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header bg-dark border-secondary">
+                    <h5 class="card-title mb-0">Crear Nuevo Token</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.csrf_token }}
+                        
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control") }}
+                            {% if form.name.errors %}
+                            <div class="text-danger">
+                                {% for error in form.name.errors %}
+                                <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control", rows=3) }}
+                            {% if form.description.errors %}
+                            <div class="text-danger">
+                                {% for error in form.description.errors %}
+                                <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Describe el propósito de este token (por ejemplo, "Gastos de viaje para vendedores").
+                            </small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.category_id.label(class="form-label") }}
+                            {{ form.category_id(class="form-select") }}
+                            {% if form.category_id.errors %}
+                            <div class="text-danger">
+                                {% for error in form.category_id.errors %}
+                                <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                            <small class="form-text text-muted">
+                                Categoría predeterminada para gastos enviados con este token.
+                            </small>
+                        </div>
+                        
+                        <div class="mb-3 form-check">
+                            {{ form.is_active(class="form-check-input") }}
+                            {{ form.is_active.label(class="form-check-label") }}
+                        </div>
+                        
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Crear Token
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Función para copiar enlaces al portapapeles
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.copy-link').forEach(function(button) {
+            button.addEventListener('click', function() {
+                var link = this.getAttribute('data-link');
+                navigator.clipboard.writeText(link).then(function() {
+                    // Cambiar el texto del botón temporalmente
+                    var originalHtml = button.innerHTML;
+                    button.innerHTML = '<i class="bi bi-check"></i> Copiado';
+                    button.classList.remove('btn-outline-primary');
+                    button.classList.add('btn-success');
+                    
+                    // Restaurar el botón después de 2 segundos
+                    setTimeout(function() {
+                        button.innerHTML = originalHtml;
+                        button.classList.remove('btn-success');
+                        button.classList.add('btn-outline-primary');
+                    }, 2000);
+                });
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -6,7 +6,7 @@
  */
 
 import { drizzle } from "drizzle-orm/node-postgres";
-import { pgTable, serial, varchar, timestamp, integer, text, boolean, time, array } from "drizzle-orm/pg-core";
+import { pgTable, serial, varchar, timestamp, integer, text, boolean, time } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 import { eq, and, or, inArray, gt, lt, gte, lte } from "drizzle-orm";
 import { Pool } from "pg";

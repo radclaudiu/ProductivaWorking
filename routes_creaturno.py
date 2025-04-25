@@ -1,216 +1,246 @@
 """
-Módulo de rutas para la integración de CreaTurno con Productiva.
-Este módulo define las rutas para acceder al módulo de CreaTurno desde Productiva.
+Rutas para el módulo CreaTurno integrado con Productiva.
+
+Este módulo maneja la redirección a la interfaz de CreaTurno y la inicialización
+del servidor TypeScript que ejecuta la lógica de CreaTurno.
 """
 
 import os
-import logging
 import subprocess
-from flask import Blueprint, render_template, redirect, url_for, flash, current_app, request, jsonify
+import threading
+import time
+from flask import Blueprint, render_template, redirect, url_for, flash, session, jsonify, current_app
 from flask_login import login_required, current_user
+from datetime import datetime
+import logging
 
 # Configurar logging
 logger = logging.getLogger(__name__)
 
-# Crear Blueprint
+# Crear blueprint
 creaturno_bp = Blueprint('creaturno', __name__, url_prefix='/creaturno')
 
-# Variable para guardar el proceso del servidor de CreaTurno
-creaturno_process = None
+# Variable global para el proceso del servidor
+creaturno_server_process = None
 
-def check_creaturno_tables():
+def init_creaturno_tables():
     """
-    Verifica si las tablas de CreaTurno están creadas.
-    Si no existen, las crea.
+    Inicializa las tablas de CreaTurno en la base de datos si no existen.
+    Esta función usa directamente SQL en lugar de migraciones.
+    
+    Returns:
+        bool: True si las tablas ya existen o se crearon correctamente, False en caso contrario.
     """
+    from app import db
+    from sqlalchemy import text
+    
     try:
-        from init_creaturno_tables import init_creaturno_tables
-        
-        # Verificar si la tabla shifts existe
-        from app import db
-        from sqlalchemy import text
-        
-        # Consultar si existe la tabla shifts
+        # Verificar si las tablas ya existen
         result = db.session.execute(text("""
-            SELECT to_regclass('shifts');
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_name = 'creaturno_shift_roles'
+            );
         """))
+        tables_exist = result.scalar()
         
-        table_exists = result.scalar() is not None
-        
-        if not table_exists:
-            logger.info("Tablas de CreaTurno no encontradas. Creando tablas...")
-            success = init_creaturno_tables()
-            if success:
-                logger.info("Tablas de CreaTurno creadas correctamente")
-                return True
-            else:
-                logger.error("Error al crear tablas de CreaTurno")
-                return False
-        else:
+        if tables_exist:
             logger.info("Tablas de CreaTurno ya existen")
             return True
             
+        # Crear las tablas necesarias
+        logger.info("Creando tablas de CreaTurno...")
+        
+        # Ruta al archivo SQL
+        sql_file_path = os.path.join('CreaTurno', 'create_tables_productiva.sql')
+        
+        # Verificar si el archivo existe
+        if not os.path.exists(sql_file_path):
+            logger.error(f"Archivo SQL de creación de tablas no encontrado: {sql_file_path}")
+            return False
+            
+        # Leer y ejecutar el archivo SQL
+        with open(sql_file_path, 'r') as f:
+            sql_commands = f.read()
+            
+        # Ejecutar los comandos SQL
+        db.session.execute(text(sql_commands))
+        db.session.commit()
+        
+        logger.info("Tablas de CreaTurno creadas correctamente")
+        return True
+        
     except Exception as e:
-        logger.error(f"Error al verificar tablas de CreaTurno: {str(e)}")
+        db.session.rollback()
+        logger.error(f"Error al crear tablas de CreaTurno: {str(e)}")
         return False
 
 def start_creaturno_server():
     """
-    Inicia el servidor de CreaTurno si no está en ejecución.
+    Inicia el servidor de CreaTurno en segundo plano.
+    
+    Returns:
+        bool: True si el servidor se inició correctamente, False en caso contrario.
     """
-    global creaturno_process
+    global creaturno_server_process
     
     try:
-        # Verificar si el proceso está en ejecución
-        if creaturno_process and creaturno_process.poll() is None:
-            logger.info("Servidor de CreaTurno ya está en ejecución")
+        # Verificar si el servidor ya está en ejecución
+        if creaturno_server_process is not None and creaturno_server_process.poll() is None:
+            logger.info("El servidor de CreaTurno ya está en ejecución")
             return True
+            
+        # Ruta al directorio de CreaTurno
+        creaturno_dir = os.path.join(os.getcwd(), 'CreaTurno')
         
-        # Iniciar el servidor de CreaTurno en segundo plano
+        # Comando para iniciar el servidor
+        node_executable = os.path.join(os.getcwd(), 'node_modules', '.bin', 'tsx')
+        server_script = os.path.join(creaturno_dir, 'server', 'index_productiva.ts')
+        
+        # Verificar si los archivos existen
+        if not os.path.exists(server_script):
+            logger.error(f"Script del servidor no encontrado: {server_script}")
+            return False
+            
+        # Iniciar el servidor en un nuevo proceso
+        if os.path.exists(node_executable):
+            cmd = [node_executable, server_script]
+        else:
+            # Intentar con npx si tsx no está instalado directamente
+            cmd = ['node', server_script]
+            
+        # Configure environment variables
         env = os.environ.copy()
-        env["DATABASE_URL"] = os.environ.get("DATABASE_URL")
-        env["SESSION_SECRET"] = os.environ.get("SESSION_SECRET", "secret_key_for_creaturno")
+        env['DATABASE_URL'] = current_app.config['SQLALCHEMY_DATABASE_URI']
         
-        # Usar tsx para ejecutar el servidor de CreaTurno de forma directa
-        cmd = ["npx", "tsx", "server/index_productiva.ts"]
+        logger.info(f"Iniciando servidor de CreaTurno con comando: {' '.join(cmd)}")
         
-        # Iniciar el proceso
-        creaturno_process = subprocess.Popen(
+        creaturno_server_process = subprocess.Popen(
             cmd,
-            cwd="./CreaTurno",
+            cwd=creaturno_dir,
             env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            universal_newlines=True
         )
         
-        logger.info(f"Servidor de CreaTurno iniciado con PID {creaturno_process.pid}")
-        return True
+        # Esperar un momento para ver si el servidor inicia correctamente
+        time.sleep(2)
         
+        # Verificar si el proceso sigue en ejecución
+        if creaturno_server_process.poll() is None:
+            logger.info("Servidor de CreaTurno iniciado correctamente")
+            
+            # Iniciar un hilo para capturar la salida del servidor
+            def log_output():
+                for line in creaturno_server_process.stdout:
+                    logger.info(f"CreaTurno Server: {line.strip()}")
+                for line in creaturno_server_process.stderr:
+                    logger.error(f"CreaTurno Server Error: {line.strip()}")
+            
+            threading.Thread(target=log_output, daemon=True).start()
+            
+            return True
+        else:
+            # El proceso terminó rápidamente, lo que indica un error
+            stdout, stderr = creaturno_server_process.communicate()
+            logger.error(f"Error al iniciar servidor de CreaTurno: {stderr}")
+            creaturno_server_process = None
+            return False
+            
     except Exception as e:
         logger.error(f"Error al iniciar servidor de CreaTurno: {str(e)}")
         return False
 
-def stop_creaturno_server():
-    """
-    Detiene el servidor de CreaTurno si está en ejecución.
-    """
-    global creaturno_process
-    
-    if creaturno_process and creaturno_process.poll() is None:
-        try:
-            creaturno_process.terminate()
-            creaturno_process.wait(timeout=5)
-            logger.info("Servidor de CreaTurno detenido correctamente")
-            return True
-        except Exception as e:
-            logger.error(f"Error al detener servidor de CreaTurno: {str(e)}")
-            try:
-                creaturno_process.kill()
-                logger.info("Servidor de CreaTurno forzado a detenerse")
-            except:
-                pass
-            return False
-    
-    return True
+# Función para inicializar CreaTurno, será llamada desde app.py
+def setup_creaturno():
+    """Configuración inicial de CreaTurno."""
+    if init_creaturno_tables():
+        return start_creaturno_server()
+    return False
 
 @creaturno_bp.route('/')
 @login_required
 def index():
-    """
-    Página principal del módulo CreaTurno.
-    Inicia el servidor y verifica las tablas si es necesario.
-    """
-    # Verificar que existan las tablas necesarias
-    if not check_creaturno_tables():
-        flash("Error al verificar tablas de CreaTurno. No se puede continuar.", "danger")
-        return redirect(url_for('main.index'))
-    
-    # Iniciar el servidor de CreaTurno si no está en ejecución
-    if not start_creaturno_server():
-        flash("Error al iniciar el servidor de CreaTurno. No se puede continuar.", "danger")
-        return redirect(url_for('main.index'))
-    
-    # Pasar información del usuario actual
-    user_info = {
-        'id': current_user.id,
-        'username': current_user.username,
-        'full_name': f"{current_user.first_name} {current_user.last_name}",
-        'email': current_user.email,
-        'is_admin': current_user.is_admin()
-    }
-    
-    # Renderizar la plantilla que muestra la aplicación de CreaTurno
-    # El cliente de CreaTurno se cargará en un iframe
-    return render_template(
-        'creaturno/index.html',
-        title='CreaTurno - Gestión de Turnos',
-        user_info=user_info
-    )
+    """Página principal de CreaTurno."""
+    try:
+        # Asegurarse de que las tablas estén creadas y el servidor esté en ejecución
+        if not init_creaturno_tables() or not start_creaturno_server():
+            flash('Error al inicializar el módulo CreaTurno. Por favor, contacte con el administrador.', 'danger')
+            return redirect(url_for('main.dashboard'))
+            
+        # Guardar información del usuario en la sesión para que CreaTurno pueda utilizarla
+        session['user_id'] = current_user.id
+        session['username'] = current_user.username
+        session['role'] = current_user.role.name
+        session['company_id'] = current_user.company_id if hasattr(current_user, 'company_id') else None
+        
+        # Renderizar la plantilla del cliente de CreaTurno
+        return render_template('creaturno/index.html', title='CreaTurno')
+        
+    except Exception as e:
+        logger.error(f"Error al cargar página de CreaTurno: {str(e)}")
+        flash(f'Error al cargar CreaTurno: {str(e)}', 'danger')
+        return redirect(url_for('main.dashboard'))
 
 @creaturno_bp.route('/admin')
 @login_required
 def admin():
-    """
-    Panel de administración de CreaTurno.
-    """
-    # Verificar que el usuario sea administrador
+    """Página de administración de CreaTurno."""
+    # Verificar si el usuario es administrador
     if not current_user.is_admin():
-        flash("No tiene permisos para acceder a esta página", "danger")
+        flash('Acceso denegado. Se requieren permisos de administrador.', 'danger')
         return redirect(url_for('creaturno.index'))
-    
-    # Estado del servidor
-    server_status = "En ejecución" if creaturno_process and creaturno_process.poll() is None else "Detenido"
-    
-    return render_template(
-        'creaturno/admin.html',
-        title='Administración de CreaTurno',
-        server_status=server_status
-    )
+        
+    try:
+        # Renderizar la plantilla de administración de CreaTurno
+        return render_template('creaturno/admin.html', title='Administración de CreaTurno')
+        
+    except Exception as e:
+        logger.error(f"Error al cargar página de administración de CreaTurno: {str(e)}")
+        flash(f'Error al cargar administración de CreaTurno: {str(e)}', 'danger')
+        return redirect(url_for('creaturno.index'))
 
-@creaturno_bp.route('/start_server', methods=['POST'])
+@creaturno_bp.route('/status')
 @login_required
-def start_server():
-    """
-    Inicia el servidor de CreaTurno manualmente.
-    """
-    # Verificar que el usuario sea administrador
+def status():
+    """Verificar el estado del servidor de CreaTurno."""
+    global creaturno_server_process
+    
+    is_running = creaturno_server_process is not None and creaturno_server_process.poll() is None
+    
+    return jsonify({
+        'status': 'running' if is_running else 'stopped',
+        'timestamp': datetime.now().isoformat()
+    })
+
+@creaturno_bp.route('/restart')
+@login_required
+def restart():
+    """Reiniciar el servidor de CreaTurno."""
+    global creaturno_server_process
+    
+    # Verificar si el usuario es administrador
     if not current_user.is_admin():
-        return jsonify({'success': False, 'message': 'No tiene permisos para realizar esta acción'})
-    
-    success = start_creaturno_server()
-    
-    return jsonify({
-        'success': success,
-        'message': 'Servidor iniciado correctamente' if success else 'Error al iniciar el servidor'
-    })
-
-@creaturno_bp.route('/stop_server', methods=['POST'])
-@login_required
-def stop_server():
-    """
-    Detiene el servidor de CreaTurno manualmente.
-    """
-    # Verificar que el usuario sea administrador
-    if not current_user.is_admin():
-        return jsonify({'success': False, 'message': 'No tiene permisos para realizar esta acción'})
-    
-    success = stop_creaturno_server()
-    
-    return jsonify({
-        'success': success,
-        'message': 'Servidor detenido correctamente' if success else 'Error al detener el servidor'
-    })
-
-@creaturno_bp.route('/status', methods=['GET'])
-@login_required
-def server_status():
-    """
-    Obtiene el estado del servidor de CreaTurno.
-    """
-    status = "running" if creaturno_process and creaturno_process.poll() is None else "stopped"
-    
-    return jsonify({
-        'status': status,
-        'pid': creaturno_process.pid if creaturno_process else None
-    })
+        flash('Acceso denegado. Se requieren permisos de administrador.', 'danger')
+        return redirect(url_for('creaturno.index'))
+        
+    try:
+        # Detener el servidor si está en ejecución
+        if creaturno_server_process is not None:
+            creaturno_server_process.terminate()
+            creaturno_server_process.wait(timeout=5)
+            creaturno_server_process = None
+            
+        # Iniciar el servidor nuevamente
+        if start_creaturno_server():
+            flash('Servidor de CreaTurno reiniciado correctamente.', 'success')
+        else:
+            flash('Error al reiniciar el servidor de CreaTurno.', 'danger')
+            
+        return redirect(url_for('creaturno.admin'))
+        
+    except Exception as e:
+        logger.error(f"Error al reiniciar servidor de CreaTurno: {str(e)}")
+        flash(f'Error al reiniciar servidor: {str(e)}', 'danger')
+        return redirect(url_for('creaturno.admin'))

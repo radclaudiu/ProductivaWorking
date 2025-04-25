@@ -1,171 +1,163 @@
 {% extends "layout.html" %}
 
-{% block styles %}
-{{ super() }}
+{% block head %}
 <style>
-    /* Estilos para el iframe que contiene CreaTurno */
-    .creaturno-container {
-        width: 100%;
-        height: calc(100vh - 100px);
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
+    #creaturno-container {
+        background-color: #28293d;
+        color: #e8eaed;
+        min-height: 80vh;
+        padding: 2rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
     }
     
-    .creaturno-iframe {
-        width: 100%;
-        height: 100%;
-        border: none;
-        margin: 0;
-        padding: 0;
+    .loading-spinner {
+        text-align: center;
+        margin: 2rem auto;
     }
     
-    /* Breadcrumb */
-    .breadcrumb {
-        background-color: transparent;
-        border-radius: 0;
-        padding: 0.5rem 0;
-        margin-bottom: 0.5rem;
-    }
-    
-    /* Pequeño banner para mostrar información del usuario y de CreaTurno */
-    .creaturno-info {
-        background-color: #f8f9fa;
-        padding: 5px 10px;
-        margin-bottom: 10px;
-        border-radius: 5px;
-        font-size: 0.9rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-    }
-    
-    .creaturno-info .status {
-        display: flex;
-        align-items: center;
-    }
-    
-    .creaturno-info .status-indicator {
-        width: 10px;
-        height: 10px;
+    .status-indicator {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
         border-radius: 50%;
-        margin-right: 5px;
+        margin-right: 8px;
     }
     
-    .status-indicator.online {
+    .status-online {
         background-color: #28a745;
     }
     
-    .status-indicator.offline {
+    .status-offline {
         background-color: #dc3545;
+    }
+    
+    #api-status {
+        margin-bottom: 1rem;
+        padding: 0.5rem;
+        border-radius: 4px;
+        background-color: #212130;
+    }
+    
+    #creaturno-frame {
+        width: 100%;
+        height: 75vh;
+        border: none;
+        background-color: #212130;
+        border-radius: 8px;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Inicio</a></li>
-        <li class="breadcrumb-item active" aria-current="page">CreaTurno</li>
-    </ol>
-</nav>
-
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1>CreaTurno - Gestión de Turnos</h1>
-    {% if current_user.is_admin() %}
-    <a href="{{ url_for('creaturno.admin') }}" class="btn btn-outline-primary">
-        <i class="fas fa-cog"></i> Administración
-    </a>
-    {% endif %}
-</div>
-
-<div class="creaturno-info">
-    <div>
-        <strong>Usuario:</strong> {{ user_info.full_name }} ({{ user_info.username }})
-        {% if user_info.is_admin %}
-        <span class="badge bg-danger">Admin</span>
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">CreaTurno: Gestor de Turnos</h1>
+        
+        {% if current_user.is_admin() %}
+        <a href="{{ url_for('creaturno.admin') }}" class="btn btn-primary">
+            <i class="bi bi-gear-fill"></i> Administración
+        </a>
         {% endif %}
     </div>
-    <div class="status">
-        <span class="status-indicator online" id="status-indicator"></span>
-        <span id="status-text">Conectado</span>
+    
+    <div id="creaturno-container">
+        <div id="api-status">
+            <span class="status-indicator status-offline" id="status-dot"></span>
+            <span id="status-text">Conectando con el servidor de CreaTurno...</span>
+        </div>
+        
+        <div class="loading-spinner" id="loading">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-2">Cargando CreaTurno...</p>
+        </div>
+        
+        <iframe id="creaturno-frame" style="display:none;" src="http://localhost:3000/creaturno-client/" frameborder="0"></iframe>
     </div>
 </div>
-
-<div class="creaturno-container">
-    <iframe src="http://localhost:5001" class="creaturno-iframe" id="creaturno-iframe"></iframe>
-</div>
-
 {% endblock %}
 
 {% block scripts %}
-{{ super() }}
 <script>
-    // Script para verificar periódicamente si el servidor de CreaTurno está disponible
-    function checkServerStatus() {
-        fetch('/creaturno/status')
-            .then(response => response.json())
-            .then(data => {
-                const statusIndicator = document.getElementById('status-indicator');
-                const statusText = document.getElementById('status-text');
-                
-                if (data.status === 'running') {
-                    statusIndicator.className = 'status-indicator online';
-                    statusText.textContent = 'Conectado';
-                } else {
-                    statusIndicator.className = 'status-indicator offline';
-                    statusText.textContent = 'Desconectado';
-                    
-                    // Mostrar mensaje de error en el iframe
-                    const iframe = document.getElementById('creaturno-iframe');
-                    const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-                    
-                    if (iframeDoc) {
-                        iframeDoc.body.innerHTML = `
-                            <div style="text-align: center; padding: 50px; font-family: Arial, sans-serif;">
-                                <h2>Servidor de CreaTurno no disponible</h2>
-                                <p>Por favor, contacte con el administrador del sistema.</p>
-                                <button onclick="window.parent.location.reload()">Reintentar</button>
+    document.addEventListener('DOMContentLoaded', function() {
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const loadingEl = document.getElementById('loading');
+        const iframeEl = document.getElementById('creaturno-frame');
+        
+        // Comprobar el estado del servidor de CreaTurno
+        function checkServerStatus() {
+            fetch('{{ url_for("creaturno.status") }}')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === 'running') {
+                        // Servidor en funcionamiento
+                        statusDot.classList.remove('status-offline');
+                        statusDot.classList.add('status-online');
+                        statusText.textContent = 'Servidor de CreaTurno conectado';
+                        
+                        // Mostrar iframe
+                        setTimeout(() => {
+                            loadingEl.style.display = 'none';
+                            iframeEl.style.display = 'block';
+                            
+                            // Cargar el iframe con la URL correcta (ajustada para Replit)
+                            const host = window.location.hostname;
+                            const port = 3000;  // Puerto del servidor CreaTurno
+                            const protocol = window.location.protocol;
+                            
+                            // En Replit, la URL sería algo como https://repl-name-3000.username.repl.co
+                            let clientUrl = `${protocol}//${host.replace(/:[0-9]+$/, '')}-${port}.${host.includes('.') ? host.split('.').slice(1).join('.') : host}/creaturno-client/`;
+                            
+                            // Para desarrollo local, usamos localhost
+                            if (host === 'localhost' || host === '127.0.0.1') {
+                                clientUrl = `${protocol}//${host}:${port}/creaturno-client/`;
+                            }
+                            
+                            iframeEl.src = clientUrl;
+                        }, 1000);
+                    } else {
+                        // Servidor no disponible
+                        statusDot.classList.remove('status-online');
+                        statusDot.classList.add('status-offline');
+                        statusText.textContent = 'Servidor de CreaTurno desconectado';
+                        
+                        // Mostrar mensaje de error
+                        loadingEl.innerHTML = `
+                            <div class="alert alert-danger" role="alert">
+                                <h4 class="alert-heading">Error de conexión</h4>
+                                <p>No se pudo conectar con el servidor de CreaTurno. Por favor, inténtelo de nuevo más tarde.</p>
+                                <hr>
+                                <button class="btn btn-primary" onclick="location.reload()">Reintentar</button>
                             </div>
                         `;
                     }
-                }
-            })
-            .catch(error => {
-                console.error('Error al verificar estado del servidor:', error);
-                
-                const statusIndicator = document.getElementById('status-indicator');
-                const statusText = document.getElementById('status-text');
-                
-                statusIndicator.className = 'status-indicator offline';
-                statusText.textContent = 'Error de conexión';
-            });
-    }
-    
-    // Verificar estado cada 30 segundos
-    setInterval(checkServerStatus, 30000);
-    
-    // Verificar estado al cargar la página
-    document.addEventListener('DOMContentLoaded', checkServerStatus);
-    
-    // Manejar eventos de mensaje desde el iframe
-    window.addEventListener('message', function(event) {
-        // Verificar origen del mensaje
-        if (event.origin !== 'http://localhost:5001') {
-            return;
+                })
+                .catch(error => {
+                    console.error('Error al comprobar estado:', error);
+                    statusDot.classList.remove('status-online');
+                    statusDot.classList.add('status-offline');
+                    statusText.textContent = 'Error al conectar con CreaTurno';
+                    
+                    // Mostrar mensaje de error
+                    loadingEl.innerHTML = `
+                        <div class="alert alert-danger" role="alert">
+                            <h4 class="alert-heading">Error de conexión</h4>
+                            <p>No se pudo conectar con el servidor de CreaTurno: ${error.message}</p>
+                            <hr>
+                            <button class="btn btn-primary" onclick="location.reload()">Reintentar</button>
+                        </div>
+                    `;
+                });
         }
         
-        const message = event.data;
+        // Comprobar estado inicial
+        checkServerStatus();
         
-        // Manejar diferentes tipos de mensajes
-        if (message.type === 'auth') {
-            // Enviar información de autenticación al iframe
-            const iframe = document.getElementById('creaturno-iframe');
-            iframe.contentWindow.postMessage({
-                type: 'auth_response',
-                user: {{ user_info|tojson }}
-            }, 'http://localhost:5001');
-        }
+        // Comprobar estado cada 30 segundos
+        setInterval(checkServerStatus, 30000);
     });
 </script>
 {% endblock %}

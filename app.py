@@ -116,6 +116,16 @@ def create_app(config_class='config.Config'):
     if creaturno_bp is not None:
         app.register_blueprint(creaturno_bp)
         logger.info("Blueprint de CreaTurno registrado correctamente")
+        
+        # Inicializar CreaTurno (crear tablas e iniciar servidor)
+        try:
+            from routes_creaturno import setup_creaturno
+            if setup_creaturno():
+                logger.info("CreaTurno inicializado correctamente")
+            else:
+                logger.warning("No se pudo inicializar CreaTurno completamente")
+        except Exception as e:
+            logger.error(f"Error al inicializar CreaTurno: {str(e)}")
     
     # Inicializar el sistema de puntos de fichaje
     init_checkpoints_app(app)

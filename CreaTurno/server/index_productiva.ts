@@ -9,7 +9,10 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
+import { createServer as createViteServer } from "vite";
+import { createServer } from "http";
 import { isAuthenticated, isAdmin, hasCompanyAccess, getCurrentUser } from "./auth_productiva.js";
 import { db, employees, locations, companies, creaturnoShifts, creaturnoShiftTemplates, creaturnoShiftRoles, eq, and, gte, lte } from "./storage_productiva.js";
 
@@ -17,9 +20,22 @@ import { db, employees, locations, companies, creaturnoShifts, creaturnoShiftTem
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Log helper function
+function log(message, source = "express") {
+  const formattedTime = new Date().toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
+  
+  console.log(`${formattedTime} [${source}] ${message}`);
+}
+
 // Crear aplicación Express
 const app = express();
 const PORT = process.env.PORT || 5001;
+const server = createServer(app);
 
 // Middleware
 app.use(express.json());
@@ -29,9 +45,51 @@ app.use(cors({
   credentials: true,
 }));
 
-// Servir archivos estáticos desde la carpeta client
-const clientPath = path.join(__dirname, '..', 'client');
-app.use('/creaturno-client', express.static(clientPath));
+// Configurar Vite para desarrollo
+async function setupVite() {
+  try {
+    // Importar y crear el servidor Vite en modo middleware
+    const vite = await createViteServer({
+      server: {
+        middlewareMode: true,
+        hmr: { server },
+      },
+      appType: "spa",
+      root: path.join(__dirname, '..'),
+    });
+    
+    // Usar middleware de Vite
+    app.use(vite.middlewares);
+    
+    // Configurar ruta para servir el index.html
+    app.use('/creaturno-client', async (req, res, next) => {
+      try {
+        const clientTemplate = path.resolve(__dirname, '..', 'client', 'index.html');
+        
+        // Leer el archivo HTML
+        let template = await fs.promises.readFile(clientTemplate, "utf-8");
+        
+        // Transformar el HTML con Vite
+        const transformedHtml = await vite.transformIndexHtml(req.originalUrl, template);
+        
+        // Enviar el HTML transformado
+        res.status(200).set({ "Content-Type": "text/html" }).end(transformedHtml);
+      } catch (e) {
+        console.error('Error al servir el cliente:', e);
+        next(e);
+      }
+    });
+    
+    log("Vite configurado correctamente");
+  } catch (error) {
+    console.error("Error al configurar Vite:", error);
+    
+    // En caso de error con Vite, usamos el modo estático como fallback
+    const clientPath = path.join(__dirname, '..', 'client');
+    app.use('/creaturno-client', express.static(clientPath));
+    log("Fallback: sirviendo archivos estáticos desde la carpeta client");
+  }
+}
 
 // Ruta para verificar el estado del servidor
 app.get("/api/health", (req, res) => {
@@ -328,7 +386,17 @@ app.delete("/api/shifts/:shiftId", isAuthenticated, async (req: any, res) => {
   }
 });
 
-// Iniciar el servidor
-app.listen(PORT, () => {
-  console.log(`Servidor CreaTurno ejecutándose en el puerto ${PORT}`);
-});
+// Configurar Vite y luego iniciar el servidor
+(async () => {
+  try {
+    // Configurar Vite para servir los archivos del cliente
+    await setupVite();
+    
+    // Iniciar el servidor HTTP
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`Servidor CreaTurno ejecutándose en el puerto ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Error al iniciar el servidor CreaTurno:', error);
+  }
+})();

@@ -29,6 +29,14 @@ from forms_monthly_expenses import MonthlyExpenseTokenForm, EmployeeExpenseForm
 # Crear Blueprint para las rutas de gastos mensuales
 monthly_expenses_bp = Blueprint('monthly_expenses', __name__, url_prefix='/monthly-expenses')
 
+# Registrar filtros para las plantillas
+@monthly_expenses_bp.app_template_filter('format_currency')
+def format_currency_filter(value):
+    """Formatea un valor decimal como moneda (€)"""
+    if value is None:
+        return "0,00 €"
+    return f"{value:,.2f} €".replace(",", "X").replace(".", ",").replace("X", ".")
+
 # Ruta para seleccionar empresa
 @monthly_expenses_bp.route('/')
 @login_required
@@ -1009,11 +1017,15 @@ def employee_submit_expense():
             
             db.session.commit()
             
+            # Obtener la categoría para el mensaje de confirmación
+            category_obj = ExpenseCategory.query.get(category_id)
+            category_name = category_obj.name if category_obj else "Otros"
+            
             # Preparar datos para la página de confirmación
             expense_info = {
                 'name': expense.name,
                 'amount': expense.amount,
-                'category_name': category.name if category else "Otro",
+                'category_name': category_name,
                 'expense_date': expense.expense_date,
                 'employee_name': expense.employee_name,
                 'token_name': token.name,

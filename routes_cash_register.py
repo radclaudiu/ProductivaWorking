@@ -227,15 +227,25 @@ def company_dashboard(company_id):
         flash('No tiene acceso a esta empresa', 'danger')
         return redirect(url_for('cash_register.dashboard'))
     
-    # Obtener el año y semana actuales
-    current_year = datetime.now().year
-    current_week = get_current_week_number()
+    # Obtener año y semana de los parámetros URL o usar los actuales
+    current_year = request.args.get('year', type=int, default=datetime.now().year)
     current_month = datetime.now().month
     
-    # Obtener fechas de inicio y fin de la semana actual
+    # Obtener semana de parámetros URL o usar la actual
+    if request.args.get('week'):
+        current_week = request.args.get('week', type=int)
+        
+        # Validar semana (entre 1 y 53)
+        if current_week < 1 or current_week > 53:
+            current_week = get_current_week_number()
+            flash('Número de semana inválido. Mostrando semana actual.', 'warning')
+    else:
+        current_week = get_current_week_number()
+    
+    # Obtener fechas de inicio y fin de la semana seleccionada
     week_start, week_end = get_week_dates(current_year, current_week)
     
-    # Calcular o actualizar el resumen semanal
+    # Calcular o actualizar el resumen semanal para la semana seleccionada
     summary = calculate_weekly_summary(company_id, current_year, current_week)
     
     # Obtener arqueos recientes
@@ -288,6 +298,7 @@ def company_dashboard(company_id):
         week_end=week_end,
         current_year=current_year,
         current_week=current_week,
+        current_month=current_month,
         format_currency=format_currency,
         format_percentage=format_percentage
     )

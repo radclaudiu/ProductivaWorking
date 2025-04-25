@@ -218,6 +218,113 @@ def status():
         'timestamp': datetime.now().isoformat()
     })
 
+@creaturno_bp.route('/client/')
+@creaturno_bp.route('/client/<path:path>')
+@login_required
+def client_proxy(path=''):
+    """
+    Actúa como proxy para el cliente de CreaTurno.
+    
+    Esta ruta permite acceder al cliente de CreaTurno sin necesidad de usar
+    un iframe o acceder directamente al puerto 5001.
+    """
+    import requests
+    try:
+        # URL base del servidor de CreaTurno
+        base_url = f"http://localhost:5001/creaturno-client/"
+        
+        if path:
+            url = f"{base_url}{path}"
+        else:
+            url = base_url
+            
+        logger.info(f"Proxy CreaTurno Client: Redirigiendo a {url}")
+        
+        # Realizar la solicitud al servidor de CreaTurno
+        response = requests.get(url)
+        
+        # Si la solicitud fue exitosa, devolver el contenido
+        if response.status_code == 200:
+            # Modificar el tipo de contenido según la extensión del archivo
+            content_type = response.headers.get('Content-Type', 'text/html')
+            
+            # Crear una respuesta con el contenido y tipo de contenido correctos
+            from flask import Response
+            return Response(
+                response.content,
+                status=response.status_code,
+                content_type=content_type
+            )
+        else:
+            # Si la solicitud falló, devolver un error
+            return f"Error al cargar el cliente de CreaTurno: {response.status_code}", response.status_code
+            
+    except Exception as e:
+        logger.error(f"Error en proxy de CreaTurno: {str(e)}")
+        return f"Error en el proxy de CreaTurno: {str(e)}", 500
+
+@creaturno_bp.route('/api/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'])
+@login_required
+def api_proxy(path):
+    """
+    Actúa como proxy para las API de CreaTurno.
+    
+    Esta ruta permite acceder a las API de CreaTurno sin necesidad de
+    realizar solicitudes directamente al puerto 5001.
+    """
+    import requests
+    from flask import request, Response
+    
+    try:
+        # URL base del servidor de CreaTurno
+        base_url = f"http://localhost:5001/api/{path}"
+        
+        # Copiar los encabezados relevantes
+        headers = {}
+        for header in request.headers:
+            if header[0].lower() in ['content-type', 'authorization', 'accept']:
+                headers[header[0]] = header[1]
+        
+        # Agregar información de autenticación para el servidor CreaTurno
+        headers['X-User-ID'] = str(current_user.id)
+        headers['X-Username'] = current_user.username
+        headers['X-User-Role'] = current_user.role.name
+        
+        # Preparar los parámetros para la solicitud
+        kwargs = {
+            'headers': headers,
+        }
+        
+        # Agregar el cuerpo de la solicitud si existe
+        if request.method in ['POST', 'PUT']:
+            if request.is_json:
+                kwargs['json'] = request.get_json()
+            else:
+                kwargs['data'] = request.data
+        
+        # Realizar la solicitud al servidor CreaTurno con el método correspondiente
+        method = request.method.lower()
+        response = getattr(requests, method)(base_url, **kwargs)
+        
+        logger.info(f"Proxy CreaTurno API: {method.upper()} {base_url}, status: {response.status_code}")
+        
+        # Crear una respuesta con el contenido y tipo de contenido correctos
+        flask_response = Response(
+            response.content,
+            status=response.status_code,
+        )
+        
+        # Copiar las cabeceras de la respuesta original
+        for key, value in response.headers.items():
+            if key.lower() not in ['content-length', 'connection', 'transfer-encoding']:
+                flask_response.headers[key] = value
+        
+        return flask_response
+        
+    except Exception as e:
+        logger.error(f"Error en proxy API de CreaTurno: {str(e)}")
+        return jsonify({'error': f"Error en el proxy de CreaTurno: {str(e)}"}), 500
+
 @creaturno_bp.route('/restart')
 @login_required
 def restart():

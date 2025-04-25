@@ -103,10 +103,8 @@
                             loadingEl.style.display = 'none';
                             iframeEl.style.display = 'block';
                             
-                            // URL directa a la ruta del cliente usando window.location.hostname
-                            const host = window.location.hostname;
-                            const protocol = window.location.protocol;
-                            const clientUrl = `${protocol}//${host}:5001/creaturno-client/`;
+                            // URL del proxy a través de nuestra aplicación Flask
+                            const clientUrl = '{{ url_for("creaturno.client_proxy") }}';
                             console.log("Cargando CreaTurno desde:", clientUrl);
                             iframeEl.src = clientUrl;
                         }, 1000);

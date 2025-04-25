@@ -47,10 +47,10 @@ export async function syncUsers() {
   
   const { rows: productivaUsers } = await productivaDb.query(`
     SELECT id, username, password_hash as password, email, 
-           CONCAT(first_name, ' ', last_name) as full_name, 
-           role
+           TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))) as full_name, 
+           COALESCE(role, 'user') as role
     FROM users
-    WHERE is_active = TRUE
+    WHERE COALESCE(is_active, TRUE) = TRUE
   `);
   
   for (const user of productivaUsers) {
@@ -83,7 +83,7 @@ export async function syncCompanies() {
   const { rows: productivaCompanies } = await productivaDb.query(`
     SELECT id, name, address, phone, email, website, tax_id
     FROM companies
-    WHERE is_active = TRUE
+    WHERE COALESCE(is_active, TRUE) = TRUE
   `);
   
   for (const company of productivaCompanies) {
@@ -120,9 +120,9 @@ export async function syncEmployees() {
   const { rows: productivaEmployees } = await productivaDb.query(`
     SELECT id, first_name, last_name, company_id, position, 
            email, phone_number as phone, address, hire_date,
-           is_active, notes
+           COALESCE(is_active, TRUE) as is_active, notes
     FROM employees
-    WHERE is_active = TRUE
+    WHERE COALESCE(is_active, TRUE) = TRUE
   `);
   
   for (const emp of productivaEmployees) {

@@ -818,7 +818,7 @@ def employee_submit_expense():
     # Procesar formulario
     if form.validate_on_submit():
         # Buscar el token
-        token_code = form.token.data.strip().upper()
+        token_code = form.token.data.strip().upper() if form.token.data else ""
         token = MonthlyExpenseToken.query.filter_by(
             token=token_code,
             is_active=True
@@ -925,8 +925,9 @@ def employee_submit_expense():
     
     # Si hay token en el formulario, cargar las categorías disponibles
     if form.token.data:
+        token_code = form.token.data.strip().upper() if form.token.data else ""
         token = MonthlyExpenseToken.query.filter_by(
-            token=form.token.data.strip().upper(),
+            token=token_code,
             is_active=True
         ).first()
         

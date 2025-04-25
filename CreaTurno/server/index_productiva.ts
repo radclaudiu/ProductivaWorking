@@ -40,12 +40,19 @@ const server = createServer(app);
 // Middleware
 app.use(express.json());
 app.use(cookieParser());
-app.use(cors({
-  origin: '*',
+
+// Configurar CORS para permitir acceso desde cualquier origen
+const corsOptions = {
+  origin: function(origin, callback) {
+    // Permitir cualquier origen (producción y desarrollo)
+    callback(null, true);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With']
+};
+
+app.use(cors(corsOptions));
 
 // Configurar Vite para desarrollo
 async function setupVite() {

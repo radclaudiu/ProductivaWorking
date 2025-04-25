@@ -132,3 +132,18 @@ class PeriodSelectorForm(FlaskForm):
     ])
     
     submit = SubmitField('Filtrar')
+
+
+class MonthlyExpenseSearchForm(FlaskForm):
+    """
+    Formulario para buscar gastos mensuales.
+    """
+    query = StringField('Buscar', validators=[Optional()])
+    
+    category_id = SelectField('Categoría', coerce=int, validators=[Optional()])
+    
+    start_date = StringField('Desde (MM/YYYY)', validators=[Optional()])
+    
+    end_date = StringField('Hasta (MM/YYYY)', validators=[Optional()])
+    
+    submit = SubmitField('Buscar')

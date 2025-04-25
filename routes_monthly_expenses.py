@@ -18,6 +18,8 @@ from sqlalchemy.exc import SQLAlchemyError
 from werkzeug.utils import secure_filename
 
 from app import db
+
+# Import models
 from models import Company
 from models_monthly_expenses import ExpenseCategory, FixedExpense, MonthlyExpense, MonthlyExpenseSummary, MonthlyExpenseToken
 from forms_monthly_expenses import ExpenseCategoryForm, FixedExpenseForm, MonthlyExpenseForm, PeriodSelectorForm, MonthlyExpenseSearchForm
@@ -1007,8 +1009,23 @@ def employee_submit_expense():
             
             db.session.commit()
             
-            flash('¡Gasto enviado correctamente! Gracias por tu colaboración.', 'success')
-            return redirect(url_for('monthly_expenses.employee_submit_expense', token=token.token))
+            # Preparar datos para la página de confirmación
+            expense_info = {
+                'name': expense.name,
+                'amount': expense.amount,
+                'category_name': category.name if category else "Otro",
+                'expense_date': expense.expense_date,
+                'employee_name': expense.employee_name,
+                'token_name': token.name,
+                'has_receipt': receipt_image_path is not None
+            }
+            
+            # Redirigir a la página de confirmación
+            return render_template(
+                'monthly_expenses/expense_submitted.html',
+                expense=expense_info,
+                token_code=token.token
+            )
         
         except SQLAlchemyError as e:
             db.session.rollback()

@@ -152,17 +152,18 @@
                                 {% endif %}
                             </div>
                             
-                            {% if form.category_id.choices %}
+                            {# Ocultamos el selector de categoría y añadimos mensaje informativo #}
+                            {% if token_info and token_info.category_name %}
                             <div class="mb-3">
-                                {{ form.category_id.label(class="form-label") }}
-                                {{ form.category_id(class="form-select") }}
-                                {% if form.category_id.errors %}
-                                <div class="text-danger">
-                                    {% for error in form.category_id.errors %}
-                                    <small>{{ error }}</small>
-                                    {% endfor %}
+                                <label class="form-label">Categoría</label>
+                                <div class="card bg-secondary text-white p-2">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-tag me-2"></i>
+                                        <span>{{ token_info.category_name }}</span>
+                                    </div>
+                                    <small class="text-light">Categoría asignada automáticamente según configuración del token</small>
                                 </div>
-                                {% endif %}
+                                {{ form.category_id(type="hidden") }}
                             </div>
                             {% endif %}
                             

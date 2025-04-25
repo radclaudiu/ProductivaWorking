@@ -971,7 +971,8 @@ def employee_submit_expense():
             db.session.rollback()
             flash(f'Error al enviar el gasto: {str(e)}', 'danger')
     
-    # Si hay token en el formulario, cargar las categorías disponibles
+    # Si hay token en el formulario, preparar la información del token y categoría
+    token_info = None
     if form.token.data:
         token_code = form.token.data.strip().upper() if form.token.data else ""
         token = MonthlyExpenseToken.query.filter_by(
@@ -980,13 +981,22 @@ def employee_submit_expense():
         ).first()
         
         if token:
-            # Cargar categorías para el selector
-            categories = ExpenseCategory.query.filter(
-                (ExpenseCategory.company_id == token.company_id) | (ExpenseCategory.is_system == True)
-            ).order_by(ExpenseCategory.name).all()
+            # Si el token tiene categoría predeterminada, usarla directamente
+            category_name = "Otros (predeterminado)"
+            if token.category_id:
+                category = ExpenseCategory.query.get(token.category_id)
+                if category:
+                    category_name = category.name
+                    # Asignar la categoría al formulario
+                    form.category_id.data = category.id
             
-            form.category_id.choices = [(c.id, c.name) for c in categories]
-            form.category_id.choices.insert(0, (0, '-- Seleccionar categoría --'))
+            # Preparar información del token para la plantilla
+            token_info = {
+                'name': token.name,
+                'company_id': token.company_id,
+                'category_id': token.category_id,
+                'category_name': category_name
+            }
     
     return render_template('monthly_expenses/employee_submit.html', form=form)
 

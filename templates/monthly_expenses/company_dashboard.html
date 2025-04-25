@@ -1,0 +1,332 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="display-5 text-white mb-0">
+                <i class="bi bi-cash-coin me-2"></i>
+                Gastos Mensuales: {{ company.name }}
+            </h1>
+            <p class="text-muted">
+                {% if current_month_name %}
+                    Gestión de gastos para {{ current_month_name }} de {{ current_year }}
+                {% else %}
+                    Mes actual
+                {% endif %}
+            </p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('monthly_expenses.dashboard') }}" class="btn btn-outline-light">
+                <i class="bi bi-arrow-left me-1"></i> Volver
+            </a>
+        </div>
+    </div>
+
+    <!-- Resumen y navegación -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header bg-transparent border-bottom border-secondary">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-calendar-month me-2"></i>
+                            Gastos de {{ current_month_name }} {{ current_year }}
+                        </h5>
+                        <div class="btn-group">
+                            <a href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, month=current_month-1 if current_month > 1 else 12, year=current_year if current_month > 1 else current_year-1) }}" class="btn btn-sm btn-outline-dark">
+                                <i class="bi bi-arrow-left"></i> Mes Anterior
+                            </a>
+                            <button type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-calendar-event"></i> Navegar
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><h6 class="dropdown-header">Seleccionar Mes</h6></li>
+                                <li><a class="dropdown-item" href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id) }}">Mes Actual</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, month=1, year=current_year) }}">Enero</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, month=2, year=current_year) }}">Febrero</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, month=3, year=current_year) }}">Marzo</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, month=4, year=current_year) }}">Abril</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, month=5, year=current_year) }}">Mayo</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, month=6, year=current_year) }}">Junio</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, month=7, year=current_year) }}">Julio</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, month=8, year=current_year) }}">Agosto</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, month=9, year=current_year) }}">Septiembre</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, month=10, year=current_year) }}">Octubre</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, month=11, year=current_year) }}">Noviembre</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, month=12, year=current_year) }}">Diciembre</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('monthly_expenses.expenses_report', company_id=company.id) }}">Ver Informe Anual</a></li>
+                            </ul>
+                            <a href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, month=current_month+1 if current_month < 12 else 1, year=current_year if current_month < 12 else current_year+1) }}" class="btn btn-sm btn-outline-dark">
+                                Mes Siguiente <i class="bi bi-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-group list-group-flush bg-transparent">
+                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
+                                    <span><i class="bi bi-cash me-1"></i> Gastos Fijos:</span>
+                                    <span class="fw-bold text-danger">{{ format_currency(summary.fixed_expenses_total if summary else 0) }}</span>
+                                </li>
+                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
+                                    <span><i class="bi bi-cash-stack me-1"></i> Gastos Personalizados:</span>
+                                    <span class="fw-bold text-danger">{{ format_currency(summary.custom_expenses_total if summary else 0) }}</span>
+                                </li>
+                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
+                                    <span><i class="bi bi-cash-coin me-1"></i> Total Gastos:</span>
+                                    <span class="fw-bold text-danger">{{ format_currency(summary.total_amount if summary else 0) }}</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('monthly_expenses.new_monthly_expense', company_id=company.id, year=current_year, month=current_month) }}" class="btn btn-success">
+                                    <i class="bi bi-plus-circle me-2"></i> Nuevo Gasto
+                                </a>
+                                <form method="POST" action="{{ url_for('monthly_expenses.generate_monthly_from_fixed', company_id=company.id) }}" onsubmit="return confirm('¿Está seguro de querer generar gastos mensuales a partir de los gastos fijos? Esta acción no duplicará gastos ya existentes.');">
+                                    <input type="hidden" name="year" value="{{ current_year }}">
+                                    <input type="hidden" name="month" value="{{ current_month }}">
+                                    <button type="submit" class="btn btn-primary w-100">
+                                        <i class="bi bi-arrow-repeat me-2"></i> Generar desde Gastos Fijos
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Gastos por Categoría (gráfico) -->
+        <div class="col-md-6 mb-4">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-header bg-transparent border-bottom border-secondary">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-pie-chart me-2"></i>
+                        Gastos por Categoría
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if chart_data and monthly_expenses %}
+                        <canvas id="expensesChart" width="100" height="100"></canvas>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            No hay gastos registrados para este mes.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Acciones Rápidas -->
+        <div class="col-md-6 mb-4">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-header bg-transparent border-bottom border-secondary">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-lightning-charge me-2"></i>
+                        Acciones Rápidas
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('monthly_expenses.new_monthly_expense', company_id=company.id, year=current_year, month=current_month) }}" class="btn btn-success">
+                            <i class="bi bi-plus-circle me-2"></i> Nuevo Gasto
+                        </a>
+                        <a href="{{ url_for('monthly_expenses.manage_fixed_expenses', company_id=company.id) }}" class="btn btn-primary">
+                            <i class="bi bi-calendar-check me-2"></i> Gestionar Gastos Fijos
+                        </a>
+                        <a href="{{ url_for('monthly_expenses.manage_categories', company_id=company.id) }}" class="btn btn-warning">
+                            <i class="bi bi-tags me-2"></i> Gestionar Categorías
+                        </a>
+                        <a href="{{ url_for('monthly_expenses.expenses_report', company_id=company.id, year=current_year) }}" class="btn btn-info">
+                            <i class="bi bi-file-earmark-bar-graph me-2"></i> Ver Informe Anual
+                        </a>
+                        <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id) }}" class="btn btn-secondary">
+                            <i class="bi bi-cash-register me-2"></i> Ver Arqueos de Caja
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de Gastos Mensuales -->
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header bg-info text-dark">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-table me-2"></i>
+                            Gastos de {{ current_month_name }} {{ current_year }}
+                        </h5>
+                        <a href="{{ url_for('monthly_expenses.new_monthly_expense', company_id=company.id, year=current_year, month=current_month) }}" class="btn btn-sm btn-dark">
+                            <i class="bi bi-plus-circle me-1"></i> Nuevo Gasto
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    {% if monthly_expenses %}
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover table-striped mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Categoría</th>
+                                        <th>Importe</th>
+                                        <th>Tipo</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for expense in monthly_expenses %}
+                                        <tr>
+                                            <td>{{ expense.name }}</td>
+                                            <td>{{ expense.category.name if expense.category else "Sin categoría" }}</td>
+                                            <td class="text-danger">{{ format_currency(expense.amount) }}</td>
+                                            <td>
+                                                {% if expense.is_fixed %}
+                                                    <span class="badge bg-primary">Fijo</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning">Personalizado</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    <a href="{{ url_for('monthly_expenses.edit_monthly_expense', expense_id=expense.id) }}" 
+                                                       class="btn btn-sm btn-primary" title="Editar">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <button type="button" class="btn btn-sm btn-danger" 
+                                                            onclick="confirmDeleteExpense({{ expense.id }}, '{{ expense.name }}')"
+                                                            title="Eliminar">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                                <tfoot>
+                                    <tr class="bg-secondary">
+                                        <th colspan="2">Total</th>
+                                        <th class="text-danger">{{ format_currency(summary.total_amount if summary else 0) }}</th>
+                                        <th colspan="2"></th>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning m-3">
+                            No hay gastos registrados para este mes.
+                            <a href="{{ url_for('monthly_expenses.new_monthly_expense', company_id=company.id, year=current_year, month=current_month) }}" class="alert-link">Crear un nuevo gasto</a> o
+                            <a href="#" onclick="document.getElementById('generateForm').submit(); return false;" class="alert-link">generar desde gastos fijos</a>.
+                            <form id="generateForm" method="POST" action="{{ url_for('monthly_expenses.generate_monthly_from_fixed', company_id=company.id) }}" style="display:none;">
+                                <input type="hidden" name="year" value="{{ current_year }}">
+                                <input type="hidden" name="month" value="{{ current_month }}">
+                            </form>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario para eliminar gastos -->
+    <form id="deleteForm" method="POST" style="display: none;"></form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Inicializar gráfico de gastos por categoría
+    {% if chart_data and monthly_expenses %}
+        const ctx = document.getElementById('expensesChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: {{ chart_data | safe }}.labels,
+                datasets: [{
+                    data: {{ chart_data | safe }}.data,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.5)',
+                        'rgba(54, 162, 235, 0.5)',
+                        'rgba(255, 206, 86, 0.5)',
+                        'rgba(75, 192, 192, 0.5)',
+                        'rgba(153, 102, 255, 0.5)',
+                        'rgba(255, 159, 64, 0.5)',
+                        'rgba(199, 199, 199, 0.5)',
+                        'rgba(83, 102, 255, 0.5)',
+                        'rgba(40, 159, 64, 0.5)',
+                        'rgba(210, 105, 30, 0.5)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(199, 199, 199, 1)',
+                        'rgba(83, 102, 255, 1)',
+                        'rgba(40, 159, 64, 1)',
+                        'rgba(210, 105, 30, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#fff'
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed !== null) {
+                                    label += new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'EUR' }).format(context.parsed);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    {% endif %}
+
+    // Función para confirmar eliminación de gasto
+    function confirmDeleteExpense(id, name) {
+        if (confirm(`¿Está seguro de que desea eliminar el gasto "${name}"?`)) {
+            const form = document.getElementById('deleteForm');
+            form.action = "{{ url_for('monthly_expenses.delete_monthly_expense', expense_id=0) }}".replace('0', id);
+            form.submit();
+        }
+    }
+
+    // Marcar como activo el enlace de navegación
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.nav-link').forEach(function(navLink) {
+            if (navLink.getAttribute('href').includes('/monthly-expenses')) {
+                navLink.classList.add('active');
+            }
+        });
+    });
+</script>
+{% endblock %}

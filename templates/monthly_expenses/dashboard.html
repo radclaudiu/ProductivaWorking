@@ -1,0 +1,69 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="display-5 text-white mb-0">
+                <i class="bi bi-cash-coin me-2"></i>
+                Gestión de Gastos Mensuales
+            </h1>
+            <p class="text-muted">Administre los gastos fijos y personalizados de sus empresas</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('cash_register.dashboard') }}" class="btn btn-outline-light">
+                <i class="bi bi-arrow-left me-1"></i> Volver a Arqueos
+            </a>
+        </div>
+    </div>
+
+    {% if companies %}
+    <div class="row">
+        {% for company in companies %}
+        <div class="col-md-6 mb-4">
+            <div class="card bg-dark border-secondary h-100">
+                <div class="card-header bg-transparent border-bottom border-secondary">
+                    <h5 class="card-title mb-0">{{ company.name }}</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Gestione los gastos mensuales de {{ company.name }}</p>
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id) }}" class="btn btn-primary">
+                            <i class="bi bi-graph-up me-2"></i> Dashboard de Gastos
+                        </a>
+                        <a href="{{ url_for('monthly_expenses.manage_fixed_expenses', company_id=company.id) }}" class="btn btn-success">
+                            <i class="bi bi-calendar-check me-2"></i> Gastos Fijos Mensuales
+                        </a>
+                        <a href="{{ url_for('monthly_expenses.manage_categories', company_id=company.id) }}" class="btn btn-warning">
+                            <i class="bi bi-tags me-2"></i> Categorías de Gastos
+                        </a>
+                        <a href="{{ url_for('monthly_expenses.expenses_report', company_id=company.id) }}" class="btn btn-info">
+                            <i class="bi bi-file-earmark-bar-graph me-2"></i> Informes
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-warning">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        No tiene acceso a ninguna empresa. Contacte con un administrador.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Marcar como activo el enlace de navegación
+        document.querySelectorAll('.nav-link').forEach(function(navLink) {
+            if (navLink.getAttribute('href').includes('/monthly-expenses')) {
+                navLink.classList.add('active');
+            }
+        });
+    });
+</script>
+{% endblock %}

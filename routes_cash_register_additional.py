@@ -157,7 +157,7 @@ def register_routes(cash_register_bp):
         )
 
 
-    @cash_register_bp.route('/delete/<int:register_id>')
+    @cash_register_bp.route('/delete_register/<int:register_id>')
     @login_required
     def delete_register(register_id):
         """Elimina un arqueo de caja."""

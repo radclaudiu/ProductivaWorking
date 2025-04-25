@@ -478,7 +478,7 @@ def confirm_register(register_id):
 
 @cash_register_bp.route('/register/<int:register_id>/delete', methods=['POST'])
 @login_required
-def delete_register(register_id):
+def delete_cash_register(register_id):
     """
     Eliminar un arqueo de caja.
     
@@ -1066,3 +1066,13 @@ def generate_token_qr(token_id):
         logger.error(f"Error al generar QR para token {token_id}: {str(e)}")
         flash(f'Error al generar código QR: {str(e)}', 'danger')
         return redirect(url_for('cash_register.manage_tokens', company_id=token.company_id))
+
+
+# Importar y registrar las rutas adicionales desde routes_cash_register_additional.py
+try:
+    from routes_cash_register_additional import register_routes
+    cash_register_bp = register_routes(cash_register_bp)
+    logger.info("Rutas adicionales de arqueos de caja registradas correctamente")
+except Exception as e:
+    logger.error(f"Error al registrar rutas adicionales de arqueos de caja: {str(e)}")
+    logger.error(traceback.format_exc())

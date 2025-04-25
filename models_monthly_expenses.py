@@ -1,147 +1,117 @@
 """
 Modelos para el sistema de gestión de gastos mensuales.
 
-Este módulo define los modelos para gestionar los gastos mensuales fijos y personalizados
-de cada empresa para uso en el módulo de arqueos de caja y reportes.
+Este módulo define los modelos necesarios para el sistema de gastos mensuales,
+incluyendo categorías de gastos, gastos fijos, gastos mensuales y resúmenes.
 """
 
-from datetime import datetime
-from sqlalchemy import Column, Integer, Float, String, Boolean, Date, Text, ForeignKey, UniqueConstraint
-from sqlalchemy.orm import relationship
+import datetime
 from app import db
-
+from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, Text, DateTime, func
+from sqlalchemy.orm import relationship
 
 class ExpenseCategory(db.Model):
     """
-    Modelo para categorías de gastos.
+    Modelo para las categorías de gastos.
     
-    Define categorías predeterminadas y personalizadas para clasificar gastos.
+    Las categorías pueden ser del sistema (predefinidas) o personalizadas por cada empresa.
     """
     __tablename__ = 'expense_categories'
     
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
-    description = Column(Text)
-    is_system = Column(Boolean, default=False)  # True para categorías del sistema, False para personalizadas
-    company_id = Column(Integer, ForeignKey('companies.id'), nullable=True)  # Null para categorías globales
-    company = relationship('Company', backref='expense_categories')
+    description = Column(Text, nullable=True)
+    company_id = Column(Integer, ForeignKey('companies.id'), nullable=True)
+    is_system = Column(Boolean, default=False)  # True para categorías predefinidas del sistema
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
     
-    created_at = Column(db.DateTime, default=datetime.utcnow)
-    updated_at = Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    # Relaciones
+    company = relationship('Company', backref='expense_categories')
+    fixed_expenses = relationship('FixedExpense', back_populates='category', cascade='all, delete-orphan')
+    monthly_expenses = relationship('MonthlyExpense', back_populates='category', cascade='all, delete-orphan')
     
     def __repr__(self):
-        return f'<ExpenseCategory {self.name}>'
+        return f"<ExpenseCategory {self.name}>"
 
 
 class FixedExpense(db.Model):
     """
-    Modelo para gastos fijos mensuales.
+    Modelo para los gastos fijos mensuales.
     
-    Almacena la definición de gastos fijos que se replican cada mes
-    automáticamente.
+    Los gastos fijos son aquellos que se repiten cada mes (ej. alquiler, servicios).
     """
     __tablename__ = 'fixed_expenses'
     
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
-    description = Column(Text)
+    description = Column(Text, nullable=True)
     amount = Column(Float, nullable=False, default=0.0)
-    is_active = Column(Boolean, default=True)
+    company_id = Column(Integer, ForeignKey('companies.id'), nullable=False)
+    category_id = Column(Integer, ForeignKey('expense_categories.id'), nullable=False)
+    is_active = Column(Boolean, default=True)  # Para deshabilitar sin eliminar
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
     
     # Relaciones
-    company_id = Column(Integer, ForeignKey('companies.id'), nullable=False)
     company = relationship('Company', backref='fixed_expenses')
-    
-    category_id = Column(Integer, ForeignKey('expense_categories.id'))
-    category = relationship('ExpenseCategory', backref='fixed_expenses')
-    
-    created_by_id = Column(Integer, ForeignKey('users.id'))
-    created_by = relationship('User', foreign_keys=[created_by_id])
-    
-    created_at = Column(db.DateTime, default=datetime.utcnow)
-    updated_at = Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    category = relationship('ExpenseCategory', back_populates='fixed_expenses')
     
     def __repr__(self):
-        return f'<FixedExpense {self.name} ({self.amount})>'
+        return f"<FixedExpense {self.name} - {self.amount}€>"
 
 
 class MonthlyExpense(db.Model):
     """
-    Modelo para registro de gastos mensuales.
+    Modelo para los gastos mensuales personalizados.
     
-    Cada registro representa un gasto asignado a un mes específico,
-    ya sea un gasto fijo replicado automáticamente o un gasto personalizado.
+    Los gastos mensuales son aquellos que se registran específicamente para un mes
+    y pueden variar en cada período.
     """
     __tablename__ = 'monthly_expenses'
     
     id = Column(Integer, primary_key=True)
     name = Column(String(100), nullable=False)
-    description = Column(Text)
+    description = Column(Text, nullable=True)
     amount = Column(Float, nullable=False, default=0.0)
+    company_id = Column(Integer, ForeignKey('companies.id'), nullable=False)
+    category_id = Column(Integer, ForeignKey('expense_categories.id'), nullable=False)
     year = Column(Integer, nullable=False)
     month = Column(Integer, nullable=False)  # 1-12
-    
-    # True si proviene de un gasto fijo, False si es personalizado para este mes
-    is_fixed = Column(Boolean, default=False)
+    is_fixed = Column(Boolean, default=False)  # Indica si también es un gasto fijo
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
     
     # Relaciones
-    company_id = Column(Integer, ForeignKey('companies.id'), nullable=False)
     company = relationship('Company', backref='monthly_expenses')
-    
-    # Relación opcional con el gasto fijo de origen (si proviene de uno)
-    fixed_expense_id = Column(Integer, ForeignKey('fixed_expenses.id'), nullable=True)
-    fixed_expense = relationship('FixedExpense', backref='monthly_instances')
-    
-    category_id = Column(Integer, ForeignKey('expense_categories.id'))
-    category = relationship('ExpenseCategory', backref='monthly_expenses')
-    
-    created_by_id = Column(Integer, ForeignKey('users.id'))
-    created_by = relationship('User', foreign_keys=[created_by_id])
-    
-    created_at = Column(db.DateTime, default=datetime.utcnow)
-    updated_at = Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Solo un registro por gasto fijo por mes/año/empresa
-    __table_args__ = (
-        UniqueConstraint('company_id', 'fixed_expense_id', 'year', 'month', 
-                         name='uq_monthly_fixed_expense'),
-    )
+    category = relationship('ExpenseCategory', back_populates='monthly_expenses')
     
     def __repr__(self):
-        expense_type = "Fijo" if self.is_fixed else "Personalizado"
-        return f'<MonthlyExpense {self.name} ({self.amount}) - {expense_type} - {self.month}/{self.year}>'
+        return f"<MonthlyExpense {self.name} - {self.month}/{self.year} - {self.amount}€>"
 
 
 class MonthlyExpenseSummary(db.Model):
     """
-    Modelo para el resumen mensual de gastos.
+    Modelo para los resúmenes mensuales de gastos.
     
-    Almacena totales acumulados de gastos por mes para cada empresa,
-    para facilitar la generación de informes y reportes.
+    Almacena los totales calculados para facilitar la generación de informes
+    sin necesidad de recalcular los totales cada vez.
     """
     __tablename__ = 'monthly_expense_summaries'
     
     id = Column(Integer, primary_key=True)
+    company_id = Column(Integer, ForeignKey('companies.id'), nullable=False)
     year = Column(Integer, nullable=False)
     month = Column(Integer, nullable=False)  # 1-12
-    
-    # Totales acumulados
-    total_amount = Column(Float, nullable=False, default=0.0)
     fixed_expenses_total = Column(Float, nullable=False, default=0.0)
     custom_expenses_total = Column(Float, nullable=False, default=0.0)
+    total_amount = Column(Float, nullable=False, default=0.0)  # fixed + custom
+    number_of_expenses = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
     
-    # Metadatos
-    created_at = Column(db.DateTime, default=datetime.utcnow)
-    updated_at = Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
-    # Relación con la empresa
-    company_id = Column(Integer, ForeignKey('companies.id'), nullable=False)
+    # Relaciones
     company = relationship('Company', backref='monthly_expense_summaries')
     
-    # Solo un resumen por empresa, año y mes
-    __table_args__ = (
-        UniqueConstraint('company_id', 'year', 'month', name='uq_monthly_expense_summary'),
-    )
-    
     def __repr__(self):
-        return f'<MonthlyExpenseSummary {self.company.name if self.company else "Unknown"} - {self.month}/{self.year}>'
+        return f"<MonthlyExpenseSummary {self.month}/{self.year} - {self.total_amount}€>"

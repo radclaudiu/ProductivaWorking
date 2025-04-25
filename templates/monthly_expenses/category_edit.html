@@ -1,0 +1,86 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="display-5 text-white mb-0">
+                <i class="bi bi-pencil-square me-2"></i>
+                Editar Categoría
+            </h1>
+            <p class="text-muted">{{ category.name }} - {{ company.name }}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('monthly_expenses.manage_categories', company_id=company.id) }}" class="btn btn-outline-light">
+                <i class="bi bi-arrow-left me-1"></i> Volver a Categorías
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-pencil me-2"></i>
+                        Editar Categoría
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('monthly_expenses.edit_category', category_id=category.id) }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control bg-dark text-light border-secondary") }}
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control bg-dark text-light border-secondary", rows=3) }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <a href="{{ url_for('monthly_expenses.manage_categories', company_id=company.id) }}" class="btn btn-secondary w-100">
+                                    Cancelar
+                                </a>
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.submit(class="btn btn-warning text-dark w-100") }}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Marcar como activo el enlace de navegación
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.nav-link').forEach(function(navLink) {
+            if (navLink.getAttribute('href').includes('/monthly-expenses')) {
+                navLink.classList.add('active');
+            }
+        });
+    });
+</script>
+{% endblock %}

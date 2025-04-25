@@ -1,0 +1,189 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h1 class="display-5 text-white mb-0">
+                <i class="bi bi-tags me-2"></i>
+                Categorías de Gastos
+            </h1>
+            <p class="text-muted">{{ company.name }}</p>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id) }}" class="btn btn-outline-light">
+                <i class="bi bi-arrow-left me-1"></i> Volver al Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Formulario de Nueva Categoría -->
+        <div class="col-md-4 mb-4">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Nueva Categoría de Gasto
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('monthly_expenses.manage_categories', company_id=company.id) }}">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.name.label(class="form-label") }}
+                            {{ form.name(class="form-control bg-dark text-light border-secondary") }}
+                            {% if form.name.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.name.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.description.label(class="form-label") }}
+                            {{ form.description(class="form-control bg-dark text-light border-secondary", rows=3) }}
+                            {% if form.description.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.description.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-grid">
+                            {{ form.submit(class="btn btn-warning text-dark") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Lista de Categorías -->
+        <div class="col-md-8 mb-4">
+            <div class="card bg-dark border-secondary">
+                <div class="card-header bg-transparent border-bottom border-secondary">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-list-check me-2"></i>
+                        Categorías del Sistema
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if system_categories %}
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover table-striped mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Descripción</th>
+                                        <th>Tipo</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for category in system_categories %}
+                                        <tr>
+                                            <td>{{ category.name }}</td>
+                                            <td>{{ category.description }}</td>
+                                            <td><span class="badge bg-primary">Sistema</span></td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning m-3">
+                            No hay categorías del sistema disponibles.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="card bg-dark border-secondary mt-4">
+                <div class="card-header bg-transparent border-bottom border-secondary">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-list-check me-2"></i>
+                        Categorías Personalizadas
+                    </h5>
+                </div>
+                <div class="card-body p-0">
+                    {% if custom_categories %}
+                        <div class="table-responsive">
+                            <table class="table table-dark table-hover table-striped mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Descripción</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for category in custom_categories %}
+                                        <tr>
+                                            <td>{{ category.name }}</td>
+                                            <td>{{ category.description }}</td>
+                                            <td>
+                                                <div class="btn-group">
+                                                    <a href="{{ url_for('monthly_expenses.edit_category', category_id=category.id) }}" 
+                                                       class="btn btn-sm btn-primary" title="Editar">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <button type="button" class="btn btn-sm btn-danger" 
+                                                            onclick="confirmDeleteCategory({{ category.id }}, '{{ category.name }}')"
+                                                            title="Eliminar">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning m-3">
+                            No hay categorías personalizadas. Utilice el formulario para crear una.
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-transparent border-top border-secondary">
+                    <p class="text-muted mb-0 small">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Las categorías personalizadas son específicas para su empresa y se pueden usar en sus gastos.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formulario para eliminar categorías -->
+    <form id="deleteForm" method="POST" style="display: none;"></form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Función para confirmar eliminación de categoría
+    function confirmDeleteCategory(id, name) {
+        if (confirm(`¿Está seguro de que desea eliminar la categoría "${name}"?
+
+IMPORTANTE: Solo podrá eliminar categorías que no estén siendo utilizadas por ningún gasto.`)) {
+            const form = document.getElementById('deleteForm');
+            form.action = "{{ url_for('monthly_expenses.delete_category', category_id=0) }}".replace('0', id);
+            form.submit();
+        }
+    }
+
+    // Marcar como activo el enlace de navegación
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.nav-link').forEach(function(navLink) {
+            if (navLink.getAttribute('href').includes('/monthly-expenses')) {
+                navLink.classList.add('active');
+            }
+        });
+    });
+</script>
+{% endblock %}

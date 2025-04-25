@@ -84,6 +84,14 @@ def create_app(config_class='config.Config'):
     except ImportError as e:
         cash_register_bp = None
         logger.warning(f"No se pudo importar el blueprint de arqueos de caja: {str(e)}")
+        
+    # Importar blueprint de gastos mensuales
+    try:
+        from routes_monthly_expenses import monthly_expenses_bp
+        logger.info("Blueprint de gastos mensuales importado correctamente")
+    except ImportError as e:
+        monthly_expenses_bp = None
+        logger.warning(f"No se pudo importar el blueprint de gastos mensuales: {str(e)}")
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -103,6 +111,11 @@ def create_app(config_class='config.Config'):
     if cash_register_bp is not None:
         app.register_blueprint(cash_register_bp)
         logger.info("Blueprint de arqueos de caja registrado correctamente")
+        
+    # Registrar el blueprint de gastos mensuales
+    if monthly_expenses_bp is not None:
+        app.register_blueprint(monthly_expenses_bp)
+        logger.info("Blueprint de gastos mensuales registrado correctamente")
     
     # Inicializar el sistema de puntos de fichaje
     init_checkpoints_app(app)

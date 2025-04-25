@@ -1,111 +1,134 @@
 """
-Formularios para el módulo de gastos mensuales.
+Formularios para el sistema de gestión de gastos mensuales.
 
-Define los formularios WTForms para la gestión de categorías,
-gastos fijos y gastos mensuales.
+Este módulo define los formularios necesarios para el sistema de gastos mensuales,
+incluyendo formularios para categorías, gastos fijos y gastos mensuales.
 """
 
+import datetime
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, FloatField, BooleanField, IntegerField
-from wtforms import SelectField, HiddenField, SubmitField
-from wtforms.validators import DataRequired, Length, NumberRange, Optional
+from wtforms import StringField, TextAreaField, FloatField, BooleanField, SubmitField
+from wtforms import SelectField, HiddenField, IntegerField
+from wtforms.validators import DataRequired, Length, Optional, NumberRange
+
+# Para obtener lista de meses
+def get_months_list():
+    return [
+        (1, 'Enero'),
+        (2, 'Febrero'),
+        (3, 'Marzo'),
+        (4, 'Abril'),
+        (5, 'Mayo'),
+        (6, 'Junio'),
+        (7, 'Julio'),
+        (8, 'Agosto'),
+        (9, 'Septiembre'),
+        (10, 'Octubre'),
+        (11, 'Noviembre'),
+        (12, 'Diciembre')
+    ]
+
+# Para obtener lista de años (actual y 5 años atrás y adelante)
+def get_years_list():
+    current_year = datetime.datetime.now().year
+    return [(year, str(year)) for year in range(current_year - 5, current_year + 6)]
 
 
 class ExpenseCategoryForm(FlaskForm):
-    """Formulario para crear o editar categorías de gastos."""
+    """
+    Formulario para crear y editar categorías de gastos.
+    """
     name = StringField('Nombre', validators=[
-        DataRequired(message="El nombre es obligatorio"),
-        Length(min=2, max=100, message="El nombre debe tener entre 2 y 100 caracteres")
+        DataRequired(message="El nombre es obligatorio."),
+        Length(min=2, max=100, message="El nombre debe tener entre 2 y 100 caracteres.")
     ])
+    
     description = TextAreaField('Descripción', validators=[
         Optional(),
-        Length(max=500, message="La descripción no puede exceder los 500 caracteres")
+        Length(max=500, message="La descripción no puede exceder los 500 caracteres.")
     ])
-    company_id = HiddenField('ID de Empresa')
-    submit = SubmitField('Guardar')
+    
+    submit = SubmitField('Guardar Categoría')
 
 
 class FixedExpenseForm(FlaskForm):
-    """Formulario para crear o editar gastos fijos mensuales."""
+    """
+    Formulario para crear y editar gastos fijos.
+    """
+    company_id = HiddenField('ID Empresa')
+    
     name = StringField('Nombre', validators=[
-        DataRequired(message="El nombre es obligatorio"),
-        Length(min=2, max=100, message="El nombre debe tener entre 2 y 100 caracteres")
+        DataRequired(message="El nombre es obligatorio."),
+        Length(min=2, max=100, message="El nombre debe tener entre 2 y 100 caracteres.")
     ])
+    
     description = TextAreaField('Descripción', validators=[
         Optional(),
-        Length(max=500, message="La descripción no puede exceder los 500 caracteres")
+        Length(max=500, message="La descripción no puede exceder los 500 caracteres.")
     ])
+    
     amount = FloatField('Importe (€)', validators=[
-        DataRequired(message="El importe es obligatorio"),
-        NumberRange(min=0, message="El importe debe ser mayor o igual a 0")
+        DataRequired(message="El importe es obligatorio."),
+        NumberRange(min=0, message="El importe no puede ser negativo.")
     ])
+    
     category_id = SelectField('Categoría', coerce=int, validators=[
-        DataRequired(message="La categoría es obligatoria")
+        DataRequired(message="La categoría es obligatoria.")
     ])
-    is_active = BooleanField('Activo', default=True)
-    company_id = HiddenField('ID de Empresa')
-    submit = SubmitField('Guardar')
+    
+    is_active = BooleanField('Activo')
+    
+    submit = SubmitField('Guardar Gasto Fijo')
 
 
 class MonthlyExpenseForm(FlaskForm):
-    """Formulario para crear o editar gastos mensuales."""
-    name = StringField('Nombre', validators=[
-        DataRequired(message="El nombre es obligatorio"),
-        Length(min=2, max=100, message="El nombre debe tener entre 2 y 100 caracteres")
+    """
+    Formulario para crear y editar gastos mensuales.
+    """
+    company_id = HiddenField('ID Empresa')
+    
+    year = SelectField('Año', coerce=int, validators=[
+        DataRequired(message="El año es obligatorio.")
     ])
+    
+    month = SelectField('Mes', coerce=int, validators=[
+        DataRequired(message="El mes es obligatorio.")
+    ])
+    
+    name = StringField('Nombre', validators=[
+        DataRequired(message="El nombre es obligatorio."),
+        Length(min=2, max=100, message="El nombre debe tener entre 2 y 100 caracteres.")
+    ])
+    
     description = TextAreaField('Descripción', validators=[
         Optional(),
-        Length(max=500, message="La descripción no puede exceder los 500 caracteres")
+        Length(max=500, message="La descripción no puede exceder los 500 caracteres.")
     ])
+    
     amount = FloatField('Importe (€)', validators=[
-        DataRequired(message="El importe es obligatorio"),
-        NumberRange(min=0, message="El importe debe ser mayor o igual a 0")
+        DataRequired(message="El importe es obligatorio."),
+        NumberRange(min=0, message="El importe no puede ser negativo.")
     ])
+    
     category_id = SelectField('Categoría', coerce=int, validators=[
-        DataRequired(message="La categoría es obligatoria")
+        DataRequired(message="La categoría es obligatoria.")
     ])
-    is_fixed = BooleanField('Convertir en gasto fijo mensual', default=False)
-    year = IntegerField('Año', validators=[
-        DataRequired(message="El año es obligatorio"),
-        NumberRange(min=2020, max=2099, message="El año debe estar entre 2020 y 2099")
+    
+    is_fixed = BooleanField('Crear también como gasto fijo')
+    
+    submit = SubmitField('Guardar Gasto Mensual')
+
+
+class PeriodSelectorForm(FlaskForm):
+    """
+    Formulario para seleccionar un período (mes y año) para los informes.
+    """
+    year = SelectField('Año', coerce=int, validators=[
+        DataRequired(message="El año es obligatorio.")
     ])
+    
     month = SelectField('Mes', coerce=int, validators=[
-        DataRequired(message="El mes es obligatorio")
+        DataRequired(message="El mes es obligatorio.")
     ])
-    company_id = HiddenField('ID de Empresa')
-    submit = SubmitField('Guardar')
     
-    def __init__(self, *args, **kwargs):
-        super(MonthlyExpenseForm, self).__init__(*args, **kwargs)
-        self.month.choices = [
-            (1, 'Enero'), (2, 'Febrero'), (3, 'Marzo'), (4, 'Abril'),
-            (5, 'Mayo'), (6, 'Junio'), (7, 'Julio'), (8, 'Agosto'),
-            (9, 'Septiembre'), (10, 'Octubre'), (11, 'Noviembre'), (12, 'Diciembre')
-        ]
-
-
-class MonthlyExpenseSearchForm(FlaskForm):
-    """Formulario para buscar y filtrar gastos mensuales."""
-    year = IntegerField('Año', validators=[
-        Optional(),
-        NumberRange(min=2020, max=2099, message="El año debe estar entre 2020 y 2099")
-    ])
-    month = SelectField('Mes', coerce=int, validators=[Optional()])
-    category_id = SelectField('Categoría', coerce=int, validators=[Optional()])
-    company_id = SelectField('Empresa', coerce=int, validators=[Optional()])
-    is_fixed = SelectField('Tipo', coerce=int, validators=[Optional()])
-    submit = SubmitField('Buscar')
-    
-    def __init__(self, *args, **kwargs):
-        super(MonthlyExpenseSearchForm, self).__init__(*args, **kwargs)
-        self.month.choices = [
-            (0, 'Todos'),
-            (1, 'Enero'), (2, 'Febrero'), (3, 'Marzo'), (4, 'Abril'),
-            (5, 'Mayo'), (6, 'Junio'), (7, 'Julio'), (8, 'Agosto'),
-            (9, 'Septiembre'), (10, 'Octubre'), (11, 'Noviembre'), (12, 'Diciembre')
-        ]
-        self.is_fixed.choices = [
-            (0, 'Todos'),
-            (1, 'Gastos Fijos'),
-            (2, 'Gastos Personalizados')
-        ]
+    submit = SubmitField('Filtrar')

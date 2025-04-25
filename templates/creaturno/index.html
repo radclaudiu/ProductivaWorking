@@ -74,7 +74,7 @@
             <p class="mt-2">Cargando CreaTurno...</p>
         </div>
         
-        <iframe id="creaturno-frame" style="display:none;" src="http://localhost:3000/creaturno-client/" frameborder="0"></iframe>
+        <iframe id="creaturno-frame" style="display:none;" src="" frameborder="0"></iframe>
     </div>
 </div>
 {% endblock %}
@@ -103,18 +103,10 @@
                             loadingEl.style.display = 'none';
                             iframeEl.style.display = 'block';
                             
-                            // Cargar el iframe con la URL correcta (ajustada para Replit)
-                            const host = window.location.hostname;
-                            const port = 3000;  // Puerto del servidor CreaTurno
-                            const protocol = window.location.protocol;
-                            
-                            // En Replit, la URL sería algo como https://repl-name-3000.username.repl.co
-                            let clientUrl = `${protocol}//${host.replace(/:[0-9]+$/, '')}-${port}.${host.includes('.') ? host.split('.').slice(1).join('.') : host}/creaturno-client/`;
-                            
-                            // Para desarrollo local, usamos localhost
-                            if (host === 'localhost' || host === '127.0.0.1') {
-                                clientUrl = `${protocol}//${host}:${port}/creaturno-client/`;
-                            }
+                            // Cargar el iframe con la URL correcta
+                            // El servidor ahora sirve los archivos estáticos desde /creaturno-client/
+                            // La URL es relativa al host actual, no necesitamos usar el puerto 3000
+                            const clientUrl = `/creaturno-client/`;
                             
                             iframeEl.src = clientUrl;
                         }, 1000);

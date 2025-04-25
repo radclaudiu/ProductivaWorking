@@ -8,8 +8,14 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import path from "path";
+import { fileURLToPath } from "url";
 import { isAuthenticated, isAdmin, hasCompanyAccess, getCurrentUser } from "./auth_productiva.js";
 import { db, employees, locations, companies, creaturnoShifts, creaturnoShiftTemplates, creaturnoShiftRoles, eq, and, gte, lte } from "./storage_productiva.js";
+
+// Obtener la ruta del directorio actual en ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Crear aplicación Express
 const app = express();
@@ -22,6 +28,10 @@ app.use(cors({
   origin: true,
   credentials: true,
 }));
+
+// Servir archivos estáticos desde la carpeta client
+const clientPath = path.join(__dirname, '..', 'client');
+app.use('/creaturno-client', express.static(clientPath));
 
 // Ruta para verificar el estado del servidor
 app.get("/api/health", (req, res) => {

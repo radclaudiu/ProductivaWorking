@@ -699,6 +699,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // ================================================
   // Endpoints de sincronización con Productiva
   // ================================================
+  
+  // Endpoint para verificar la conexión con Productiva
+  app.get("/api/sync/status", isAdmin, async (req, res) => {
+    try {
+      const startTime = Date.now();
+      const { rows } = await productivaDb.query("SELECT current_timestamp as timestamp");
+      const endTime = Date.now();
+      
+      res.json({
+        success: true,
+        connected: true,
+        timestamp: new Date().toISOString(),
+        serverTime: rows[0]?.timestamp || null,
+        latency: `${endTime - startTime}ms`,
+        message: "Conexión con Productiva establecida correctamente"
+      });
+    } catch (error) {
+      console.error("Error verificando conexión con Productiva:", error);
+      res.status(500).json({
+        success: false,
+        connected: false,
+        timestamp: new Date().toISOString(),
+        message: "Error al conectar con Productiva",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
 
   // Endpoint de sincronización completa (limpia todas las tablas y sincroniza)
   app.post("/api/sync", isAdmin, async (req, res) => {

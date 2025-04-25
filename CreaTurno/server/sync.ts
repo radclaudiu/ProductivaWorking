@@ -3,11 +3,24 @@ import { Pool } from '@neondatabase/serverless';
 import { sql } from 'drizzle-orm';
 import { companies, employees, users, userCompanies } from '@shared/schema';
 import { eq } from 'drizzle-orm';
+import { pbkdf2Sync } from 'crypto';
+
+// Configuración mejorada para la conexión a Productiva
+const PRODUCTIVA_CONNECTION_OPTIONS = {
+  connectionString: process.env.PRODUCTIVA_DB_URL,
+  connectionTimeoutMillis: 10000,  // 10 segundos timeout para conexión
+  idleTimeoutMillis: 30000,        // 30 segundos antes de desconectar conexiones inactivas
+  max: 10,                         // máximo 10 clientes en el pool
+  statement_timeout: 60000,        // timeout para consultas (60 segundos)
+};
+
+// Verifica que la URL de conexión esté definida
+if (!process.env.PRODUCTIVA_DB_URL) {
+  console.error("ADVERTENCIA: No se ha definido PRODUCTIVA_DB_URL. La sincronización con Productiva no funcionará.");
+}
 
 // Conexión a Productiva
-export const productivaDb = new Pool({ 
-  connectionString: process.env.PRODUCTIVA_DB_URL 
-});
+export const productivaDb = new Pool(PRODUCTIVA_CONNECTION_OPTIONS);
 
 // Función de limpieza de tablas para reinicio completo
 export async function truncateTables() {
@@ -278,3 +291,33 @@ export async function updateSequences() {
     }
   }
 }
+
+// Función para cerrar conexiones de base de datos
+export async function closeConnections() {
+  try {
+    console.log("Cerrando conexiones a Productiva...");
+    await productivaDb.end();
+    console.log("Conexiones a Productiva cerradas correctamente");
+    return true;
+  } catch (error) {
+    console.error("Error al cerrar conexiones:", error);
+    return false;
+  }
+}
+
+// Manejo de cierre limpio de conexiones al apagar la aplicación
+process.on('SIGTERM', () => {
+  console.log('Recibida señal SIGTERM, cerrando conexiones...');
+  closeConnections().then(() => {
+    console.log('Conexiones cerradas correctamente, terminando proceso');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('Recibida señal SIGINT, cerrando conexiones...');
+  closeConnections().then(() => {
+    console.log('Conexiones cerradas correctamente, terminando proceso');
+    process.exit(0);
+  });
+});

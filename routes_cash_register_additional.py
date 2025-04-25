@@ -117,13 +117,13 @@ def register_routes(cash_register_bp):
             
         # Calcular totales
         totals = {
-            'cash': sum(r.cash_amount for r in registers),
-            'card': sum(r.card_amount for r in registers),
-            'delivery_cash': sum(r.delivery_cash_amount for r in registers),
-            'delivery_online': sum(r.delivery_online_amount for r in registers),
-            'check': sum(r.check_amount for r in registers),
-            'expenses': sum(r.expenses_amount for r in registers),
-            'total': sum(r.total_amount for r in registers)
+            'cash_amount': sum(r.cash_amount for r in registers),
+            'card_amount': sum(r.card_amount for r in registers),
+            'delivery_cash_amount': sum(r.delivery_cash_amount for r in registers),
+            'delivery_online_amount': sum(r.delivery_online_amount for r in registers),
+            'check_amount': sum(r.check_amount for r in registers),
+            'expenses_amount': sum(r.expenses_amount for r in registers),
+            'total_amount': sum(r.total_amount for r in registers)
         }
         
         return render_template(

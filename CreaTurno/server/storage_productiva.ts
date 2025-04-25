@@ -1,854 +1,197 @@
-import { eq, and } from "drizzle-orm";
-import { 
-  Employee, InsertEmployee,
-  Shift, InsertShift,
-  Schedule, InsertSchedule,
-  User, InsertUser,
-  Company, InsertCompany,
-  UserCompany, InsertUserCompany,
-  ScheduleTemplate, InsertScheduleTemplate
-} from "@shared/schema";
-import { IStorage } from "./storage";
-import { pool } from "./db";
+/**
+ * Adaptador de almacenamiento para integrar CreaTurno con Productiva
+ * 
+ * Este archivo adapta el sistema de almacenamiento de CreaTurno para usar
+ * las tablas y modelos de Productiva en lugar de sus propias estructuras.
+ */
 
-// Adaptador para la base de datos PostgreSQL de Productiva
-export class ProductivaAdapter implements IStorage {
-  // Realiza consultas directas a la base de datos de Productiva
-  private async query(text: string, params: any[] = []): Promise<any[]> {
-    const client = await pool.connect();
-    try {
-      const result = await client.query(text, params);
-      return result.rows;
-    } finally {
-      client.release();
-    }
-  }
+import { drizzle } from "drizzle-orm/node-postgres";
+import { pgTable, serial, varchar, timestamp, integer, text, boolean, time, array } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+import { eq, and, or, inArray, gt, lt, gte, lte } from "drizzle-orm";
+import { Pool } from "pg";
 
-  // User operations - Convertir usuarios de Productiva al formato de CreaTurno
-  async getUser(id: number): Promise<User | undefined> {
-    const rows = await this.query(`
-      SELECT id, username, email, role, first_name || ' ' || last_name as full_name
-      FROM users
-      WHERE id = $1
-    `, [id]);
-    
-    if (rows.length === 0) return undefined;
-    
-    return {
-      id: rows[0].id,
-      username: rows[0].username,
-      email: rows[0].email,
-      password: "", // No exponemos la contraseña
-      fullName: rows[0].full_name,
-      role: this.mapUserRole(rows[0].role),
-      createdAt: new Date()
-    };
-  }
-  
-  // Mapea los roles de usuario de Productiva a CreaTurno
-  private mapUserRole(role: string): string {
-    switch (role) {
-      case "admin":
-        return "admin";
-      case "gerente":
-        return "manager";
-      default:
-        return "member";
-    }
-  }
-  
-  async getUserByEmail(email: string): Promise<User | undefined> {
-    const rows = await this.query(`
-      SELECT id, username, email, role, first_name || ' ' || last_name as full_name
-      FROM users
-      WHERE email = $1
-    `, [email.toLowerCase()]);
-    
-    if (rows.length === 0) return undefined;
-    
-    return {
-      id: rows[0].id,
-      username: rows[0].username,
-      email: rows[0].email,
-      password: "", // No exponemos la contraseña
-      fullName: rows[0].full_name,
-      role: this.mapUserRole(rows[0].role),
-      createdAt: new Date()
-    };
-  }
-  
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const rows = await this.query(`
-      SELECT id, username, email, role, first_name || ' ' || last_name as full_name
-      FROM users
-      WHERE username = $1
-    `, [username]);
-    
-    if (rows.length === 0) return undefined;
-    
-    return {
-      id: rows[0].id,
-      username: rows[0].username,
-      email: rows[0].email,
-      password: "", // No exponemos la contraseña
-      fullName: rows[0].full_name,
-      role: this.mapUserRole(rows[0].role),
-      createdAt: new Date()
-    };
-  }
-  
-  // En el adaptador no creamos usuarios directamente, lo hace el sistema principal
-  async createUser(user: InsertUser): Promise<User> {
-    throw new Error("No se pueden crear usuarios directamente desde CreaTurno");
-  }
-  
-  async updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined> {
-    throw new Error("No se pueden actualizar usuarios directamente desde CreaTurno");
-  }
-  
-  async deleteUser(id: number): Promise<boolean> {
-    throw new Error("No se pueden eliminar usuarios directamente desde CreaTurno");
-  }
-  
-  async getAllUsers(): Promise<User[]> {
-    const rows = await this.query(`
-      SELECT id, username, email, role, first_name || ' ' || last_name as full_name
-      FROM users
-      WHERE is_active = true
-      ORDER BY username
-    `);
-    
-    return rows.map(row => ({
-      id: row.id,
-      username: row.username,
-      email: row.email,
-      password: "", // No exponemos la contraseña
-      fullName: row.full_name,
-      role: this.mapUserRole(row.role),
-      createdAt: new Date()
-    }));
-  }
-  
-  // Company operations - Convertir empresas de Productiva al formato de CreaTurno
-  async getCompanies(userId?: number): Promise<Company[]> {
-    let query = `
-      SELECT c.id, c.name, c.address, c.city, c.postal_code, c.country, 
-             c.phone, c.email, c.website, c.tax_id, c.created_at
-      FROM companies c
-      WHERE c.is_active = true
-    `;
-    
-    const params = [];
-    
-    if (userId) {
-      // Filtrar por empresas a las que pertenece el usuario
-      query = `
-        SELECT c.id, c.name, c.address, c.city, c.postal_code, c.country, 
-               c.phone, c.email, c.website, c.tax_id, c.created_at
-        FROM companies c
-        JOIN user_companies uc ON c.id = uc.company_id
-        WHERE c.is_active = true AND uc.user_id = $1
-      `;
-      params.push(userId);
-    }
-    
-    query += " ORDER BY c.name";
-    
-    const rows = await this.query(query, params);
-    
-    return rows.map(row => ({
-      id: row.id,
-      name: row.name,
-      description: "",
-      address: row.address || "",
-      phone: row.phone || "",
-      email: row.email || "",
-      website: row.website || "",
-      taxId: row.tax_id || "",
-      startHour: 9,
-      endHour: 22,
-      logoUrl: "",
-      isActive: true,
-      createdAt: row.created_at,
-      updatedAt: row.created_at,
-      createdBy: null
-    }));
-  }
-  
-  async getCompany(id: number): Promise<Company | undefined> {
-    const rows = await this.query(`
-      SELECT c.id, c.name, c.address, c.city, c.postal_code, c.country, 
-             c.phone, c.email, c.website, c.tax_id, c.created_at
-      FROM companies c
-      WHERE c.id = $1 AND c.is_active = true
-    `, [id]);
-    
-    if (rows.length === 0) return undefined;
-    
-    return {
-      id: rows[0].id,
-      name: rows[0].name,
-      description: "",
-      address: rows[0].address || "",
-      phone: rows[0].phone || "",
-      email: rows[0].email || "",
-      website: rows[0].website || "",
-      taxId: rows[0].tax_id || "",
-      startHour: 9,
-      endHour: 22,
-      logoUrl: "",
-      isActive: true,
-      createdAt: rows[0].created_at,
-      updatedAt: rows[0].created_at,
-      createdBy: null
-    };
-  }
-  
-  // En el adaptador no creamos empresas directamente, lo hace el sistema principal
-  async createCompany(company: InsertCompany): Promise<Company> {
-    throw new Error("No se pueden crear empresas directamente desde CreaTurno");
-  }
-  
-  async updateCompany(id: number, company: Partial<InsertCompany>): Promise<Company | undefined> {
-    throw new Error("No se pueden actualizar empresas directamente desde CreaTurno");
-  }
-  
-  async deleteCompany(id: number): Promise<boolean> {
-    throw new Error("No se pueden eliminar empresas directamente desde CreaTurno");
-  }
-  
-  // User-Company relations - Obtener relaciones usuario-empresa de Productiva
-  async getUserCompanies(userId: number): Promise<UserCompany[]> {
-    const rows = await this.query(`
-      SELECT uc.user_id, uc.company_id, 'member' as role, NOW() as created_at
-      FROM user_companies uc
-      WHERE uc.user_id = $1
-    `, [userId]);
-    
-    return rows.map(row => ({
-      id: 0, // ID sintético
-      userId: row.user_id,
-      companyId: row.company_id,
-      role: row.role,
-      createdAt: row.created_at
-    }));
-  }
-  
-  async getCompanyUsers(companyId: number): Promise<UserCompany[]> {
-    const rows = await this.query(`
-      SELECT uc.user_id, uc.company_id, 'member' as role, NOW() as created_at
-      FROM user_companies uc
-      WHERE uc.company_id = $1
-    `, [companyId]);
-    
-    return rows.map(row => ({
-      id: 0, // ID sintético
-      userId: row.user_id,
-      companyId: row.company_id,
-      role: row.role,
-      createdAt: row.created_at
-    }));
-  }
-  
-  // En el adaptador no modificamos relaciones usuario-empresa, lo hace el sistema principal
-  async assignUserToCompany(userId: number, companyId: number, role: string): Promise<UserCompany> {
-    throw new Error("No se pueden modificar relaciones usuario-empresa directamente desde CreaTurno");
-  }
-  
-  async removeUserFromCompany(userId: number, companyId: number): Promise<boolean> {
-    throw new Error("No se pueden eliminar relaciones usuario-empresa directamente desde CreaTurno");
-  }
-  
-  // Employee operations - Convertir empleados de Productiva al formato de CreaTurno
-  async getEmployees(companyId?: number): Promise<Employee[]> {
-    let query = `
-      SELECT e.id, e.first_name || ' ' || e.last_name as name, e.position as role,
-             e.company_id, e.email, e.phone, e.address, e.start_date as hire_date,
-             e.contract_type, e.bank_account, e.is_active
-      FROM employees e
-      WHERE e.is_active = true
-    `;
-    
-    const params = [];
-    
-    if (companyId) {
-      query += " AND e.company_id = $1";
-      params.push(companyId);
-    }
-    
-    query += " ORDER BY e.first_name, e.last_name";
-    
-    const rows = await this.query(query, params);
-    
-    return rows.map(row => ({
-      id: row.id,
-      name: row.name,
-      role: row.role || "",
-      companyId: row.company_id,
-      email: row.email || "",
-      phone: row.phone || "",
-      address: row.address || "",
-      hireDate: row.hire_date,
-      contractType: row.contract_type || "",
-      hourlyRate: 0,
-      maxHoursPerWeek: 40,
-      preferredDays: "",
-      unavailableDays: "",
-      isActive: row.is_active,
-      notes: "",
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }));
-  }
-  
-  async getEmployee(id: number): Promise<Employee | undefined> {
-    const rows = await this.query(`
-      SELECT e.id, e.first_name || ' ' || e.last_name as name, e.position as role,
-             e.company_id, e.email, e.phone, e.address, e.start_date as hire_date,
-             e.contract_type, e.bank_account, e.is_active
-      FROM employees e
-      WHERE e.id = $1
-    `, [id]);
-    
-    if (rows.length === 0) return undefined;
-    
-    return {
-      id: rows[0].id,
-      name: rows[0].name,
-      role: rows[0].role || "",
-      companyId: rows[0].company_id,
-      email: rows[0].email || "",
-      phone: rows[0].phone || "",
-      address: rows[0].address || "",
-      hireDate: rows[0].hire_date,
-      contractType: rows[0].contract_type || "",
-      hourlyRate: 0,
-      maxHoursPerWeek: 40,
-      preferredDays: "",
-      unavailableDays: "",
-      isActive: rows[0].is_active,
-      notes: "",
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-  }
-  
-  // En CreaTurno sí podemos crear empleados, pero lo sincronizamos con la base de datos principal
-  async createEmployee(employee: InsertEmployee): Promise<Employee> {
-    throw new Error("No se pueden crear empleados directamente desde CreaTurno");
-  }
-  
-  async updateEmployee(id: number, employee: Partial<InsertEmployee>): Promise<Employee | undefined> {
-    throw new Error("No se pueden actualizar empleados directamente desde CreaTurno");
-  }
-  
-  async deleteEmployee(id: number): Promise<boolean> {
-    throw new Error("No se pueden eliminar empleados directamente desde CreaTurno");
-  }
-  
-  // Shift operations - Estas operaciones sí las gestionamos en CreaTurno
-  async getShifts(date?: string, employeeId?: number, companyId?: number): Promise<Shift[]> {
-    let query = `
-      SELECT s.id, s.employee_id, s.date, s.start_time, s.end_time, 
-             s.notes, s.status, s.break_time, s.schedule_id
-      FROM shifts s
-    `;
-    
-    const whereConditions = [];
-    const params = [];
-    let paramIndex = 1;
-    
-    if (date) {
-      whereConditions.push(`s.date = $${paramIndex++}`);
-      params.push(date);
-    }
-    
-    if (employeeId) {
-      whereConditions.push(`s.employee_id = $${paramIndex++}`);
-      params.push(employeeId);
-    }
-    
-    if (companyId) {
-      // Para filtrar por compañía, necesitamos unir con la tabla employees
-      query += " JOIN employees e ON s.employee_id = e.id";
-      whereConditions.push(`e.company_id = $${paramIndex++}`);
-      params.push(companyId);
-    }
-    
-    if (whereConditions.length > 0) {
-      query += " WHERE " + whereConditions.join(" AND ");
-    }
-    
-    query += " ORDER BY s.date, s.start_time";
-    
-    const rows = await this.query(query, params);
-    
-    return rows.map(row => ({
-      id: row.id,
-      employeeId: row.employee_id,
-      date: row.date,
-      startTime: row.start_time,
-      endTime: row.end_time,
-      notes: row.notes || "",
-      status: row.status || "scheduled",
-      breakTime: row.break_time || 0,
-      actualStartTime: null,
-      actualEndTime: null,
-      totalHours: null,
-      scheduleId: row.schedule_id,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }));
-  }
-  
-  async getShift(id: number): Promise<Shift | undefined> {
-    const rows = await this.query(`
-      SELECT s.id, s.employee_id, s.date, s.start_time, s.end_time, 
-             s.notes, s.status, s.break_time, s.schedule_id
-      FROM shifts s
-      WHERE s.id = $1
-    `, [id]);
-    
-    if (rows.length === 0) return undefined;
-    
-    return {
-      id: rows[0].id,
-      employeeId: rows[0].employee_id,
-      date: rows[0].date,
-      startTime: rows[0].start_time,
-      endTime: rows[0].end_time,
-      notes: rows[0].notes || "",
-      status: rows[0].status || "scheduled",
-      breakTime: rows[0].break_time || 0,
-      actualStartTime: null,
-      actualEndTime: null,
-      totalHours: null,
-      scheduleId: rows[0].schedule_id,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-  }
-  
-  async createShift(shift: InsertShift): Promise<Shift> {
-    const result = await this.query(`
-      INSERT INTO shifts (employee_id, date, start_time, end_time, notes, status, break_time, schedule_id)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING id
-    `, [
-      shift.employeeId, 
-      shift.date, 
-      shift.startTime, 
-      shift.endTime, 
-      shift.notes || "", 
-      shift.status || "scheduled", 
-      shift.breakTime || 0,
-      shift.scheduleId
-    ]);
-    
-    const id = result[0].id;
-    
-    return {
-      id,
-      ...shift,
-      actualStartTime: null,
-      actualEndTime: null,
-      totalHours: null,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-  }
-  
-  async updateShift(id: number, shift: Partial<InsertShift>): Promise<Shift | undefined> {
-    // Construir la consulta de actualización dinámicamente
-    const updates = [];
-    const values = [];
-    let paramIndex = 1;
-    
-    if (shift.employeeId !== undefined) {
-      updates.push(`employee_id = $${paramIndex++}`);
-      values.push(shift.employeeId);
-    }
-    
-    if (shift.date !== undefined) {
-      updates.push(`date = $${paramIndex++}`);
-      values.push(shift.date);
-    }
-    
-    if (shift.startTime !== undefined) {
-      updates.push(`start_time = $${paramIndex++}`);
-      values.push(shift.startTime);
-    }
-    
-    if (shift.endTime !== undefined) {
-      updates.push(`end_time = $${paramIndex++}`);
-      values.push(shift.endTime);
-    }
-    
-    if (shift.notes !== undefined) {
-      updates.push(`notes = $${paramIndex++}`);
-      values.push(shift.notes);
-    }
-    
-    if (shift.status !== undefined) {
-      updates.push(`status = $${paramIndex++}`);
-      values.push(shift.status);
-    }
-    
-    if (shift.breakTime !== undefined) {
-      updates.push(`break_time = $${paramIndex++}`);
-      values.push(shift.breakTime);
-    }
-    
-    if (shift.scheduleId !== undefined) {
-      updates.push(`schedule_id = $${paramIndex++}`);
-      values.push(shift.scheduleId);
-    }
-    
-    if (updates.length === 0) {
-      return await this.getShift(id);
-    }
-    
-    values.push(id);
-    
-    const result = await this.query(`
-      UPDATE shifts
-      SET ${updates.join(", ")}
-      WHERE id = $${paramIndex}
-      RETURNING id
-    `, values);
-    
-    if (result.length === 0) return undefined;
-    
-    return await this.getShift(id);
-  }
-  
-  async deleteShift(id: number): Promise<boolean> {
-    const result = await this.query(`
-      DELETE FROM shifts
-      WHERE id = $1
-      RETURNING id
-    `, [id]);
-    
-    return result.length > 0;
-  }
-  
-  // Schedule operations - Estas operaciones sí las gestionamos en CreaTurno
-  async getSchedules(companyId?: number): Promise<Schedule[]> {
-    let query = `
-      SELECT s.id, s.name, s.description, s.company_id, s.template_id,
-             s.start_date, s.end_date, s.status, s.department, s.created_by,
-             s.created_at
-      FROM schedules s
-    `;
-    
-    const params = [];
-    
-    if (companyId) {
-      query += " WHERE s.company_id = $1";
-      params.push(companyId);
-    }
-    
-    query += " ORDER BY s.created_at DESC";
-    
-    const rows = await this.query(query, params);
-    
-    return rows.map(row => ({
-      id: row.id,
-      name: row.name,
-      description: row.description || "",
-      companyId: row.company_id,
-      templateId: row.template_id,
-      startDate: row.start_date,
-      endDate: row.end_date,
-      status: row.status || "draft",
-      department: row.department,
-      createdBy: row.created_by,
-      createdAt: row.created_at,
-      updatedAt: row.created_at
-    }));
-  }
-  
-  async getSchedule(id: number): Promise<Schedule | undefined> {
-    const rows = await this.query(`
-      SELECT s.id, s.name, s.description, s.company_id, s.template_id,
-             s.start_date, s.end_date, s.status, s.department, s.created_by,
-             s.created_at
-      FROM schedules s
-      WHERE s.id = $1
-    `, [id]);
-    
-    if (rows.length === 0) return undefined;
-    
-    return {
-      id: rows[0].id,
-      name: rows[0].name,
-      description: rows[0].description || "",
-      companyId: rows[0].company_id,
-      templateId: rows[0].template_id,
-      startDate: rows[0].start_date,
-      endDate: rows[0].end_date,
-      status: rows[0].status || "draft",
-      department: rows[0].department,
-      createdBy: rows[0].created_by,
-      createdAt: rows[0].created_at,
-      updatedAt: rows[0].created_at
-    };
-  }
-  
-  async createSchedule(schedule: InsertSchedule): Promise<Schedule> {
-    const result = await this.query(`
-      INSERT INTO schedules (name, description, company_id, template_id, start_date, end_date, status, department, created_by)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      RETURNING id, created_at
-    `, [
-      schedule.name,
-      schedule.description || "",
-      schedule.companyId,
-      schedule.templateId || null,
-      schedule.startDate || null,
-      schedule.endDate || null,
-      schedule.status || "draft",
-      schedule.department || null,
-      schedule.createdBy || null
-    ]);
-    
-    const id = result[0].id;
-    const createdAt = result[0].created_at;
-    
-    return {
-      id,
-      ...schedule,
-      createdAt,
-      updatedAt: createdAt
-    };
-  }
-  
-  async deleteSchedule(id: number): Promise<boolean> {
-    // Primero eliminar los turnos asociados a este horario
-    await this.query(`
-      DELETE FROM shifts
-      WHERE schedule_id = $1
-    `, [id]);
-    
-    // Luego eliminar el horario
-    const result = await this.query(`
-      DELETE FROM schedules
-      WHERE id = $1
-      RETURNING id
-    `, [id]);
-    
-    return result.length > 0;
-  }
-  
-  // Estas operaciones específicas de CreaTurno
-  async getScheduleTemplates(userId?: number): Promise<ScheduleTemplate[]> {
-    let query = `
-      SELECT t.id, t.name, t.description, t.is_default, t.start_hour, t.end_hour,
-             t.time_increment, t.is_global, t.company_id, t.created_by, t.created_at
-      FROM schedule_templates t
-    `;
-    
-    const whereConditions = [];
-    const params = [];
-    let paramIndex = 1;
-    
-    if (userId) {
-      // Para un usuario regular, obtener sus plantillas personales y las globales
-      whereConditions.push(`(t.created_by = $${paramIndex++} OR t.is_global = true)`);
-      params.push(userId);
-    }
-    
-    if (whereConditions.length > 0) {
-      query += " WHERE " + whereConditions.join(" AND ");
-    }
-    
-    query += " ORDER BY t.created_at DESC";
-    
-    const rows = await this.query(query, params);
-    
-    return rows.map(row => ({
-      id: row.id,
-      name: row.name,
-      description: row.description || "",
-      isDefault: row.is_default,
-      startHour: row.start_hour,
-      endHour: row.end_hour,
-      timeIncrement: row.time_increment,
-      isGlobal: row.is_global,
-      companyId: row.company_id,
-      createdBy: row.created_by,
-      createdAt: row.created_at,
-      updatedAt: row.created_at
-    }));
-  }
-  
-  async getScheduleTemplate(id: number): Promise<ScheduleTemplate | undefined> {
-    const rows = await this.query(`
-      SELECT t.id, t.name, t.description, t.is_default, t.start_hour, t.end_hour,
-             t.time_increment, t.is_global, t.company_id, t.created_by, t.created_at
-      FROM schedule_templates t
-      WHERE t.id = $1
-    `, [id]);
-    
-    if (rows.length === 0) return undefined;
-    
-    return {
-      id: rows[0].id,
-      name: rows[0].name,
-      description: rows[0].description || "",
-      isDefault: rows[0].is_default,
-      startHour: rows[0].start_hour,
-      endHour: rows[0].end_hour,
-      timeIncrement: rows[0].time_increment,
-      isGlobal: rows[0].is_global,
-      companyId: rows[0].company_id,
-      createdBy: rows[0].created_by,
-      createdAt: rows[0].created_at,
-      updatedAt: rows[0].created_at
-    };
-  }
-  
-  async createScheduleTemplate(template: InsertScheduleTemplate): Promise<ScheduleTemplate> {
-    const result = await this.query(`
-      INSERT INTO schedule_templates (name, description, is_default, start_hour, end_hour, time_increment, is_global, company_id, created_by)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      RETURNING id, created_at
-    `, [
-      template.name,
-      template.description || "",
-      template.isDefault || false,
-      template.startHour || 8,
-      template.endHour || 20,
-      template.timeIncrement || 15,
-      template.isGlobal || false,
-      template.companyId || null,
-      template.createdBy || null
-    ]);
-    
-    const id = result[0].id;
-    const createdAt = result[0].created_at;
-    
-    return {
-      id,
-      ...template,
-      createdAt,
-      updatedAt: createdAt
-    };
-  }
-  
-  async updateScheduleTemplate(id: number, template: Partial<InsertScheduleTemplate>): Promise<ScheduleTemplate | undefined> {
-    // Construir la consulta de actualización dinámicamente
-    const updates = [];
-    const values = [];
-    let paramIndex = 1;
-    
-    if (template.name !== undefined) {
-      updates.push(`name = $${paramIndex++}`);
-      values.push(template.name);
-    }
-    
-    if (template.description !== undefined) {
-      updates.push(`description = $${paramIndex++}`);
-      values.push(template.description);
-    }
-    
-    if (template.isDefault !== undefined) {
-      updates.push(`is_default = $${paramIndex++}`);
-      values.push(template.isDefault);
-    }
-    
-    if (template.startHour !== undefined) {
-      updates.push(`start_hour = $${paramIndex++}`);
-      values.push(template.startHour);
-    }
-    
-    if (template.endHour !== undefined) {
-      updates.push(`end_hour = $${paramIndex++}`);
-      values.push(template.endHour);
-    }
-    
-    if (template.timeIncrement !== undefined) {
-      updates.push(`time_increment = $${paramIndex++}`);
-      values.push(template.timeIncrement);
-    }
-    
-    if (template.isGlobal !== undefined) {
-      updates.push(`is_global = $${paramIndex++}`);
-      values.push(template.isGlobal);
-    }
-    
-    if (template.companyId !== undefined) {
-      updates.push(`company_id = $${paramIndex++}`);
-      values.push(template.companyId);
-    }
-    
-    if (updates.length === 0) {
-      return await this.getScheduleTemplate(id);
-    }
-    
-    values.push(id);
-    
-    const result = await this.query(`
-      UPDATE schedule_templates
-      SET ${updates.join(", ")}
-      WHERE id = $${paramIndex}
-      RETURNING id
-    `, values);
-    
-    if (result.length === 0) return undefined;
-    
-    return await this.getScheduleTemplate(id);
-  }
-  
-  async deleteScheduleTemplate(id: number): Promise<boolean> {
-    const result = await this.query(`
-      DELETE FROM schedule_templates
-      WHERE id = $1
-      RETURNING id
-    `, [id]);
-    
-    return result.length > 0;
-  }
-  
-  // Save and load entire schedule data
-  async saveScheduleData(scheduleId: number, employees: Employee[], shifts: Shift[]): Promise<boolean> {
-    // Este método sería específico para el manejo de datos en CreaTurno
-    // Podríamos no implementarlo o adaptar la lógica según sea necesario
-    
-    // Por ahora, implementación simple: guardamos los turnos uno por uno
-    for (const shift of shifts) {
-      if (!shift.id) {
-        // Es un nuevo turno, crearlo
-        await this.createShift({
-          ...shift,
-          scheduleId
-        });
-      } else {
-        // Es un turno existente, actualizarlo
-        await this.updateShift(shift.id, {
-          ...shift,
-          scheduleId
-        });
-      }
-    }
-    
-    return true;
-  }
-  
-  async loadScheduleData(scheduleId: number): Promise<{ employees: Employee[], shifts: Shift[] } | undefined> {
-    const schedule = await this.getSchedule(scheduleId);
-    if (!schedule) return undefined;
-    
-    // Obtener todos los turnos de este horario
-    const shifts = await this.getShifts(undefined, undefined, schedule.companyId);
-    const filteredShifts = shifts.filter(shift => shift.scheduleId === scheduleId);
-    
-    // Obtener todos los empleados de la empresa
-    const employees = await this.getEmployees(schedule.companyId);
-    
-    return {
-      employees,
-      shifts: filteredShifts
-    };
-  }
-}
+// Configuración de la conexión a la base de datos
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+// Definición de esquemas para tablas existentes en Productiva
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: varchar("username", { length: 64 }).notNull(),
+  email: varchar("email", { length: 120 }).notNull(),
+  first_name: varchar("first_name", { length: 64 }),
+  last_name: varchar("last_name", { length: 64 }),
+  password_hash: varchar("password_hash", { length: 256 }),
+  role: varchar("role", { length: 20 }),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+export const companies = pgTable("companies", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  address: varchar("address", { length: 255 }),
+  phone: varchar("phone", { length: 20 }),
+  email: varchar("email", { length: 120 }),
+  tax_id: varchar("tax_id", { length: 20 }),
+  is_active: boolean("is_active").default(true),
+  logo_url: varchar("logo_url", { length: 255 }),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+export const userCompanies = pgTable("user_companies", {
+  id: serial("id").primaryKey(),
+  user_id: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  company_id: integer("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+});
+
+export const employees = pgTable("employees", {
+  id: serial("id").primaryKey(),
+  company_id: integer("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  first_name: varchar("first_name", { length: 64 }).notNull(),
+  last_name: varchar("last_name", { length: 64 }).notNull(),
+  email: varchar("email", { length: 120 }),
+  phone: varchar("phone", { length: 20 }),
+  position: varchar("position", { length: 64 }),
+  dni: varchar("dni", { length: 20 }),
+  social_security_number: varchar("social_security_number", { length: 20 }),
+  bank_account: varchar("bank_account", { length: 50 }),
+  admission_date: varchar("admission_date", { length: 20 }),
+  contract_type: varchar("contract_type", { length: 50 }),
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+export const locations = pgTable("locations", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  address: varchar("address", { length: 255 }),
+  company_id: integer("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  is_active: boolean("is_active").default(true),
+  created_at: timestamp("created_at").defaultNow(),
+  updated_at: timestamp("updated_at").defaultNow(),
+});
+
+// Definición de esquemas para las tablas de CreaTurno
+export const creaturnoShifts = pgTable("creaturno_shifts", {
+  id: serial("id").primaryKey(),
+  employee_id: integer("employee_id").notNull().references(() => employees.id, { onDelete: "cascade" }),
+  location_id: integer("location_id").notNull().references(() => locations.id, { onDelete: "cascade" }),
+  start_time: timestamp("start_time", { withTimezone: true }).notNull(),
+  end_time: timestamp("end_time", { withTimezone: true }).notNull(),
+  role: varchar("role", { length: 100 }),
+  color: varchar("color", { length: 50 }),
+  notes: text("notes"),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export const creaturnoShiftTemplates = pgTable("creaturno_shift_templates", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  company_id: integer("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  start_time: time("start_time").notNull(),
+  end_time: time("end_time").notNull(),
+  days_of_week: array(integer("days_of_week")).notNull(),
+  role: varchar("role", { length: 100 }),
+  color: varchar("color", { length: 50 }),
+  notes: text("notes"),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+export const creaturnoShiftRoles = pgTable("creaturno_shift_roles", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull(),
+  company_id: integer("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
+  color: varchar("color", { length: 50 }),
+  description: text("description"),
+  created_at: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updated_at: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+});
+
+// Relaciones entre tablas
+export const usersRelations = relations(users, ({ many }) => ({
+  userCompanies: many(userCompanies),
+}));
+
+export const companiesRelations = relations(companies, ({ many }) => ({
+  userCompanies: many(userCompanies),
+  employees: many(employees),
+  locations: many(locations),
+  shiftTemplates: many(creaturnoShiftTemplates),
+  shiftRoles: many(creaturnoShiftRoles),
+}));
+
+export const userCompaniesRelations = relations(userCompanies, ({ one }) => ({
+  user: one(users, {
+    fields: [userCompanies.user_id],
+    references: [users.id],
+  }),
+  company: one(companies, {
+    fields: [userCompanies.company_id],
+    references: [companies.id],
+  }),
+}));
+
+export const employeesRelations = relations(employees, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [employees.company_id],
+    references: [companies.id],
+  }),
+  shifts: many(creaturnoShifts),
+}));
+
+export const locationsRelations = relations(locations, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [locations.company_id],
+    references: [companies.id],
+  }),
+  shifts: many(creaturnoShifts),
+}));
+
+export const creaturnoShiftsRelations = relations(creaturnoShifts, ({ one }) => ({
+  employee: one(employees, {
+    fields: [creaturnoShifts.employee_id],
+    references: [employees.id],
+  }),
+  location: one(locations, {
+    fields: [creaturnoShifts.location_id],
+    references: [locations.id],
+  }),
+}));
+
+export const creaturnoShiftTemplatesRelations = relations(creaturnoShiftTemplates, ({ one }) => ({
+  company: one(companies, {
+    fields: [creaturnoShiftTemplates.company_id],
+    references: [companies.id],
+  }),
+}));
+
+export const creaturnoShiftRolesRelations = relations(creaturnoShiftRoles, ({ one }) => ({
+  company: one(companies, {
+    fields: [creaturnoShiftRoles.company_id],
+    references: [companies.id],
+  }),
+}));
+
+// Crear instancia de drizzle
+export const db = drizzle(pool, {
+  schema: {
+    users,
+    companies,
+    userCompanies,
+    employees,
+    locations,
+    creaturnoShifts,
+    creaturnoShiftTemplates,
+    creaturnoShiftRoles,
+  },
+});
+
+// Exportar también helpers de drizzle para usarlos en queries
+export { eq, and, or, inArray, gt, lt, gte, lte };

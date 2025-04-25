@@ -29,27 +29,57 @@
                 <div class="card-header bg-warning text-dark">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0">
-                            <i class="bi bi-calendar-week me-2"></i>
-                            Resumen Semana {{ current_week }} ({{ week_start }} - {{ week_end }})
+                            {% if view_type == 'month' %}
+                                <i class="bi bi-calendar-month me-2"></i>
+                                Resumen Mes de {{ month_name }} {{ current_year }}
+                            {% elif view_type == 'year' %}
+                                <i class="bi bi-calendar me-2"></i>
+                                Resumen Año {{ current_year }}
+                            {% else %}
+                                <i class="bi bi-calendar-week me-2"></i>
+                                Resumen Semana {{ current_week }} ({{ week_start }} - {{ week_end }})
+                            {% endif %}
                         </h5>
                         <div class="btn-group">
-                            <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id, week=current_week-1, year=current_year) }}" class="btn btn-sm btn-outline-dark">
-                                <i class="bi bi-arrow-left"></i> Semana Anterior
-                            </a>
+                            {% if view_type == 'month' %}
+                                <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id, view_type='month', month=current_month-1, year=current_year if current_month > 1 else current_year-1) }}" class="btn btn-sm btn-outline-dark">
+                                    <i class="bi bi-arrow-left"></i> Mes Anterior
+                                </a>
+                            {% elif view_type == 'year' %}
+                                <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id, view_type='year', year=current_year-1) }}" class="btn btn-sm btn-outline-dark">
+                                    <i class="bi bi-arrow-left"></i> Año Anterior
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id, week=current_week-1, year=current_year) }}" class="btn btn-sm btn-outline-dark">
+                                    <i class="bi bi-arrow-left"></i> Semana Anterior
+                                </a>
+                            {% endif %}
+                            
                             <button type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-calendar-event"></i> Navegar
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
                                 <li><h6 class="dropdown-header">Seleccionar Período</h6></li>
                                 <li><a class="dropdown-item" href="{{ url_for('cash_register.company_dashboard', company_id=company.id) }}">Semana Actual</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('cash_register.company_report', company_id=company.id, month=current_month, year=current_year) }}">Mes Actual</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('cash_register.company_report', company_id=company.id, year=current_year) }}">Año Actual</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('cash_register.company_dashboard', company_id=company.id, view_type='month') }}">Mes Actual</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('cash_register.company_dashboard', company_id=company.id, view_type='year') }}">Año Actual</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{{ url_for('cash_register.company_report', company_id=company.id) }}">Personalizar...</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('cash_register.company_report', company_id=company.id) }}">Informe Detallado...</a></li>
                             </ul>
-                            <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id, week=current_week+1, year=current_year) }}" class="btn btn-sm btn-outline-dark">
-                                Semana Siguiente <i class="bi bi-arrow-right"></i>
-                            </a>
+                            
+                            {% if view_type == 'month' %}
+                                <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id, view_type='month', month=current_month+1, year=current_year if current_month < 12 else current_year+1) }}" class="btn btn-sm btn-outline-dark">
+                                    Mes Siguiente <i class="bi bi-arrow-right"></i>
+                                </a>
+                            {% elif view_type == 'year' %}
+                                <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id, view_type='year', year=current_year+1) }}" class="btn btn-sm btn-outline-dark">
+                                    Año Siguiente <i class="bi bi-arrow-right"></i>
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id, week=current_week+1, year=current_year) }}" class="btn btn-sm btn-outline-dark">
+                                    Semana Siguiente <i class="bi bi-arrow-right"></i>
+                                </a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
@@ -60,20 +90,32 @@
                             <ul class="list-group list-group-flush bg-transparent">
                                 <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
                                     <span>Total Semanal:</span>
-                                    <span class="fw-bold text-success">{{ format_currency(summary.weekly_total) }}</span>
+                                    <span class="fw-bold text-success {% if view_type != 'week' and view_type != None %}text-muted{% endif %}">{{ format_currency(summary.weekly_total) }}</span>
                                 </li>
                                 <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
                                     <span>Total Mensual:</span>
-                                    <span class="fw-bold text-success">{{ format_currency(summary.monthly_total) }}</span>
+                                    <span class="fw-bold text-success {% if view_type != 'month' %}{% if view_type != 'week' and view_type != None %}text-white{% else %}text-muted{% endif %}{% endif %}">{{ format_currency(summary.monthly_total) }}</span>
                                 </li>
                                 <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
                                     <span>Total Anual:</span>
-                                    <span class="fw-bold text-success">{{ format_currency(summary.yearly_total) }}</span>
+                                    <span class="fw-bold text-success {% if view_type != 'year' %}{% if view_type != 'week' and view_type != None %}text-muted{% endif %}{% endif %}">{{ format_currency(summary.yearly_total) }}</span>
                                 </li>
+                                {% if view_type == 'month' %}
+                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
+                                    <span>Gastos Mensuales:</span>
+                                    <span class="fw-bold text-danger">{{ format_currency(summary.monthly_expenses) }}</span>
+                                </li>
+                                {% elif view_type == 'year' %}
+                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
+                                    <span>Gastos Anuales:</span>
+                                    <span class="fw-bold text-danger">{{ format_currency(summary.yearly_expenses) }}</span>
+                                </li>
+                                {% else %}
                                 <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
                                     <span>Gastos Semanales:</span>
                                     <span class="fw-bold text-danger">{{ format_currency(summary.weekly_expenses) }}</span>
                                 </li>
+                                {% endif %}
                             </ul>
                         </div>
                         <div class="col-md-6">

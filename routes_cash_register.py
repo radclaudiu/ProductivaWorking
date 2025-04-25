@@ -227,9 +227,17 @@ def company_dashboard(company_id):
         flash('No tiene acceso a esta empresa', 'danger')
         return redirect(url_for('cash_register.dashboard'))
     
-    # Obtener año y semana de los parámetros URL o usar los actuales
+    # Obtener tipo de vista (semana, mes, año)
+    view_type = request.args.get('view_type')
+    
+    # Obtener año y mes de los parámetros URL o usar los actuales
     current_year = request.args.get('year', type=int, default=datetime.now().year)
-    current_month = datetime.now().month
+    current_month = request.args.get('month', type=int, default=datetime.now().month)
+    
+    # Obtener nombre del mes para la vista
+    month_names = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                  'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+    month_name = month_names[current_month-1] if 1 <= current_month <= 12 else ''
     
     # Obtener semana de parámetros URL o usar la actual
     if request.args.get('week'):
@@ -299,6 +307,8 @@ def company_dashboard(company_id):
         current_year=current_year,
         current_week=current_week,
         current_month=current_month,
+        view_type=view_type,
+        month_name=month_name,
         format_currency=format_currency,
         format_percentage=format_percentage
     )

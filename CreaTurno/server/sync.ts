@@ -21,24 +21,55 @@ export async function truncateTables() {
 
 // Función principal de sincronización
 export async function syncAll() {
-  // Limpiar tablas existentes
-  await truncateTables();
+  console.log("Iniciando sincronización completa...");
+  const startTime = Date.now();
   
-  // Sincronizar en el orden correcto
-  const userStats = await syncUsers();
-  const companyStats = await syncCompanies();
-  const employeeStats = await syncEmployees();
-  const relationStats = await syncUserCompanies();
-  
-  // Actualizar secuencias
-  await updateSequences();
-  
-  return {
-    users: userStats,
-    companies: companyStats,
-    employees: employeeStats,
-    userCompanies: relationStats
-  };
+  try {
+    // Limpiar tablas existentes
+    console.log("Limpiando tablas existentes...");
+    await truncateTables();
+    
+    // Sincronizar en el orden correcto
+    console.log("Sincronizando usuarios...");
+    const userStats = await syncUsers();
+    
+    console.log("Sincronizando empresas...");
+    const companyStats = await syncCompanies();
+    
+    console.log("Sincronizando empleados...");
+    const employeeStats = await syncEmployees();
+    
+    console.log("Sincronizando relaciones usuario-empresa...");
+    const relationStats = await syncUserCompanies();
+    
+    // Actualizar secuencias
+    console.log("Actualizando secuencias de base de datos...");
+    await updateSequences();
+    
+    const endTime = Date.now();
+    const duration = ((endTime - startTime) / 1000).toFixed(2);
+    
+    const totalStats = {
+      total: userStats.total + companyStats.total + employeeStats.total + relationStats.total,
+      added: userStats.added + companyStats.added + employeeStats.added + relationStats.added,
+      errors: userStats.errors + companyStats.errors + employeeStats.errors + relationStats.errors,
+      duration: `${duration}s`
+    };
+    
+    console.log(`Sincronización completada en ${duration} segundos.`);
+    console.log(`Total elementos: ${totalStats.total}, Añadidos: ${totalStats.added}, Errores: ${totalStats.errors}`);
+    
+    return {
+      users: userStats,
+      companies: companyStats,
+      employees: employeeStats,
+      userCompanies: relationStats,
+      summary: totalStats
+    };
+  } catch (error) {
+    console.error("Error crítico durante la sincronización:", error);
+    throw new Error(`Error en el proceso de sincronización: ${error.message}`);
+  }
 }
 
 // Sincronizar usuarios
@@ -234,7 +265,7 @@ async function getMaxId(table: string) {
   return parseInt(result.rows[0].max_id, 10);
 }
 
-async function updateSequences() {
+export async function updateSequences() {
   const tables = ['users', 'companies', 'employees', 'user_companies'];
   
   for (const table of tables) {

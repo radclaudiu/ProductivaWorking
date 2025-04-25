@@ -45,32 +45,42 @@ export async function syncAll() {
 export async function syncUsers() {
   const stats = { added: 0, errors: 0, total: 0 };
   
-  const { rows: productivaUsers } = await productivaDb.query(`
-    SELECT id, username, password_hash as password, email, 
-           TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))) as full_name, 
-           COALESCE(role, 'user') as role
-    FROM users
-    WHERE COALESCE(is_active, TRUE) = TRUE
-  `);
-  
-  for (const user of productivaUsers) {
-    stats.total++;
-    try {
-      await db.insert(users).values({
-        id: user.id,
-        username: user.username,
-        password: user.password,
-        email: user.email,
-        fullName: user.full_name,
-        role: user.role === 'admin' ? 'admin' : 'user',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      });
-      stats.added++;
-    } catch (error) {
-      console.error(`Error al sincronizar usuario ${user.id}:`, error);
-      stats.errors++;
+  try {
+    const { rows: productivaUsers } = await productivaDb.query(`
+      SELECT id, username, password_hash as password, email, 
+             TRIM(CONCAT(COALESCE(first_name, ''), ' ', COALESCE(last_name, ''))) as full_name, 
+             COALESCE(role, 'user') as role
+      FROM users
+      WHERE COALESCE(is_active, TRUE) = TRUE
+    `);
+    
+    for (const user of productivaUsers) {
+      if (!user.id || !user.username || !user.password || !user.email) {
+        console.warn(`Usuario con datos incompletos, omitiendo: ${JSON.stringify(user)}`);
+        continue;
+      }
+      
+      stats.total++;
+      try {
+        await db.insert(users).values({
+          id: user.id,
+          username: user.username,
+          password: user.password,
+          email: user.email,
+          fullName: user.full_name || '',
+          role: user.role === 'admin' ? 'admin' : 'user',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+        stats.added++;
+      } catch (error) {
+        console.error(`Error al sincronizar usuario ${user.id}:`, error);
+        stats.errors++;
+      }
     }
+  } catch (error) {
+    console.error('Error al obtener usuarios de Productiva:', error);
+    throw new Error(`Error crítico en sincronización de usuarios: ${error.message}`);
   }
   
   return stats;
@@ -80,34 +90,44 @@ export async function syncUsers() {
 export async function syncCompanies() {
   const stats = { added: 0, errors: 0, total: 0 };
   
-  const { rows: productivaCompanies } = await productivaDb.query(`
-    SELECT id, name, address, phone, email, website, tax_id
-    FROM companies
-    WHERE COALESCE(is_active, TRUE) = TRUE
-  `);
-  
-  for (const company of productivaCompanies) {
-    stats.total++;
-    try {
-      await db.insert(companies).values({
-        id: company.id,
-        name: company.name,
-        address: company.address || null,
-        phone: company.phone || null,
-        email: company.email || null,
-        website: company.website || null,
-        taxId: company.tax_id || null,
-        isActive: true,
-        startHour: 9, // Valores por defecto
-        endHour: 18,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      });
-      stats.added++;
-    } catch (error) {
-      console.error(`Error al sincronizar empresa ${company.id}:`, error);
-      stats.errors++;
+  try {
+    const { rows: productivaCompanies } = await productivaDb.query(`
+      SELECT id, name, address, phone, email, website, tax_id
+      FROM companies
+      WHERE COALESCE(is_active, TRUE) = TRUE
+    `);
+    
+    for (const company of productivaCompanies) {
+      if (!company.id || !company.name) {
+        console.warn(`Empresa con datos incompletos, omitiendo: ${JSON.stringify(company)}`);
+        continue;
+      }
+      
+      stats.total++;
+      try {
+        await db.insert(companies).values({
+          id: company.id,
+          name: company.name,
+          address: company.address || null,
+          phone: company.phone || null,
+          email: company.email || null,
+          website: company.website || null,
+          taxId: company.tax_id || null,
+          isActive: true,
+          startHour: 9, // Valores por defecto
+          endHour: 18,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+        stats.added++;
+      } catch (error) {
+        console.error(`Error al sincronizar empresa ${company.id}:`, error);
+        stats.errors++;
+      }
     }
+  } catch (error) {
+    console.error('Error al obtener empresas de Productiva:', error);
+    throw new Error(`Error crítico en sincronización de empresas: ${error.message}`);
   }
   
   return stats;
@@ -117,38 +137,48 @@ export async function syncCompanies() {
 export async function syncEmployees() {
   const stats = { added: 0, errors: 0, total: 0 };
   
-  const { rows: productivaEmployees } = await productivaDb.query(`
-    SELECT id, first_name, last_name, company_id, position, 
-           email, phone_number as phone, address, hire_date,
-           COALESCE(is_active, TRUE) as is_active, notes
-    FROM employees
-    WHERE COALESCE(is_active, TRUE) = TRUE
-  `);
-  
-  for (const emp of productivaEmployees) {
-    stats.total++;
-    try {
-      const fullName = `${emp.first_name} ${emp.last_name}`.trim();
+  try {
+    const { rows: productivaEmployees } = await productivaDb.query(`
+      SELECT id, first_name, last_name, company_id, position, 
+             email, phone_number as phone, address, hire_date,
+             COALESCE(is_active, TRUE) as is_active, notes
+      FROM employees
+      WHERE COALESCE(is_active, TRUE) = TRUE
+    `);
+    
+    for (const emp of productivaEmployees) {
+      if (!emp.id || !emp.company_id) {
+        console.warn(`Empleado con datos incompletos, omitiendo: ${JSON.stringify(emp)}`);
+        continue;
+      }
       
-      await db.insert(employees).values({
-        id: emp.id,
-        name: fullName,
-        role: emp.position || "",
-        companyId: emp.company_id,
-        email: emp.email || null,
-        phone: emp.phone || null,
-        address: emp.address || null,
-        hireDate: emp.hire_date ? new Date(emp.hire_date) : null,
-        isActive: true,
-        notes: emp.notes || null,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      });
-      stats.added++;
-    } catch (error) {
-      console.error(`Error al sincronizar empleado ${emp.id}:`, error);
-      stats.errors++;
+      stats.total++;
+      try {
+        const fullName = `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || 'Sin nombre';
+        
+        await db.insert(employees).values({
+          id: emp.id,
+          name: fullName,
+          role: emp.position || "",
+          companyId: emp.company_id,
+          email: emp.email || null,
+          phone: emp.phone || null,
+          address: emp.address || null,
+          hireDate: emp.hire_date ? new Date(emp.hire_date) : null,
+          isActive: true,
+          notes: emp.notes || null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+        stats.added++;
+      } catch (error) {
+        console.error(`Error al sincronizar empleado ${emp.id}:`, error);
+        stats.errors++;
+      }
     }
+  } catch (error) {
+    console.error('Error al obtener empleados de Productiva:', error);
+    throw new Error(`Error crítico en sincronización de empleados: ${error.message}`);
   }
   
   return stats;
@@ -158,31 +188,41 @@ export async function syncEmployees() {
 export async function syncUserCompanies() {
   const stats = { added: 0, errors: 0, total: 0 };
   
-  const { rows: productivaRelations } = await productivaDb.query(`
-    SELECT user_id, company_id, access_level as role
-    FROM user_company_access
-    WHERE is_active = TRUE
-  `);
-  
-  for (const rel of productivaRelations) {
-    stats.total++;
-    try {
-      // Mapear roles: admin, manager o member
-      let role = "member";
-      if (rel.role === "admin") role = "owner";
-      else if (rel.role === "manager") role = "manager";
+  try {
+    const { rows: productivaRelations } = await productivaDb.query(`
+      SELECT user_id, company_id, COALESCE(access_level, 'user') as role
+      FROM user_company_access
+      WHERE COALESCE(is_active, TRUE) = TRUE
+    `);
+    
+    for (const rel of productivaRelations) {
+      if (!rel.user_id || !rel.company_id) {
+        console.warn(`Relación usuario-empresa con datos incompletos, omitiendo: ${JSON.stringify(rel)}`);
+        continue;
+      }
       
-      await db.insert(userCompanies).values({
-        userId: rel.user_id,
-        companyId: rel.company_id,
-        role: role,
-        createdAt: new Date()
-      });
-      stats.added++;
-    } catch (error) {
-      console.error(`Error al sincronizar relación ${rel.user_id}-${rel.company_id}:`, error);
-      stats.errors++;
+      stats.total++;
+      try {
+        // Mapear roles: admin, manager o member
+        let role = "member";
+        if (rel.role === "admin") role = "owner";
+        else if (rel.role === "manager") role = "manager";
+        
+        await db.insert(userCompanies).values({
+          userId: rel.user_id,
+          companyId: rel.company_id,
+          role: role,
+          createdAt: new Date()
+        });
+        stats.added++;
+      } catch (error) {
+        console.error(`Error al sincronizar relación ${rel.user_id}-${rel.company_id}:`, error);
+        stats.errors++;
+      }
     }
+  } catch (error) {
+    console.error('Error al obtener relaciones usuario-empresa de Productiva:', error);
+    throw new Error(`Error crítico en sincronización de relaciones usuario-empresa: ${error.message}`);
   }
   
   return stats;

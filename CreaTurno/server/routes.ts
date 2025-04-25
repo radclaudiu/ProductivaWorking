@@ -719,6 +719,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/sync/users", isAdmin, async (req, res) => {
     try {
       const results = await syncUsers();
+      await updateSequences();
       res.json({ success: true, results });
     } catch (error) {
       res.status(500).json({ 
@@ -732,6 +733,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/sync/companies", isAdmin, async (req, res) => {
     try {
       const results = await syncCompanies();
+      await updateSequences();
       res.json({ success: true, results });
     } catch (error) {
       res.status(500).json({ 
@@ -745,6 +747,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/sync/employees", isAdmin, async (req, res) => {
     try {
       const results = await syncEmployees();
+      await updateSequences();
       res.json({ success: true, results });
     } catch (error) {
       res.status(500).json({ 
@@ -758,6 +761,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/sync/relations", isAdmin, async (req, res) => {
     try {
       const results = await syncUserCompanies();
+      await updateSequences();
       res.json({ success: true, results });
     } catch (error) {
       res.status(500).json({ 

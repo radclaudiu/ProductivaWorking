@@ -864,6 +864,10 @@ def employee_submit_expense():
     # Preparar formulario
     form = EmployeeExpenseForm()
     
+    # Inicializar choices del campo category_id para evitar error de validación
+    # Incluso si se oculta el campo, WTForms necesita que choices sea una lista válida
+    form.category_id.choices = [(0, '-- Seleccionar categoría --')]
+    
     # Inicializar token_info
     token_info = None
     

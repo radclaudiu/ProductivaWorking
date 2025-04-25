@@ -7,6 +7,7 @@ incluyendo formularios para categorías, gastos fijos y gastos mensuales.
 
 import datetime
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileField, FileAllowed
 from wtforms import StringField, TextAreaField, FloatField, BooleanField, SubmitField
 from wtforms import SelectField, HiddenField, IntegerField
 from wtforms.validators import DataRequired, Length, Optional, NumberRange

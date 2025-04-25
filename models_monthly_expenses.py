@@ -6,6 +6,8 @@ incluyendo categorías de gastos, gastos fijos, gastos mensuales y resúmenes.
 """
 
 import datetime
+import secrets
+import string
 from app import db
 from sqlalchemy import Column, Integer, String, Float, Boolean, ForeignKey, Text, DateTime, func
 from sqlalchemy.orm import relationship
@@ -79,6 +81,10 @@ class MonthlyExpense(db.Model):
     year = Column(Integer, nullable=False)
     month = Column(Integer, nullable=False)  # 1-12
     is_fixed = Column(Boolean, default=False)  # Indica si también es un gasto fijo
+    expense_date = Column(String(20), nullable=True)  # Fecha del gasto en formato DD-MM-YYYY
+    submitted_by_employee = Column(Boolean, default=False)  # Indica si fue enviado por un empleado
+    employee_name = Column(String(100), nullable=True)  # Nombre del empleado que reportó el gasto
+    receipt_image = Column(String(255), nullable=True)  # Ruta a la imagen del recibo/factura (opcional)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
     
@@ -115,3 +121,39 @@ class MonthlyExpenseSummary(db.Model):
     
     def __repr__(self):
         return f"<MonthlyExpenseSummary {self.month}/{self.year} - {self.total_amount}€>"
+
+
+class MonthlyExpenseToken(db.Model):
+    """
+    Modelo para tokens de envío de gastos por empleados.
+    
+    Estos tokens permiten a los empleados enviar gastos sin necesidad
+    de acceder al sistema completo.
+    """
+    __tablename__ = 'monthly_expense_tokens'
+    
+    id = Column(Integer, primary_key=True)
+    company_id = Column(Integer, ForeignKey('companies.id'), nullable=False)
+    token = Column(String(20), nullable=False, unique=True)
+    name = Column(String(100), nullable=False)  # Nombre descriptivo del token
+    description = Column(Text, nullable=True)
+    is_active = Column(Boolean, default=True)
+    category_id = Column(Integer, ForeignKey('expense_categories.id'), nullable=True)  # Categoría predeterminada (opcional)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    last_used_at = Column(DateTime, nullable=True)
+    total_uses = Column(Integer, default=0)
+    
+    # Relaciones
+    company = relationship('Company', backref='expense_tokens')
+    category = relationship('ExpenseCategory', backref='expense_tokens')
+    
+    @staticmethod
+    def generate_token(length=10):
+        """Genera un token aleatorio para envío de gastos."""
+        characters = string.ascii_uppercase + string.digits
+        token = ''.join(secrets.choice(characters) for _ in range(length))
+        return token
+    
+    def __repr__(self):
+        return f"<MonthlyExpenseToken {self.name} - {self.token}>"

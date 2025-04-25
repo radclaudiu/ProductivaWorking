@@ -60,13 +60,6 @@ def register_routes(cash_register_bp):
     Args:
         cash_register_bp: Blueprint de arqueos de caja
     """
-    # Verificar rutas existentes para evitar duplicados
-    existing_endpoints = set()
-    for rule in cash_register_bp.deferred_functions:
-        if hasattr(rule, 'endpoint'):
-            existing_endpoints.add(rule.endpoint)
-            
-    logger.info(f"Rutas existentes: {existing_endpoints}")
     
     @cash_register_bp.route('/manage/<int:company_id>')
     @login_required
@@ -164,8 +157,31 @@ def register_routes(cash_register_bp):
         )
 
 
-    # No se registra la ruta /delete/<int:register_id> porque ya existe en routes_cash_register.py
-    # En su lugar, usamos el endpoint existente
+    @cash_register_bp.route('/delete/<int:register_id>')
+    @login_required
+    def delete_register(register_id):
+        """Elimina un arqueo de caja."""
+        logger.info(f"Eliminando arqueo {register_id}")
+        
+        # Obtener el arqueo y verificar acceso
+        register = CashRegister.query.get_or_404(register_id)
+        company = Company.query.get_or_404(register.company_id)
+        check_company_access(company)
+        
+        company_id = register.company_id
+        
+        try:
+            # Eliminar el arqueo
+            db.session.delete(register)
+            db.session.commit()
+            flash('Arqueo eliminado correctamente.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"Error al eliminar arqueo: {str(e)}")
+            flash(f'Error al eliminar el arqueo: {str(e)}', 'danger')
+        
+        # Redirigir a la página anterior o a la dashboard de la empresa
+        return redirect(request.referrer or url_for('cash_register.company_dashboard', company_id=company_id))
         
         
     @cash_register_bp.route('/export/<int:company_id>')

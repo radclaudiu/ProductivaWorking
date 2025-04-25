@@ -273,6 +273,15 @@ def company_dashboard(company_id):
     if next_month > 12:
         next_month = 1
         next_year += 1
+        
+    # Obtener nombres de los meses para la navegación
+    month_names = {
+        1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
+        5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
+        9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+    }
+    prev_month_name = month_names[prev_month]
+    next_month_name = month_names[next_month]
     
     # Calcular el número de días en el mes para estadísticas
     days_in_month = calendar.monthrange(year, month)[1]
@@ -292,8 +301,10 @@ def company_dashboard(company_id):
         current_month=month,
         prev_month=prev_month,
         prev_year=prev_year,
+        prev_month_name=prev_month_name,
         next_month=next_month,
         next_year=next_year,
+        next_month_name=next_month_name,
         days_in_month=days_in_month,
         daily_avg=daily_avg,
         format_currency=format_currency

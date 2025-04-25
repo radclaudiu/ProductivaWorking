@@ -9,11 +9,11 @@
         padding: 2rem;
         border-radius: 8px;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
-    }
-    
-    .loading-spinner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         text-align: center;
-        margin: 2rem auto;
     }
     
     .status-indicator {
@@ -32,19 +32,43 @@
         background-color: #dc3545;
     }
     
-    #api-status {
-        margin-bottom: 1rem;
-        padding: 0.5rem;
-        border-radius: 4px;
-        background-color: #212130;
+    .launch-btn {
+        margin-top: 2rem;
+        padding: 1rem 2rem;
+        font-size: 1.2rem;
+        border-radius: 8px;
+        background-color: #1976D2;
+        color: white;
+        border: none;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
     }
     
-    #creaturno-frame {
-        width: 100%;
-        height: 75vh;
-        border: none;
-        background-color: #212130;
-        border-radius: 8px;
+    .launch-btn:hover {
+        background-color: #1565C0;
+        transform: translateY(-2px);
+    }
+    
+    .launch-btn i {
+        font-size: 1.5rem;
+    }
+    
+    .creaturno-info {
+        max-width: 600px;
+        margin: 2rem auto;
+    }
+    
+    .feature-list {
+        text-align: left;
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .feature-list li {
+        margin-bottom: 0.8rem;
     }
 </style>
 {% endblock %}
@@ -62,19 +86,38 @@
     </div>
     
     <div id="creaturno-container">
-        <div id="api-status">
-            <span class="status-indicator status-offline" id="status-dot"></span>
-            <span id="status-text">Conectando con el servidor de CreaTurno...</span>
-        </div>
-        
-        <div class="loading-spinner" id="loading">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Cargando...</span>
+        <div class="creaturno-info">
+            <h2>Bienvenido a CreaTurno</h2>
+            <p class="lead">Sistema de gestión de turnos de trabajo integrado con Productiva</p>
+            
+            <div class="feature-list">
+                <h4>Características principales:</h4>
+                <ul>
+                    <li><i class="bi bi-calendar-check"></i> Planificación visual de turnos en calendario</li>
+                    <li><i class="bi bi-people"></i> Gestión de personal y ubicaciones</li>
+                    <li><i class="bi bi-clipboard-data"></i> Informes de horas y distribución de personal</li>
+                    <li><i class="bi bi-phone"></i> Interfaz adaptable a móviles y tablets</li>
+                    <li><i class="bi bi-printer"></i> Exportación de horarios en PDF</li>
+                </ul>
             </div>
-            <p class="mt-2">Cargando CreaTurno...</p>
+            
+            <div id="server-status">
+                <span class="status-indicator status-offline" id="status-dot"></span>
+                <span id="status-text">Verificando estado del servidor...</span>
+            </div>
+            
+            <button id="launch-btn" class="launch-btn" style="display:none">
+                <i class="bi bi-box-arrow-up-right"></i>
+                Abrir CreaTurno
+            </button>
+            
+            <div id="error-message" style="display:none" class="alert alert-danger mt-4">
+                <h4 class="alert-heading">Error de conexión</h4>
+                <p id="error-details">No se pudo conectar con el servidor de CreaTurno.</p>
+                <hr>
+                <button class="btn btn-primary" onclick="location.reload()">Reintentar</button>
+            </div>
         </div>
-        
-        <iframe id="creaturno-frame" style="display:none;" src="" frameborder="0"></iframe>
     </div>
 </div>
 {% endblock %}
@@ -84,8 +127,12 @@
     document.addEventListener('DOMContentLoaded', function() {
         const statusDot = document.getElementById('status-dot');
         const statusText = document.getElementById('status-text');
-        const loadingEl = document.getElementById('loading');
-        const iframeEl = document.getElementById('creaturno-frame');
+        const launchBtn = document.getElementById('launch-btn');
+        const errorMessage = document.getElementById('error-message');
+        const errorDetails = document.getElementById('error-details');
+        
+        // URL del cliente de CreaTurno en el puerto 5001
+        const clientUrl = 'http://{{ request.host.split(":")[0] }}:5001/creaturno-client/';
         
         // Comprobar el estado del servidor de CreaTurno
         function checkServerStatus() {
@@ -96,50 +143,38 @@
                         // Servidor en funcionamiento
                         statusDot.classList.remove('status-offline');
                         statusDot.classList.add('status-online');
-                        statusText.textContent = 'Servidor de CreaTurno conectado';
+                        statusText.textContent = 'Servidor disponible';
                         
-                        // Mostrar iframe
-                        setTimeout(() => {
-                            loadingEl.style.display = 'none';
-                            iframeEl.style.display = 'block';
-                            
-                            // URL del proxy a través de nuestra aplicación Flask
-                            const clientUrl = '{{ url_for("creaturno.client_proxy") }}';
-                            console.log("Cargando CreaTurno desde:", clientUrl);
-                            iframeEl.src = clientUrl;
-                        }, 1000);
+                        // Mostrar botón de inicio
+                        launchBtn.style.display = 'inline-flex';
+                        errorMessage.style.display = 'none';
+                        
+                        // Configurar evento de clic para el botón
+                        launchBtn.onclick = function() {
+                            window.open(clientUrl, '_blank', 'noopener,noreferrer');
+                        };
                     } else {
                         // Servidor no disponible
                         statusDot.classList.remove('status-online');
                         statusDot.classList.add('status-offline');
-                        statusText.textContent = 'Servidor de CreaTurno desconectado';
+                        statusText.textContent = 'Servidor no disponible';
                         
                         // Mostrar mensaje de error
-                        loadingEl.innerHTML = `
-                            <div class="alert alert-danger" role="alert">
-                                <h4 class="alert-heading">Error de conexión</h4>
-                                <p>No se pudo conectar con el servidor de CreaTurno. Por favor, inténtelo de nuevo más tarde.</p>
-                                <hr>
-                                <button class="btn btn-primary" onclick="location.reload()">Reintentar</button>
-                            </div>
-                        `;
+                        launchBtn.style.display = 'none';
+                        errorMessage.style.display = 'block';
+                        errorDetails.textContent = 'El servidor de CreaTurno no está en ejecución. Por favor, contacte con el administrador.';
                     }
                 })
                 .catch(error => {
                     console.error('Error al comprobar estado:', error);
                     statusDot.classList.remove('status-online');
                     statusDot.classList.add('status-offline');
-                    statusText.textContent = 'Error al conectar con CreaTurno';
+                    statusText.textContent = 'Error de conexión';
                     
                     // Mostrar mensaje de error
-                    loadingEl.innerHTML = `
-                        <div class="alert alert-danger" role="alert">
-                            <h4 class="alert-heading">Error de conexión</h4>
-                            <p>No se pudo conectar con el servidor de CreaTurno: ${error.message}</p>
-                            <hr>
-                            <button class="btn btn-primary" onclick="location.reload()">Reintentar</button>
-                        </div>
-                    `;
+                    launchBtn.style.display = 'none';
+                    errorMessage.style.display = 'block';
+                    errorDetails.textContent = `Error al conectar con el servidor: ${error.message}`;
                 });
         }
         

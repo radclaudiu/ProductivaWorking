@@ -9,42 +9,55 @@
         padding: 2rem;
         border-radius: 8px;
         box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
-    }
-    
-    .loading-spinner {
         text-align: center;
-        margin: 2rem auto;
     }
     
-    .status-indicator {
-        display: inline-block;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        margin-right: 8px;
-    }
-    
-    .status-online {
-        background-color: #28a745;
-    }
-    
-    .status-offline {
-        background-color: #dc3545;
-    }
-    
-    #api-status {
-        margin-bottom: 1rem;
-        padding: 0.5rem;
-        border-radius: 4px;
-        background-color: #212130;
-    }
-    
-    #creaturno-frame {
-        width: 100%;
-        height: 75vh;
-        border: none;
+    .feature-box {
         background-color: #212130;
         border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .feature-box:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.35);
+    }
+    
+    .feature-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        color: #1976D2;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 2rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        background-color: #ffc107;
+        color: #212130;
+        margin: 1.5rem 0;
+    }
+    
+    .coming-soon-container {
+        text-align: center;
+        padding: 3rem 0;
+    }
+    
+    .coming-soon-title {
+        font-size: 2.5rem;
+        margin-bottom: 1.5rem;
+        color: #ffffff;
+    }
+    
+    .coming-soon-description {
+        font-size: 1.2rem;
+        max-width: 800px;
+        margin: 0 auto 2rem;
+        color: #b0b0c0;
     }
 </style>
 {% endblock %}
@@ -62,19 +75,47 @@
     </div>
     
     <div id="creaturno-container">
-        <div id="api-status">
-            <span class="status-indicator status-offline" id="status-dot"></span>
-            <span id="status-text">Conectando con el servidor de CreaTurno...</span>
-        </div>
-        
-        <div class="loading-spinner" id="loading">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Cargando...</span>
+        <div class="coming-soon-container">
+            <div class="status-badge">En desarrollo</div>
+            <h2 class="coming-soon-title">Próximamente: CreaTurno</h2>
+            <p class="coming-soon-description">
+                Estamos trabajando en el nuevo sistema de gestión de turnos que revolucionará la forma en que organizas los horarios de tus empleados. 
+                Integrado completamente con Productiva para ofrecerte una experiencia unificada.
+            </p>
+            
+            <div class="row mt-5">
+                <div class="col-md-4">
+                    <div class="feature-box">
+                        <div class="feature-icon">
+                            <i class="bi bi-calendar-check"></i>
+                        </div>
+                        <h4>Planificación visual</h4>
+                        <p>Crea y modifica turnos con una interfaz intuitiva de arrastrar y soltar.</p>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="feature-box">
+                        <div class="feature-icon">
+                            <i class="bi bi-people"></i>
+                        </div>
+                        <h4>Gestión de equipos</h4>
+                        <p>Asigna empleados a ubicaciones específicas y controla su disponibilidad.</p>
+                    </div>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="feature-box">
+                        <div class="feature-icon">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                        <h4>Análisis de productividad</h4>
+                        <p>Obtén reportes detallados de las horas trabajadas y la eficiencia operativa.</p>
+                    </div>
+                </div>
             </div>
-            <p class="mt-2">Cargando CreaTurno...</p>
+            
         </div>
-        
-        <iframe id="creaturno-frame" style="display:none;" src="" frameborder="0"></iframe>
     </div>
 </div>
 {% endblock %}
@@ -82,74 +123,7 @@
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const statusDot = document.getElementById('status-dot');
-        const statusText = document.getElementById('status-text');
-        const loadingEl = document.getElementById('loading');
-        const iframeEl = document.getElementById('creaturno-frame');
-        
-        // Comprobar el estado del servidor de CreaTurno
-        function checkServerStatus() {
-            fetch('{{ url_for("creaturno.status") }}')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'running') {
-                        // Servidor en funcionamiento
-                        statusDot.classList.remove('status-offline');
-                        statusDot.classList.add('status-online');
-                        statusText.textContent = 'Servidor de CreaTurno conectado';
-                        
-                        // Mostrar iframe
-                        setTimeout(() => {
-                            loadingEl.style.display = 'none';
-                            iframeEl.style.display = 'block';
-                            
-                            // Cargar el iframe con la URL correcta
-                            // El servidor ahora sirve los archivos estáticos desde /creaturno-client/
-                            // La URL es relativa al host actual, no necesitamos usar el puerto 3000
-                            const clientUrl = `/creaturno-client/`;
-                            
-                            iframeEl.src = clientUrl;
-                        }, 1000);
-                    } else {
-                        // Servidor no disponible
-                        statusDot.classList.remove('status-online');
-                        statusDot.classList.add('status-offline');
-                        statusText.textContent = 'Servidor de CreaTurno desconectado';
-                        
-                        // Mostrar mensaje de error
-                        loadingEl.innerHTML = `
-                            <div class="alert alert-danger" role="alert">
-                                <h4 class="alert-heading">Error de conexión</h4>
-                                <p>No se pudo conectar con el servidor de CreaTurno. Por favor, inténtelo de nuevo más tarde.</p>
-                                <hr>
-                                <button class="btn btn-primary" onclick="location.reload()">Reintentar</button>
-                            </div>
-                        `;
-                    }
-                })
-                .catch(error => {
-                    console.error('Error al comprobar estado:', error);
-                    statusDot.classList.remove('status-online');
-                    statusDot.classList.add('status-offline');
-                    statusText.textContent = 'Error al conectar con CreaTurno';
-                    
-                    // Mostrar mensaje de error
-                    loadingEl.innerHTML = `
-                        <div class="alert alert-danger" role="alert">
-                            <h4 class="alert-heading">Error de conexión</h4>
-                            <p>No se pudo conectar con el servidor de CreaTurno: ${error.message}</p>
-                            <hr>
-                            <button class="btn btn-primary" onclick="location.reload()">Reintentar</button>
-                        </div>
-                    `;
-                });
-        }
-        
-        // Comprobar estado inicial
-        checkServerStatus();
-        
-        // Comprobar estado cada 30 segundos
-        setInterval(checkServerStatus, 30000);
+        // Código JavaScript para la página (actualmente no necesario)
     });
 </script>
 {% endblock %}

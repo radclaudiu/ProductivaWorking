@@ -96,7 +96,7 @@ export const creaturnoShiftTemplates = pgTable("creaturno_shift_templates", {
   company_id: integer("company_id").notNull().references(() => companies.id, { onDelete: "cascade" }),
   start_time: time("start_time").notNull(),
   end_time: time("end_time").notNull(),
-  days_of_week: array(integer("days_of_week")).notNull(),
+  days_of_week: varchar("days_of_week", { length: 255 }),
   role: varchar("role", { length: 100 }),
   color: varchar("color", { length: 50 }),
   notes: text("notes"),

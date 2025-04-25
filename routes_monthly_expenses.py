@@ -180,13 +180,61 @@ def company_dashboard(company_id):
     # Obtener el resumen mensual (o crearlo si no existe)
     summary = get_or_create_summary(company_id, year, month)
     
-    # Obtener gastos fijos para este mes
-    fixed_expenses = MonthlyExpense.query.filter_by(
+    # Obtener gastos fijos activos desde la tabla FixedExpense
+    active_fixed_expenses = FixedExpense.query.filter_by(
+        company_id=company_id,
+        is_active=True
+    ).order_by(FixedExpense.name).all()
+    
+    # Obtener gastos fijos registrados para este mes específico
+    fixed_expenses_this_month = MonthlyExpense.query.filter_by(
         company_id=company_id,
         year=year,
         month=month,
         is_fixed=True
     ).order_by(MonthlyExpense.name).all()
+    
+    # Combinar ambas listas para el dashboard, priorizando los que ya existen para este mes
+    # Primero, vamos a convertir los gastos fijos activos en gastos mensuales si no existen ya
+    existing_fixed_names = [expense.name for expense in fixed_expenses_this_month]
+    
+    # Si no hay gastos fijos convertidos para este mes, crearlos a partir de los gastos fijos activos
+    if not fixed_expenses_this_month and active_fixed_expenses:
+        for fixed_expense in active_fixed_expenses:
+            # Crear un gasto mensual a partir del gasto fijo
+            monthly_fixed = MonthlyExpense(
+                company_id=company_id,
+                year=year,
+                month=month,
+                name=fixed_expense.name,
+                description=fixed_expense.description,
+                amount=fixed_expense.amount,
+                category_id=fixed_expense.category_id,
+                is_fixed=True,
+                created_at=datetime.datetime.utcnow(),
+                updated_at=datetime.datetime.utcnow()
+            )
+            db.session.add(monthly_fixed)
+        
+        # Guardar todos los nuevos gastos fijos convertidos
+        try:
+            db.session.commit()
+            # Refrescar la lista de gastos fijos para este mes
+            fixed_expenses_this_month = MonthlyExpense.query.filter_by(
+                company_id=company_id,
+                year=year,
+                month=month,
+                is_fixed=True
+            ).order_by(MonthlyExpense.name).all()
+            
+            # Actualizar el resumen con los nuevos gastos
+            summary = get_or_create_summary(company_id, year, month)
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            flash(f'Error al crear gastos fijos para este mes: {str(e)}', 'warning')
+    
+    # Usar los gastos fijos mensuales para mostrar en el dashboard
+    fixed_expenses = fixed_expenses_this_month
     
     # Obtener gastos personalizados para este mes
     custom_expenses = MonthlyExpense.query.filter_by(

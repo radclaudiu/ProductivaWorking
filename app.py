@@ -84,6 +84,14 @@ def create_app(config_class='config.Config'):
     except ImportError as e:
         cash_register_bp = None
         logger.warning(f"No se pudo importar el blueprint de arqueos de caja: {str(e)}")
+        
+    # Importar blueprint de CreaTurno
+    try:
+        from routes_creaturno import creaturno_bp
+        logger.info("Blueprint de CreaTurno importado correctamente")
+    except ImportError as e:
+        creaturno_bp = None
+        logger.warning(f"No se pudo importar el blueprint de CreaTurno: {str(e)}")
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -103,6 +111,11 @@ def create_app(config_class='config.Config'):
     if cash_register_bp is not None:
         app.register_blueprint(cash_register_bp)
         logger.info("Blueprint de arqueos de caja registrado correctamente")
+    
+    # Registrar el blueprint de CreaTurno
+    if creaturno_bp is not None:
+        app.register_blueprint(creaturno_bp)
+        logger.info("Blueprint de CreaTurno registrado correctamente")
     
     # Inicializar el sistema de puntos de fichaje
     init_checkpoints_app(app)

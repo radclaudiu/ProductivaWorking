@@ -1,0 +1,243 @@
+{% extends "layout.html" %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    /* Estilos para la tarjeta de estado del servidor */
+    .server-status-card {
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+    
+    .server-status-card .card-header {
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .server-status-card .status-badge {
+        font-size: 0.8rem;
+        padding: 5px 10px;
+        border-radius: 20px;
+    }
+    
+    /* Estilos para operaciones de mantenimiento */
+    .maintenance-card {
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .logs-container {
+        max-height: 300px;
+        overflow-y: auto;
+        background-color: #f8f9fa;
+        padding: 15px;
+        border-radius: 5px;
+        font-family: monospace;
+        font-size: 0.9rem;
+    }
+    
+    /* Breadcrumb */
+    .breadcrumb {
+        background-color: transparent;
+        border-radius: 0;
+        padding: 0.5rem 0;
+        margin-bottom: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.index') }}">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('creaturno.index') }}">CreaTurno</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Administración</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Administración de CreaTurno</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <!-- Tarjeta de Estado del Servidor -->
+        <div class="card server-status-card">
+            <div class="card-header bg-primary text-white">
+                <span>Estado del Servidor</span>
+                <span class="status-badge bg-light text-dark" id="server-status-badge">{{ server_status }}</span>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    El servidor de CreaTurno es necesario para que funcione la aplicación.
+                    Si está detenido, los usuarios no podrán acceder a la funcionalidad de gestión de turnos.
+                </p>
+                <div class="d-flex mt-3">
+                    <button class="btn btn-success me-2" id="start-server-btn">
+                        <i class="fas fa-play"></i> Iniciar Servidor
+                    </button>
+                    <button class="btn btn-danger" id="stop-server-btn">
+                        <i class="fas fa-stop"></i> Detener Servidor
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tarjeta de Información -->
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <i class="fas fa-info-circle"></i> Información
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">Acerca de CreaTurno</h5>
+                <p>CreaTurno es un módulo para la gestión de turnos de trabajo de los empleados.</p>
+                <ul>
+                    <li>Permite crear horarios semanales</li>
+                    <li>Asignar turnos a empleados</li>
+                    <li>Visualizar la distribución de personal</li>
+                    <li>Exportar horarios</li>
+                </ul>
+                <p class="mb-0 text-muted">Version: 1.0.0</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <!-- Tarjeta de Mantenimiento -->
+        <div class="card maintenance-card">
+            <div class="card-header bg-secondary text-white">
+                <i class="fas fa-tools"></i> Mantenimiento
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <button class="btn btn-primary" id="check-tables-btn">
+                        <i class="fas fa-database"></i> Verificar Tablas
+                    </button>
+                    <button class="btn btn-warning ms-2" id="reinit-tables-btn">
+                        <i class="fas fa-sync"></i> Reinicializar Tablas
+                    </button>
+                </div>
+                
+                <h5 class="mt-4">Registros del Servidor</h5>
+                <div class="logs-container" id="server-logs">
+                    <p class="text-muted">Los registros del servidor se mostrarán aquí...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Referencias a elementos
+        const serverStatusBadge = document.getElementById('server-status-badge');
+        const startServerBtn = document.getElementById('start-server-btn');
+        const stopServerBtn = document.getElementById('stop-server-btn');
+        const checkTablesBtn = document.getElementById('check-tables-btn');
+        const reinitTablesBtn = document.getElementById('reinit-tables-btn');
+        const serverLogs = document.getElementById('server-logs');
+        
+        // Verificar estado del servidor
+        function checkServerStatus() {
+            fetch('/creaturno/status')
+                .then(response => response.json())
+                .then(data => {
+                    const isRunning = data.status === 'running';
+                    
+                    // Actualizar badge de estado
+                    serverStatusBadge.textContent = isRunning ? 'En ejecución' : 'Detenido';
+                    serverStatusBadge.className = isRunning 
+                        ? 'status-badge bg-success text-white' 
+                        : 'status-badge bg-danger text-white';
+                    
+                    // Habilitar/deshabilitar botones según el estado
+                    startServerBtn.disabled = isRunning;
+                    stopServerBtn.disabled = !isRunning;
+                    
+                    // Mostrar información de PID si el servidor está en ejecución
+                    if (isRunning && data.pid) {
+                        appendToLogs(`Servidor en ejecución con PID: ${data.pid}`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al verificar estado del servidor:', error);
+                    appendToLogs('Error al verificar estado del servidor: ' + error.message);
+                    
+                    serverStatusBadge.textContent = 'Desconocido';
+                    serverStatusBadge.className = 'status-badge bg-secondary text-white';
+                });
+        }
+        
+        // Iniciar servidor
+        startServerBtn.addEventListener('click', function() {
+            appendToLogs('Iniciando servidor...');
+            
+            fetch('/creaturno/start_server', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                appendToLogs(data.message);
+                checkServerStatus();
+            })
+            .catch(error => {
+                console.error('Error al iniciar servidor:', error);
+                appendToLogs('Error al iniciar servidor: ' + error.message);
+            });
+        });
+        
+        // Detener servidor
+        stopServerBtn.addEventListener('click', function() {
+            if (!confirm('¿Está seguro de que desea detener el servidor? Los usuarios no podrán acceder a CreaTurno hasta que se reinicie.')) {
+                return;
+            }
+            
+            appendToLogs('Deteniendo servidor...');
+            
+            fetch('/creaturno/stop_server', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                appendToLogs(data.message);
+                checkServerStatus();
+            })
+            .catch(error => {
+                console.error('Error al detener servidor:', error);
+                appendToLogs('Error al detener servidor: ' + error.message);
+            });
+        });
+        
+        // Función para añadir mensajes a los logs
+        function appendToLogs(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<strong>${timestamp}</strong>: ${message}`;
+            
+            serverLogs.appendChild(logEntry);
+            serverLogs.scrollTop = serverLogs.scrollHeight;
+        }
+        
+        // Verificar estado al cargar la página
+        checkServerStatus();
+        
+        // Verificar estado cada 30 segundos
+        setInterval(checkServerStatus, 30000);
+    });
+</script>
+{% endblock %}

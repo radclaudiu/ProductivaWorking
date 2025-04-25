@@ -100,22 +100,10 @@
                                     <span>Total Anual:</span>
                                     <span class="fw-bold text-success {% if view_type != 'year' %}{% if view_type != 'week' and view_type != None %}text-muted{% endif %}{% endif %}">{{ format_currency(summary.yearly_total) }}</span>
                                 </li>
-                                {% if view_type == 'month' %}
-                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
-                                    <span>Gastos Mensuales:</span>
-                                    <span class="fw-bold text-danger">{{ format_currency(summary.monthly_expenses) }}</span>
-                                </li>
-                                {% elif view_type == 'year' %}
-                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
-                                    <span>Gastos Anuales:</span>
-                                    <span class="fw-bold text-danger">{{ format_currency(summary.yearly_expenses) }}</span>
-                                </li>
-                                {% else %}
                                 <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
                                     <span>Gastos Semanales:</span>
                                     <span class="fw-bold text-danger">{{ format_currency(summary.weekly_expenses) }}</span>
                                 </li>
-                                {% endif %}
                             </ul>
                         </div>
                         <div class="col-md-6">
@@ -171,7 +159,13 @@
                 <div class="card-header bg-transparent border-bottom border-secondary">
                     <h5 class="card-title mb-0">
                         <i class="bi bi-pie-chart me-2"></i>
-                        Métodos de Pago (Semana)
+                        {% if view_type == 'month' %}
+                            Métodos de Pago (Mes)
+                        {% elif view_type == 'year' %}
+                            Métodos de Pago (Año)
+                        {% else %}
+                            Métodos de Pago (Semana)
+                        {% endif %}
                     </h5>
                 </div>
                 <div class="card-body">

@@ -8,8 +8,8 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import { isAuthenticated, isAdmin, hasCompanyAccess, getCurrentUser } from "./auth_productiva";
-import { db, employees, locations, companies, creaturnoShifts, creaturnoShiftTemplates, creaturnoShiftRoles, eq, and, gte, lte } from "./storage_productiva";
+import { isAuthenticated, isAdmin, hasCompanyAccess, getCurrentUser } from "./auth_productiva.js";
+import { db, employees, locations, companies, creaturnoShifts, creaturnoShiftTemplates, creaturnoShiftRoles, eq, and, gte, lte } from "./storage_productiva.js";
 
 // Crear aplicación Express
 const app = express();

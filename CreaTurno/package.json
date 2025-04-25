@@ -2,6 +2,7 @@
   "name": "creaturno",
   "version": "1.0.0",
   "description": "Módulo de gestión de turnos para Productiva",
+  "type": "module",
   "main": "server/index_productiva.ts",
   "scripts": {
     "start": "npx tsx server/index_productiva.ts",

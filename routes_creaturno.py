@@ -93,8 +93,11 @@ def start_creaturno_server():
         # Ruta al directorio de CreaTurno
         creaturno_dir = os.path.join(os.getcwd(), 'CreaTurno')
         
+        # Ruta a Node.js y sus binarios
+        node_dir = os.path.join(os.getcwd(), 'node_modules', '.bin')
+        
         # Comando para iniciar el servidor
-        node_executable = os.path.join(os.getcwd(), 'node_modules', '.bin', 'tsx')
+        node_executable = os.path.join(node_dir, 'tsx')
         server_script = os.path.join(creaturno_dir, 'server', 'index_productiva.ts')
         
         # Verificar si los archivos existen
@@ -102,12 +105,13 @@ def start_creaturno_server():
             logger.error(f"Script del servidor no encontrado: {server_script}")
             return False
             
-        # Iniciar el servidor en un nuevo proceso
-        if os.path.exists(node_executable):
-            cmd = [node_executable, server_script]
+        # Ejecutar con npm (que usará tsx internamente como está configurado en package.json)
+        npm_path = '/usr/bin/npm'
+        if os.path.exists(npm_path):
+            cmd = [npm_path, 'run', 'start']
         else:
-            # Intentar con npx si tsx no está instalado directamente
-            cmd = ['node', server_script]
+            # Intentar con npm en la ruta estándar
+            cmd = ['npm', 'run', 'start']
             
         # Configure environment variables
         env = os.environ.copy()

@@ -5,10 +5,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const configPrinterBtn = document.getElementById("config-printer-btn");
     if (!brotherPrintBtn && !configPrinterBtn) return;
 
-    // Cargar la biblioteca bpac-js
+    // Cargar la biblioteca bpac-js (versión UMD en lugar de ES modules)
     const scriptTag = document.createElement('script');
-    scriptTag.src = "https://cdn.jsdelivr.net/npm/bpac-js@latest/dist/index.js";
+    scriptTag.src = "https://cdn.jsdelivr.net/npm/bpac-js@1.1.1/dist/bpac.umd.js"; // Usar versión UMD específica
     scriptTag.onload = initBrotherPrinting;
+    console.log("Cargando biblioteca de Brother desde CDN (versión UMD)");
     document.head.appendChild(scriptTag);
 
     // Almacenar configuración de la impresora en localStorage
@@ -59,19 +60,26 @@ document.addEventListener('DOMContentLoaded', function() {
                     const secondaryExpiryDate = document.getElementById("secondary-expiry-date") ? 
                         document.getElementById("secondary-expiry-date").textContent : "";
 
-                    // Crear instancia de BrotherSdk
-                    const BrotherSdk = window.BrotherSdk;
-                    if (!BrotherSdk) {
-                        console.error("No se pudo cargar la biblioteca BrotherSdk");
-                        showPrintMessage("Error: No se pudo cargar la biblioteca de impresión", true);
+                    // Crear instancia de BrotherSdk (biblioteca UMD)
+                    // La biblioteca UMD crea un objeto global bpac
+                    if (!window.bpac) {
+                        console.error("No se pudo cargar la biblioteca de Brother (bpac)");
+                        showPrintMessage("Error: No se pudo cargar la biblioteca de impresión. Intenta recargar la página.", true);
                         return;
                     }
+                    
+                    console.log("Biblioteca Brother detectada correctamente:", window.bpac);
 
                     const config = getPrinterConfig();
-                    const tag = new BrotherSdk({
-                        templatePath: config.templatePath,
-                        exportPath: config.exportPath,
-                    });
+                    // Usar la API de bpac en lugar de BrotherSdk
+                    // Crear objeto de documento b-PAC
+                    const bDoc = new window.bpac.Document();
+                    
+                    // Abrir plantilla
+                    const openResult = bDoc.open(config.templatePath);
+                    if (!openResult) {
+                        throw new Error(`No se pudo abrir la plantilla: ${config.templatePath}`);
+                    }
 
                     // Los datos deben coincidir con los objetos/variables en la plantilla
                     const data = {
@@ -91,13 +99,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     showPrintMessage("Enviando a la impresora Brother...");
                     
-                    const isPrinted = await tag.print(data, options);
+                    // Asignar los datos a los campos de la plantilla
+                    Object.keys(data).forEach(key => {
+                        if (bDoc.getObject(key)) {
+                            bDoc.getObject(key).text = data[key] || "";
+                        }
+                    });
                     
-                    if (isPrinted) {
-                        showPrintMessage("Etiqueta enviada correctamente a la impresora Brother");
+                    // Configurar opciones de impresión
+                    const copies = options.copies || 1;
+                    
+                    // Imprimir
+                    const printResult = bDoc.print(copies);
+                    
+                    if (printResult) {
+                        showPrintMessage(`Etiqueta enviada correctamente a la impresora Brother (${copies} copias)`);
                     } else {
                         showPrintMessage("No se pudo imprimir en la impresora Brother", true);
                     }
+                    
+                    // Cerrar el documento
+                    bDoc.close();
                 } catch (error) {
                     console.error("Error al imprimir con Brother:", error);
                     showPrintMessage("Error al imprimir: " + (error.message || "Error desconocido"), true);

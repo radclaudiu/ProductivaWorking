@@ -119,7 +119,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Firma:"
+                    android:text="@string/signature_label"
                     android:textColor="#757575"
                     android:textSize="14sp" />
 
@@ -149,7 +149,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Foto:"
+                    android:text="@string/photo_label"
                     android:textColor="#757575"
                     android:textSize="14sp" />
 

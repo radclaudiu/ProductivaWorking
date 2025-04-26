@@ -18,12 +18,12 @@
             android:title="@string/settings" />
     </group>
 
-    <item android:title="Cuenta">
+    <item android:title="@string/profile">
         <menu>
             <item
                 android:id="@+id/nav_switch_user"
                 android:icon="@android:drawable/ic_menu_myplaces"
-                android:title="Cambiar usuario" />
+                android:title="@string/change_user" />
             <item
                 android:id="@+id/nav_logout"
                 android:icon="@android:drawable/ic_menu_close_clear_cancel"

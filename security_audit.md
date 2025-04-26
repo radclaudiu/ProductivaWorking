@@ -161,3 +161,79 @@ Se ha realizado un examen de los archivos clave del proyecto y se han identifica
   - Función `check_company_access` en `routes_cash_register_additional.py`.
 - **Riesgo**: Inconsistencia en la aplicación de controles de acceso.
 - **Recomendación**: Centralizar las verificaciones de permisos en un único módulo.
+
+### 6. Cross-Site Scripting (XSS) y Exposición de Datos
+
+#### 6.1 Templates HTML - Ausencia de Escape
+
+**Severidad: Alta**
+- **Problema**: No se usa el filtro `|escape` de forma consistente en las plantillas.
+  - Múltiples archivos como `company_delete_confirm.html` y `employee_detail.html` muestran datos sin escape.
+  - Ejemplo: `{{ company.name }}` en lugar de `{{ company.name|escape }}`
+- **Riesgo**: Vulnerabilidad a ataques XSS si datos de entrada contienen código malicioso.
+- **Recomendación**: Aplicar escape de forma predeterminada y usar `|safe` solo cuando sea absolutamente necesario.
+
+**Severidad: Media**
+- **Problema**: Posible vulnerabilidad XSS en serialización de datos a JavaScript.
+  - En templates como `employee_history.html`: `{{ history|map(attribute='changed_at')|list|tojson }}`
+  - En `dashboard.html`: `{{ stats.employees_by_contract | tojson }}`
+- **Riesgo**: Aunque `tojson` ayuda a serializar datos, no garantiza protección completa contra XSS.
+- **Recomendación**: Validar que todos los datos expuestos a JavaScript estén sanitizados.
+
+#### 6.2 APIs y Respuestas JSON
+
+**Severidad: Media**
+- **Problema**: Errores de sistema expuestos directamente en respuestas JSON.
+  - En `routes_checkpoints_new.py` (línea 762): `jsonify({'error': f'Error al generar el PDF: {str(e)}'}), 500`
+- **Riesgo**: Exposición de detalles de implementación y posible información confidencial en errores.
+- **Recomendación**: Usar mensajes de error genéricos y registrar los detalles en logs internos.
+
+#### 6.3 Gestión de Datos Sensibles
+
+**Severidad: Alta**
+- **Problema**: Datos sensibles de empleados expuestos en múltiples vistas sin control adecuado.
+  - Ejemplo en `checkin_form.html` (línea 84): `<p><strong>DNI/NIE:</strong> {{ employee.dni }}</p>`
+- **Riesgo**: Exposición no autorizada de información personal identificable (PII).
+- **Recomendación**: Implementar control de acceso granular a datos sensibles y enmascarar información cuando corresponda.
+
+### 7. Validación de Entrada y Protección CSRF
+
+#### 7.1 Protección CSRF Deshabilitada
+
+**Severidad: Crítica**
+- **Problema**: A pesar de tener tokens CSRF en los formularios, la protección está deshabilitada.
+  - Línea 42 en `app.py`: `app.config['WTF_CSRF_ENABLED'] = False`
+  - La mayoría de formularios incluyen tokens: `<input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />`
+- **Riesgo**: Vulnerabilidad a ataques CSRF en todas las operaciones POST de la aplicación.
+- **Recomendación**: Habilitar la protección CSRF y aplicarla consistentemente en todos los formularios.
+
+#### 7.2 Validación Insuficiente en Entradas de Usuario
+
+**Severidad: Alta**
+- **Problema**: Validación insuficiente de entradas de usuario en rutas API.
+  - Múltiples endpoints aceptan datos directamente sin validación adicional más allá de WTForms.
+- **Riesgo**: Posibles vulnerabilidades de inyección y bypass de validación del lado del cliente.
+- **Recomendación**: Implementar validación de datos en el lado del servidor, independiente de WTForms.
+
+### 8. Conclusiones y Recomendaciones Generales
+
+A continuación se presentan las recomendaciones prioritarias para mejorar la seguridad de la aplicación:
+
+1. **Prioridad Crítica**:
+   - Habilitar protección CSRF inmediatamente
+   - Eliminar la función de ejecución de consultas SQL arbitrarias
+   - Implementar sanitización consistente contra XSS
+
+2. **Prioridad Alta**:
+   - Eliminar todas las credenciales hardcodeadas
+   - Revisar y fortalecer los mecanismos de hash de contraseñas
+   - Implementar validación más estricta para todas las entradas de usuario
+   - Limitar la exposición de información sensible en templates
+
+3. **Prioridad Media**:
+   - Centralizar la gestión de permisos
+   - Mejorar la gestión de errores para evitar exposición de información
+   - Implementar timeout de sesiones más corto con renovación segura
+   - Revisar y mejorar las prácticas de logging y auditoría
+
+La aplicación contiene múltiples vulnerabilidades críticas que podrían comprometer datos sensibles y la integridad del sistema. Se recomienda abordar estos problemas antes de cualquier despliegue en producción.

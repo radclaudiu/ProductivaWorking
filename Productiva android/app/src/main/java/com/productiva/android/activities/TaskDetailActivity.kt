@@ -1,182 +1,166 @@
 package com.productiva.android.activities
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
-import android.provider.MediaStore
-import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
-import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
-import com.productiva.android.ProductivaApplication
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.productiva.android.R
+import com.productiva.android.adapters.CompletionAdapter
 import com.productiva.android.model.Task
-import com.productiva.android.repository.TaskRepository
+import com.productiva.android.viewmodel.TaskDetailViewModel
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import java.io.File
-import java.io.IOException
-import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 
 /**
- * Actividad para ver detalles de una tarea y completarla
+ * Activity para mostrar el detalle de una tarea y permitir completarla
  */
 class TaskDetailActivity : AppCompatActivity() {
     
+    private lateinit var viewModel: TaskDetailViewModel
+    
+    // Componentes de UI
     private lateinit var toolbar: Toolbar
-    private lateinit var textViewTaskTitle: TextView
-    private lateinit var textViewTaskDescription: TextView
-    private lateinit var textViewTaskFrequency: TextView
-    private lateinit var imageViewPhoto: ImageView
-    private lateinit var imageViewSignature: ImageView
-    private lateinit var editTextNotes: EditText
-    private lateinit var buttonTakePhoto: Button
-    private lateinit var buttonCaptureFirma: Button
-    private lateinit var buttonPrintLabel: Button
-    private lateinit var buttonCompleteTask: Button
+    private lateinit var titleTextView: TextView
+    private lateinit var descriptionTextView: TextView
+    private lateinit var statusTextView: TextView
+    private lateinit var dueDateTextView: TextView
+    private lateinit var locationTextView: TextView
+    private lateinit var priorityTextView: TextView
     private lateinit var progressBar: ProgressBar
+    private lateinit var completionsRecyclerView: RecyclerView
+    private lateinit var completeButton: Button
+    private lateinit var startButton: Button
     
-    private lateinit var taskRepository: TaskRepository
-    private lateinit var app: ProductivaApplication
+    // Adaptador para la lista de completaciones
+    private lateinit var completionAdapter: CompletionAdapter
     
-    private var currentTask: Task? = null
-    private var photoFile: File? = null
-    private var signatureFile: File? = null
-    private var currentPhotoPath: String? = null
-    private var currentSignaturePath: String? = null
-    
-    // Lanzadores de actividades para resultados
-    private val takePictureLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == RESULT_OK) {
-            // La foto se guardó en el archivo photoFile
-            currentPhotoPath = photoFile?.absolutePath
-            
-            // Mostrar la imagen capturada
-            photoFile?.let {
-                if (it.exists()) {
-                    val bitmap = BitmapFactory.decodeFile(it.absolutePath)
-                    imageViewPhoto.setImageBitmap(bitmap)
-                    imageViewPhoto.visibility = View.VISIBLE
-                }
-            }
-        }
-    }
-    
-    private val captureSignatureLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == RESULT_OK) {
-            // La firma se guardó en el archivo pasado a la actividad
-            signatureFile?.let {
-                if (it.exists()) {
-                    currentSignaturePath = it.absolutePath
-                    val bitmap = BitmapFactory.decodeFile(it.absolutePath)
-                    imageViewSignature.setImageBitmap(bitmap)
-                    imageViewSignature.visibility = View.VISIBLE
-                }
-            }
-        }
-    }
-    
-    private val printLabelLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { 
-        // No necesitamos hacer nada con el resultado
-    }
+    // ID de la tarea
+    private var taskId: Int = -1
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_task_detail)
         
-        // Obtener instancia de la aplicación
-        app = application as ProductivaApplication
+        // Obtener ID de la tarea
+        taskId = intent.getIntExtra("task_id", -1)
         
-        // Inicializar el repositorio de tareas
-        taskRepository = app.taskRepository
+        if (taskId == -1) {
+            Toast.makeText(this, R.string.error_task_not_found, Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
         
-        // Inicializar vistas
+        // Inicializar ViewModel
+        viewModel = ViewModelProvider(this).get(TaskDetailViewModel::class.java)
+        
+        // Configurar componentes de UI
+        setupUI()
+        
+        // Configurar observadores
+        setupObservers()
+        
+        // Cargar tarea
+        viewModel.loadTask(taskId)
+    }
+    
+    /**
+     * Configura las referencias y eventos de UI
+     */
+    private fun setupUI() {
         toolbar = findViewById(R.id.toolbar)
-        textViewTaskTitle = findViewById(R.id.textViewTaskTitle)
-        textViewTaskDescription = findViewById(R.id.textViewTaskDescription)
-        textViewTaskFrequency = findViewById(R.id.textViewTaskFrequency)
-        imageViewPhoto = findViewById(R.id.imageViewPhoto)
-        imageViewSignature = findViewById(R.id.imageViewSignature)
-        editTextNotes = findViewById(R.id.editTextNotes)
-        buttonTakePhoto = findViewById(R.id.buttonTakePhoto)
-        buttonCaptureFirma = findViewById(R.id.buttonCaptureFirma)
-        buttonPrintLabel = findViewById(R.id.buttonPrintLabel)
-        buttonCompleteTask = findViewById(R.id.buttonCompleteTask)
-        progressBar = findViewById(R.id.progressBar)
-        
-        // Configurar toolbar
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.title = "Detalle de tarea"
+        title = getString(R.string.task_details)
         
-        // Configurar listeners
-        buttonTakePhoto.setOnClickListener {
-            if (checkCameraPermission()) {
-                dispatchTakePictureIntent()
-            } else {
-                requestCameraPermission()
-            }
+        titleTextView = findViewById(R.id.task_title)
+        descriptionTextView = findViewById(R.id.task_description)
+        statusTextView = findViewById(R.id.task_status)
+        dueDateTextView = findViewById(R.id.task_due_date)
+        locationTextView = findViewById(R.id.task_location)
+        priorityTextView = findViewById(R.id.task_priority)
+        progressBar = findViewById(R.id.progressBar)
+        completionsRecyclerView = findViewById(R.id.completions_recyclerview)
+        completeButton = findViewById(R.id.complete_button)
+        startButton = findViewById(R.id.start_button)
+        
+        // Configurar RecyclerView
+        completionsRecyclerView.layoutManager = LinearLayoutManager(this)
+        completionAdapter = CompletionAdapter()
+        completionsRecyclerView.adapter = completionAdapter
+        
+        // Configurar eventos de botones
+        completeButton.setOnClickListener {
+            showCompletionDialog()
         }
         
-        buttonCaptureFirma.setOnClickListener {
-            captureSignature()
-        }
-        
-        buttonPrintLabel.setOnClickListener {
-            printLabel()
-        }
-        
-        buttonCompleteTask.setOnClickListener {
-            completeTask()
-        }
-        
-        // Obtener tarea de la intent
-        val taskId = intent.getIntExtra("task_id", -1)
-        if (taskId != -1) {
-            loadTask(taskId)
-        } else {
-            finish()
+        startButton.setOnClickListener {
+            viewModel.startTask()
         }
     }
     
     /**
-     * Carga la tarea de la base de datos local
+     * Configura los observadores de LiveData
      */
-    private fun loadTask(taskId: Int) {
-        val taskDao = app.database.taskDao()
-        taskDao.getTaskById(taskId).observe(this) { task ->
-            if (task != null) {
-                currentTask = task
-                updateUI(task)
-            } else {
-                Toast.makeText(this, "No se pudo cargar la tarea", Toast.LENGTH_SHORT).show()
-                finish()
+    private fun setupObservers() {
+        // Observar estado de carga
+        viewModel.isLoading.observe(this) { isLoading ->
+            progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+        }
+        
+        // Observar mensajes de error
+        viewModel.errorMessage.observe(this) { errorMessage ->
+            if (errorMessage.isNotEmpty()) {
+                Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
+            }
+        }
+        
+        // Observar tarea
+        lifecycleScope.launch {
+            viewModel.task.collect { task ->
+                task?.let { updateTaskUI(it) }
+            }
+        }
+        
+        // Observar completaciones
+        viewModel.completions.observe(this) { completions ->
+            completionAdapter.submitList(completions)
+        }
+        
+        // Observar estado de completado
+        viewModel.completionState.observe(this) { state ->
+            when (state) {
+                is TaskDetailViewModel.CompletionState.Success -> {
+                    Toast.makeText(this, R.string.task_completed_successfully, Toast.LENGTH_SHORT).show()
+                    
+                    // Reiniciar estado tras un éxito
+                    viewModel.resetCompletionState()
+                    
+                    // Recargar tarea para mostrar el nuevo estado
+                    viewModel.loadTask(taskId)
+                }
+                is TaskDetailViewModel.CompletionState.Error -> {
+                    Toast.makeText(this, state.message, Toast.LENGTH_LONG).show()
+                    
+                    // Reiniciar estado tras un error
+                    viewModel.resetCompletionState()
+                }
+                else -> {
+                    // No hacer nada con el estado inicial
+                }
             }
         }
     }
@@ -184,278 +168,158 @@ class TaskDetailActivity : AppCompatActivity() {
     /**
      * Actualiza la UI con los datos de la tarea
      */
-    private fun updateUI(task: Task) {
-        textViewTaskTitle.text = task.title
-        textViewTaskDescription.text = task.description ?: "Sin descripción"
-        textViewTaskFrequency.text = formatFrequency(task.frequency)
+    private fun updateTaskUI(task: Task) {
+        titleTextView.text = task.title
+        descriptionTextView.text = task.description ?: getString(R.string.no_description)
+        statusTextView.text = getStatusText(task.status)
         
-        // Configurar visibilidad de botones según los requisitos de la tarea
-        buttonTakePhoto.visibility = if (task.needsPhoto) View.VISIBLE else View.GONE
-        buttonCaptureFirma.visibility = if (task.needsSignature) View.VISIBLE else View.GONE
-        buttonPrintLabel.visibility = if (task.printLabel) View.VISIBLE else View.GONE
+        // Formatear fecha
+        dueDateTextView.text = task.dueDate?.let { formatDate(it) } ?: getString(R.string.no_due_date)
+        
+        locationTextView.text = task.locationName ?: getString(R.string.no_location)
+        priorityTextView.text = getPriorityText(task.priority)
+        
+        // Actualizar estado de los botones según el estado de la tarea
+        updateButtons(task.status)
     }
     
     /**
-     * Formatea la frecuencia para mostrarla
+     * Actualiza los botones según el estado de la tarea
      */
-    private fun formatFrequency(frequency: String): String {
-        return when (frequency.lowercase()) {
-            "daily" -> "Diaria"
-            "weekly" -> "Semanal"
-            "monthly" -> "Mensual"
-            "work_days" -> "Días laborables"
-            "weekends" -> "Fines de semana"
-            else -> frequency.replaceFirstChar { it.uppercase() }
-        }
-    }
-    
-    /**
-     * Verifica el permiso de cámara
-     */
-    private fun checkCameraPermission(): Boolean {
-        return (ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.CAMERA
-        ) == PackageManager.PERMISSION_GRANTED)
-    }
-    
-    /**
-     * Solicita el permiso de cámara
-     */
-    private fun requestCameraPermission() {
-        ActivityCompat.requestPermissions(
-            this,
-            arrayOf(Manifest.permission.CAMERA),
-            REQUEST_CAMERA_PERMISSION
-        )
-    }
-    
-    /**
-     * Inicia la captura de foto
-     */
-    private fun dispatchTakePictureIntent() {
-        Intent(MediaStore.ACTION_IMAGE_CAPTURE).also { takePictureIntent ->
-            // Asegurarse de que hay una actividad de cámara para manejar el intent
-            takePictureIntent.resolveActivity(packageManager)?.also {
-                // Crear el archivo donde se guardará la foto
-                val photoFile: File? = try {
-                    createImageFile("PHOTO")
-                } catch (ex: IOException) {
-                    Log.e("TaskDetailActivity", "Error al crear archivo de imagen", ex)
-                    null
-                }
-                
-                // Continuar solo si el archivo fue creado exitosamente
-                photoFile?.also {
-                    this.photoFile = it
-                    val photoURI: Uri = FileProvider.getUriForFile(
-                        this,
-                        "com.productiva.android.fileprovider",
-                        it
-                    )
-                    takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
-                    takePictureLauncher.launch(takePictureIntent)
-                }
+    private fun updateButtons(status: String) {
+        when (status) {
+            "pending" -> {
+                startButton.visibility = View.VISIBLE
+                completeButton.visibility = View.GONE
+            }
+            "in_progress" -> {
+                startButton.visibility = View.GONE
+                completeButton.visibility = View.VISIBLE
+            }
+            "completed" -> {
+                startButton.visibility = View.GONE
+                completeButton.visibility = View.GONE
+            }
+            else -> {
+                startButton.visibility = View.VISIBLE
+                completeButton.visibility = View.GONE
             }
         }
     }
     
     /**
-     * Crea un archivo para guardar una imagen
+     * Obtiene el texto para el estado de la tarea
      */
-    @Throws(IOException::class)
-    private fun createImageFile(prefix: String): File {
-        // Crear un nombre de archivo único
-        val timeStamp: String = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-        val storageDir: File = getExternalFilesDir(Environment.DIRECTORY_PICTURES)!!
-        
-        return File.createTempFile(
-            "${prefix}_${timeStamp}_",  /* prefijo */
-            ".jpg",                      /* sufijo */
-            storageDir                   /* directorio */
-        )
-    }
-    
-    /**
-     * Inicia la captura de firma
-     */
-    private fun captureSignature() {
-        try {
-            // Crear archivo para la firma
-            signatureFile = createImageFile("SIGNATURE")
-            
-            // Lanzar actividad para capturar firma
-            val intent = Intent(this, SignatureActivity::class.java)
-            intent.putExtra("file_path", signatureFile?.absolutePath)
-            captureSignatureLauncher.launch(intent)
-        } catch (e: IOException) {
-            Log.e("TaskDetailActivity", "Error al crear archivo para firma", e)
-            Toast.makeText(this, "Error al iniciar captura de firma", Toast.LENGTH_SHORT).show()
+    private fun getStatusText(status: String): String {
+        return when (status) {
+            "pending" -> getString(R.string.status_pending)
+            "in_progress" -> getString(R.string.status_in_progress)
+            "completed" -> getString(R.string.status_completed)
+            else -> status
         }
     }
     
     /**
-     * Inicia la impresión de etiqueta
+     * Obtiene el texto para la prioridad de la tarea
      */
-    private fun printLabel() {
-        val intent = Intent(this, PrintLabelActivity::class.java)
-        intent.putExtra("task_id", currentTask?.id ?: -1)
-        intent.putExtra("task_title", currentTask?.title)
-        printLabelLauncher.launch(intent)
+    private fun getPriorityText(priority: Int?): String {
+        return when (priority) {
+            1 -> getString(R.string.priority_low)
+            2 -> getString(R.string.priority_medium)
+            3 -> getString(R.string.priority_high)
+            else -> getString(R.string.priority_unknown)
+        }
     }
     
     /**
-     * Completa la tarea actual
+     * Formatea una fecha para mostrarla
      */
-    private fun completeTask() {
-        val task = currentTask ?: return
+    private fun formatDate(date: Date): String {
+        val format = android.text.format.DateFormat.getDateFormat(this)
+        return format.format(date)
+    }
+    
+    /**
+     * Muestra un diálogo para completar la tarea
+     */
+    private fun showCompletionDialog() {
+        val view = layoutInflater.inflate(R.layout.dialog_task_completion, null)
+        val notesEditText = view.findViewById<EditText>(R.id.notes_edittext)
+        val timeSpentEditText = view.findViewById<EditText>(R.id.time_spent_edittext)
         
-        // Validar requisitos
-        if (task.needsPhoto && currentPhotoPath == null) {
-            Toast.makeText(this, "Se requiere una foto para completar la tarea", Toast.LENGTH_SHORT).show()
-            return
-        }
-        
-        if (task.needsSignature && currentSignaturePath == null) {
-            Toast.makeText(this, "Se requiere una firma para completar la tarea", Toast.LENGTH_SHORT).show()
-            return
-        }
-        
-        // Mostrar progreso
-        setLoading(true)
-        
-        // Notas
-        val notes = editTextNotes.text.toString().trim()
-        
-        lifecycleScope.launch {
-            try {
-                val result = taskRepository.completeTask(
-                    taskId = task.id,
-                    notes = notes,
-                    photoPath = currentPhotoPath,
-                    signaturePath = currentSignaturePath
-                )
+        val dialog = AlertDialog.Builder(this)
+            .setTitle(R.string.complete_task)
+            .setView(view)
+            .setPositiveButton(R.string.complete) { _, _ ->
+                val notes = notesEditText.text.toString().trim().takeIf { it.isNotEmpty() }
+                val timeSpent = timeSpentEditText.text.toString().trim().toIntOrNull()
                 
-                if (result.isSuccess) {
-                    // Intentar sincronizar inmediatamente
-                    syncTaskCompletion()
-                } else {
-                    val error = result.exceptionOrNull()?.message ?: "Error desconocido"
-                    Toast.makeText(applicationContext, error, Toast.LENGTH_LONG).show()
-                    setLoading(false)
-                }
-            } catch (e: Exception) {
-                Toast.makeText(
-                    applicationContext,
-                    "Error al completar la tarea: ${e.message}",
-                    Toast.LENGTH_LONG
-                ).show()
-                setLoading(false)
+                viewModel.completeTask(notes, timeSpent)
             }
-        }
-    }
-    
-    /**
-     * Sincroniza el completado de tarea con el servidor
-     */
-    private fun syncTaskCompletion() {
-        val token = app.sessionManager.getAuthToken()
+            .setNegativeButton(R.string.cancel, null)
+            .setNeutralButton(R.string.add_signature) { _, _ ->
+                val notes = notesEditText.text.toString().trim().takeIf { it.isNotEmpty() }
+                val timeSpent = timeSpentEditText.text.toString().trim().toIntOrNull()
+                
+                // Guardar notas y tiempo para enviarlos a la actividad de firma
+                val intent = Intent(this, SignatureActivity::class.java)
+                intent.putExtra("task_id", taskId)
+                intent.putExtra("notes", notes)
+                intent.putExtra("time_spent", timeSpent)
+                startActivity(intent)
+            }
+            .create()
         
-        if (token == null) {
-            Toast.makeText(this, "Sesión expirada", Toast.LENGTH_SHORT).show()
-            setLoading(false)
-            return
-        }
-        
-        lifecycleScope.launch {
-            try {
-                val result = taskRepository.syncPendingTaskCompletions(token)
-                
-                setLoading(false)
-                
-                if (result.isSuccess) {
-                    // Mostrar diálogo de éxito
-                    showSuccessDialog()
-                } else {
-                    val error = result.exceptionOrNull()?.message ?: "Error desconocido"
-                    Toast.makeText(
-                        applicationContext,
-                        "Tarea completada sin conexión. Se sincronizará más tarde: $error",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    
-                    // Volver a la actividad anterior
-                    finish()
-                }
-            } catch (e: Exception) {
-                setLoading(false)
-                Toast.makeText(
-                    applicationContext,
-                    "Tarea completada sin conexión. Se sincronizará más tarde: ${e.message}",
-                    Toast.LENGTH_LONG
-                ).show()
-                
-                // Volver a la actividad anterior
-                finish()
-            }
-        }
+        dialog.show()
     }
     
     /**
-     * Muestra un diálogo de tarea completada con éxito
+     * Infla el menú de opciones
      */
-    private fun showSuccessDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("¡Tarea completada!")
-            .setMessage("La tarea se ha completado correctamente.")
-            .setPositiveButton("Aceptar") { _, _ ->
-                finish()
-            }
-            .setCancelable(false)
-            .show()
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.task_detail_menu, menu)
+        return true
     }
     
     /**
-     * Actualiza la UI para mostrar/ocultar indicadores de carga
+     * Maneja las selecciones en el menú de opciones
      */
-    private fun setLoading(loading: Boolean) {
-        progressBar.visibility = if (loading) View.VISIBLE else View.GONE
-        buttonCompleteTask.isEnabled = !loading
-        buttonTakePhoto.isEnabled = !loading
-        buttonCaptureFirma.isEnabled = !loading
-        buttonPrintLabel.isEnabled = !loading
-    }
-    
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_CAMERA_PERMISSION) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                dispatchTakePictureIntent()
-            } else {
-                Toast.makeText(
-                    this,
-                    "Se necesita permiso de cámara para capturar fotos",
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-    }
-    
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
             android.R.id.home -> {
                 onBackPressed()
                 true
             }
+            R.id.action_refresh -> {
+                viewModel.loadTask(taskId)
+                true
+            }
+            R.id.action_take_photo -> {
+                navigateToPhotoCapture()
+                true
+            }
+            R.id.action_print_label -> {
+                navigateToPrintLabel()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }
     
-    companion object {
-        private const val REQUEST_CAMERA_PERMISSION = 100
+    /**
+     * Navega a la actividad de captura de foto
+     */
+    private fun navigateToPhotoCapture() {
+        // Implementación pendiente
+        Toast.makeText(this, R.string.feature_not_implemented, Toast.LENGTH_SHORT).show()
+    }
+    
+    /**
+     * Navega a la actividad de impresión de etiqueta
+     */
+    private fun navigateToPrintLabel() {
+        val intent = Intent(this, PrintLabelActivity::class.java)
+        intent.putExtra("task_id", taskId)
+        startActivity(intent)
     }
 }

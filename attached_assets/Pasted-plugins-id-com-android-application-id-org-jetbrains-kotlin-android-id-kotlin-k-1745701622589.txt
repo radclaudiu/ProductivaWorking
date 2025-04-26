@@ -1,0 +1,202 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'kotlin-kapt'
+    id 'androidx.navigation.safeargs.kotlin'
+    id 'kotlinx-serialization'
+}
+
+android {
+    namespace 'com.productiva.android'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.productiva.android"
+        minSdk 26  // Incrementado a 26 para soportar íconos adaptativos correctamente
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        
+        // Habilitar multidex para APIs menores a 21
+        multiDexEnabled true
+        
+        // Vectores para compatibilidad
+        vectorDrawables.useSupportLibrary = true
+    }
+    
+    // Configuración AAPT para manejo de recursos
+    aaptOptions {
+        // Evitar la compresión de archivos WebP para mantener la calidad
+        noCompress "webp"
+        // Deshabilitar el procesamiento de imágenes para acelerar la compilación
+        cruncherEnabled false
+        // Ignorar advertencias en recursos para evitar fallas por archivos duplicados
+        ignoreWarnings true
+    }
+    
+    // Desactivamos la sección que elimina archivos durante la compilación
+    // ya que puede estar causando problemas en la versión actual de Gradle
+    /*
+    android.applicationVariants.all { variant ->
+        variant.mergeResourcesProvider.configure {
+            doLast {
+                // Eliminar archivos PNG duplicados después de la fusión de recursos
+                delete(fileTree(dir: outputDir, includes: [
+                    "**/mipmap-mdpi/ic_launcher.png" ,
+                    "**/mipmap-mdpi/ic_launcher_round.png",
+                    "**/mipmap-xhdpi/ic_launcher.png",
+                    "**/mipmap-xhdpi/ic_launcher_round.png", 
+                    "**/mipmap-xxhdpi/ic_launcher.png",
+                    "**/mipmap-xxhdpi/ic_launcher_round.png",
+                    "**/mipmap-xxxhdpi/ic_launcher.png",
+                    "**/mipmap-xxxhdpi/ic_launcher_round.png"
+                ]).files)
+                println("Archivos PNG duplicados eliminados durante la compilación")
+            }
+        }
+    }
+    */
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            // Configuración para firmar la aplicación en release
+            signingConfig signingConfigs.debug
+        }
+        debug {
+            applicationIdSuffix ".debug"
+            debuggable true
+        }
+    }
+    
+    compileOptions {
+        // Flag para Java 8
+        coreLibraryDesugaringEnabled true
+        // Compatibilidad para Java 8 en todas las versiones de Android
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+    
+    buildFeatures {
+        compose true
+        viewBinding true
+    }
+    
+    composeOptions {
+        kotlinCompilerExtensionVersion '1.5.3'
+    }
+    
+    packagingOptions {
+        resources {
+            excludes += '/META-INF/{AL2.0,LGPL2.1}'
+        }
+    }
+    
+    // Configuración mejorada para manejo de recursos
+    sourceSets {
+        main {
+            // Desactivar la exclusión directa de archivos, puede causar problemas con AGP reciente
+            // Usar mergeRules en lugar de excludes
+            java {
+                srcDirs = ['src/main/java']
+            }
+            res {
+                srcDirs = ['src/main/res']
+            }
+        }
+    }
+    
+    // Deshabilitar PNG crushing para evitar problemas de recursos
+    android.aaptOptions.cruncherEnabled = false
+}
+
+dependencies {
+    // Core Android
+    implementation 'androidx.core:core-ktx:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'androidx.activity:activity-ktx:1.8.2'
+    implementation 'androidx.fragment:fragment-ktx:1.6.2'
+    implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
+    implementation 'androidx.multidex:multidex:2.0.1'
+    
+    // Componentes UI
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
+    
+    // Jetpack Compose
+    implementation platform('androidx.compose:compose-bom:2023.10.01')
+    implementation 'androidx.compose.ui:ui'
+    implementation 'androidx.compose.ui:ui-graphics'
+    implementation 'androidx.compose.ui:ui-tooling-preview'
+    implementation 'androidx.compose.material3:material3'
+    implementation 'androidx.compose.material3:material3-window-size-class'
+    implementation 'androidx.activity:activity-compose:1.8.2'
+    implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0'
+    implementation 'androidx.constraintlayout:constraintlayout-compose:1.0.1'
+    
+    // Navigation
+    implementation 'androidx.navigation:navigation-fragment-ktx:2.7.5'
+    implementation 'androidx.navigation:navigation-ui-ktx:2.7.5'
+    implementation 'androidx.navigation:navigation-compose:2.7.5'
+    
+    // Room
+    implementation 'androidx.room:room-runtime:2.6.1'
+    implementation 'androidx.room:room-ktx:2.6.1'
+    kapt 'androidx.room:room-compiler:2.6.1'
+    
+    // Coroutines
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3'
+    
+    // WorkManager
+    implementation 'androidx.work:work-runtime-ktx:2.9.0'
+    
+    // Retrofit y Networking
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.11.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:4.11.0'
+    
+    // Gson
+    implementation 'com.google.code.gson:gson:2.10.1'
+    
+    // Security
+    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
+    
+    // Bibliotecas de compatibilidad
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.3'
+    
+    // Biblioteca para firmas digitales
+    implementation 'com.github.gcacace:signature-pad:1.3.1'
+    
+    // IMPORTANTE: NO DESCOMENTAR hasta tener el archivo real de la SDK
+    // La implementación simulada BrotherPrintService.kt debe usarse mientras tanto
+    // implementation files('libs/brotherprintsdk.jar')
+    
+    // Unit y UI Testing
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+    androidTestImplementation platform('androidx.compose:compose-bom:2023.10.01')
+    androidTestImplementation 'androidx.compose.ui:ui-test-junit4'
+    
+    // Debug para Compose
+    debugImplementation 'androidx.compose.ui:ui-tooling'
+    debugImplementation 'androidx.compose.ui:ui-test-manifest'
+}
+
+// Configuración para Kotlin Serialization
+kotlin {
+    // Usando compatibilidad con Java 8 a través de compileOptions en lugar de jvmToolchain
+    // Esto evita el error de toolchain en máquinas sin JDK 8 específico
+}

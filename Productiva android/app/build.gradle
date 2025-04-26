@@ -45,11 +45,18 @@ android {
         ignoreWarnings true
     }
     
-    // Configuración para resolver conflictos de recursos
-    // Habilitamos opciones para manejo adecuado de recursos sin borrar archivos manualmente
+    // Configuración para optimizar el manejo de recursos
+    // Estas opciones ayudan a evitar conflictos durante la compilación
     
-    // Configuración para evitar advertencias de lint sobre recursos duplicados
+    // Habilitar lint para mostrar y corregir problemas en recursos
     android.buildFeatures.lint = true
+    
+    // Validación específica para recursos vectoriales
+    vectorDrawables {
+        useSupportLibrary = true  // Para compatibilidad con versiones antiguas de Android
+        // No generar PNGs de respaldo para vectores
+        generatedDensities = []
+    }
 
     buildTypes {
         release {

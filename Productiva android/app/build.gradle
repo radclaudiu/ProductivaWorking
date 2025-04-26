@@ -25,6 +25,16 @@ android {
         // Vectores para compatibilidad
         vectorDrawables.useSupportLibrary = true
     }
+    
+    // Configuración AAPT para ignorar duplicados
+    aaptOptions {
+        ignoreAssetsPattern '!.webp:!.png'
+        // Ignorar advertencias de nombres duplicados en recursos
+        ignoreWarnings true
+        cruncherEnabled false
+        // Especificar uso preferente de WebP sobre PNG
+        noCompress "webp"
+    }
 
     buildTypes {
         release {

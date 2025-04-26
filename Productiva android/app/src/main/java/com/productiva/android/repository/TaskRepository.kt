@@ -1,21 +1,16 @@
 package com.productiva.android.repository
 
 import android.content.Context
-import android.net.Uri
 import com.productiva.android.api.ApiService
+import com.productiva.android.data.dao.TaskCompletionDao
 import com.productiva.android.data.dao.TaskDao
 import com.productiva.android.model.Task
 import com.productiva.android.model.TaskCompletion
+import com.productiva.android.utils.SessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.asRequestBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
-import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 
 /**
  * Repositorio para operaciones relacionadas con tareas
@@ -24,12 +19,15 @@ import java.util.Locale
 class TaskRepository(
     private val apiService: ApiService,
     private val taskDao: TaskDao,
+    private val taskCompletionDao: TaskCompletionDao,
     private val context: Context
 ) {
+    private val sessionManager = SessionManager(context)
+    
     /**
-     * Carga tareas del servidor y las guarda en la base de datos local
+     * Obtiene las tareas del servidor y las actualiza en la base de datos local
      */
-    suspend fun refreshTasks(token: String, locationId: Int? = null): Result<List<Task>> {
+    suspend fun refreshTasks(token: String, locationId: Int): Result<List<Task>> {
         return withContext(Dispatchers.IO) {
             try {
                 val response = apiService.getTasks(
@@ -39,133 +37,160 @@ class TaskRepository(
                 
                 if (response.isSuccessful) {
                     val tasks = response.body() ?: emptyList()
+                    
+                    // Guardar tareas en la base de datos local
                     if (tasks.isNotEmpty()) {
+                        taskDao.deleteAllTasks()
                         taskDao.insertAllTasks(tasks)
                     }
+                    
                     Result.success(tasks)
                 } else {
-                    Result.failure(Exception("Error obteniendo tareas: ${response.code()}"))
+                    val errorMessage = when (response.code()) {
+                        401 -> "Token expirado o inválido"
+                        403 -> "Acceso denegado"
+                        404 -> "No se encontraron tareas"
+                        500 -> "Error en el servidor"
+                        else -> "Error: ${response.code()} - ${response.message()}"
+                    }
+                    Result.failure(Exception(errorMessage))
                 }
             } catch (e: Exception) {
-                Result.failure(Exception("Error de red: ${e.message}"))
+                // Intentar obtener tareas de la base de datos local
+                val localTasks = taskDao.getAllTasksSync()
+                if (localTasks.isNotEmpty()) {
+                    return@withContext Result.success(localTasks)
+                }
+                
+                Result.failure(Exception("Error de conexión: ${e.message}"))
             }
         }
     }
     
     /**
-     * Registra la completitud de una tarea tanto localmente como en el servidor
+     * Completa una tarea y la guarda localmente
      */
     suspend fun completeTask(
-        token: String,
         taskId: Int,
-        userId: Int,
-        locationId: Int,
-        notes: String? = null,
-        photoFilePath: String? = null,
-        signatureFilePath: String? = null
-    ): Result<Long> {
+        notes: String?,
+        photoPath: String?,
+        signaturePath: String?
+    ): Result<TaskCompletion> {
         return withContext(Dispatchers.IO) {
             try {
-                // Formato para la fecha
-                val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                val currentDate = dateFormat.format(Date())
+                val userId = sessionManager.getSelectedUserId()
+                if (userId == -1) {
+                    return@withContext Result.failure(Exception("No hay usuario seleccionado"))
+                }
                 
-                // Crear objeto de completado local
-                val taskCompletion = TaskCompletion(
+                val task = taskDao.getTaskByIdSync(taskId)
+                    ?: return@withContext Result.failure(Exception("Tarea no encontrada"))
+                
+                val completion = TaskCompletion(
+                    id = 0, // Se asignará automáticamente
                     taskId = taskId,
                     userId = userId,
-                    locationId = locationId,
-                    completionDate = currentDate,
-                    notes = notes,
-                    photoPath = photoFilePath,
-                    signaturePath = signatureFilePath,
-                    syncStatus = TaskCompletion.SYNC_PENDING
+                    completedAt = Date(),
+                    notes = notes ?: "",
+                    photoPath = photoPath,
+                    signaturePath = signaturePath,
+                    synced = false
                 )
                 
-                // Guardar en base de datos local
-                val localId = taskDao.saveTaskCompletion(taskCompletion)
+                // Guardar en la base de datos local
+                val id = taskCompletionDao.insertTaskCompletion(completion)
                 
-                // Enviar al servidor
-                val taskIdRequestBody = taskId.toString().toRequestBody("text/plain".toMediaTypeOrNull())
-                val userIdRequestBody = userId.toString().toRequestBody("text/plain".toMediaTypeOrNull())
-                val locationIdRequestBody = locationId.toString().toRequestBody("text/plain".toMediaTypeOrNull())
-                val notesRequestBody = notes?.toRequestBody("text/plain".toMediaTypeOrNull())
+                // Obtener el objeto con el ID asignado
+                val savedCompletion = taskCompletionDao.getTaskCompletionByIdSync(id.toInt())
+                    ?: return@withContext Result.failure(Exception("Error al guardar el completado"))
                 
-                // Preparar archivos adjuntos
-                var photoPart: MultipartBody.Part? = null
-                var signaturePart: MultipartBody.Part? = null
-                
-                if (!photoFilePath.isNullOrEmpty()) {
-                    val photoFile = File(photoFilePath)
-                    val photoRequestBody = photoFile.asRequestBody("image/jpeg".toMediaTypeOrNull())
-                    photoPart = MultipartBody.Part.createFormData("photo", photoFile.name, photoRequestBody)
-                }
-                
-                if (!signatureFilePath.isNullOrEmpty()) {
-                    val signatureFile = File(signatureFilePath)
-                    val signatureRequestBody = signatureFile.asRequestBody("image/png".toMediaTypeOrNull())
-                    signaturePart = MultipartBody.Part.createFormData("signature", signatureFile.name, signatureRequestBody)
-                }
-                
-                // Hacer la petición
-                val response = apiService.completeTask(
-                    token = "Bearer $token",
-                    taskId = taskIdRequestBody,
-                    userId = userIdRequestBody,
-                    locationId = locationIdRequestBody,
-                    notes = notesRequestBody,
-                    photo = photoPart,
-                    signature = signaturePart
-                )
-                
-                if (response.isSuccessful) {
-                    val responseBody = response.body()
-                    if (responseBody != null) {
-                        // Actualizar estado de sincronización
-                        taskDao.updateTaskCompletionSyncStatus(
-                            id = localId.toInt(),
-                            syncStatus = TaskCompletion.SYNC_COMPLETE,
-                            serverId = responseBody.id
-                        )
-                    }
-                    Result.success(localId)
-                } else {
-                    Result.failure(Exception("Error al completar tarea: ${response.code()}"))
-                }
+                Result.success(savedCompletion)
             } catch (e: Exception) {
-                Result.failure(Exception("Error de red: ${e.message}"))
+                Result.failure(Exception("Error al completar la tarea: ${e.message}"))
             }
         }
     }
     
     /**
-     * Sincroniza completados de tareas pendientes con el servidor
+     * Sincroniza los completados de tareas pendientes con el servidor
      */
     suspend fun syncPendingTaskCompletions(token: String): Result<Int> {
         return withContext(Dispatchers.IO) {
             try {
-                // Obtener completados pendientes
-                val pendingCompletions = taskDao.getPendingSyncTaskCompletions()
-                
+                val pendingCompletions = taskCompletionDao.getPendingTaskCompletionsSync()
                 if (pendingCompletions.isEmpty()) {
                     return@withContext Result.success(0)
                 }
                 
-                // TODO: Implementar lógica de sincronización real con el servidor
-                // En una implementación real, se enviarían los pendingCompletions al servidor
+                var syncedCount = 0
                 
-                // Simulamos éxito para todos (en una implementación real esto vendría del servidor)
-                pendingCompletions.forEach { completion ->
-                    taskDao.updateTaskCompletionSyncStatus(
-                        id = completion.id,
-                        syncStatus = TaskCompletion.SYNC_COMPLETE,
-                        serverId = completion.id + 1000 // Simulado
+                for (completion in pendingCompletions) {
+                    // Preparar archivos para subir
+                    val photoFile = completion.photoPath?.let { File(it) }
+                    val signatureFile = completion.signaturePath?.let { File(it) }
+                    
+                    val response = apiService.completeTask(
+                        token = "Bearer $token",
+                        taskId = completion.taskId,
+                        userId = completion.userId,
+                        notes = completion.notes,
+                        photo = photoFile,
+                        signature = signatureFile
                     )
+                    
+                    if (response.isSuccessful) {
+                        // Marcar como sincronizado
+                        completion.synced = true
+                        taskCompletionDao.updateTaskCompletion(completion)
+                        syncedCount++
+                    }
                 }
                 
-                Result.success(pendingCompletions.size)
+                Result.success(syncedCount)
             } catch (e: Exception) {
-                Result.failure(Exception("Error sincronizando completados: ${e.message}"))
+                Result.failure(Exception("Error de sincronización: ${e.message}"))
+            }
+        }
+    }
+    
+    /**
+     * Obtiene el historial de completados de una tarea
+     */
+    suspend fun getTaskCompletionHistory(token: String, taskId: Int): Result<List<TaskCompletion>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiService.getTaskCompletions(
+                    token = "Bearer $token",
+                    taskId = taskId
+                )
+                
+                if (response.isSuccessful) {
+                    val completions = response.body() ?: emptyList()
+                    
+                    // Guardar en la base de datos local
+                    if (completions.isNotEmpty()) {
+                        taskCompletionDao.insertAllTaskCompletions(completions)
+                    }
+                    
+                    Result.success(completions)
+                } else {
+                    val errorMessage = when (response.code()) {
+                        401 -> "Token expirado o inválido"
+                        403 -> "Acceso denegado"
+                        404 -> "No se encontró el historial"
+                        500 -> "Error en el servidor"
+                        else -> "Error: ${response.code()} - ${response.message()}"
+                    }
+                    Result.failure(Exception(errorMessage))
+                }
+            } catch (e: Exception) {
+                // Intentar obtener de la base de datos local
+                val localCompletions = taskCompletionDao.getTaskCompletionsByTaskIdSync(taskId)
+                if (localCompletions.isNotEmpty()) {
+                    return@withContext Result.success(localCompletions)
+                }
+                
+                Result.failure(Exception("Error de conexión: ${e.message}"))
             }
         }
     }

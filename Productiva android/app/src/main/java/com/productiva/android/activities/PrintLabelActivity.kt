@@ -12,80 +12,72 @@ import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
 import android.widget.Button
+import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.productiva.android.ProductivaApplication
 import com.productiva.android.R
-import com.productiva.android.adapters.PrinterListAdapter
+import com.productiva.android.adapters.BluetoothDeviceAdapter
 import com.productiva.android.bluetooth.BluetoothPrinterManager
-import kotlinx.coroutines.Dispatchers
+import com.productiva.android.model.SavedPrinter
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.ResponseBody
-import java.io.IOException
 
 /**
- * Actividad para imprimir etiquetas de tareas
+ * Actividad para imprimir etiquetas en impresoras Bluetooth
  */
 class PrintLabelActivity : AppCompatActivity() {
     
     private lateinit var toolbar: Toolbar
-    private lateinit var recyclerViewPrinters: RecyclerView
-    private lateinit var textViewNoDevices: TextView
-    private lateinit var buttonEnableBluetooth: Button
+    private lateinit var recyclerViewDevices: RecyclerView
+    private lateinit var editTextExtraText: EditText
+    private lateinit var buttonPrint: Button
     private lateinit var progressBar: ProgressBar
+    private lateinit var textViewStatus: TextView
+    private lateinit var buttonScanDevices: Button
     
     private lateinit var bluetoothPrinterManager: BluetoothPrinterManager
-    private var printerListAdapter: PrinterListAdapter? = null
-    
-    private val apiService by lazy {
-        (application as ProductivaApplication).apiService
-    }
-    
-    private val sessionManager by lazy {
-        (application as ProductivaApplication).sessionManager
-    }
+    private lateinit var deviceAdapter: BluetoothDeviceAdapter
+    private lateinit var app: ProductivaApplication
     
     private var taskId: Int = -1
-    private var labelData: ByteArray? = null
+    private var taskTitle: String? = null
+    private var selectedDevice: BluetoothDevice? = null
     
-    // Lanzador para solicitar permisos de Bluetooth
-    private val requestPermissionLauncher = registerForActivityResult(
+    // Lanzadores para solicitud de permisos
+    private val bluetoothPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
-        if (permissions.all { it.value }) {
-            loadPairedPrinters()
+        val allGranted = permissions.entries.all { it.value }
+        if (allGranted) {
+            initializeBluetoothScanning()
         } else {
             Toast.makeText(
                 this,
-                "Se requieren permisos de Bluetooth para imprimir etiquetas",
-                Toast.LENGTH_LONG
+                "Se requieren permisos de Bluetooth para escanear dispositivos",
+                Toast.LENGTH_SHORT
             ).show()
         }
     }
     
-    // Lanzador para habilitar Bluetooth
+    // Lanzador para activar Bluetooth
     private val enableBluetoothLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK) {
-            loadPairedPrinters()
+            scanForDevices()
         } else {
-            Toast.makeText(
-                this,
-                "Se requiere Bluetooth para imprimir etiquetas",
-                Toast.LENGTH_LONG
-            ).show()
+            Toast.makeText(this, "Bluetooth necesario para imprimir etiquetas", Toast.LENGTH_SHORT).show()
         }
     }
     
@@ -93,271 +85,218 @@ class PrintLabelActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_print_label)
         
-        // Obtener ID de tarea
+        // Obtener la aplicación
+        app = application as ProductivaApplication
+        
+        // Obtener datos de la tarea
         taskId = intent.getIntExtra("task_id", -1)
+        taskTitle = intent.getStringExtra("task_title")
+        
         if (taskId == -1) {
-            Toast.makeText(this, "Error: Tarea no encontrada", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Error: Tarea no especificada", Toast.LENGTH_SHORT).show()
             finish()
             return
         }
         
-        // Inicializar views
+        // Inicializar el gestor de impresora Bluetooth
+        bluetoothPrinterManager = BluetoothPrinterManager(this)
+        
+        // Inicializar vistas
         toolbar = findViewById(R.id.toolbar)
-        recyclerViewPrinters = findViewById(R.id.recyclerViewPrinters)
-        textViewNoDevices = findViewById(R.id.textViewNoDevices)
-        buttonEnableBluetooth = findViewById(R.id.buttonEnableBluetooth)
+        recyclerViewDevices = findViewById(R.id.recyclerViewDevices)
+        editTextExtraText = findViewById(R.id.editTextExtraText)
+        buttonPrint = findViewById(R.id.buttonPrint)
         progressBar = findViewById(R.id.progressBar)
+        textViewStatus = findViewById(R.id.textViewStatus)
+        buttonScanDevices = findViewById(R.id.buttonScanDevices)
         
         // Configurar toolbar
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        supportActionBar?.title = "Imprimir Etiqueta"
-        
-        // Inicializar BluetoothPrinterManager
-        bluetoothPrinterManager = BluetoothPrinterManager(this)
+        supportActionBar?.title = "Imprimir etiqueta"
         
         // Configurar RecyclerView
-        recyclerViewPrinters.layoutManager = LinearLayoutManager(this)
-        printerListAdapter = PrinterListAdapter { device ->
-            onPrinterSelected(device)
-        }
-        recyclerViewPrinters.adapter = printerListAdapter
+        recyclerViewDevices.layoutManager = LinearLayoutManager(this)
+        recyclerViewDevices.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
         
-        // Configurar botón para habilitar Bluetooth
-        buttonEnableBluetooth.setOnClickListener {
-            enableBluetooth()
+        deviceAdapter = BluetoothDeviceAdapter { device ->
+            selectDevice(device)
+        }
+        recyclerViewDevices.adapter = deviceAdapter
+        
+        // Configurar botones
+        buttonPrint.setOnClickListener {
+            printLabel()
+        }
+        
+        buttonScanDevices.setOnClickListener {
+            requestBluetoothPermissions()
         }
         
         // Verificar permisos de Bluetooth
-        checkBluetoothPermissions()
+        requestBluetoothPermissions()
         
-        // Obtener datos de la etiqueta
-        fetchLabelData()
+        // Cargar dispositivos guardados
+        loadSavedPrinters()
     }
     
     /**
-     * Obtiene los datos de la etiqueta desde el servidor
+     * Solicita los permisos necesarios para Bluetooth
      */
-    private fun fetchLabelData() {
-        val token = sessionManager.getAuthToken()
-        if (token == null) {
-            Toast.makeText(this, "Error: No hay sesión activa", Toast.LENGTH_SHORT).show()
-            finish()
-            return
-        }
-        
-        setLoading(true)
-        
-        lifecycleScope.launch {
-            try {
-                val response = apiService.getTaskLabel(
-                    token = "Bearer $token",
-                    taskId = taskId
-                )
-                
-                if (response.isSuccessful) {
-                    val responseBody = response.body()
-                    if (responseBody != null) {
-                        labelData = responseBody.bytes()
-                        setLoading(false)
-                    } else {
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(
-                                this@PrintLabelActivity,
-                                "Error: No se pudieron obtener los datos de la etiqueta",
-                                Toast.LENGTH_LONG
-                            ).show()
-                            finish()
-                        }
-                    }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(
-                            this@PrintLabelActivity,
-                            "Error: ${response.code()} - ${response.message()}",
-                            Toast.LENGTH_LONG
-                        ).show()
-                        finish()
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(
-                        this@PrintLabelActivity,
-                        "Error: ${e.message}",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    finish()
-                }
-            }
-        }
-    }
-    
-    /**
-     * Verifica si la app tiene los permisos necesarios para usar Bluetooth
-     */
-    private fun checkBluetoothPermissions() {
+    private fun requestBluetoothPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val bluetoothPermissions = arrayOf(
+            // Android 12+ requiere permisos especiales para Bluetooth
+            val permissions = arrayOf(
                 Manifest.permission.BLUETOOTH_SCAN,
                 Manifest.permission.BLUETOOTH_CONNECT
             )
             
-            val hasPermissions = bluetoothPermissions.all {
-                ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
-            }
+            val permissionsToRequest = permissions.filter {
+                ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+            }.toTypedArray()
             
-            if (!hasPermissions) {
-                requestPermissionLauncher.launch(bluetoothPermissions)
-                return
+            if (permissionsToRequest.isNotEmpty()) {
+                bluetoothPermissionLauncher.launch(permissionsToRequest)
+            } else {
+                initializeBluetoothScanning()
             }
-        }
-        
-        // En Android 11 o inferior, solo necesitamos verificar si Bluetooth está habilitado
-        if (!bluetoothPrinterManager.isBluetoothEnabled()) {
-            showBluetoothDisabledUI()
         } else {
-            loadPairedPrinters()
+            // Versiones anteriores de Android
+            val permissions = arrayOf(
+                Manifest.permission.BLUETOOTH,
+                Manifest.permission.BLUETOOTH_ADMIN,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            )
+            
+            val permissionsToRequest = permissions.filter {
+                ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+            }.toTypedArray()
+            
+            if (permissionsToRequest.isNotEmpty()) {
+                bluetoothPermissionLauncher.launch(permissionsToRequest)
+            } else {
+                initializeBluetoothScanning()
+            }
         }
     }
     
     /**
-     * Solicita al usuario que habilite el Bluetooth
+     * Inicializa el escaneo de dispositivos Bluetooth
      */
-    private fun enableBluetooth() {
-        val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-        if (ActivityCompat.checkSelfPermission(
-                this,
-                Manifest.permission.BLUETOOTH_CONNECT
-            ) == PackageManager.PERMISSION_GRANTED
-        ) {
+    private fun initializeBluetoothScanning() {
+        val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        val bluetoothAdapter = bluetoothManager.adapter
+        
+        if (bluetoothAdapter == null) {
+            // El dispositivo no soporta Bluetooth
+            Toast.makeText(this, "Bluetooth no disponible en este dispositivo", Toast.LENGTH_SHORT).show()
+            return
+        }
+        
+        if (!bluetoothAdapter.isEnabled) {
+            // Solicitar activar Bluetooth
+            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             enableBluetoothLauncher.launch(enableBtIntent)
         } else {
-            checkBluetoothPermissions()
+            // Bluetooth está activo, escanear dispositivos
+            scanForDevices()
         }
     }
     
     /**
-     * Muestra la interfaz para cuando el Bluetooth está desactivado
+     * Escanea dispositivos Bluetooth
      */
-    private fun showBluetoothDisabledUI() {
-        textViewNoDevices.text = "Bluetooth desactivado"
-        textViewNoDevices.visibility = View.VISIBLE
-        buttonEnableBluetooth.visibility = View.VISIBLE
-        recyclerViewPrinters.visibility = View.GONE
-    }
-    
-    /**
-     * Carga la lista de impresoras Bluetooth emparejadas
-     */
-    private fun loadPairedPrinters() {
-        if (!bluetoothPrinterManager.isBluetoothEnabled()) {
-            showBluetoothDisabledUI()
-            return
-        }
-        
+    private fun scanForDevices() {
         setLoading(true)
-        
-        lifecycleScope.launch(Dispatchers.IO) {
-            val pairedPrinters = bluetoothPrinterManager.getPairedPrinters()
-            
-            withContext(Dispatchers.Main) {
-                setLoading(false)
-                
-                if (pairedPrinters.isEmpty()) {
-                    textViewNoDevices.text = "No se encontraron impresoras emparejadas"
-                    textViewNoDevices.visibility = View.VISIBLE
-                    recyclerViewPrinters.visibility = View.GONE
-                } else {
-                    textViewNoDevices.visibility = View.GONE
-                    recyclerViewPrinters.visibility = View.VISIBLE
-                    printerListAdapter?.updatePrinterList(pairedPrinters)
-                }
-                
-                buttonEnableBluetooth.visibility = View.GONE
-            }
-        }
-    }
-    
-    /**
-     * Maneja la selección de una impresora
-     */
-    private fun onPrinterSelected(device: BluetoothDevice) {
-        if (labelData == null) {
-            Toast.makeText(
-                this,
-                "Error: No hay datos de etiqueta disponibles",
-                Toast.LENGTH_SHORT
-            ).show()
-            return
-        }
-        
-        AlertDialog.Builder(this)
-            .setTitle("Imprimir etiqueta")
-            .setMessage("¿Desea imprimir la etiqueta en ${device.name}?")
-            .setPositiveButton("Imprimir") { _, _ ->
-                printLabel(device)
-            }
-            .setNegativeButton("Cancelar", null)
-            .show()
-    }
-    
-    /**
-     * Imprime la etiqueta en el dispositivo seleccionado
-     */
-    private fun printLabel(device: BluetoothDevice) {
-        val data = labelData ?: return
-        
-        setLoading(true)
+        textViewStatus.text = "Buscando dispositivos..."
         
         lifecycleScope.launch {
             try {
-                // Conectar a la impresora
-                val socket = bluetoothPrinterManager.connectToDevice(device)
+                val devices = bluetoothPrinterManager.discoverDevices()
+                deviceAdapter.updateDevices(devices)
                 
-                if (socket != null) {
-                    // Enviar datos a la impresora
-                    val success = bluetoothPrinterManager.printRawData(socket, data)
-                    
-                    // Cerrar la conexión
-                    bluetoothPrinterManager.closeConnection(socket)
-                    
-                    withContext(Dispatchers.Main) {
-                        setLoading(false)
-                        if (success) {
-                            Toast.makeText(
-                                this@PrintLabelActivity,
-                                "Etiqueta enviada a la impresora",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                            finish()
-                        } else {
-                            Toast.makeText(
-                                this@PrintLabelActivity,
-                                "Error al enviar datos a la impresora",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
-                    }
+                if (devices.isEmpty()) {
+                    textViewStatus.text = "No se encontraron dispositivos"
                 } else {
-                    withContext(Dispatchers.Main) {
-                        setLoading(false)
-                        Toast.makeText(
-                            this@PrintLabelActivity,
-                            "No se pudo conectar a la impresora",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
+                    textViewStatus.text = "Seleccione una impresora"
                 }
-            } catch (e: IOException) {
-                withContext(Dispatchers.Main) {
-                    setLoading(false)
-                    Toast.makeText(
-                        this@PrintLabelActivity,
-                        "Error de conexión: ${e.message}",
-                        Toast.LENGTH_LONG
-                    ).show()
+            } catch (e: Exception) {
+                textViewStatus.text = "Error al buscar dispositivos: ${e.message}"
+            } finally {
+                setLoading(false)
+            }
+        }
+    }
+    
+    /**
+     * Carga las impresoras guardadas previamente
+     */
+    private fun loadSavedPrinters() {
+        lifecycleScope.launch {
+            val savedPrinters = app.database.savedPrinterDao().getAllPrinters()
+            if (savedPrinters.isNotEmpty()) {
+                val devices = bluetoothPrinterManager.getSavedDevices(savedPrinters)
+                deviceAdapter.updateDevices(devices)
+                textViewStatus.text = "Impresoras guardadas"
+            }
+        }
+    }
+    
+    /**
+     * Selecciona un dispositivo para imprimir
+     */
+    private fun selectDevice(device: BluetoothDevice) {
+        selectedDevice = device
+        textViewStatus.text = "Impresora seleccionada: ${device.name ?: device.address}"
+        buttonPrint.isEnabled = true
+        
+        // Guardar dispositivo en la base de datos
+        lifecycleScope.launch {
+            val savedPrinter = SavedPrinter(
+                address = device.address,
+                name = device.name ?: "Desconocido"
+            )
+            app.database.savedPrinterDao().insertPrinter(savedPrinter)
+        }
+    }
+    
+    /**
+     * Imprime la etiqueta
+     */
+    private fun printLabel() {
+        val device = selectedDevice ?: return
+        val extraText = editTextExtraText.text.toString().trim()
+        
+        setLoading(true)
+        textViewStatus.text = "Conectando con la impresora..."
+        
+        lifecycleScope.launch {
+            try {
+                textViewStatus.text = "Enviando datos a la impresora..."
+                
+                val success = bluetoothPrinterManager.printLabel(
+                    device = device,
+                    title = taskTitle ?: "Tarea #$taskId",
+                    extraText = extraText,
+                    date = System.currentTimeMillis()
+                )
+                
+                if (success) {
+                    textViewStatus.text = "Etiqueta impresa correctamente"
+                    
+                    // Esperar un momento antes de cerrar la actividad
+                    delay(1500)
+                    
+                    // Cerrar la actividad con resultado OK
+                    setResult(RESULT_OK)
+                    finish()
+                } else {
+                    textViewStatus.text = "Error al imprimir la etiqueta"
                 }
+            } catch (e: Exception) {
+                textViewStatus.text = "Error: ${e.message}"
+            } finally {
+                setLoading(false)
             }
         }
     }
@@ -367,18 +306,17 @@ class PrintLabelActivity : AppCompatActivity() {
      */
     private fun setLoading(loading: Boolean) {
         progressBar.visibility = if (loading) View.VISIBLE else View.GONE
-        recyclerViewPrinters.visibility = if (loading) View.GONE else View.VISIBLE
-        
-        if (!loading && !bluetoothPrinterManager.isBluetoothEnabled()) {
-            showBluetoothDisabledUI()
-        }
+        buttonPrint.isEnabled = !loading && selectedDevice != null
+        buttonScanDevices.isEnabled = !loading
     }
     
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == android.R.id.home) {
-            onBackPressed()
-            return true
+        return when (item.itemId) {
+            android.R.id.home -> {
+                finish()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
         }
-        return super.onOptionsItemSelected(item)
     }
 }

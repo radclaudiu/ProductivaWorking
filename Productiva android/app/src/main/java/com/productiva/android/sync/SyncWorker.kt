@@ -2,110 +2,98 @@ package com.productiva.android.sync
 
 import android.content.Context
 import android.util.Log
+import androidx.work.Constraints
 import androidx.work.CoroutineWorker
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import com.productiva.android.ProductivaApplication
-import com.productiva.android.network.RetrofitClient
-import com.productiva.android.repository.LabelTemplateRepository
-import com.productiva.android.repository.ResourceState
-import com.productiva.android.repository.TaskRepository
-import com.productiva.android.repository.UserRepository
-import com.productiva.android.utils.SessionManager
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.firstOrNull
+import com.productiva.android.session.SessionManager
+import java.util.concurrent.TimeUnit
 
 /**
- * Worker para ejecutar tareas de sincronización en segundo plano.
+ * Worker para la sincronización periódica de datos usando WorkManager.
+ * Proporciona una implementación más moderna y robusta que JobScheduler.
  */
 class SyncWorker(
     context: Context,
-    workerParams: WorkerParameters
-) : CoroutineWorker(context, workerParams) {
+    params: WorkerParameters
+) : CoroutineWorker(context, params) {
     
     private val TAG = "SyncWorker"
     
-    /**
-     * Método principal que ejecuta el trabajo de sincronización.
-     */
     override suspend fun doWork(): Result {
-        Log.d(TAG, "Iniciando trabajo de sincronización")
+        Log.d(TAG, "Iniciando worker de sincronización")
         
-        // Verificar si hay sesión activa
-        val sessionManager = SessionManager(applicationContext)
+        // Verificar si hay usuario autenticado
+        val sessionManager = SessionManager.getInstance()
         if (!sessionManager.isLoggedIn()) {
-            Log.d(TAG, "No hay sesión activa, cancelando sincronización")
+            Log.d(TAG, "No hay usuario autenticado, cancelando sincronización")
             return Result.failure()
         }
         
-        // Obtener las instancias necesarias
-        val app = applicationContext as ProductivaApplication
-        val database = app.database
-        val apiService = RetrofitClient.getApiService(applicationContext)
-        
-        // Inicializar repositorios
-        val userRepository = UserRepository(database.userDao(), apiService)
-        val taskRepository = TaskRepository(
-            applicationContext,
-            database.taskDao(),
-            database.taskCompletionDao(),
-            apiService
-        )
-        val labelTemplateRepository = LabelTemplateRepository(
-            database.labelTemplateDao(),
-            apiService
-        )
-        
         try {
-            // 1. Sincronizar usuarios
-            val userSyncResult = userRepository.syncUsers().firstOrNull()
-            if (userSyncResult is ResourceState.Error) {
-                Log.e(TAG, "Error sincronizando usuarios: ${userSyncResult.message}")
-            } else {
-                Log.d(TAG, "Sincronización de usuarios completada")
+            // Obtener datos del usuario y empresa
+            val currentUser = sessionManager.getCurrentUser()
+            val userId = currentUser?.id
+            val companyId = currentUser?.companyId
+            
+            // Realizar sincronización
+            Log.d(TAG, "Ejecutando sincronización periódica")
+            val syncManager = SyncManager.getInstance(applicationContext)
+            syncManager.syncAll(companyId, userId)
+            
+            // Esperar a que termine la sincronización
+            while (syncManager.isSyncing()) {
+                kotlinx.coroutines.delay(500)
             }
             
-            // 2. Sincronizar tareas
-            val taskSyncResult = taskRepository.syncTasks().firstOrNull()
-            if (taskSyncResult is ResourceState.Error) {
-                Log.e(TAG, "Error sincronizando tareas: ${taskSyncResult.message}")
-            } else {
-                Log.d(TAG, "Sincronización de tareas completada")
-            }
-            
-            // 3. Sincronizar plantillas de etiquetas
-            val templateSyncResult = labelTemplateRepository.syncLabelTemplates().firstOrNull()
-            if (templateSyncResult is ResourceState.Error) {
-                Log.e(TAG, "Error sincronizando plantillas: ${templateSyncResult.message}")
-            } else {
-                Log.d(TAG, "Sincronización de plantillas completada")
-            }
-            
-            // 4. Sincronizar finalizaciones pendientes
-            val completionSyncResult = taskRepository.syncPendingCompletions().firstOrNull()
-            if (completionSyncResult is ResourceState.Error) {
-                Log.e(TAG, "Error sincronizando finalizaciones: ${completionSyncResult.message}")
-            } else {
-                Log.d(TAG, "Sincronización de finalizaciones completada")
-            }
-            
-            // Actualizar tiempo de última sincronización
-            val syncManager = SyncManager(applicationContext)
-            syncManager.updateLastSyncTime(System.currentTimeMillis())
-            
-            // Comprobar si hubo errores críticos
-            if (userSyncResult is ResourceState.Error && 
-                taskSyncResult is ResourceState.Error && 
-                templateSyncResult is ResourceState.Error) {
-                // Si todos los procesos principales fallaron, considerar fallida la sincronización
-                Log.e(TAG, "La sincronización falló en todos los componentes principales")
-                return Result.retry()
-            }
-            
-            Log.d(TAG, "Trabajo de sincronización completado con éxito")
+            Log.d(TAG, "Sincronización periódica completada")
             return Result.success()
         } catch (e: Exception) {
-            Log.e(TAG, "Error durante el trabajo de sincronización", e)
-            return Result.retry()
+            Log.e(TAG, "Error durante la sincronización periódica", e)
+            return if (runAttemptCount < MAX_RETRIES) {
+                Result.retry()
+            } else {
+                Result.failure()
+            }
+        }
+    }
+    
+    companion object {
+        private const val SYNC_WORK_NAME = "com.productiva.android.PERIODIC_SYNC"
+        private const val SYNC_INTERVAL_HOURS = 1L
+        private const val MAX_RETRIES = 3
+        
+        /**
+         * Programa una sincronización periódica usando WorkManager.
+         */
+        fun enqueuePeriodic(context: Context) {
+            Log.d("SyncWorker", "Programando sincronización periódica")
+            
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            
+            val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(
+                SYNC_INTERVAL_HOURS, TimeUnit.HOURS
+            )
+                .setConstraints(constraints)
+                .build()
+            
+            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                SYNC_WORK_NAME,
+                ExistingPeriodicWorkPolicy.UPDATE,
+                syncRequest
+            )
+        }
+        
+        /**
+         * Cancela la sincronización periódica.
+         */
+        fun cancel(context: Context) {
+            WorkManager.getInstance(context).cancelUniqueWork(SYNC_WORK_NAME)
         }
     }
 }

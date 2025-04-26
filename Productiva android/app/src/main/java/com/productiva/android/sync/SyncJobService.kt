@@ -1,166 +1,143 @@
 package com.productiva.android.sync
 
-import android.app.job.JobInfo
 import android.app.job.JobParameters
-import android.app.job.JobScheduler
 import android.app.job.JobService
-import android.content.ComponentName
 import android.content.Context
-import android.net.NetworkCapabilities
 import android.util.Log
+import com.productiva.android.ProductivaApplication
+import com.productiva.android.session.SessionManager
+import com.productiva.android.utils.ConnectivityMonitor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.concurrent.TimeUnit
 
 /**
- * Servicio de sincronización en segundo plano que se ejecuta periódicamente.
- * Utiliza JobScheduler para planificar sincronizaciones periódicas con el servidor.
+ * Servicio de trabajos programados para la sincronización en segundo plano.
+ * Se ejecuta periódicamente para mantener los datos actualizados, incluso cuando la aplicación
+ * no está en primer plano.
  */
 class SyncJobService : JobService() {
     
     private val TAG = "SyncJobService"
     
-    // Ámbito de corrutina para la sincronización
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val serviceJob = SupervisorJob()
+    private val serviceScope = CoroutineScope(Dispatchers.IO + serviceJob)
     
-    // Gestor de sincronización
     private lateinit var syncManager: SyncManager
-    
-    // Tarea actual
-    private var currentJob: JobParameters? = null
-    
-    companion object {
-        // ID del trabajo de sincronización
-        private const val JOB_ID = 1000
-        
-        // Intervalo mínimo entre sincronizaciones (30 minutos)
-        private val SYNC_INTERVAL = TimeUnit.MINUTES.toMillis(30)
-        
-        // Flexibilidad del intervalo (5 minutos)
-        private val SYNC_FLEX_TIME = TimeUnit.MINUTES.toMillis(5)
-        
-        /**
-         * Programa la sincronización periódica.
-         * 
-         * @param context Contexto de la aplicación.
-         */
-        fun scheduleSyncJob(context: Context) {
-            val jobScheduler = context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
-            
-            // Verificar si el trabajo ya está programado
-            val pendingJobs = jobScheduler.allPendingJobs
-            if (pendingJobs.any { it.id == JOB_ID }) {
-                Log.d("SyncJobService", "Trabajo de sincronización ya programado")
-                return
-            }
-            
-            val componentName = ComponentName(context, SyncJobService::class.java)
-            
-            val jobInfo = JobInfo.Builder(JOB_ID, componentName)
-                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY) // Cualquier tipo de red
-                .setPersisted(true) // Persistir después de reinicios
-                .setPeriodic(SYNC_INTERVAL, SYNC_FLEX_TIME) // Sincronización periódica
-                .build()
-            
-            val result = jobScheduler.schedule(jobInfo)
-            if (result == JobScheduler.RESULT_SUCCESS) {
-                Log.d("SyncJobService", "Sincronización programada correctamente")
-            } else {
-                Log.e("SyncJobService", "Error al programar sincronización")
-            }
-        }
-        
-        /**
-         * Programa una sincronización inmediata.
-         * 
-         * @param context Contexto de la aplicación.
-         */
-        fun scheduleImmediateSync(context: Context) {
-            val jobScheduler = context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
-            
-            val componentName = ComponentName(context, SyncJobService::class.java)
-            
-            val jobInfo = JobInfo.Builder(JOB_ID + 1, componentName)
-                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY) // Cualquier tipo de red
-                .setMinimumLatency(0) // Ejecutar lo antes posible
-                .setOverrideDeadline(TimeUnit.SECONDS.toMillis(5)) // Plazo máximo
-                .setBackoffCriteria(
-                    TimeUnit.MINUTES.toMillis(5),
-                    JobInfo.BACKOFF_POLICY_LINEAR
-                ) // Criterio de reintento
-                .build()
-            
-            val result = jobScheduler.schedule(jobInfo)
-            if (result == JobScheduler.RESULT_SUCCESS) {
-                Log.d("SyncJobService", "Sincronización inmediata programada correctamente")
-            } else {
-                Log.e("SyncJobService", "Error al programar sincronización inmediata")
-            }
-        }
-        
-        /**
-         * Cancela todas las sincronizaciones programadas.
-         * 
-         * @param context Contexto de la aplicación.
-         */
-        fun cancelAllSyncJobs(context: Context) {
-            val jobScheduler = context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
-            jobScheduler.cancel(JOB_ID)
-            jobScheduler.cancel(JOB_ID + 1)
-            Log.d("SyncJobService", "Sincronizaciones canceladas")
-        }
-    }
+    private lateinit var sessionManager: SessionManager
+    private lateinit var connectivityMonitor: ConnectivityMonitor
     
     override fun onCreate() {
         super.onCreate()
-        syncManager = SyncManager(applicationContext)
         Log.d(TAG, "Servicio de sincronización creado")
+        
+        // Inicialización
+        syncManager = SyncManager.getInstance(this)
+        sessionManager = SessionManager.getInstance()
+        connectivityMonitor = ConnectivityMonitor.getInstance(this)
     }
     
-    /**
-     * Se llama cuando el sistema determina que es momento de ejecutar el trabajo.
-     * 
-     * @param params Parámetros del trabajo.
-     * @return true si el trabajo debe continuar en segundo plano, false si ha terminado.
-     */
     override fun onStartJob(params: JobParameters?): Boolean {
-        Log.d(TAG, "Iniciando trabajo de sincronización")
+        Log.d(TAG, "Iniciando trabajo de sincronización en segundo plano")
         
-        currentJob = params
+        // Verificar si hay conexión y usuario activo antes de sincronizar
+        if (!connectivityMonitor.isNetworkAvailable()) {
+            Log.d(TAG, "Sin conexión a Internet, postergando sincronización")
+            jobFinished(params, true) // Pedir reintento
+            return true
+        }
         
-        // Iniciar sincronización en una corrutina
+        if (!sessionManager.isLoggedIn()) {
+            Log.d(TAG, "Usuario no autenticado, cancelando sincronización")
+            jobFinished(params, false) // No reintentar, no hay usuario
+            return false
+        }
+        
+        // Iniciar sincronización asíncrona
         serviceScope.launch {
             try {
-                // Realizar sincronización
-                syncManager.syncAll()
+                // Obtener datos del usuario y empresa para la sincronización
+                val currentUser = sessionManager.getCurrentUser()
+                val userId = currentUser?.id
+                val companyId = currentUser?.companyId
                 
-                // Notificar al sistema que el trabajo ha terminado
-                jobFinished(params, false)
-                Log.d(TAG, "Trabajo de sincronización completado")
+                // Realizar sincronización completa
+                Log.d(TAG, "Ejecutando sincronización programada para usuario $userId, empresa $companyId")
+                syncManager.syncAll(companyId, userId)
+                
+                // Esperar a que termine la sincronización
+                while (syncManager.isSyncing()) {
+                    delay(500)
+                }
+                
+                Log.d(TAG, "Sincronización programada completada con éxito")
             } catch (e: Exception) {
-                Log.e(TAG, "Error en trabajo de sincronización", e)
-                
-                // Notificar al sistema que el trabajo debe volver a intentarse
-                jobFinished(params, true)
+                Log.e(TAG, "Error durante la sincronización programada", e)
+            } finally {
+                // Indicar finalización del trabajo
+                jobFinished(params, false)
             }
         }
         
-        // Devolver true para indicar que el trabajo continuará en segundo plano
+        // Devolver true para indicar que el trabajo sigue en progreso
         return true
     }
     
-    /**
-     * Se llama cuando el sistema necesita detener el trabajo antes de que termine.
-     * 
-     * @param params Parámetros del trabajo.
-     * @return true si el trabajo debe volver a intentarse, false en caso contrario.
-     */
     override fun onStopJob(params: JobParameters?): Boolean {
-        Log.d(TAG, "Trabajo de sincronización detenido")
+        Log.d(TAG, "Deteniendo trabajo de sincronización en segundo plano")
         
-        // Devolver true para indicar que el trabajo debe volver a intentarse
+        // Cancelar trabajos en progreso
+        serviceJob.cancel("Servicio de sincronización detenido")
+        
+        // Devolver true para indicar que el trabajo debería reintentarse
         return true
+    }
+    
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d(TAG, "Servicio de sincronización destruido")
+        
+        // Limpiar recursos
+        serviceScope.cancel()
+    }
+    
+    companion object {
+        const val JOB_ID = 1000
+        
+        /**
+         * Programa un trabajo de sincronización periódica.
+         */
+        fun scheduleSync(context: Context) {
+            SyncWorker.enqueuePeriodic(context)
+        }
+        
+        /**
+         * Cancela el trabajo de sincronización programado.
+         */
+        fun cancelSync(context: Context) {
+            SyncWorker.cancel(context)
+        }
+        
+        /**
+         * Ejecuta una sincronización inmediata.
+         */
+        fun syncNow(context: Context) {
+            val app = context.applicationContext as ProductivaApplication
+            val syncManager = SyncManager.getInstance(context)
+            val sessionManager = SessionManager.getInstance()
+            
+            // Solo sincronizar si hay un usuario autenticado
+            if (sessionManager.isLoggedIn()) {
+                val currentUser = sessionManager.getCurrentUser()
+                val userId = currentUser?.id
+                val companyId = currentUser?.companyId
+                
+                // Ejecutar sincronización completa
+                syncManager.syncAll(companyId, userId)
+            }
+        }
     }
 }

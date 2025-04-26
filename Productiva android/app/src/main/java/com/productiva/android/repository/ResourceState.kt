@@ -1,89 +1,55 @@
 package com.productiva.android.repository
 
 /**
- * Clase que representa los diferentes estados de un recurso durante operaciones asíncronas.
- * Utilizada para transmitir el estado actual de una operación a los observadores.
+ * Clase que representa el estado de un recurso en el repositorio.
+ * Permite gestionar diferentes estados de carga, éxito y error de forma uniforme
+ * a través de toda la aplicación.
  */
 sealed class ResourceState<out T> {
     /**
-     * Estado de carga. Indica que la operación está en curso.
+     * Estado de carga, se está obteniendo el recurso.
      */
     object Loading : ResourceState<Nothing>()
     
     /**
-     * Estado de éxito. Contiene los datos resultantes de la operación.
+     * Estado de éxito, el recurso se ha obtenido correctamente.
      * 
-     * @param data Datos obtenidos en la operación, pueden ser nulos.
+     * @param data Los datos del recurso.
+     * @param message Mensaje opcional de éxito.
      */
-    data class Success<T>(val data: T?) : ResourceState<T>()
+    data class Success<T>(val data: T, val message: String? = null) : ResourceState<T>()
     
     /**
-     * Estado de error. Contiene información sobre el error ocurrido.
+     * Estado de error, no se ha podido obtener el recurso.
      * 
      * @param message Mensaje descriptivo del error.
-     * @param errorCode Código de error, útil para identificar tipos específicos de error.
-     * @param exception Excepción que causó el error, si existe.
+     * @param data Datos parciales o en caché que pueden estar disponibles a pesar del error.
      */
-    data class Error(
-        val message: String? = null,
-        val errorCode: Int? = null,
-        val exception: Exception? = null
-    ) : ResourceState<Nothing>()
+    data class Error(val message: String, val data: Any? = null) : ResourceState<Nothing>()
     
     /**
-     * Verifica si el estado actual es de carga.
+     * Comprueba si el estado es de tipo Loading.
      */
     fun isLoading(): Boolean = this is Loading
     
     /**
-     * Verifica si el estado actual es de éxito.
+     * Comprueba si el estado es de tipo Success.
      */
     fun isSuccess(): Boolean = this is Success
     
     /**
-     * Verifica si el estado actual es de error.
+     * Comprueba si el estado es de tipo Error.
      */
     fun isError(): Boolean = this is Error
     
     /**
-     * Obtiene los datos si el estado es de éxito, de lo contrario retorna null.
+     * Obtiene el mensaje asociado al estado, solo para Success y Error.
      */
-    fun getDataOrNull(): T? = if (this is Success) data else null
-    
-    /**
-     * Obtiene el mensaje de error si el estado es de error, de lo contrario retorna null.
-     */
-    fun getErrorMessageOrNull(): String? = if (this is Error) message else null
-    
-    /**
-     * Transforma los datos de un ResourceState usando la función proporcionada.
-     * 
-     * @param transform Función que transforma los datos de tipo T a tipo R.
-     * @return Un nuevo ResourceState con los datos transformados o el mismo estado si no es Success.
-     */
-    fun <R> map(transform: (T?) -> R?): ResourceState<R> {
+    fun getMessage(): String? {
         return when (this) {
-            is Success -> Success(transform(data))
-            is Error -> this
-            is Loading -> Loading
+            is Success -> message
+            is Error -> message
+            else -> null
         }
-    }
-    
-    companion object {
-        /**
-         * Crea un estado de éxito con los datos proporcionados.
-         */
-        fun <T> success(data: T? = null): ResourceState<T> = Success(data)
-        
-        /**
-         * Crea un estado de error con el mensaje proporcionado.
-         */
-        fun error(message: String? = null, errorCode: Int? = null, exception: Exception? = null): ResourceState<Nothing> = 
-            Error(message, errorCode, exception)
-        
-        /**
-         * Crea un estado de carga.
-         */
-        fun <T> loading(): ResourceState<T> = Loading
     }
 }

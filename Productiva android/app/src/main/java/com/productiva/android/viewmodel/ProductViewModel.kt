@@ -3,18 +3,20 @@ package com.productiva.android.viewmodel
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.productiva.android.ProductivaApplication
 import com.productiva.android.model.Product
 import com.productiva.android.network.RetrofitClient
 import com.productiva.android.repository.ProductRepository
 import com.productiva.android.repository.ResourceState
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
@@ -27,49 +29,156 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
     // Repositorio de productos
     private val productRepository: ProductRepository
     
-    // Estado del producto, visible externamente
+    // Estado de productos
     private val _productState = MutableStateFlow<ProductState>(ProductState.Idle)
-    val productState = _productState.asStateFlow()
+    val productState: StateFlow<ProductState> = _productState
     
-    // Todos los productos
-    val allProducts: LiveData<List<Product>>
+    // Filtros
+    private val _categoryFilter = MutableStateFlow<String?>(null)
+    private val _searchQuery = MutableStateFlow<String?>(null)
+    private val _companyFilter = MutableStateFlow<Int?>(null)
+    private val _locationFilter = MutableStateFlow<Int?>(null)
     
-    // Productos con stock bajo
-    val lowStockProducts: LiveData<List<Product>>
+    // Producto seleccionado
+    private val _selectedProduct = MutableStateFlow<Product?>(null)
+    val selectedProduct: StateFlow<Product?> = _selectedProduct
     
-    // Productos sin stock
-    val outOfStockProducts: LiveData<List<Product>>
+    // Lista de productos filtrados
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val products: Flow<List<Product>> = combine(
+        _searchQuery,
+        _categoryFilter,
+        _companyFilter,
+        _locationFilter
+    ) { search, category, company, location ->
+        ProductFilter(search, category, company, location)
+    }.flatMapLatest { filter ->
+        when {
+            filter.search != null -> productRepository.searchProducts(filter.search)
+            filter.category != null -> productRepository.getProductsByCategory(filter.category)
+            filter.company != null -> productRepository.getProductsByCompany(filter.company)
+            filter.location != null -> productRepository.getProductsByLocation(filter.location)
+            else -> productRepository.getAllProducts()
+        }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     
-    // Contador de cambios pendientes
-    val pendingSyncCount: LiveData<Int>
+    // Lista de productos con stock bajo
+    val lowStockProducts = productRepository.getLowStockProducts()
+        .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     
     init {
         val app = getApplication<ProductivaApplication>()
         val apiService = RetrofitClient.getApiService(app)
-        val database = app.database
         
         // Inicializar el repositorio
-        productRepository = ProductRepository(database.productDao(), apiService)
+        productRepository = ProductRepository(app.database.productDao(), apiService)
+    }
+    
+    /**
+     * Carga productos de una empresa específica.
+     */
+    fun loadProductsByCompany(companyId: Int) {
+        _productState.value = ProductState.Loading
+        _companyFilter.value = companyId
         
-        // Inicializar observadores
-        allProducts = productRepository.getAllProducts().asLiveData()
-        lowStockProducts = database.productDao().getLowStockProducts().asLiveData()
-        outOfStockProducts = database.productDao().getOutOfStockProducts().asLiveData()
-        pendingSyncCount = database.productDao().countProductsForSync().asLiveData()
+        viewModelScope.launch {
+            try {
+                // Sincronizar productos con el servidor
+                productRepository.syncProducts(companyId = companyId).collect { state ->
+                    when (state) {
+                        is ResourceState.Success -> {
+                            _productState.value = ProductState.Synced(state.data)
+                        }
+                        is ResourceState.Error -> {
+                            _productState.value = ProductState.Error(state.message ?: "Error desconocido")
+                        }
+                        is ResourceState.Loading -> {
+                            _productState.value = ProductState.Loading
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al cargar productos por empresa", e)
+                _productState.value = ProductState.Error("Error al cargar productos: ${e.message}")
+            }
+        }
+    }
+    
+    /**
+     * Carga productos de una ubicación específica.
+     */
+    fun loadProductsByLocation(locationId: Int) {
+        _productState.value = ProductState.Loading
+        _locationFilter.value = locationId
+        
+        viewModelScope.launch {
+            try {
+                // Sincronizar productos con el servidor
+                productRepository.syncProducts(locationId = locationId).collect { state ->
+                    when (state) {
+                        is ResourceState.Success -> {
+                            _productState.value = ProductState.Synced(state.data)
+                        }
+                        is ResourceState.Error -> {
+                            _productState.value = ProductState.Error(state.message ?: "Error desconocido")
+                        }
+                        is ResourceState.Loading -> {
+                            _productState.value = ProductState.Loading
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al cargar productos por ubicación", e)
+                _productState.value = ProductState.Error("Error al cargar productos: ${e.message}")
+            }
+        }
+    }
+    
+    /**
+     * Busca productos por nombre, código o código de barras.
+     */
+    fun searchProducts(query: String) {
+        if (query.isBlank()) {
+            clearSearch()
+            return
+        }
+        
+        _searchQuery.value = query
+    }
+    
+    /**
+     * Limpia la búsqueda actual.
+     */
+    fun clearSearch() {
+        _searchQuery.value = null
+    }
+    
+    /**
+     * Filtra productos por categoría.
+     */
+    fun filterByCategory(category: String) {
+        _categoryFilter.value = category
+    }
+    
+    /**
+     * Limpia todos los filtros.
+     */
+    fun clearFilter() {
+        _categoryFilter.value = null
     }
     
     /**
      * Sincroniza productos con el servidor.
      */
-    fun syncProducts() {
+    fun syncProducts(locationId: Int? = null, companyId: Int? = null) {
         _productState.value = ProductState.Loading
         
         viewModelScope.launch {
             try {
-                productRepository.syncProducts().collect { state ->
+                productRepository.syncProducts(locationId, companyId).collect { state ->
                     when (state) {
                         is ResourceState.Success -> {
-                            _productState.value = ProductState.Synced(state.data ?: emptyList())
+                            _productState.value = ProductState.Synced(state.data)
                         }
                         is ResourceState.Error -> {
                             _productState.value = ProductState.Error(state.message ?: "Error desconocido")
@@ -81,66 +190,24 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error al sincronizar productos", e)
-                _productState.value = ProductState.Error("Error: ${e.message}")
+                _productState.value = ProductState.Error("Error al sincronizar productos: ${e.message}")
             }
         }
     }
     
     /**
-     * Sincroniza cambios pendientes de productos con el servidor.
+     * Obtiene un producto específico por su ID.
      */
-    fun syncPendingChanges() {
-        viewModelScope.launch {
-            try {
-                productRepository.syncPendingProductChanges().collect { state ->
-                    when (state) {
-                        is ResourceState.Success -> {
-                            val count = state.data ?: 0
-                            Log.d(TAG, "Cambios pendientes sincronizados: $count")
-                        }
-                        is ResourceState.Error -> {
-                            Log.e(TAG, "Error al sincronizar cambios pendientes: ${state.message}")
-                        }
-                        else -> {}
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error al sincronizar cambios pendientes", e)
-            }
-        }
-    }
-    
-    /**
-     * Busca productos por texto.
-     */
-    fun searchProducts(query: String): LiveData<List<Product>> {
-        return productRepository.searchProducts(query).asLiveData()
-    }
-    
-    /**
-     * Obtiene productos por categoría.
-     */
-    fun getProductsByCategory(categoryId: Int): LiveData<List<Product>> {
-        return productRepository.getProductsByCategory(categoryId).asLiveData()
-    }
-    
-    /**
-     * Actualiza el stock de un producto.
-     */
-    fun updateProductStock(productId: Int, newStock: Int) {
+    fun getProduct(productId: Int) {
         _productState.value = ProductState.Loading
         
         viewModelScope.launch {
             try {
-                productRepository.updateProductStock(productId, newStock).collect { state ->
+                productRepository.syncProduct(productId).collect { state ->
                     when (state) {
                         is ResourceState.Success -> {
-                            val product = state.data
-                            if (product != null) {
-                                _productState.value = ProductState.Updated(product)
-                            } else {
-                                _productState.value = ProductState.Error("No se pudo actualizar el producto")
-                            }
+                            _selectedProduct.value = state.data
+                            _productState.value = ProductState.ProductLoaded(state.data)
                         }
                         is ResourceState.Error -> {
                             _productState.value = ProductState.Error(state.message ?: "Error desconocido")
@@ -151,27 +218,64 @@ class ProductViewModel(application: Application) : AndroidViewModel(application)
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error al actualizar stock", e)
-                _productState.value = ProductState.Error("Error: ${e.message}")
+                Log.e(TAG, "Error al obtener producto", e)
+                _productState.value = ProductState.Error("Error al obtener producto: ${e.message}")
             }
         }
     }
     
     /**
-     * Obtiene un producto por su ID.
+     * Actualiza un producto.
      */
-    fun getProductById(productId: Int): LiveData<Product?> {
-        return productRepository.getProductById(productId).asLiveData()
+    fun updateProduct(product: Product) {
+        _productState.value = ProductState.Loading
+        
+        viewModelScope.launch {
+            try {
+                productRepository.updateProduct(product).collect { state ->
+                    when (state) {
+                        is ResourceState.Success -> {
+                            _selectedProduct.value = state.data
+                            _productState.value = ProductState.ProductUpdated(state.data)
+                        }
+                        is ResourceState.Error -> {
+                            _productState.value = ProductState.Error(state.message ?: "Error desconocido")
+                        }
+                        is ResourceState.Loading -> {
+                            _productState.value = ProductState.Loading
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al actualizar producto", e)
+                _productState.value = ProductState.Error("Error al actualizar producto: ${e.message}")
+            }
+        }
     }
     
     /**
-     * Estados posibles de productos.
+     * Selecciona un producto para verlo en detalle.
+     */
+    fun selectProduct(product: Product) {
+        _selectedProduct.value = product
+    }
+    
+    /**
+     * Clases para estados y filtros de productos.
      */
     sealed class ProductState {
         object Idle : ProductState()
         object Loading : ProductState()
         data class Synced(val products: List<Product>) : ProductState()
-        data class Updated(val product: Product) : ProductState()
+        data class ProductLoaded(val product: Product) : ProductState()
+        data class ProductUpdated(val product: Product) : ProductState()
         data class Error(val message: String) : ProductState()
     }
+    
+    data class ProductFilter(
+        val search: String? = null,
+        val category: String? = null,
+        val company: Int? = null,
+        val location: Int? = null
+    )
 }

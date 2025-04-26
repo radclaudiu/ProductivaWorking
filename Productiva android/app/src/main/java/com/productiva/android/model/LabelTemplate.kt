@@ -3,9 +3,12 @@ package com.productiva.android.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.google.gson.annotations.SerializedName
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
- * Modelo de datos que representa una plantilla de etiqueta en la aplicación.
+ * Modelo de datos que representa una plantilla de etiqueta para impresión.
  * Se almacena en la base de datos local y se sincroniza con el servidor.
  */
 @Entity(tableName = "label_templates")
@@ -20,29 +23,23 @@ data class LabelTemplate(
     @SerializedName("description")
     val description: String?,
     
-    @SerializedName("printer_type")
-    val printerType: String,  // Tipos: "BROTHER_QL", "ZEBRA", "DYMO", etc.
-    
     @SerializedName("template_data")
-    val templateData: String,  // Estructura JSON o XML con la definición de la etiqueta
+    val templateData: String,
     
-    @SerializedName("width")
-    val width: Int,  // Ancho en puntos o píxeles
+    @SerializedName("template_type")
+    val templateType: String, // BROTHER, ZEBRA, GENERIC
     
-    @SerializedName("height")
-    val height: Int,  // Alto en puntos o píxeles
+    @SerializedName("label_width")
+    val labelWidth: Int, // in mm
     
-    @SerializedName("is_default")
-    val isDefault: Boolean,
+    @SerializedName("label_height")
+    val labelHeight: Int, // in mm
     
-    @SerializedName("usage_count")
-    val usageCount: Int,
+    @SerializedName("dpi")
+    val dpi: Int, // 203, 300, 600
     
-    @SerializedName("last_used")
-    val lastUsed: String?,
-    
-    @SerializedName("created_by")
-    val createdBy: Int?,
+    @SerializedName("orientation")
+    val orientation: String, // PORTRAIT, LANDSCAPE
     
     @SerializedName("created_at")
     val createdAt: String?,
@@ -50,79 +47,142 @@ data class LabelTemplate(
     @SerializedName("updated_at")
     val updatedAt: String?,
     
-    @SerializedName("paper_type")
-    val paperType: String?,  // Para impresoras Brother: "W29H90", "W62H100", etc.
+    @SerializedName("created_by")
+    val createdBy: Int?,
     
-    @SerializedName("orientation")
-    val orientation: String?,  // "PORTRAIT" o "LANDSCAPE"
+    @SerializedName("company_id")
+    val companyId: Int?,
     
-    @SerializedName("dpi")
-    val dpi: Int?,  // Resolución de la etiqueta
+    @SerializedName("is_default")
+    val isDefault: Boolean,
+    
+    @SerializedName("usage_count")
+    val usageCount: Int,
+    
+    @SerializedName("last_used_at")
+    val lastUsedAt: String?,
     
     @SerializedName("fields")
-    val fields: List<LabelField>?,  // Campos variables de la etiqueta
+    val fields: List<String>?, // Lista de campos disponibles en la plantilla
     
-    // Campos locales (no se envían al servidor)
-    val needsSync: Boolean = false,
+    // Campos locales
     val localUsageCount: Int = 0,
-    val lastSyncTimestamp: Long = 0
+    val needsSync: Boolean = false
 ) {
     /**
-     * Obtiene el nombre formateado para mostrar en UI.
+     * Incrementa el contador de uso de la plantilla.
      */
-    fun getDisplayName(): String {
-        return if (isDefault) "$name (Predeterminada)" else name
+    fun incrementUsage(): LabelTemplate {
+        val now = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(Date())
+        return this.copy(
+            localUsageCount = localUsageCount + 1,
+            lastUsedAt = now,
+            needsSync = true
+        )
     }
     
     /**
-     * Obtiene la descripción para mostrar en UI.
+     * Actualiza esta plantilla con información del servidor.
      */
-    fun getDisplayDescription(): String {
-        return description ?: "Sin descripción"
+    fun updateFromServer(serverTemplate: LabelTemplate): LabelTemplate {
+        return this.copy(
+            name = serverTemplate.name,
+            description = serverTemplate.description,
+            templateData = serverTemplate.templateData,
+            templateType = serverTemplate.templateType,
+            labelWidth = serverTemplate.labelWidth,
+            labelHeight = serverTemplate.labelHeight,
+            dpi = serverTemplate.dpi,
+            orientation = serverTemplate.orientation,
+            updatedAt = serverTemplate.updatedAt,
+            isDefault = serverTemplate.isDefault,
+            usageCount = serverTemplate.usageCount,
+            lastUsedAt = serverTemplate.lastUsedAt,
+            fields = serverTemplate.fields,
+            needsSync = false
+        )
     }
     
     /**
-     * Verifica si la plantilla es compatible con el tipo de impresora especificado.
+     * Genera los datos de impresión para un producto específico.
      */
-    fun isCompatibleWith(printerType: String): Boolean {
-        return this.printerType.equals(printerType, ignoreCase = true)
+    fun generatePrintData(product: Product): String {
+        // Reemplazar los marcadores de posición en la plantilla con los datos del producto
+        var printData = templateData
+        
+        // Datos básicos del producto
+        printData = printData.replace("[PRODUCT_ID]", product.id.toString())
+        printData = printData.replace("[PRODUCT_NAME]", product.name)
+        printData = printData.replace("[PRODUCT_CODE]", product.code ?: "")
+        printData = printData.replace("[PRODUCT_BARCODE]", product.barcode ?: "")
+        printData = printData.replace("[PRODUCT_SKU]", product.sku ?: "")
+        printData = printData.replace("[PRODUCT_PRICE]", product.formattedPrice())
+        
+        // Datos de categoría y marca
+        printData = printData.replace("[PRODUCT_CATEGORY]", product.category ?: "")
+        printData = printData.replace("[PRODUCT_BRAND]", product.brand ?: "")
+        
+        // Fecha y hora actual
+        val currentDate = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
+        val currentTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
+        printData = printData.replace("[CURRENT_DATE]", currentDate)
+        printData = printData.replace("[CURRENT_TIME]", currentTime)
+        
+        // Si el producto tiene fecha de creación o actualización
+        product.createdAt?.let { date ->
+            try {
+                val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+                val outputFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                val parsedDate = inputFormat.parse(date)
+                parsedDate?.let {
+                    printData = printData.replace("[PRODUCT_CREATED_DATE]", outputFormat.format(it))
+                }
+            } catch (e: Exception) {
+                printData = printData.replace("[PRODUCT_CREATED_DATE]", "")
+            }
+        } ?: run {
+            printData = printData.replace("[PRODUCT_CREATED_DATE]", "")
+        }
+        
+        // Otros datos opcionales
+        product.description?.let { printData = printData.replace("[PRODUCT_DESCRIPTION]", it) }
+            ?: run { printData = printData.replace("[PRODUCT_DESCRIPTION]", "") }
+            
+        product.weight?.let { printData = printData.replace("[PRODUCT_WEIGHT]", "$it kg") }
+            ?: run { printData = printData.replace("[PRODUCT_WEIGHT]", "") }
+            
+        product.dimensions?.let { printData = printData.replace("[PRODUCT_DIMENSIONS]", it) }
+            ?: run { printData = printData.replace("[PRODUCT_DIMENSIONS]", "") }
+        
+        return printData
     }
     
-    /**
-     * Clase para representar un campo variable en una plantilla de etiqueta.
-     */
-    data class LabelField(
-        @SerializedName("id")
-        val id: String,
-        
-        @SerializedName("name")
-        val name: String,
-        
-        @SerializedName("type")
-        val type: String,  // "TEXT", "BARCODE", "IMAGE", "QR", etc.
-        
-        @SerializedName("x")
-        val x: Int,  // Posición X en la etiqueta
-        
-        @SerializedName("y")
-        val y: Int,  // Posición Y en la etiqueta
-        
-        @SerializedName("width")
-        val width: Int?,
-        
-        @SerializedName("height")
-        val height: Int?,
-        
-        @SerializedName("font_size")
-        val fontSize: Int?,
-        
-        @SerializedName("font_name")
-        val fontName: String?,
-        
-        @SerializedName("alignment")
-        val alignment: String?,  // "LEFT", "CENTER", "RIGHT"
-        
-        @SerializedName("default_value")
-        val defaultValue: String?
-    )
+    companion object {
+        /**
+         * Crea una plantilla vacía para usar como comodín.
+         */
+        fun createEmpty(): LabelTemplate {
+            return LabelTemplate(
+                id = 0,
+                name = "",
+                description = null,
+                templateData = "",
+                templateType = "BROTHER",
+                labelWidth = 62,
+                labelHeight = 29,
+                dpi = 300,
+                orientation = "LANDSCAPE",
+                createdAt = null,
+                updatedAt = null,
+                createdBy = null,
+                companyId = null,
+                isDefault = false,
+                usageCount = 0,
+                lastUsedAt = null,
+                fields = null,
+                localUsageCount = 0,
+                needsSync = false
+            )
+        }
+    }
 }

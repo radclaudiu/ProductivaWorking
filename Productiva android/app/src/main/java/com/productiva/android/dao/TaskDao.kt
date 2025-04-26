@@ -1,58 +1,139 @@
 package com.productiva.android.dao
 
-import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.productiva.android.model.Task
+import com.productiva.android.model.TaskCompletion
+import kotlinx.coroutines.flow.Flow
 
 /**
- * DAO para interactuar con la tabla de tareas
+ * DAO para acceder y manipular tareas en la base de datos.
  */
 @Dao
 interface TaskDao {
+    // Consultas para Tareas
     
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(task: Task): Long
+    /**
+     * Obtiene todas las tareas.
+     */
+    @Query("SELECT * FROM tasks ORDER BY priority DESC, due_date ASC")
+    fun getAllTasks(): Flow<List<Task>>
     
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(tasks: List<Task>)
+    /**
+     * Obtiene todas las tareas (versión sincrónica).
+     */
+    @Query("SELECT * FROM tasks ORDER BY priority DESC, due_date ASC")
+    suspend fun getAllTasksSync(): List<Task>
     
-    @Update
-    suspend fun update(task: Task)
-    
+    /**
+     * Obtiene una tarea por su ID.
+     */
     @Query("SELECT * FROM tasks WHERE id = :taskId")
-    suspend fun getTaskById(taskId: Int): Task?
+    fun getTaskById(taskId: Int): Flow<Task?>
     
-    @Query("SELECT * FROM tasks ORDER BY dueDate ASC")
-    fun getAllTasks(): LiveData<List<Task>>
+    /**
+     * Obtiene una tarea por su ID (versión sincrónica).
+     */
+    @Query("SELECT * FROM tasks WHERE id = :taskId")
+    suspend fun getTaskByIdSync(taskId: Int): Task?
     
-    @Query("SELECT * FROM tasks WHERE assignedTo = :userId ORDER BY dueDate ASC")
-    fun getTasksByUser(userId: Int): LiveData<List<Task>>
+    /**
+     * Obtiene tareas por estado.
+     */
+    @Query("SELECT * FROM tasks WHERE status = :status ORDER BY priority DESC, due_date ASC")
+    fun getTasksByStatus(status: String): Flow<List<Task>>
     
-    @Query("SELECT * FROM tasks WHERE status = :status ORDER BY dueDate ASC")
-    fun getTasksByStatus(status: String): LiveData<List<Task>>
+    /**
+     * Obtiene tareas asignadas a un usuario específico.
+     */
+    @Query("SELECT * FROM tasks WHERE assigned_to = :userId ORDER BY priority DESC, due_date ASC")
+    fun getTasksByAssignedUser(userId: Int): Flow<List<Task>>
     
-    @Query("SELECT * FROM tasks WHERE assignedTo = :userId AND status = :status ORDER BY dueDate ASC")
-    fun getTasksByUserAndStatus(userId: Int, status: String): LiveData<List<Task>>
+    /**
+     * Obtiene tareas por estado y usuario asignado.
+     */
+    @Query("SELECT * FROM tasks WHERE status = :status AND assigned_to = :userId ORDER BY priority DESC, due_date ASC")
+    fun getTasksByStatusAndUser(status: String, userId: Int): Flow<List<Task>>
     
-    @Query("SELECT * FROM tasks WHERE location_id = :locationId ORDER BY dueDate ASC")
-    fun getTasksByLocation(locationId: Int): LiveData<List<Task>>
+    /**
+     * Obtiene tareas que necesitan sincronización.
+     */
+    @Query("SELECT * FROM tasks WHERE needs_sync = 1")
+    fun getTasksNeedingSync(): Flow<List<Task>>
     
-    @Query("SELECT COUNT(*) FROM tasks WHERE assignedTo = :userId AND status = 'pending'")
-    suspend fun getPendingTaskCount(userId: Int): Int
+    /**
+     * Obtiene tareas que necesitan sincronización (versión sincrónica).
+     */
+    @Query("SELECT * FROM tasks WHERE needs_sync = 1")
+    suspend fun getTasksNeedingSyncSync(): List<Task>
     
-    @Query("DELETE FROM tasks")
-    suspend fun deleteAll()
+    /**
+     * Inserta una nueva tarea.
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertTask(task: Task)
     
-    @Query("DELETE FROM tasks WHERE id = :taskId")
-    suspend fun deleteTaskById(taskId: Int)
+    /**
+     * Inserta múltiples tareas.
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertTasks(tasks: List<Task>)
     
-    @Query("SELECT * FROM tasks WHERE last_sync < :timestamp")
-    suspend fun getTasksToSync(timestamp: Long): List<Task>
+    /**
+     * Actualiza una tarea existente.
+     */
+    @Update
+    suspend fun updateTask(task: Task)
     
-    @Query("SELECT * FROM tasks WHERE dueDate BETWEEN :startDate AND :endDate ORDER BY dueDate ASC")
-    fun getTasksByDateRange(startDate: Long, endDate: Long): LiveData<List<Task>>
+    /**
+     * Actualiza múltiples tareas.
+     */
+    @Update
+    suspend fun updateTasks(tasks: List<Task>)
+    
+    /**
+     * Inserta o actualiza tareas (upsert).
+     */
+    @Transaction
+    suspend fun upsertTasks(tasks: List<Task>) {
+        for (task in tasks) {
+            val existingTask = getTaskByIdSync(task.id)
+            if (existingTask == null) {
+                insertTask(task)
+            } else if (!existingTask.needsSync) {
+                // Solo actualizar si la tarea local no necesita sincronización
+                updateTask(task)
+            }
+        }
+    }
+    
+    // Consultas para Completados de Tareas
+    
+    /**
+     * Obtiene todos los completados de tareas pendientes de sincronizar.
+     */
+    @Query("SELECT * FROM task_completions WHERE synced = 0")
+    suspend fun getPendingTaskCompletionsSync(): List<TaskCompletion>
+    
+    /**
+     * Inserta un nuevo completado de tarea.
+     */
+    @Insert
+    suspend fun insertTaskCompletion(completion: TaskCompletion)
+    
+    /**
+     * Actualiza un completado de tarea existente.
+     */
+    @Update
+    suspend fun updateTaskCompletion(completion: TaskCompletion)
+    
+    /**
+     * Elimina completados de tareas que ya se han sincronizado.
+     */
+    @Query("DELETE FROM task_completions WHERE synced = 1")
+    suspend fun deleteSyncedTaskCompletions()
 }

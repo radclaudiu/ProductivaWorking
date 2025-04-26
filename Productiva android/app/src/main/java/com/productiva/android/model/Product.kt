@@ -3,7 +3,8 @@ package com.productiva.android.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.google.gson.annotations.SerializedName
-import java.math.BigDecimal
+import java.text.NumberFormat
+import java.util.Locale
 
 /**
  * Modelo de datos que representa un producto en la aplicación.
@@ -21,92 +22,188 @@ data class Product(
     @SerializedName("description")
     val description: String?,
     
-    @SerializedName("sku")
-    val sku: String?,
+    @SerializedName("code")
+    val code: String?,
     
     @SerializedName("barcode")
     val barcode: String?,
     
+    @SerializedName("sku")
+    val sku: String?,
+    
     @SerializedName("price")
-    val price: BigDecimal,
+    val price: Double,
     
     @SerializedName("cost")
-    val cost: BigDecimal?,
+    val cost: Double?,
     
     @SerializedName("stock")
-    val stock: Int,
+    val stock: Int?,
+    
+    @SerializedName("reorder_level")
+    val reorderLevel: Int?,
+    
+    @SerializedName("category")
+    val category: String?,
     
     @SerializedName("category_id")
     val categoryId: Int?,
     
-    @SerializedName("image_url")
-    val imageUrl: String?,
+    @SerializedName("brand")
+    val brand: String?,
+    
+    @SerializedName("brand_id")
+    val brandId: Int?,
+    
+    @SerializedName("supplier")
+    val supplier: String?,
+    
+    @SerializedName("supplier_id")
+    val supplierId: Int?,
     
     @SerializedName("tax_rate")
-    val taxRate: Float?,
-    
-    @SerializedName("location")
-    val location: String?,
+    val taxRate: Double?,
     
     @SerializedName("weight")
-    val weight: Float?,
+    val weight: Double?,
     
     @SerializedName("dimensions")
     val dimensions: String?,
     
-    @SerializedName("last_updated")
-    val lastUpdated: String?,
+    @SerializedName("image_url")
+    val imageUrl: String?,
     
-    @SerializedName("active")
+    @SerializedName("is_active")
     val isActive: Boolean,
     
-    // Campos locales (no se envían al servidor)
+    @SerializedName("created_at")
+    val createdAt: String?,
+    
+    @SerializedName("updated_at")
+    val updatedAt: String?,
+    
+    @SerializedName("company_id")
+    val companyId: Int?,
+    
+    @SerializedName("location_id")
+    val locationId: Int?,
+    
+    // Campos locales
     val needsSync: Boolean = false,
-    val lastSyncTimestamp: Long = 0
+    val localImagePath: String? = null
 ) {
     /**
-     * Obtiene una versión formateada del precio para mostrar en UI.
+     * Devuelve el precio formateado con símbolo de moneda.
      */
-    fun getFormattedPrice(): String {
-        return String.format("%.2f €", price)
+    fun formattedPrice(): String {
+        val format = NumberFormat.getCurrencyInstance(Locale.getDefault())
+        return format.format(price)
     }
     
     /**
-     * Determina si el producto tiene stock disponible.
+     * Devuelve el costo formateado con símbolo de moneda.
      */
-    fun hasStock(): Boolean {
-        return stock > 0
+    fun formattedCost(): String {
+        if (cost == null) return ""
+        val format = NumberFormat.getCurrencyInstance(Locale.getDefault())
+        return format.format(cost)
     }
     
     /**
-     * Obtiene el estado del stock para mostrar en UI.
+     * Determina si el producto tiene stock bajo.
      */
-    fun getStockStatus(): StockStatus {
-        return when {
-            stock <= 0 -> StockStatus.OUT_OF_STOCK
-            stock < 5 -> StockStatus.LOW_STOCK
-            else -> StockStatus.IN_STOCK
+    fun hasLowStock(): Boolean {
+        if (stock == null || reorderLevel == null) return false
+        return stock <= reorderLevel
+    }
+    
+    /**
+     * Calcula el margen de beneficio en porcentaje.
+     */
+    fun profitMargin(): Double? {
+        if (cost == null || cost <= 0) return null
+        return ((price - cost) / cost) * 100
+    }
+    
+    /**
+     * Formatea el margen de beneficio como texto.
+     */
+    fun formattedProfitMargin(): String {
+        val margin = profitMargin() ?: return ""
+        return String.format("%.2f%%", margin)
+    }
+    
+    /**
+     * Actualiza este producto con información del servidor.
+     */
+    fun updateFromServer(serverProduct: Product): Product {
+        return this.copy(
+            name = serverProduct.name,
+            description = serverProduct.description,
+            code = serverProduct.code,
+            barcode = serverProduct.barcode,
+            sku = serverProduct.sku,
+            price = serverProduct.price,
+            cost = serverProduct.cost,
+            stock = serverProduct.stock,
+            reorderLevel = serverProduct.reorderLevel,
+            category = serverProduct.category,
+            categoryId = serverProduct.categoryId,
+            brand = serverProduct.brand,
+            brandId = serverProduct.brandId,
+            supplier = serverProduct.supplier,
+            supplierId = serverProduct.supplierId,
+            taxRate = serverProduct.taxRate,
+            weight = serverProduct.weight,
+            dimensions = serverProduct.dimensions,
+            imageUrl = serverProduct.imageUrl,
+            isActive = serverProduct.isActive,
+            updatedAt = serverProduct.updatedAt,
+            needsSync = false
+        )
+    }
+    
+    /**
+     * Marca este producto para sincronización.
+     */
+    fun markForSync(): Product {
+        return this.copy(needsSync = true)
+    }
+    
+    companion object {
+        /**
+         * Crea un producto vacío para usar como comodín.
+         */
+        fun createEmpty(): Product {
+            return Product(
+                id = 0,
+                name = "",
+                description = null,
+                code = null,
+                barcode = null,
+                sku = null,
+                price = 0.0,
+                cost = null,
+                stock = null,
+                reorderLevel = null,
+                category = null,
+                categoryId = null,
+                brand = null,
+                brandId = null,
+                supplier = null,
+                supplierId = null,
+                taxRate = null,
+                weight = null,
+                dimensions = null,
+                imageUrl = null,
+                isActive = true,
+                createdAt = null,
+                updatedAt = null,
+                companyId = null,
+                locationId = null,
+                needsSync = false,
+                localImagePath = null
+            )
         }
-    }
-    
-    /**
-     * Obtiene el margen de beneficio.
-     */
-    fun getProfitMargin(): Float {
-        if (cost == null || cost.compareTo(BigDecimal.ZERO) == 0) {
-            return 0f
-        }
-        
-        val profit = price.subtract(cost)
-        return profit.toFloat() / cost.toFloat() * 100
-    }
-    
-    /**
-     * Estados posibles del stock.
-     */
-    enum class StockStatus {
-        IN_STOCK,
-        LOW_STOCK,
-        OUT_OF_STOCK
     }
 }

@@ -39,16 +39,46 @@ interface PrinterDao {
     suspend fun getPrinterById(printerId: Int): SavedPrinter?
     
     /**
+     * Obtiene una impresora por su dirección MAC.
+     */
+    @Query("SELECT * FROM saved_printers WHERE mac_address = :macAddress")
+    suspend fun getPrinterByMacAddress(macAddress: String): SavedPrinter?
+    
+    /**
      * Obtiene todas las impresoras guardadas.
      */
     @Query("SELECT * FROM saved_printers ORDER BY name")
     fun getAllPrinters(): LiveData<List<SavedPrinter>>
     
     /**
-     * Obtiene la impresora predeterminada.
+     * Obtiene la impresora predeterminada, si existe.
      */
     @Query("SELECT * FROM saved_printers WHERE is_default = 1 LIMIT 1")
     suspend fun getDefaultPrinter(): SavedPrinter?
+    
+    /**
+     * Establece una impresora como predeterminada y quita este estado de las demás.
+     */
+    @Query("UPDATE saved_printers SET is_default = (CASE WHEN id = :printerId THEN 1 ELSE 0 END)")
+    suspend fun setDefaultPrinter(printerId: Int): Int
+    
+    /**
+     * Obtiene las impresoras recientemente usadas.
+     */
+    @Query("SELECT * FROM saved_printers ORDER BY last_used DESC LIMIT :limit")
+    fun getRecentlyUsedPrinters(limit: Int = 5): LiveData<List<SavedPrinter>>
+    
+    /**
+     * Actualiza la fecha de último uso de una impresora.
+     */
+    @Query("UPDATE saved_printers SET last_used = :timestamp WHERE id = :printerId")
+    suspend fun updateLastUsed(printerId: Int, timestamp: Long = System.currentTimeMillis()): Int
+    
+    /**
+     * Incrementa el contador de uso de una impresora.
+     */
+    @Query("UPDATE saved_printers SET use_count = use_count + 1 WHERE id = :printerId")
+    suspend fun incrementUseCount(printerId: Int): Int
     
     /**
      * Elimina una impresora por su ID.
@@ -63,37 +93,7 @@ interface PrinterDao {
     suspend fun deleteAllPrinters()
     
     /**
-     * Establece una impresora como predeterminada y quita el estado predeterminado de las demás.
-     */
-    @Query("UPDATE saved_printers SET is_default = (id = :printerId)")
-    suspend fun setDefaultPrinter(printerId: Int): Int
-    
-    /**
-     * Actualiza la fecha de último uso de una impresora.
-     */
-    @Query("UPDATE saved_printers SET last_used = :timestamp WHERE id = :printerId")
-    suspend fun updateLastUsed(printerId: Int, timestamp: Long): Int
-    
-    /**
-     * Obtiene impresoras por tipo de conexión.
-     */
-    @Query("SELECT * FROM saved_printers WHERE connection_type = :connectionType ORDER BY name")
-    fun getPrintersByConnectionType(connectionType: String): LiveData<List<SavedPrinter>>
-    
-    /**
-     * Busca impresoras por nombre o dirección.
-     */
-    @Query("SELECT * FROM saved_printers WHERE name LIKE '%' || :query || '%' OR address LIKE '%' || :query || '%' ORDER BY name")
-    fun searchPrinters(query: String): LiveData<List<SavedPrinter>>
-    
-    /**
-     * Obtiene la impresora utilizada más recientemente.
-     */
-    @Query("SELECT * FROM saved_printers ORDER BY last_used DESC LIMIT 1")
-    suspend fun getMostRecentlyUsedPrinter(): SavedPrinter?
-    
-    /**
-     * Verifica si existe alguna impresora guardada.
+     * Cuenta el número de impresoras guardadas.
      */
     @Query("SELECT COUNT(*) FROM saved_printers")
     suspend fun getPrintersCount(): Int

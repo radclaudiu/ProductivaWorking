@@ -1,74 +1,69 @@
 package com.productiva.android
 
 import android.app.Application
-import android.content.Context
-import androidx.room.Room
+import android.os.StrictMode
+import android.util.Log
 import com.brother.sdk.BrotherPrintLibrary
 import com.productiva.android.database.AppDatabase
-import com.productiva.android.utils.AppLogger
-import com.productiva.android.utils.PreferenceManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 
 /**
- * Clase de aplicación principal para inicializar componentes esenciales
+ * Clase de aplicación principal que se inicializa cuando la app inicia.
+ * Se encarga de inicializar componentes globales como la base de datos y el SDK de Brother.
  */
 class ProductivaApplication : Application() {
     
-    // Ámbito de corrutina para la aplicación
+    // Crea un CoroutineScope para la aplicación
     private val applicationScope = CoroutineScope(SupervisorJob())
     
-    // Base de datos única en toda la aplicación
-    lateinit var database: AppDatabase
-        private set
-    
-    // Gestor de preferencias
-    lateinit var preferenceManager: PreferenceManager
-        private set
-    
-    override fun onCreate() {
-        super.onCreate()
-        
-        instance = this
-        
-        // Inicializar logger
-        AppLogger.init(this)
-        
-        // Inicializar base de datos
-        database = Room.databaseBuilder(
-            applicationContext,
-            AppDatabase::class.java,
-            "productiva_database"
-        )
-            .fallbackToDestructiveMigration() // En producción usar migrations adecuadas
-            .build()
-        
-        // Inicializar gestor de preferencias
-        preferenceManager = PreferenceManager(this)
-        
-        // Inicializar SDK de Brother
-        initializeBrotherSDK()
-        
-        AppLogger.d(TAG, "Aplicación inicializada correctamente")
-    }
-    
-    /**
-     * Inicializa el SDK de Brother para impresión
-     */
-    private fun initializeBrotherSDK() {
-        try {
-            // Inicializar biblioteca de Brother
-            BrotherPrintLibrary.initialize(this)
-            AppLogger.d(TAG, "SDK de Brother inicializado correctamente")
-        } catch (e: Exception) {
-            AppLogger.e(TAG, "Error al inicializar SDK de Brother: ${e.message}")
-        }
-    }
+    // Base de datos Room de la aplicación
+    val database by lazy { AppDatabase.getInstance(this) }
     
     companion object {
         private const val TAG = "ProductivaApplication"
         
+        // Instancia singleton de la aplicación
         lateinit var instance: ProductivaApplication
             private set
+    }
+    
+    override fun onCreate() {
+        super.onCreate()
+        
+        // Configura la instancia singleton
+        instance = this
+        
+        // Configura StrictMode para desarrollo
+        if (BuildConfig.DEBUG) {
+            StrictMode.setThreadPolicy(
+                StrictMode.ThreadPolicy.Builder()
+                    .detectDiskReads()
+                    .detectDiskWrites()
+                    .detectNetwork()
+                    .penaltyLog()
+                    .build()
+            )
+            
+            StrictMode.setVmPolicy(
+                StrictMode.VmPolicy.Builder()
+                    .detectLeakedSqlLiteObjects()
+                    .detectLeakedClosableObjects()
+                    .penaltyLog()
+                    .build()
+            )
+        }
+        
+        // Inicializa el SDK de impresión Brother
+        try {
+            BrotherPrintLibrary.initialize(this)
+            Log.d(TAG, "Brother SDK inicializado correctamente")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al inicializar Brother SDK", e)
+        }
+        
+        // Otras inicializaciones aquí...
+        
+        Log.d(TAG, "Aplicación Productiva inicializada")
     }
 }

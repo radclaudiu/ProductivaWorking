@@ -1,23 +1,16 @@
 package com.productiva.android.database
 
+import android.content.Context
 import androidx.room.Database
+import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import com.productiva.android.database.converters.DateConverter
-import com.productiva.android.database.converters.StringListConverter
-import com.productiva.android.database.dao.LabelTemplateDao
-import com.productiva.android.database.dao.PrinterDao
-import com.productiva.android.database.dao.TaskCompletionDao
-import com.productiva.android.database.dao.TaskDao
-import com.productiva.android.database.dao.UserDao
-import com.productiva.android.model.LabelTemplate
-import com.productiva.android.model.SavedPrinter
-import com.productiva.android.model.Task
-import com.productiva.android.model.TaskCompletion
-import com.productiva.android.model.User
+import com.productiva.android.database.dao.*
+import com.productiva.android.model.*
+import com.productiva.android.utils.DateConverters
 
 /**
- * Configuración principal de la base de datos Room
+ * Configuración principal de la base de datos Room para la aplicación.
  */
 @Database(
     entities = [
@@ -28,36 +21,42 @@ import com.productiva.android.model.User
         LabelTemplate::class
     ],
     version = 1,
-    exportSchema = true
+    exportSchema = false
 )
-@TypeConverters(
-    DateConverter::class,
-    StringListConverter::class
-)
+@TypeConverters(DateConverters::class)
 abstract class AppDatabase : RoomDatabase() {
     
-    /**
-     * DAO para operaciones de usuarios
-     */
+    // DAOs
     abstract fun userDao(): UserDao
-    
-    /**
-     * DAO para operaciones de tareas
-     */
     abstract fun taskDao(): TaskDao
-    
-    /**
-     * DAO para operaciones de completaciones de tareas
-     */
     abstract fun taskCompletionDao(): TaskCompletionDao
-    
-    /**
-     * DAO para operaciones de impresoras guardadas
-     */
     abstract fun printerDao(): PrinterDao
-    
-    /**
-     * DAO para operaciones de plantillas de etiquetas
-     */
     abstract fun labelTemplateDao(): LabelTemplateDao
+    
+    companion object {
+        private const val DATABASE_NAME = "productiva.db"
+        
+        @Volatile
+        private var INSTANCE: AppDatabase? = null
+        
+        /**
+         * Obtiene una instancia de la base de datos.
+         * Si la base de datos no existe, se crea una nueva.
+         */
+        fun getInstance(context: Context): AppDatabase {
+            return INSTANCE ?: synchronized(this) {
+                val instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    AppDatabase::class.java,
+                    DATABASE_NAME
+                )
+                .fallbackToDestructiveMigration() // En caso de cambio de versión, se reconstruye la BD
+                .build()
+                
+                INSTANCE = instance
+                
+                instance
+            }
+        }
+    }
 }

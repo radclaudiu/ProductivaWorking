@@ -9,98 +9,86 @@ import androidx.room.Update
 import com.productiva.android.model.TaskCompletion
 
 /**
- * DAO para operaciones con completaciones de tareas en la base de datos local.
+ * DAO para operaciones con finalizaciones de tareas en la base de datos local.
  */
 @Dao
 interface TaskCompletionDao {
     
     /**
-     * Inserta una completación de tarea en la base de datos.
+     * Inserta una finalización de tarea en la base de datos.
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(completion: TaskCompletion): Long
+    suspend fun insert(taskCompletion: TaskCompletion): Long
     
     /**
-     * Inserta varias completaciones de tareas en la base de datos.
+     * Inserta varias finalizaciones de tareas en la base de datos.
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(completions: List<TaskCompletion>): List<Long>
+    suspend fun insertAll(taskCompletions: List<TaskCompletion>): List<Long>
     
     /**
-     * Actualiza la información de una completación existente.
+     * Actualiza la información de una finalización de tarea existente.
      */
     @Update
-    suspend fun update(completion: TaskCompletion)
+    suspend fun update(taskCompletion: TaskCompletion)
     
     /**
-     * Obtiene una completación por su ID.
+     * Obtiene una finalización de tarea por su ID.
      */
     @Query("SELECT * FROM task_completions WHERE id = :completionId")
-    suspend fun getCompletionById(completionId: Int): TaskCompletion?
+    suspend fun getTaskCompletionById(completionId: Int): TaskCompletion?
     
     /**
-     * Obtiene todas las completaciones para una tarea específica.
+     * Obtiene todas las finalizaciones de tareas para una tarea específica.
      */
     @Query("SELECT * FROM task_completions WHERE task_id = :taskId ORDER BY completion_date DESC")
-    fun getCompletionsByTaskId(taskId: Int): LiveData<List<TaskCompletion>>
+    fun getCompletionsForTask(taskId: Int): LiveData<List<TaskCompletion>>
     
     /**
-     * Obtiene completaciones por usuario.
+     * Obtiene todas las finalizaciones de tareas para un usuario específico.
      */
-    @Query("SELECT * FROM task_completions WHERE user_id = :userId ORDER BY completion_date DESC")
+    @Query("SELECT * FROM task_completions WHERE completed_by = :userId ORDER BY completion_date DESC")
     fun getCompletionsByUser(userId: Int): LiveData<List<TaskCompletion>>
     
     /**
-     * Obtiene completaciones por ubicación.
+     * Obtiene todas las finalizaciones de tareas pendientes de sincronizar.
      */
-    @Query("SELECT * FROM task_completions WHERE location_id = :locationId ORDER BY completion_date DESC")
-    fun getCompletionsByLocation(locationId: Int): LiveData<List<TaskCompletion>>
+    @Query("SELECT * FROM task_completions WHERE is_synced = 0")
+    suspend fun getUnsyncedCompletions(): List<TaskCompletion>
     
     /**
-     * Elimina una completación por su ID.
+     * Marca una finalización de tarea como sincronizada.
      */
-    @Query("DELETE FROM task_completions WHERE id = :completionId")
-    suspend fun deleteCompletionById(completionId: Int): Int
+    @Query("UPDATE task_completions SET is_synced = 1, server_id = :serverId WHERE id = :localId")
+    suspend fun markAsSynced(localId: Int, serverId: Int): Int
     
     /**
-     * Elimina todas las completaciones para una tarea específica.
-     */
-    @Query("DELETE FROM task_completions WHERE task_id = :taskId")
-    suspend fun deleteCompletionsByTaskId(taskId: Int): Int
-    
-    /**
-     * Elimina todas las completaciones.
-     */
-    @Query("DELETE FROM task_completions")
-    suspend fun deleteAllCompletions()
-    
-    /**
-     * Obtiene completaciones que tienen sincronización pendiente.
-     */
-    @Query("SELECT * FROM task_completions WHERE syncPending = 1")
-    suspend fun getCompletionsWithPendingSync(): List<TaskCompletion>
-    
-    /**
-     * Marca una completación como sincronizada y actualiza su ID remoto.
-     */
-    @Query("UPDATE task_completions SET syncPending = 0, remoteId = :remoteId WHERE id = :localId")
-    suspend fun markCompletionSynced(localId: Int, remoteId: Int): Int
-    
-    /**
-     * Obtiene la última completación para una tarea.
+     * Obtiene la última finalización para una tarea específica.
      */
     @Query("SELECT * FROM task_completions WHERE task_id = :taskId ORDER BY completion_date DESC LIMIT 1")
     suspend fun getLastCompletionForTask(taskId: Int): TaskCompletion?
     
     /**
-     * Cuenta el número de completaciones para una tarea.
+     * Elimina una finalización de tarea por su ID.
+     */
+    @Query("DELETE FROM task_completions WHERE id = :completionId")
+    suspend fun deleteTaskCompletionById(completionId: Int): Int
+    
+    /**
+     * Elimina todas las finalizaciones de tareas para una tarea específica.
+     */
+    @Query("DELETE FROM task_completions WHERE task_id = :taskId")
+    suspend fun deleteCompletionsForTask(taskId: Int): Int
+    
+    /**
+     * Elimina todas las finalizaciones de tareas.
+     */
+    @Query("DELETE FROM task_completions")
+    suspend fun deleteAllTaskCompletions()
+    
+    /**
+     * Cuenta el número de finalizaciones para una tarea específica.
      */
     @Query("SELECT COUNT(*) FROM task_completions WHERE task_id = :taskId")
     suspend fun getCompletionsCountForTask(taskId: Int): Int
-    
-    /**
-     * Verifica si una tarea tiene completaciones.
-     */
-    @Query("SELECT EXISTS(SELECT 1 FROM task_completions WHERE task_id = :taskId LIMIT 1)")
-    suspend fun hasCompletionsForTask(taskId: Int): Boolean
 }

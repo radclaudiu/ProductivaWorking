@@ -1,40 +1,87 @@
 package com.productiva.android.model
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.google.gson.annotations.SerializedName
 
 /**
- * Entidad que representa una plantilla de etiqueta para impresión
+ * Clase de entidad para representar una plantilla de etiqueta en la base de datos
  */
-@Entity(tableName = "label_templates")
+@Entity(
+    tableName = "label_templates",
+    foreignKeys = [
+        ForeignKey(
+            entity = User::class,
+            parentColumns = ["id"],
+            childColumns = ["user_id"],
+            onDelete = ForeignKey.SET_NULL
+        )
+    ],
+    indices = [
+        Index("user_id"),
+        Index("company_id")
+    ]
+)
 data class LabelTemplate(
     @PrimaryKey(autoGenerate = true)
+    @ColumnInfo(name = "id")
+    @SerializedName("id")
     val id: Int = 0,
+    
+    @ColumnInfo(name = "name")
+    @SerializedName("name")
     val name: String,
+    
+    @ColumnInfo(name = "description")
+    @SerializedName("description")
+    val description: String? = null,
+    
+    @ColumnInfo(name = "template_data")
+    @SerializedName("template_data")
+    val templateData: String, // JSON con la configuración de la plantilla
+    
+    @ColumnInfo(name = "user_id")
+    @SerializedName("user_id")
+    val userId: Int? = null,
+    
+    @ColumnInfo(name = "company_id")
+    @SerializedName("company_id")
+    val companyId: Int? = null,
+    
+    @ColumnInfo(name = "width")
+    @SerializedName("width")
+    val width: Int = 62, // ancho en mm
+    
+    @ColumnInfo(name = "height")
+    @SerializedName("height")
+    val height: Int = 29, // alto en mm
+    
+    @ColumnInfo(name = "orientation")
+    @SerializedName("orientation")
+    val orientation: String = "landscape", // portrait o landscape
+    
+    @ColumnInfo(name = "is_default")
+    @SerializedName("is_default")
     val isDefault: Boolean = false,
     
-    // Tamaño de la etiqueta
-    val widthMm: Int = 62, // Ancho del papel en mm
-    val heightMm: Int = 100, // Alto del papel en mm
+    @ColumnInfo(name = "created_at")
+    @SerializedName("created_at")
+    val createdAt: Long = System.currentTimeMillis(),
     
-    // Contenido y formato
-    val showTitle: Boolean = true,
-    val showDate: Boolean = true,
-    val showExtraText: Boolean = true,
-    val showQrCode: Boolean = false,
-    val showBarcode: Boolean = false,
+    @ColumnInfo(name = "updated_at")
+    @SerializedName("updated_at")
+    val updatedAt: Long = System.currentTimeMillis(),
     
-    // Tamaños de fuente (1-5, donde 3 es normal)
-    val titleFontSize: Int = 4,
-    val dateFontSize: Int = 2,
-    val extraTextFontSize: Int = 3,
+    @ColumnInfo(name = "is_synced")
+    val isSynced: Boolean = false,
     
-    // Márgenes en mm
-    val marginTop: Int = 3,
-    val marginLeft: Int = 3,
-    val marginRight: Int = 3,
-    val marginBottom: Int = 3,
+    @ColumnInfo(name = "last_sync")
+    val lastSync: Long = System.currentTimeMillis(),
     
-    // Formato de fecha (por defecto: dd/MM/yyyy HH:mm)
-    val dateFormat: String = "dd/MM/yyyy HH:mm"
+    @ColumnInfo(name = "preview_image_path")
+    @SerializedName("preview_image_path")
+    val previewImagePath: String? = null
 )

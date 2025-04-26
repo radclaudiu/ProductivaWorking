@@ -1,44 +1,52 @@
 package com.productiva.android.model
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
+import androidx.room.TypeConverters
 import com.google.gson.annotations.SerializedName
-import java.text.NumberFormat
-import java.util.Locale
+import com.productiva.android.database.Converters
 
 /**
- * Modelo de datos para productos.
- * Incluye todos los campos necesarios para la sincronización con el portal web.
+ * Modelo para productos.
+ * Representa un producto en el sistema con toda su información.
  */
-@Entity(tableName = "products")
+@Entity(
+    tableName = "products",
+    indices = [
+        Index("sku", unique = true),
+        Index("barcode")
+    ]
+)
+@TypeConverters(Converters::class)
 data class Product(
     @PrimaryKey
     @SerializedName("id")
-    val id: Int,
+    val id: Int = 0,
     
     @SerializedName("name")
     val name: String,
     
-    @SerializedName("code")
-    val code: String? = null,
+    @SerializedName("description")
+    val description: String? = null,
+    
+    @SerializedName("sku")
+    val sku: String,
     
     @SerializedName("barcode")
     val barcode: String? = null,
     
-    @SerializedName("description")
-    val description: String? = null,
-    
     @SerializedName("price")
-    val price: Double = 0.0,
+    val price: Double? = null,
     
     @SerializedName("cost")
     val cost: Double? = null,
     
     @SerializedName("stock")
-    val stock: Int? = null,
+    val stock: Int = 0,
     
-    @SerializedName("stock_min")
-    val stockMin: Int? = null,
+    @SerializedName("min_stock")
+    val minStock: Int = 0,
     
     @SerializedName("category")
     val category: String? = null,
@@ -46,14 +54,23 @@ data class Product(
     @SerializedName("supplier")
     val supplier: String? = null,
     
-    @SerializedName("company_id")
-    val companyId: Int,
+    @SerializedName("supplier_id")
+    val supplierId: Int? = null,
     
     @SerializedName("location_id")
     val locationId: Int? = null,
     
+    @SerializedName("company_id")
+    val companyId: Int? = null,
+    
     @SerializedName("image_url")
     val imageUrl: String? = null,
+    
+    @SerializedName("tags")
+    val tags: List<String> = emptyList(),
+    
+    @SerializedName("attributes")
+    val attributes: Map<String, String> = emptyMap(),
     
     @SerializedName("is_active")
     val isActive: Boolean = true,
@@ -64,87 +81,66 @@ data class Product(
     @SerializedName("updated_at")
     val updatedAt: String? = null,
     
-    // Campos locales (no se envían al servidor)
-    var localImagePath: String? = null,
-    var needsSync: Boolean = false,
-    var lastSyncTime: Long = 0
+    // Campos locales
+    var isLocallyModified: Boolean = false,
+    var lastSyncTime: Long = 0,
+    var localImagePath: String? = null
 ) {
     /**
-     * Formatea el precio con el formato de moneda local.
+     * Verifica si el producto tiene existencias disponibles.
      */
-    fun formattedPrice(): String {
-        val format = NumberFormat.getCurrencyInstance(Locale.getDefault())
-        return format.format(price)
+    fun hasStock(): Boolean {
+        return stock > 0
     }
     
     /**
-     * Formatea el costo con el formato de moneda local.
+     * Verifica si el producto está en nivel bajo de existencias.
      */
-    fun formattedCost(): String {
-        if (cost == null) return "N/A"
-        val format = NumberFormat.getCurrencyInstance(Locale.getDefault())
-        return format.format(cost)
+    fun isLowStock(): Boolean {
+        return stock <= minStock && stock > 0
     }
     
     /**
-     * Calcula el margen de beneficio como porcentaje.
+     * Verifica si el producto está agotado.
      */
-    fun calculateMargin(): Double? {
-        if (cost == null || cost <= 0 || price <= 0) return null
-        return ((price - cost) / price) * 100.0
+    fun isOutOfStock(): Boolean {
+        return stock <= 0
     }
     
     /**
-     * Formatea el margen como porcentaje.
+     * Obtiene el margen de ganancia en porcentaje.
      */
-    fun formattedMargin(): String {
-        val margin = calculateMargin()
-        return if (margin != null) {
-            String.format("%.2f%%", margin)
-        } else {
-            "N/A"
-        }
+    fun getMarginPercent(): Double {
+        if (cost == null || price == null || cost <= 0) return 0.0
+        return ((price - cost) / cost) * 100
     }
     
     /**
-     * Determina si el producto tiene stock bajo.
+     * Obtiene el margen de ganancia en valor absoluto.
      */
-    fun hasLowStock(): Boolean {
-        if (stock == null || stockMin == null) return false
-        return stock <= stockMin
+    fun getMarginValue(): Double {
+        if (cost == null || price == null) return 0.0
+        return price - cost
     }
     
     /**
-     * Actualiza el producto con datos del servidor preservando cambios locales.
+     * Obtiene la URL de la imagen o la ruta local si existe.
      */
-    fun updateFromServer(serverProduct: Product): Product {
-        return this.copy(
-            name = serverProduct.name,
-            code = serverProduct.code,
-            barcode = serverProduct.barcode,
-            description = serverProduct.description,
-            price = serverProduct.price,
-            cost = serverProduct.cost,
-            stock = serverProduct.stock,
-            stockMin = serverProduct.stockMin,
-            category = serverProduct.category,
-            supplier = serverProduct.supplier,
-            locationId = serverProduct.locationId,
-            imageUrl = serverProduct.imageUrl,
-            isActive = serverProduct.isActive,
-            createdAt = serverProduct.createdAt,
-            updatedAt = serverProduct.updatedAt,
-            // Preservar datos locales
-            localImagePath = this.localImagePath,
-            needsSync = this.needsSync,
-            lastSyncTime = System.currentTimeMillis()
-        )
+    fun getImageSource(): String? {
+        return localImagePath ?: imageUrl
     }
     
     /**
-     * Marca el producto como pendiente de sincronización.
+     * Verifica si el producto tiene imagen.
      */
-    fun markForSync(): Product {
-        return this.copy(needsSync = true)
+    fun hasImage(): Boolean {
+        return !imageUrl.isNullOrEmpty() || !localImagePath.isNullOrEmpty()
+    }
+    
+    /**
+     * Verifica si el producto necesita ser sincronizado con el servidor.
+     */
+    fun needsSync(): Boolean {
+        return isLocallyModified
     }
 }

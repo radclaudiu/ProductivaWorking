@@ -2,16 +2,16 @@ package com.productiva.android.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import androidx.room.TypeConverters
 import com.google.gson.annotations.SerializedName
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.productiva.android.database.Converters
 
 /**
- * Modelo para plantillas de etiquetas para impresoras Brother.
- * Contiene la configuración de formato y campos para generar etiquetas.
+ * Modelo para plantillas de etiquetas.
+ * Representa una plantilla para imprimir etiquetas de productos.
  */
 @Entity(tableName = "label_templates")
+@TypeConverters(Converters::class)
 data class LabelTemplate(
     @PrimaryKey
     @SerializedName("id")
@@ -23,56 +23,32 @@ data class LabelTemplate(
     @SerializedName("description")
     val description: String? = null,
     
-    @SerializedName("type")
-    val type: String, // "product", "location", "asset", "custom"
+    @SerializedName("company_id")
+    val companyId: Int? = null,
     
-    @SerializedName("paper_size")
-    val paperSize: String, // "62mm", "29mm", etc.
+    @SerializedName("creator_id")
+    val creatorId: Int? = null,
     
-    @SerializedName("orientation")
-    val orientation: String = "landscape", // "portrait" o "landscape"
+    @SerializedName("width")
+    val width: Int, // Ancho en mm
+    
+    @SerializedName("height")
+    val height: Int, // Alto en mm
     
     @SerializedName("dpi")
-    val dpi: Int = 300,
+    val dpi: Int = 203, // Resolución en DPI
     
-    @SerializedName("font_size")
-    val fontSize: Float = 10f,
+    @SerializedName("orientation")
+    val orientation: String = "landscape", // landscape o portrait
     
-    @SerializedName("font_family")
-    val fontFamily: String = "Arial",
+    @SerializedName("elements")
+    val elements: List<LabelElement> = emptyList(),
     
-    @SerializedName("bold_title")
-    val boldTitle: Boolean = true,
-    
-    @SerializedName("include_barcode")
-    val includeBarcode: Boolean = true,
-    
-    @SerializedName("barcode_type")
-    val barcodeType: String = "CODE128",
-    
-    @SerializedName("include_logo")
-    val includeLogo: Boolean = false,
-    
-    @SerializedName("logo_url")
-    val logoUrl: String? = null,
-    
-    @SerializedName("include_price")
-    val includePrice: Boolean = true,
-    
-    @SerializedName("include_date")
-    val includeDate: Boolean = false,
-    
-    @SerializedName("date_format")
-    val dateFormat: String = "dd/MM/yyyy",
-    
-    @SerializedName("custom_fields")
-    val customFields: List<String> = emptyList(),
+    @SerializedName("is_active")
+    val isActive: Boolean = true,
     
     @SerializedName("is_default")
     val isDefault: Boolean = false,
-    
-    @SerializedName("company_id")
-    val companyId: Int? = null,
     
     @SerializedName("created_at")
     val createdAt: String? = null,
@@ -80,96 +56,97 @@ data class LabelTemplate(
     @SerializedName("updated_at")
     val updatedAt: String? = null,
     
-    @SerializedName("use_count")
-    val useCount: Int = 0,
-    
     // Campos locales
-    var localUseCount: Int = 0,
-    var needsSync: Boolean = false,
     var lastSyncTime: Long = 0
 ) {
     /**
-     * Genera los datos necesarios para imprimir una etiqueta para un producto.
+     * Verifica si la plantilla es compatible con una impresora específica.
      */
-    fun generateProductLabelData(product: Product): Map<String, Any> {
-        val labelData = mutableMapOf<String, Any>()
-        
-        // Datos básicos del producto
-        labelData["title"] = product.name
-        labelData["code"] = product.code ?: ""
-        
-        // Código de barras
-        if (includeBarcode && !product.barcode.isNullOrEmpty()) {
-            labelData["barcode"] = product.barcode
-            labelData["barcodeType"] = barcodeType
-        } else if (includeBarcode) {
-            // Si no hay código de barras pero se solicita incluirlo, usamos el código del producto
-            labelData["barcode"] = product.code ?: product.id.toString()
-            labelData["barcodeType"] = barcodeType
-        }
-        
-        // Precio
-        if (includePrice) {
-            labelData["price"] = product.formattedPrice()
-        }
-        
-        // Fecha
-        if (includeDate) {
-            val formatter = SimpleDateFormat(dateFormat, Locale.getDefault())
-            labelData["date"] = formatter.format(Date())
-        }
-        
-        // Logo
-        if (includeLogo && !logoUrl.isNullOrEmpty()) {
-            labelData["logoUrl"] = logoUrl
-        }
-        
-        // Campos personalizados
-        for (field in customFields) {
-            when (field) {
-                "category" -> labelData["category"] = product.category ?: ""
-                "supplier" -> labelData["supplier"] = product.supplier ?: ""
-                "stock" -> product.stock?.let { labelData["stock"] = it.toString() }
-                "description" -> product.description?.let { 
-                    // Truncar descripción para que quepa en la etiqueta
-                    labelData["description"] = if (it.length > 50) it.substring(0, 47) + "..." else it
-                }
-            }
-        }
-        
-        return labelData
+    fun isCompatibleWithPrinter(printerModel: String, printerDpi: Int): Boolean {
+        // Lógica de compatibilidad
+        return true
     }
     
     /**
-     * Incrementa el contador de uso local y marca para sincronización.
+     * Obtiene el tamaño de etiqueta como texto.
      */
-    fun incrementUseCount(): LabelTemplate {
-        return this.copy(
-            localUseCount = localUseCount + 1,
-            needsSync = true
-        )
+    fun getSizeText(): String {
+        return "${width}mm x ${height}mm"
     }
+}
+
+/**
+ * Modelo para elementos de una etiqueta.
+ * Representa un elemento visual dentro de una plantilla de etiqueta.
+ */
+data class LabelElement(
+    @SerializedName("id")
+    val id: Int = 0,
     
+    @SerializedName("type")
+    val type: String, // text, barcode, qrcode, image, line, rectangle
+    
+    @SerializedName("x")
+    val x: Int, // Posición X en píxeles
+    
+    @SerializedName("y")
+    val y: Int, // Posición Y en píxeles
+    
+    @SerializedName("width")
+    val width: Int? = null, // Ancho en píxeles
+    
+    @SerializedName("height")
+    val height: Int? = null, // Alto en píxeles
+    
+    @SerializedName("content")
+    val content: String? = null, // Contenido estático o variable (ej: {product.name})
+    
+    @SerializedName("font_family")
+    val fontFamily: String? = null, // Solo para texto
+    
+    @SerializedName("font_size")
+    val fontSize: Int? = null, // Solo para texto
+    
+    @SerializedName("font_style")
+    val fontStyle: String? = null, // normal, bold, italic - Solo para texto
+    
+    @SerializedName("alignment")
+    val alignment: String? = null, // left, center, right - Solo para texto
+    
+    @SerializedName("rotation")
+    val rotation: Int = 0, // Rotación en grados
+    
+    @SerializedName("barcode_type")
+    val barcodeType: String? = null, // code128, ean13, etc. - Solo para códigos de barras
+    
+    @SerializedName("qrcode_version")
+    val qrcodeVersion: Int? = null, // Solo para QR
+    
+    @SerializedName("border_width")
+    val borderWidth: Int? = null, // Solo para líneas y rectángulos
+    
+    @SerializedName("is_variable")
+    val isVariable: Boolean = false, // Si el contenido es una variable o texto estático
+    
+    @SerializedName("variable_binding")
+    val variableBinding: String? = null // Nombre de la variable (product.name, product.price, etc.)
+) {
     /**
-     * Actualiza la plantilla con datos del servidor.
+     * Evalúa el contenido del elemento con un producto específico.
      */
-    fun updateFromServer(serverTemplate: LabelTemplate): LabelTemplate {
-        return if (needsSync) {
-            // Si hay cambios locales pendientes, solo actualizamos campos no críticos
-            this.copy(
-                name = serverTemplate.name,
-                description = serverTemplate.description,
-                isDefault = serverTemplate.isDefault,
-                updatedAt = serverTemplate.updatedAt,
-                lastSyncTime = System.currentTimeMillis()
-            )
-        } else {
-            // Actualización completa preservando el contador de uso local
-            serverTemplate.copy(
-                localUseCount = this.localUseCount,
-                needsSync = false,
-                lastSyncTime = System.currentTimeMillis()
-            )
+    fun evaluateContent(product: Product): String {
+        if (!isVariable || variableBinding.isNullOrEmpty()) {
+            return content ?: ""
+        }
+        
+        // Procesar la variable según el binding
+        return when (variableBinding) {
+            "product.name" -> product.name
+            "product.sku" -> product.sku
+            "product.barcode" -> product.barcode ?: ""
+            "product.price" -> product.price?.toString() ?: ""
+            "product.category" -> product.category ?: ""
+            else -> ""
         }
     }
 }

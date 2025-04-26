@@ -16,130 +16,144 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface LabelTemplateDao {
     /**
-     * Inserta nuevas plantillas en la base de datos.
-     * Si ya existen plantillas con los mismos IDs, las reemplaza.
-     *
-     * @param templates Lista de plantillas a insertar.
-     * @return Lista de IDs de las plantillas insertadas.
-     */
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTemplates(templates: List<LabelTemplate>): List<Long>
-    
-    /**
-     * Inserta una nueva plantilla en la base de datos.
+     * Inserta una plantilla de etiqueta en la base de datos.
      * Si ya existe una plantilla con el mismo ID, la reemplaza.
      *
-     * @param template Plantilla a insertar.
+     * @param labelTemplate Plantilla de etiqueta a insertar.
      * @return ID de la plantilla insertada.
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTemplate(template: LabelTemplate): Long
+    suspend fun insertLabelTemplate(labelTemplate: LabelTemplate): Long
     
     /**
-     * Actualiza una plantilla existente.
+     * Inserta múltiples plantillas de etiquetas en la base de datos.
+     * Si ya existe alguna plantilla con el mismo ID, la reemplaza.
      *
-     * @param template Plantilla a actualizar.
+     * @param labelTemplates Lista de plantillas de etiquetas a insertar.
+     * @return Lista de IDs de las plantillas insertadas.
+     */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLabelTemplates(labelTemplates: List<LabelTemplate>): List<Long>
+    
+    /**
+     * Actualiza una plantilla de etiqueta existente.
+     *
+     * @param labelTemplate Plantilla de etiqueta a actualizar.
      * @return Número de filas actualizadas.
      */
     @Update
-    suspend fun updateTemplate(template: LabelTemplate): Int
+    suspend fun updateLabelTemplate(labelTemplate: LabelTemplate): Int
     
     /**
      * Obtiene todas las plantillas de etiquetas.
      *
-     * @return Flow con la lista de todas las plantillas.
+     * @return Flow con la lista de todas las plantillas de etiquetas.
      */
-    @Query("SELECT * FROM label_templates ORDER BY name ASC")
-    fun getAllTemplates(): Flow<List<LabelTemplate>>
+    @Query("SELECT * FROM label_templates ORDER BY name")
+    fun getAllLabelTemplates(): Flow<List<LabelTemplate>>
     
     /**
-     * Obtiene una plantilla específica por su ID.
+     * Obtiene una plantilla de etiqueta por su ID.
      *
      * @param templateId ID de la plantilla.
      * @return Flow con la plantilla, o null si no existe.
      */
     @Query("SELECT * FROM label_templates WHERE id = :templateId")
-    fun getTemplateById(templateId: Int): Flow<LabelTemplate?>
+    fun getLabelTemplateById(templateId: Int): Flow<LabelTemplate?>
     
     /**
-     * Obtiene plantillas por tipo.
+     * Obtiene la plantilla de etiqueta por defecto.
      *
-     * @param type Tipo de plantilla (product, location, asset, custom).
-     * @return Flow con la lista de plantillas del tipo especificado.
+     * @return Flow con la plantilla por defecto, o null si no hay ninguna.
      */
-    @Query("SELECT * FROM label_templates WHERE type = :type ORDER BY name ASC")
-    fun getTemplatesByType(type: String): Flow<List<LabelTemplate>>
+    @Query("SELECT * FROM label_templates WHERE isDefault = 1 LIMIT 1")
+    fun getDefaultLabelTemplate(): Flow<LabelTemplate?>
     
     /**
-     * Obtiene la plantilla predeterminada para un tipo específico.
+     * Obtiene todas las plantillas de etiquetas para una empresa específica.
      *
-     * @param type Tipo de plantilla.
-     * @return Flow con la plantilla predeterminada, o null si no hay ninguna.
+     * @param companyId ID de la empresa.
+     * @return Flow con la lista de plantillas de la empresa.
      */
-    @Query("SELECT * FROM label_templates WHERE type = :type AND isDefault = 1 LIMIT 1")
-    fun getDefaultTemplateForType(type: String): Flow<LabelTemplate?>
+    @Query("SELECT * FROM label_templates WHERE companyId = :companyId OR companyId IS NULL ORDER BY name")
+    fun getLabelTemplatesByCompanyId(companyId: Int): Flow<List<LabelTemplate>>
     
     /**
-     * Obtiene plantillas pendientes de sincronización.
+     * Elimina una plantilla de etiqueta por su ID.
      *
-     * @return Lista de plantillas pendientes de sincronización.
+     * @param templateId ID de la plantilla a eliminar.
+     * @return Número de filas eliminadas.
      */
-    @Query("SELECT * FROM label_templates WHERE needsSync = 1")
-    suspend fun getTemplatesPendingSync(): List<LabelTemplate>
-    
-    /**
-     * Marca una plantilla como sincronizada.
-     *
-     * @param templateId ID de la plantilla.
-     * @return Número de filas actualizadas.
-     */
-    @Query("UPDATE label_templates SET needsSync = 0 WHERE id = :templateId")
-    suspend fun markAsSynced(templateId: Int): Int
-    
-    /**
-     * Incrementa el contador de uso local de una plantilla.
-     *
-     * @param templateId ID de la plantilla.
-     * @return Número de filas actualizadas.
-     */
-    @Transaction
-    suspend fun incrementUseCount(templateId: Int): Int {
-        val template = getTemplateByIdSync(templateId) ?: return 0
-        val updated = template.incrementUseCount()
-        updateTemplate(updated)
-        return 1
-    }
-    
-    /**
-     * Obtiene una plantilla por su ID de forma síncrona.
-     *
-     * @param templateId ID de la plantilla.
-     * @return La plantilla, o null si no existe.
-     */
-    @Query("SELECT * FROM label_templates WHERE id = :templateId")
-    suspend fun getTemplateByIdSync(templateId: Int): LabelTemplate?
-    
-    /**
-     * Actualiza una plantilla desde el servidor, preservando los cambios locales.
-     * Si la plantilla no existe, la inserta.
-     *
-     * @param serverTemplate Plantilla recibida del servidor.
-     * @return Plantilla actualizada o insertada.
-     */
-    @Transaction
-    suspend fun upsertFromServer(serverTemplate: LabelTemplate): LabelTemplate {
-        val existingTemplate = getTemplateByIdSync(serverTemplate.id)
-        
-        val templateToSave = existingTemplate?.updateFromServer(serverTemplate) ?: serverTemplate
-        
-        insertTemplate(templateToSave)
-        
-        return templateToSave
-    }
+    @Query("DELETE FROM label_templates WHERE id = :templateId")
+    suspend fun deleteLabelTemplateById(templateId: Int): Int
     
     /**
      * Elimina todas las plantillas de etiquetas.
      */
     @Query("DELETE FROM label_templates")
-    suspend fun deleteAllTemplates()
+    suspend fun deleteAllLabelTemplates()
+    
+    /**
+     * Obtiene una plantilla de etiqueta por su ID de forma síncrona.
+     *
+     * @param templateId ID de la plantilla.
+     * @return La plantilla, o null si no existe.
+     */
+    @Query("SELECT * FROM label_templates WHERE id = :templateId")
+    suspend fun getLabelTemplateByIdSync(templateId: Int): LabelTemplate?
+    
+    /**
+     * Marca todas las plantillas como no predeterminadas.
+     */
+    @Query("UPDATE label_templates SET isDefault = 0")
+    suspend fun clearDefaultLabelTemplate()
+    
+    /**
+     * Establece una plantilla como predeterminada.
+     *
+     * @param templateId ID de la plantilla a establecer como predeterminada.
+     * @return Número de filas actualizadas.
+     */
+    @Query("UPDATE label_templates SET isDefault = 1 WHERE id = :templateId")
+    suspend fun setDefaultLabelTemplate(templateId: Int): Int
+    
+    /**
+     * Establece una plantilla como predeterminada, asegurándose de que solo hay una.
+     * Esta función ejecuta una transacción que primero elimina cualquier plantilla predeterminada
+     * y luego establece la nueva plantilla como predeterminada.
+     *
+     * @param templateId ID de la plantilla a establecer como predeterminada.
+     */
+    @Transaction
+    suspend fun setAsDefaultTemplate(templateId: Int) {
+        clearDefaultLabelTemplate()
+        setDefaultLabelTemplate(templateId)
+    }
+    
+    /**
+     * Transacción para sincronizar plantillas desde el servidor.
+     * Inserta nuevas plantillas, actualiza existentes y elimina las que ya no existen.
+     *
+     * @param templates Lista de plantillas del servidor.
+     * @param deletedIds Lista de IDs de plantillas eliminadas en el servidor.
+     * @param syncTime Timestamp de la sincronización.
+     */
+    @Transaction
+    suspend fun syncLabelTemplatesFromServer(templates: List<LabelTemplate>, deletedIds: List<Int>, syncTime: Long) {
+        // Eliminar plantillas marcadas como eliminadas
+        if (deletedIds.isNotEmpty()) {
+            for (id in deletedIds) {
+                deleteLabelTemplateById(id)
+            }
+        }
+        
+        // Insertar o actualizar plantillas
+        val templatesWithSyncTime = templates.map { template ->
+            template.copy(lastSyncTime = syncTime)
+        }
+        
+        if (templatesWithSyncTime.isNotEmpty()) {
+            insertLabelTemplates(templatesWithSyncTime)
+        }
+    }
 }

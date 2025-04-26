@@ -5,15 +5,10 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.annotations.SerializedName
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.UUID
 
 /**
- * Modelo para el registro de completado de tareas.
- * Se utiliza para almacenar localmente los datos de completado de tareas
- * y sincronizarlos con el servidor cuando hay conexión a internet.
+ * Modelo para completación de tareas.
+ * Representa la información sobre cómo se completó una tarea.
  */
 @Entity(
     tableName = "task_completions",
@@ -30,29 +25,32 @@ import java.util.UUID
     ]
 )
 data class TaskCompletion(
-    @PrimaryKey
-    val id: String,
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
     
     @SerializedName("task_id")
     val taskId: Int,
     
-    @SerializedName("completion_date")
-    val completionDate: String,
+    @SerializedName("completed_by")
+    val completedBy: Int, // ID del usuario que completó la tarea
+    
+    @SerializedName("completed_at")
+    val completedAt: String, // Fecha y hora de completación
     
     @SerializedName("notes")
     val notes: String? = null,
     
-    @SerializedName("signature_image")
-    val signatureImage: String? = null, // Base64 de la imagen de firma
+    @SerializedName("location_id")
+    val locationId: Int? = null,
     
-    @SerializedName("photo_image")
-    val photoImage: String? = null, // Ruta local o Base64 de foto
+    @SerializedName("photo_path")
+    val photoPath: String? = null,
     
-    @SerializedName("completed_by_user_id")
-    val completedByUserId: Int,
+    @SerializedName("signature_path")
+    val signaturePath: String? = null,
     
-    @SerializedName("completed_by_username")
-    val completedByUsername: String,
+    @SerializedName("scan_data")
+    val scanData: String? = null,
     
     @SerializedName("latitude")
     val latitude: Double? = null,
@@ -60,85 +58,52 @@ data class TaskCompletion(
     @SerializedName("longitude")
     val longitude: Double? = null,
     
-    // Campo local para seguimiento de sincronización
-    var synced: Boolean = false,
+    @SerializedName("status")
+    val status: String = "completed", // completed, partial, failed
     
-    // Campo local para seguimiento de intentos de sincronización
-    var syncAttempts: Int = 0,
+    @SerializedName("rating")
+    val rating: Int? = null, // 1-5 estrellas
     
-    // Último intento de sincronización (timestamp)
-    var lastSyncAttempt: Long = 0
+    // Campos locales
+    var isLocalOnly: Boolean = false,
+    var isSynced: Boolean = false,
+    var retryCount: Int = 0,
+    var lastSyncAttempt: Long = 0,
+    var localPhotoPath: String? = null,     // Ruta local a la foto
+    var localSignaturePath: String? = null  // Ruta local a la firma
 ) {
-    companion object {
-        /**
-         * Crea una nueva instancia de TaskCompletion con valores por defecto.
-         */
-        fun create(
-            taskId: Int,
-            userId: Int,
-            username: String,
-            notes: String? = null,
-            signatureImage: String? = null,
-            photoImage: String? = null,
-            latitude: Double? = null,
-            longitude: Double? = null
-        ): TaskCompletion {
-            // Generar ID único para completado local
-            val id = UUID.randomUUID().toString()
-            
-            // Formatear fecha actual
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-            val currentDate = dateFormat.format(Date())
-            
-            return TaskCompletion(
-                id = id,
-                taskId = taskId,
-                completionDate = currentDate,
-                notes = notes,
-                signatureImage = signatureImage,
-                photoImage = photoImage,
-                completedByUserId = userId,
-                completedByUsername = username,
-                latitude = latitude,
-                longitude = longitude,
-                synced = false,
-                syncAttempts = 0,
-                lastSyncAttempt = 0
-            )
-        }
+    /**
+     * Verifica si la completación requiere ser sincronizada.
+     */
+    fun needsSync(): Boolean {
+        return isLocalOnly && !isSynced
     }
     
     /**
-     * Comprueba si este completado está listo para sincronizar.
-     * Se considera listo si no está sincronizado y han pasado al menos
-     * 5 minutos desde el último intento (para evitar demasiados intentos seguidos).
+     * Verifica si la completación tiene foto.
      */
-    fun isReadyToSync(): Boolean {
-        if (synced) return false
-        
-        val now = System.currentTimeMillis()
-        val minDelayBetweenAttempts = 5 * 60 * 1000 // 5 minutos en milisegundos
-        
-        return lastSyncAttempt == 0L || (now - lastSyncAttempt) > minDelayBetweenAttempts
+    fun hasPhoto(): Boolean {
+        return !photoPath.isNullOrEmpty() || !localPhotoPath.isNullOrEmpty()
     }
     
     /**
-     * Incrementa el contador de intentos de sincronización y actualiza el timestamp.
+     * Verifica si la completación tiene firma.
      */
-    fun incrementSyncAttempt(): TaskCompletion {
-        return this.copy(
-            syncAttempts = syncAttempts + 1,
-            lastSyncAttempt = System.currentTimeMillis()
-        )
+    fun hasSignature(): Boolean {
+        return !signaturePath.isNullOrEmpty() || !localSignaturePath.isNullOrEmpty()
     }
     
     /**
-     * Marca el completado como sincronizado.
+     * Verifica si la completación tiene datos de escaneo.
      */
-    fun markAsSynced(): TaskCompletion {
-        return this.copy(
-            synced = true,
-            lastSyncAttempt = System.currentTimeMillis()
-        )
+    fun hasScanData(): Boolean {
+        return !scanData.isNullOrEmpty()
+    }
+    
+    /**
+     * Verifica si la completación tiene coordenadas de ubicación.
+     */
+    fun hasLocation(): Boolean {
+        return latitude != null && longitude != null
     }
 }

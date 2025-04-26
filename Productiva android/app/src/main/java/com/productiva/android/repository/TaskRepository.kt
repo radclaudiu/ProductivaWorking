@@ -2,283 +2,359 @@ package com.productiva.android.repository
 
 import android.util.Log
 import com.productiva.android.dao.TaskDao
+import com.productiva.android.dao.TaskCompletionDao
 import com.productiva.android.model.Task
 import com.productiva.android.model.TaskCompletion
 import com.productiva.android.network.ApiService
-import kotlinx.coroutines.Dispatchers
+import com.productiva.android.network.NetworkResult
+import com.productiva.android.network.safeApiCall
+import com.productiva.android.utils.ConnectivityMonitor
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.withContext
-import java.io.File
-import java.io.IOException
-import java.util.Base64
+import java.util.Date
 
 /**
- * Repositorio para gestionar tareas.
+ * Repositorio para gestionar las tareas.
+ * Proporciona métodos para acceder y manipular las tareas, incluyendo sincronización con el servidor.
  */
 class TaskRepository(
     private val taskDao: TaskDao,
-    private val apiService: ApiService
+    private val taskCompletionDao: TaskCompletionDao,
+    private val apiService: ApiService,
+    private val connectivityMonitor: ConnectivityMonitor
 ) {
     private val TAG = "TaskRepository"
     
     /**
      * Obtiene todas las tareas.
+     *
+     * @return Flow con el estado del recurso que contiene la lista de tareas.
      */
-    fun getAllTasks(): Flow<List<Task>> {
-        return taskDao.getAllTasks()
+    fun getAllTasks(): Flow<ResourceState<List<Task>>> = flow {
+        emit(ResourceState.Loading())
+        
+        try {
+            // Emitir datos locales primero (caché)
+            val localTasks = taskDao.getAllTasks()
+            localTasks.collect { tasks ->
+                emit(ResourceState.CachedData(tasks))
+                
+                // Si hay conexión a Internet, intentar sincronizar
+                if (connectivityMonitor.isNetworkAvailable()) {
+                    fetchAndSyncTasks()
+                } else {
+                    emit(ResourceState.Offline<List<Task>>())
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al obtener tareas", e)
+            emit(ResourceState.Error("Error al obtener tareas: ${e.message}", e))
+        }
     }
     
     /**
-     * Obtiene todas las tareas asignadas a un usuario.
+     * Obtiene todas las tareas asignadas a un usuario específico.
+     *
+     * @param userId ID del usuario.
+     * @return Flow con el estado del recurso que contiene la lista de tareas del usuario.
      */
-    fun getTasksAssignedToUser(userId: Int): Flow<List<Task>> {
-        return taskDao.getTasksByAssignedUser(userId)
+    fun getTasksByUserId(userId: Int): Flow<ResourceState<List<Task>>> = flow {
+        emit(ResourceState.Loading())
+        
+        try {
+            // Emitir datos locales primero (caché)
+            val localTasks = taskDao.getTasksByUserId(userId)
+            localTasks.collect { tasks ->
+                emit(ResourceState.CachedData(tasks))
+                
+                // Si hay conexión a Internet, intentar sincronizar
+                if (connectivityMonitor.isNetworkAvailable()) {
+                    fetchAndSyncTasks()
+                } else {
+                    emit(ResourceState.Offline<List<Task>>())
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al obtener tareas del usuario", e)
+            emit(ResourceState.Error("Error al obtener tareas del usuario: ${e.message}", e))
+        }
+    }
+    
+    /**
+     * Obtiene todas las tareas pendientes asignadas a un usuario específico.
+     *
+     * @param userId ID del usuario.
+     * @return Flow con el estado del recurso que contiene la lista de tareas pendientes del usuario.
+     */
+    fun getPendingTasksByUserId(userId: Int): Flow<ResourceState<List<Task>>> = flow {
+        emit(ResourceState.Loading())
+        
+        try {
+            // Emitir datos locales primero (caché)
+            val localTasks = taskDao.getPendingTasksByUserId(userId)
+            localTasks.collect { tasks ->
+                emit(ResourceState.CachedData(tasks))
+                
+                // Si hay conexión a Internet, intentar sincronizar
+                if (connectivityMonitor.isNetworkAvailable()) {
+                    fetchAndSyncTasks()
+                } else {
+                    emit(ResourceState.Offline<List<Task>>())
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al obtener tareas pendientes del usuario", e)
+            emit(ResourceState.Error("Error al obtener tareas pendientes del usuario: ${e.message}", e))
+        }
     }
     
     /**
      * Obtiene una tarea por su ID.
+     *
+     * @param taskId ID de la tarea.
+     * @return Flow con el estado del recurso que contiene la tarea.
      */
-    fun getTaskById(taskId: Int): Flow<Task?> {
-        return taskDao.getTaskById(taskId)
-    }
-    
-    /**
-     * Obtiene una tarea por su ID (versión sincrónica).
-     */
-    suspend fun getTaskByIdSync(taskId: Int): Task? {
-        return withContext(Dispatchers.IO) {
-            taskDao.getTaskByIdSync(taskId)
-        }
-    }
-    
-    /**
-     * Obtiene tareas por estado.
-     */
-    fun getTasksByStatus(status: String): Flow<List<Task>> {
-        return taskDao.getTasksByStatus(status)
-    }
-    
-    /**
-     * Obtiene tareas por estado para un usuario específico.
-     */
-    fun getTasksByStatusForUser(userId: Int, status: String): Flow<List<Task>> {
-        return taskDao.getTasksByStatusAndUser(status, userId)
-    }
-    
-    /**
-     * Sincroniza tareas con el servidor.
-     */
-    suspend fun syncTasks(userId: Int? = null): Flow<ResourceState<List<Task>>> = flow {
-        emit(ResourceState.Loading)
+    fun getTaskById(taskId: Int): Flow<ResourceState<Task>> = flow {
+        emit(ResourceState.Loading())
         
         try {
-            // Intentar sincronizar cualquier tarea completada pendiente primero
-            syncPendingTaskCompletions()
-            
-            // Obtener tareas del servidor
-            val response = if (userId != null) {
-                apiService.getTasksAssignedToUser(userId)
-            } else {
-                apiService.getAllTasks()
-            }
-            
-            if (response.isSuccessful) {
-                val serverTasks = response.body() ?: emptyList()
-                
-                // Obtener tareas locales que necesitan sincronización
-                val localTasks = taskDao.getTasksNeedingSyncSync()
-                
-                // Actualizar tareas locales con datos del servidor, preservando cambios locales pendientes
-                withContext(Dispatchers.IO) {
-                    // Filtrar solo tareas que no están pendientes de sincronización
-                    val tasksToUpdate = serverTasks.filter { serverTask ->
-                        localTasks.none { it.id == serverTask.id && it.needsSync }
+            // Emitir datos locales primero (caché)
+            val localTask = taskDao.getTaskById(taskId)
+            localTask.collect { task ->
+                if (task != null) {
+                    emit(ResourceState.CachedData(task))
+                    
+                    // Si hay conexión a Internet, intentar obtener la versión actualizada
+                    if (connectivityMonitor.isNetworkAvailable()) {
+                        fetchTaskFromServer(taskId)
+                    } else {
+                        emit(ResourceState.Offline<Task>())
                     }
-                    
-                    // Insertar o actualizar tareas
-                    taskDao.upsertTasks(tasksToUpdate)
-                    
-                    // También incluir las tareas locales que necesitan sincronización
-                    // en la lista de tareas resultante
-                    val resultTasks = ArrayList<Task>(tasksToUpdate)
-                    resultTasks.addAll(localTasks)
-                    
-                    emit(ResourceState.Success(resultTasks))
+                } else {
+                    // Si no existe localmente, intentar obtenerla del servidor
+                    if (connectivityMonitor.isNetworkAvailable()) {
+                        fetchTaskFromServer(taskId)
+                    } else {
+                        emit(ResourceState.Error("Tarea no encontrada y sin conexión a Internet"))
+                    }
                 }
-            } else {
-                val errorMessage = when (response.code()) {
-                    401 -> "Sesión expirada"
-                    403 -> "Sin permiso para acceder a las tareas"
-                    404 -> "No se encontraron tareas"
-                    else -> "Error del servidor: ${response.code()}"
-                }
-                
-                emit(ResourceState.Error(errorMessage))
             }
-        } catch (e: IOException) {
-            Log.e(TAG, "Error de conexión al sincronizar tareas", e)
-            
-            // En caso de error de conexión, devolver las tareas locales
-            val localTasks = taskDao.getAllTasksSync()
-            emit(ResourceState.Success(localTasks, "Usando datos locales"))
         } catch (e: Exception) {
-            Log.e(TAG, "Error al sincronizar tareas", e)
-            emit(ResourceState.Error("Error al sincronizar tareas: ${e.message}"))
+            Log.e(TAG, "Error al obtener tarea por ID", e)
+            emit(ResourceState.Error("Error al obtener tarea: ${e.message}", e))
         }
-    }.flowOn(Dispatchers.IO)
+    }
     
     /**
-     * Completa una tarea localmente.
+     * Completa una tarea.
+     *
+     * @param taskId ID de la tarea.
+     * @param completion Datos de la completación.
+     * @return Flow con el estado del recurso que indica el resultado de la operación.
      */
-    suspend fun completeTaskLocally(completion: TaskCompletion): Flow<ResourceState<Task>> = flow {
-        emit(ResourceState.Loading)
+    fun completeTask(taskId: Int, completion: TaskCompletion): Flow<ResourceState<TaskCompletion>> = flow {
+        emit(ResourceState.Loading())
         
         try {
-            // Buscar la tarea
-            val task = taskDao.getTaskByIdSync(completion.taskId)
-            
+            // Marcar como completado localmente
+            val task = taskDao.getTaskByIdSync(taskId)
             if (task == null) {
                 emit(ResourceState.Error("Tarea no encontrada"))
                 return@flow
             }
             
-            // Registrar el completado en la base de datos local
-            taskDao.insertTaskCompletion(completion)
+            // Actualizar el estado de la tarea
+            taskDao.updateTaskStatus(taskId, "completed")
             
-            // Actualizar el estado de la tarea según el tipo de completado
-            val updatedTask = when (completion.status) {
-                "COMPLETED" -> task.markAsCompleted(
-                    userId = completion.userId,
-                    userName = "Usuario Local", // Esto se actualizará en la próxima sincronización
-                    notes = completion.notes,
-                    hasSignature = completion.hasSignature,
-                    hasPhoto = completion.hasPhoto,
-                    localSignaturePath = completion.localSignaturePath,
-                    localPhotoPath = completion.localPhotoPath
-                )
-                "CANCELLED" -> task.markAsCancelled(
-                    userId = completion.userId,
-                    userName = "Usuario Local", // Esto se actualizará en la próxima sincronización
-                    notes = completion.notes
-                )
-                else -> task.markForSync()
+            // Guardar la completación en local
+            val localCompletion = completion.copy(
+                isLocalOnly = true,
+                isSynced = false
+            )
+            taskCompletionDao.insertTaskCompletion(localCompletion)
+            
+            // Si hay conexión, sincronizar con el servidor
+            if (connectivityMonitor.isNetworkAvailable()) {
+                val result = safeApiCall {
+                    apiService.completeTask(taskId, completion)
+                }
+                
+                when (result) {
+                    is NetworkResult.Success -> {
+                        // Actualizar en local con los datos del servidor
+                        val serverCompletion = result.data
+                        val updatedCompletion = serverCompletion.copy(
+                            isLocalOnly = false,
+                            isSynced = true
+                        )
+                        taskCompletionDao.insertTaskCompletion(updatedCompletion)
+                        emit(ResourceState.Success(updatedCompletion))
+                    }
+                    is NetworkResult.Error -> {
+                        // Mantener la versión local para sincronizar más tarde
+                        emit(ResourceState.Error("Error al sincronizar completación: ${result.message}"))
+                    }
+                    is NetworkResult.Loading -> {
+                        // No debería ocurrir, pero por si acaso
+                        Log.d(TAG, "Loading state in completeTask network call")
+                    }
+                }
+            } else {
+                // Sin conexión, guardar para sincronizar más tarde
+                emit(ResourceState.Success(localCompletion))
+                emit(ResourceState.Offline<TaskCompletion>())
             }
-            
-            // Guardar la tarea actualizada
-            taskDao.updateTask(updatedTask)
-            
-            emit(ResourceState.Success(updatedTask))
         } catch (e: Exception) {
-            Log.e(TAG, "Error al completar tarea localmente", e)
-            emit(ResourceState.Error("Error al completar tarea: ${e.message}"))
+            Log.e(TAG, "Error al completar tarea", e)
+            emit(ResourceState.Error("Error al completar tarea: ${e.message}", e))
         }
-    }.flowOn(Dispatchers.IO)
+    }
     
     /**
-     * Sincroniza completados de tareas pendientes con el servidor.
+     * Sincroniza todas las completaciones de tareas pendientes con el servidor.
+     *
+     * @return Flow con el estado del recurso que indica el resultado de la sincronización.
      */
-    suspend fun syncPendingTaskCompletions(): Flow<ResourceState<Int>> = flow {
-        emit(ResourceState.Loading)
+    fun syncPendingTaskCompletions(): Flow<ResourceState<Int>> = flow {
+        emit(ResourceState.Loading())
+        
+        if (!connectivityMonitor.isNetworkAvailable()) {
+            emit(ResourceState.Offline<Int>())
+            return@flow
+        }
         
         try {
-            // Obtener completados pendientes
-            val pendingCompletions = taskDao.getPendingTaskCompletionsSync()
-            
+            // Obtener completaciones pendientes de sincronización
+            val pendingCompletions = taskCompletionDao.getTaskCompletionsToSync()
             if (pendingCompletions.isEmpty()) {
-                emit(ResourceState.Success(0, "No hay completados pendientes"))
+                emit(ResourceState.Success(0))
                 return@flow
             }
             
-            var successCount = 0
-            
-            for (completion in pendingCompletions) {
-                try {
-                    // Preparar datos para enviar al servidor
-                    val completionData = mutableMapOf(
-                        "task_id" to completion.taskId,
-                        "status" to completion.status,
-                        "notes" to (completion.notes ?: ""),
-                        "completion_date" to completion.completionDate
-                    )
-                    
-                    // Procesar firma si existe
-                    if (completion.hasSignature) {
-                        val signatureData = if (completion.signatureData != null) {
-                            completion.signatureData
-                        } else if (completion.localSignaturePath != null) {
-                            // Convertir archivo a Base64
-                            val file = File(completion.localSignaturePath)
-                            if (file.exists()) {
-                                val bytes = file.readBytes()
-                                Base64.getEncoder().encodeToString(bytes)
-                            } else {
-                                null
-                            }
-                        } else {
-                            null
-                        }
-                        
-                        if (signatureData != null) {
-                            completionData["signature_data"] = signatureData
-                        }
-                    }
-                    
-                    // Procesar foto si existe
-                    if (completion.hasPhoto) {
-                        val photoData = if (completion.photoData != null) {
-                            completion.photoData
-                        } else if (completion.localPhotoPath != null) {
-                            // Convertir archivo a Base64
-                            val file = File(completion.localPhotoPath)
-                            if (file.exists()) {
-                                val bytes = file.readBytes()
-                                Base64.getEncoder().encodeToString(bytes)
-                            } else {
-                                null
-                            }
-                        } else {
-                            null
-                        }
-                        
-                        if (photoData != null) {
-                            completionData["photo_data"] = photoData
-                        }
-                    }
-                    
-                    // Enviar completado al servidor
-                    val response = apiService.completeTask(completion.taskId, completionData)
-                    
-                    if (response.isSuccessful) {
-                        // Marcar como sincronizado
-                        taskDao.updateTaskCompletion(completion.markAsSynced())
-                        
-                        // Actualizar tarea local con datos del servidor si está disponible
-                        response.body()?.let { serverTask ->
-                            val localTask = taskDao.getTaskByIdSync(completion.taskId)
-                            if (localTask != null) {
-                                val updatedTask = localTask.updateFromServer(serverTask)
-                                taskDao.updateTask(updatedTask)
-                            }
-                        }
-                        
-                        successCount++
-                    } else {
-                        Log.e(TAG, "Error al sincronizar completado de tarea: ${response.code()}")
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error al procesar completado de tarea", e)
-                }
+            // Sincronizar con el servidor
+            val result = safeApiCall {
+                apiService.syncTaskCompletions(pendingCompletions)
             }
             
-            emit(ResourceState.Success(successCount, "Completados sincronizados: $successCount/${pendingCompletions.size}"))
-        } catch (e: IOException) {
-            Log.e(TAG, "Error de conexión al sincronizar completados", e)
-            emit(ResourceState.Error("Error de conexión: ${e.message}"))
+            when (result) {
+                is NetworkResult.Success -> {
+                    val syncResponse = result.data
+                    // Actualizar completaciones en la base de datos local
+                    taskCompletionDao.syncTaskCompletionsFromServer(syncResponse.added + syncResponse.updated)
+                    
+                    // Marcar las completaciones como sincronizadas
+                    val syncedIds = syncResponse.added.map { it.id } + syncResponse.updated.map { it.id }
+                    if (syncedIds.isNotEmpty()) {
+                        taskCompletionDao.markTaskCompletionsAsSynced(syncedIds)
+                    }
+                    
+                    emit(ResourceState.Success(syncedIds.size))
+                }
+                is NetworkResult.Error -> {
+                    emit(ResourceState.Error("Error al sincronizar completaciones: ${result.message}"))
+                }
+                is NetworkResult.Loading -> {
+                    // No debería ocurrir, pero por si acaso
+                    Log.d(TAG, "Loading state in syncPendingTaskCompletions network call")
+                }
+            }
         } catch (e: Exception) {
-            Log.e(TAG, "Error al sincronizar completados", e)
-            emit(ResourceState.Error("Error al sincronizar completados: ${e.message}"))
+            Log.e(TAG, "Error al sincronizar completaciones", e)
+            emit(ResourceState.Error("Error al sincronizar completaciones: ${e.message}", e))
         }
-    }.flowOn(Dispatchers.IO)
+    }
+    
+    /**
+     * Obtiene las completaciones de una tarea.
+     *
+     * @param taskId ID de la tarea.
+     * @return Flow con el estado del recurso que contiene la lista de completaciones.
+     */
+    fun getTaskCompletions(taskId: Int): Flow<ResourceState<List<TaskCompletion>>> = flow {
+        emit(ResourceState.Loading())
+        
+        try {
+            // Emitir datos locales
+            val localCompletions = taskCompletionDao.getTaskCompletionsByTaskId(taskId)
+            localCompletions.collect { completions ->
+                emit(ResourceState.Success(completions))
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al obtener completaciones de tarea", e)
+            emit(ResourceState.Error("Error al obtener completaciones: ${e.message}", e))
+        }
+    }
+    
+    /**
+     * Obtiene las tareas desde el servidor y las sincroniza con la base de datos local.
+     */
+    private suspend fun fetchAndSyncTasks() {
+        if (!connectivityMonitor.isNetworkAvailable()) {
+            return
+        }
+        
+        try {
+            // Obtener el timestamp de la última sincronización
+            val lastSync = findLastTaskSyncTime()
+            
+            // Obtener tareas actualizadas desde el servidor
+            val result = safeApiCall {
+                apiService.getTasks(lastSync)
+            }
+            
+            when (result) {
+                is NetworkResult.Success -> {
+                    val tasks = result.data
+                    val currentTime = System.currentTimeMillis()
+                    
+                    // Sincronizar con la base de datos local
+                    taskDao.syncTasksFromServer(tasks, emptyList(), currentTime)
+                }
+                is NetworkResult.Error -> {
+                    Log.e(TAG, "Error al obtener tareas del servidor: ${result.message}")
+                }
+                is NetworkResult.Loading -> {
+                    // No debería ocurrir, pero por si acaso
+                    Log.d(TAG, "Loading state in fetchAndSyncTasks network call")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al sincronizar tareas", e)
+        }
+    }
+    
+    /**
+     * Obtiene una tarea desde el servidor.
+     *
+     * @param taskId ID de la tarea.
+     */
+    private suspend fun fetchTaskFromServer(taskId: Int) {
+        if (!connectivityMonitor.isNetworkAvailable()) {
+            return
+        }
+        
+        try {
+            // Implementar cuando haya un endpoint específico para obtener una tarea por ID
+            // De momento, sincronizamos todas para obtener la actualizada
+            fetchAndSyncTasks()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al obtener tarea del servidor", e)
+        }
+    }
+    
+    /**
+     * Encuentra el timestamp de la última sincronización de tareas.
+     *
+     * @return Timestamp de la última sincronización.
+     */
+    private suspend fun findLastTaskSyncTime(): Long {
+        try {
+            // Aquí se podría implementar una lógica más sofisticada para guardar y recuperar
+            // el timestamp de la última sincronización exitosa
+            return 0L
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al obtener timestamp de última sincronización", e)
+            return 0L
+        }
+    }
 }

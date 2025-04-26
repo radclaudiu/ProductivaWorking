@@ -1,54 +1,77 @@
 package com.productiva.android.repository
 
 /**
- * Clase que representa el estado de un recurso en el repositorio.
- * Permite gestionar diferentes estados de carga, éxito y error de forma uniforme
- * a través de toda la aplicación.
+ * Clase genérica que representa el estado de un recurso.
+ * Permite manejar de manera unificada diferentes estados de carga, éxito y error.
  */
-sealed class ResourceState<out T> {
+sealed class ResourceState<T> {
     /**
-     * Estado de carga, se está obteniendo el recurso.
+     * Estado inicial o de carga.
      */
-    object Loading : ResourceState<Nothing>()
+    class Loading<T> : ResourceState<T>()
     
     /**
-     * Estado de éxito, el recurso se ha obtenido correctamente.
-     * 
-     * @param data Los datos del recurso.
-     * @param message Mensaje opcional de éxito.
+     * Estado de éxito con los datos cargados.
+     *
+     * @property data Datos del recurso.
      */
-    data class Success<T>(val data: T, val message: String? = null) : ResourceState<T>()
+    data class Success<T>(val data: T) : ResourceState<T>()
     
     /**
-     * Estado de error, no se ha podido obtener el recurso.
-     * 
-     * @param message Mensaje descriptivo del error.
-     * @param data Datos parciales o en caché que pueden estar disponibles a pesar del error.
+     * Estado de error.
+     *
+     * @property message Mensaje de error.
+     * @property throwable Excepción que causó el error (opcional).
      */
-    data class Error(val message: String, val data: Any? = null) : ResourceState<Nothing>()
+    data class Error<T>(
+        val message: String,
+        val throwable: Throwable? = null
+    ) : ResourceState<T>()
     
     /**
-     * Comprueba si el estado es de tipo Loading.
+     * Estado de datos en caché mientras se está cargando la actualización.
+     *
+     * @property data Datos del caché.
+     */
+    data class CachedData<T>(val data: T) : ResourceState<T>()
+    
+    /**
+     * Estado sin conexión.
+     */
+    class Offline<T> : ResourceState<T>()
+    
+    /**
+     * Verifica si el estado actual es de carga.
      */
     fun isLoading(): Boolean = this is Loading
     
     /**
-     * Comprueba si el estado es de tipo Success.
+     * Verifica si el estado actual es de éxito.
      */
     fun isSuccess(): Boolean = this is Success
     
     /**
-     * Comprueba si el estado es de tipo Error.
+     * Verifica si el estado actual es de error.
      */
     fun isError(): Boolean = this is Error
     
     /**
-     * Obtiene el mensaje asociado al estado, solo para Success y Error.
+     * Verifica si el estado actual es de datos en caché.
      */
-    fun getMessage(): String? {
+    fun isCachedData(): Boolean = this is CachedData
+    
+    /**
+     * Verifica si el estado actual es sin conexión.
+     */
+    fun isOffline(): Boolean = this is Offline
+    
+    /**
+     * Obtiene los datos si el estado es de éxito o de caché.
+     */
+    fun getDataOrNull(): T? {
         return when (this) {
-            is Success -> message
-            is Error -> message
+            is Success -> data
+            is CachedData -> data
             else -> null
         }
     }

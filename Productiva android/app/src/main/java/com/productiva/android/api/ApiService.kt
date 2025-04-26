@@ -1,11 +1,13 @@
 package com.productiva.android.api
 
-import com.productiva.android.models.Location
-import com.productiva.android.models.Task
-import com.productiva.android.models.TaskCompletion
-import com.productiva.android.models.User
+import com.productiva.android.model.Company
+import com.productiva.android.model.Location
+import com.productiva.android.model.Task
+import com.productiva.android.model.TaskCompletion
+import com.productiva.android.model.User
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
+import okhttp3.ResponseBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.Field
@@ -18,72 +20,126 @@ import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 
+/**
+ * Interfaz para los servicios de la API de Productiva
+ * Define todas las llamadas a endpoints del servidor
+ */
 interface ApiService {
-    // Autenticación
+    /**
+     * Autenticación
+     */
     @FormUrlEncoded
-    @POST("auth/login")
+    @POST("api/auth/login")
     suspend fun login(
         @Field("username") username: String,
         @Field("password") password: String
-    ): Response<LoginResponse>
+    ): Response<AuthResponse>
     
-    // Obtener usuarios (normalmente para el portal de tareas)
-    @GET("users")
+    /**
+     * Usuarios
+     */
+    @GET("api/users")
     suspend fun getUsers(
-        @Header("Authorization") token: String,
-        @Query("location_id") locationId: Int? = null
+        @Header("Authorization") token: String
     ): Response<List<User>>
     
-    // Obtener información del usuario actual
-    @GET("users/me")
-    suspend fun getCurrentUser(
-        @Header("Authorization") token: String
+    @GET("api/users/{id}")
+    suspend fun getUserById(
+        @Header("Authorization") token: String,
+        @Path("id") userId: Int
     ): Response<User>
     
-    // Obtener ubicaciones
-    @GET("locations")
+    /**
+     * Tareas
+     */
+    @GET("api/tasks")
+    suspend fun getTasks(
+        @Header("Authorization") token: String,
+        @Query("location_id") locationId: Int? = null
+    ): Response<List<Task>>
+    
+    @GET("api/tasks/{id}")
+    suspend fun getTaskById(
+        @Header("Authorization") token: String,
+        @Path("id") taskId: Int
+    ): Response<Task>
+    
+    /**
+     * Completado de tareas
+     */
+    @Multipart
+    @POST("api/task_completions")
+    suspend fun completeTask(
+        @Header("Authorization") token: String,
+        @Part("task_id") taskId: RequestBody,
+        @Part("user_id") userId: RequestBody,
+        @Part("location_id") locationId: RequestBody,
+        @Part("notes") notes: RequestBody?,
+        @Part photo: MultipartBody.Part?,
+        @Part signature: MultipartBody.Part?
+    ): Response<TaskCompletionResponse>
+    
+    /**
+     * Empresas
+     */
+    @GET("api/companies")
+    suspend fun getCompanies(
+        @Header("Authorization") token: String
+    ): Response<List<Company>>
+    
+    /**
+     * Ubicaciones
+     */
+    @GET("api/locations")
     suspend fun getLocations(
         @Header("Authorization") token: String,
         @Query("company_id") companyId: Int? = null
     ): Response<List<Location>>
     
-    // Obtener tareas
-    @GET("tasks")
-    suspend fun getTasks(
+    /**
+     * Sincronización
+     */
+    @POST("api/sync")
+    suspend fun synchronize(
         @Header("Authorization") token: String,
-        @Query("location_id") locationId: Int? = null,
-        @Query("status") status: String? = null
-    ): Response<List<Task>>
+        @Body syncData: SyncRequest
+    ): Response<SyncResponse>
     
-    // Obtener tareas por ID
-    @GET("tasks/{taskId}")
-    suspend fun getTaskById(
+    /**
+     * Impresión de etiquetas
+     */
+    @GET("api/tasks/{taskId}/label")
+    suspend fun getTaskLabel(
         @Header("Authorization") token: String,
         @Path("taskId") taskId: Int
-    ): Response<Task>
-    
-    // Obtener completados de tareas
-    @GET("task_completions")
-    suspend fun getTaskCompletions(
-        @Header("Authorization") token: String,
-        @Query("task_id") taskId: Int? = null,
-        @Query("user_id") userId: Int? = null
-    ): Response<List<TaskCompletion>>
-    
-    // Completar una tarea
-    @POST("task_completions")
-    suspend fun completeTask(
-        @Header("Authorization") token: String,
-        @Body taskCompletion: TaskCompletion
-    ): Response<TaskCompletion>
-    
-    // Subir una imagen/firma para completado de tarea
-    @Multipart
-    @POST("upload/task_completion")
-    suspend fun uploadTaskCompletionFile(
-        @Header("Authorization") token: String,
-        @Part("task_completion_id") taskCompletionId: RequestBody,
-        @Part("type") type: RequestBody, // "photo" o "signature"
-        @Part file: MultipartBody.Part
-    ): Response<UploadResponse>
+    ): Response<ResponseBody>
 }
+
+/**
+ * Clases para respuestas de la API
+ */
+data class AuthResponse(
+    val token: String,
+    val user: User
+)
+
+data class TaskCompletionResponse(
+    val id: Int,
+    val message: String
+)
+
+data class SyncRequest(
+    val taskCompletions: List<TaskCompletion>
+)
+
+data class SyncResponse(
+    val success: Boolean,
+    val message: String,
+    val syncedItems: List<SyncedItem>
+)
+
+data class SyncedItem(
+    val localId: Int,
+    val serverId: Int,
+    val type: String
+)

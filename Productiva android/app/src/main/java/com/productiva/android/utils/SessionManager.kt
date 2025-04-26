@@ -2,40 +2,28 @@ package com.productiva.android.utils
 
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
+import com.productiva.android.model.User
 
 /**
- * Gestiona la sesión del usuario y almacena información segura
+ * Gestor de sesión para la aplicación
+ * Maneja la autenticación, almacenamiento de tokens y datos de sesión
  */
 class SessionManager(context: Context) {
     
-    private val masterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
-        
-    private val sharedPreferences: SharedPreferences = EncryptedSharedPreferences.create(
-        context,
-        "productiva_prefs",
-        masterKey,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
-    
     companion object {
+        private const val PREF_NAME = "ProductivaSession"
         private const val KEY_AUTH_TOKEN = "auth_token"
         private const val KEY_USER_ID = "user_id"
-        private const val KEY_USER_NAME = "user_name"
-        private const val KEY_USER_EMAIL = "user_email"
-        private const val KEY_USER_ROLE = "user_role"
-        private const val KEY_LOCATION_ID = "location_id"
-        private const val KEY_COMPANY_ID = "company_id"
-        private const val KEY_SERVER_URL = "server_url"
         private const val KEY_SELECTED_USER_ID = "selected_user_id"
+        private const val KEY_LOCATION_ID = "location_id"
+        private const val KEY_SERVER_URL = "server_url"
+        private const val DEFAULT_SERVER_URL = "https://productiva.replit.app/"
     }
     
+    private val sharedPreferences: SharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+    
     /**
-     * Guarda la información de autenticación
+     * Guarda el token de autenticación
      */
     fun saveAuthToken(token: String) {
         val editor = sharedPreferences.edit()
@@ -51,19 +39,23 @@ class SessionManager(context: Context) {
     }
     
     /**
-     * Guarda información del usuario autenticado
+     * Guarda el ID del usuario autenticado (account)
      */
-    fun saveUserInfo(id: Int, name: String, email: String, role: String) {
+    fun saveUserId(userId: Int) {
         val editor = sharedPreferences.edit()
-        editor.putInt(KEY_USER_ID, id)
-        editor.putString(KEY_USER_NAME, name)
-        editor.putString(KEY_USER_EMAIL, email)
-        editor.putString(KEY_USER_ROLE, role)
+        editor.putInt(KEY_USER_ID, userId)
         editor.apply()
     }
     
     /**
-     * Guarda el ID del usuario seleccionado para el portal de tareas
+     * Obtiene el ID del usuario autenticado (account)
+     */
+    fun getUserId(): Int {
+        return sharedPreferences.getInt(KEY_USER_ID, -1)
+    }
+    
+    /**
+     * Guarda el ID del usuario seleccionado (profile)
      */
     fun saveSelectedUserId(userId: Int) {
         val editor = sharedPreferences.edit()
@@ -72,34 +64,26 @@ class SessionManager(context: Context) {
     }
     
     /**
-     * Obtiene el ID del usuario seleccionado para el portal de tareas
+     * Obtiene el ID del usuario seleccionado (profile)
      */
     fun getSelectedUserId(): Int {
         return sharedPreferences.getInt(KEY_SELECTED_USER_ID, -1)
     }
     
     /**
-     * Guarda la información de ubicación y empresa
+     * Guarda el ID de la ubicación
      */
-    fun saveLocationInfo(locationId: Int, companyId: Int) {
+    fun saveLocationId(locationId: Int) {
         val editor = sharedPreferences.edit()
         editor.putInt(KEY_LOCATION_ID, locationId)
-        editor.putInt(KEY_COMPANY_ID, companyId)
         editor.apply()
     }
     
     /**
-     * Obtiene el ID de ubicación
+     * Obtiene el ID de la ubicación
      */
     fun getLocationId(): Int {
         return sharedPreferences.getInt(KEY_LOCATION_ID, -1)
-    }
-    
-    /**
-     * Obtiene el ID de la empresa
-     */
-    fun getCompanyId(): Int {
-        return sharedPreferences.getInt(KEY_COMPANY_ID, -1)
     }
     
     /**
@@ -114,16 +98,20 @@ class SessionManager(context: Context) {
     /**
      * Obtiene la URL del servidor
      */
-    fun getServerUrl(): String? {
-        return sharedPreferences.getString(KEY_SERVER_URL, null)
+    fun getServerUrl(): String {
+        return sharedPreferences.getString(KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
     }
     
     /**
-     * Borra todos los datos de sesión
+     * Limpia los datos de sesión (logout)
      */
     fun clearSession() {
         val editor = sharedPreferences.edit()
-        editor.clear()
+        editor.remove(KEY_AUTH_TOKEN)
+        editor.remove(KEY_USER_ID)
+        editor.remove(KEY_SELECTED_USER_ID)
+        editor.remove(KEY_LOCATION_ID)
+        // No eliminamos KEY_SERVER_URL para mantener la última URL utilizada
         editor.apply()
     }
     
@@ -131,6 +119,13 @@ class SessionManager(context: Context) {
      * Verifica si el usuario está autenticado
      */
     fun isLoggedIn(): Boolean {
-        return !getAuthToken().isNullOrEmpty()
+        return !getAuthToken().isNullOrEmpty() && getUserId() != -1
+    }
+    
+    /**
+     * Verifica si se ha seleccionado un usuario
+     */
+    fun isUserSelected(): Boolean {
+        return getSelectedUserId() != -1
     }
 }

@@ -1,60 +1,63 @@
 package com.productiva.android
 
 import android.app.Application
-import androidx.room.Room
+import com.productiva.android.api.ApiClient
 import com.productiva.android.api.ApiService
 import com.productiva.android.repository.TaskRepository
-import com.productiva.android.repository.UserRepository
 import com.productiva.android.utils.AppDatabase
 import com.productiva.android.utils.SessionManager
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 
+/**
+ * Clase de aplicación principal
+ * Inicializa los componentes globales y proporciona acceso a ellos
+ */
 class ProductivaApplication : Application() {
     
-    // API_BASE_URL debe ser actualizado con la URL de tu servidor web
-    private val API_BASE_URL = "https://tu-servidor-productiva.com/api/"
+    // Componentes principales
+    lateinit var database: AppDatabase
+        private set
     
-    // Instancia de la base de datos de Room
-    val database: AppDatabase by lazy {
-        Room.databaseBuilder(
-            applicationContext,
-            AppDatabase::class.java,
-            "productiva_database"
-        )
-        .fallbackToDestructiveMigration()
-        .build()
-    }
+    lateinit var sessionManager: SessionManager
+        private set
     
-    // Instancia de Retrofit para llamadas a la API
-    private val retrofit by lazy {
-        Retrofit.Builder()
-            .baseUrl(API_BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-    }
-    
-    // Servicio API
-    val apiService: ApiService by lazy {
-        retrofit.create(ApiService::class.java)
-    }
-    
-    // Administrador de sesiones para guardar token y datos de usuario
-    val sessionManager: SessionManager by lazy {
-        SessionManager(applicationContext)
-    }
+    lateinit var apiService: ApiService
+        private set
     
     // Repositorios
-    val userRepository: UserRepository by lazy {
-        UserRepository(apiService, database, sessionManager)
-    }
-    
-    val taskRepository: TaskRepository by lazy {
-        TaskRepository(apiService, database)
-    }
+    lateinit var taskRepository: TaskRepository
+        private set
     
     override fun onCreate() {
         super.onCreate()
-        // Inicializaciones adicionales si son necesarias
+        
+        // Inicializar componentes
+        sessionManager = SessionManager(applicationContext)
+        database = AppDatabase.getDatabase(applicationContext)
+        
+        // Inicializar ApiService con la URL del servidor
+        val serverUrl = sessionManager.getServerUrl()
+        apiService = ApiClient.createApiService(serverUrl)
+        
+        // Inicializar repositorios
+        taskRepository = TaskRepository(
+            apiService = apiService,
+            taskDao = database.taskDao(),
+            context = applicationContext
+        )
+    }
+    
+    /**
+     * Actualiza la URL del servidor y reinicializa el ApiService
+     */
+    fun updateServerUrl(serverUrl: String) {
+        sessionManager.saveServerUrl(serverUrl)
+        apiService = ApiClient.createApiService(serverUrl)
+        
+        // Reinicializar repositorios con el nuevo apiService
+        taskRepository = TaskRepository(
+            apiService = apiService,
+            taskDao = database.taskDao(),
+            context = applicationContext
+        )
     }
 }

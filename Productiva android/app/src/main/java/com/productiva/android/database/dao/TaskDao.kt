@@ -16,14 +16,12 @@ interface TaskDao {
     
     /**
      * Inserta una tarea en la base de datos.
-     * Si ya existe una tarea con el mismo ID, la reemplaza.
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(task: Task): Long
     
     /**
      * Inserta varias tareas en la base de datos.
-     * Si ya existen tareas con los mismos IDs, las reemplaza.
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(tasks: List<Task>): List<Long>
@@ -37,44 +35,62 @@ interface TaskDao {
     /**
      * Obtiene una tarea por su ID.
      */
-    @Query("SELECT * FROM tasks WHERE id = :taskId")
+    @Query("SELECT * FROM tasks WHERE id = :taskId AND is_deleted = 0")
     suspend fun getTaskById(taskId: Int): Task?
     
     /**
      * Obtiene todas las tareas.
      */
-    @Query("SELECT * FROM tasks ORDER BY due_date ASC")
+    @Query("SELECT * FROM tasks WHERE is_deleted = 0 ORDER BY priority DESC, due_date ASC")
     fun getAllTasks(): LiveData<List<Task>>
     
     /**
      * Obtiene tareas por estado.
      */
-    @Query("SELECT * FROM tasks WHERE status = :status ORDER BY due_date ASC")
+    @Query("SELECT * FROM tasks WHERE status = :status AND is_deleted = 0 ORDER BY priority DESC, due_date ASC")
     fun getTasksByStatus(status: String): LiveData<List<Task>>
-    
-    /**
-     * Obtiene tareas por usuario asignado.
-     */
-    @Query("SELECT * FROM tasks WHERE user_id = :userId ORDER BY due_date ASC")
-    fun getTasksByUser(userId: Int): LiveData<List<Task>>
-    
-    /**
-     * Obtiene tareas por ubicación.
-     */
-    @Query("SELECT * FROM tasks WHERE location_id = :locationId ORDER BY due_date ASC")
-    fun getTasksByLocation(locationId: Int): LiveData<List<Task>>
     
     /**
      * Obtiene tareas por compañía.
      */
-    @Query("SELECT * FROM tasks WHERE company_id = :companyId ORDER BY due_date ASC")
+    @Query("SELECT * FROM tasks WHERE company_id = :companyId AND is_deleted = 0 ORDER BY priority DESC, due_date ASC")
     fun getTasksByCompany(companyId: Int): LiveData<List<Task>>
+    
+    /**
+     * Obtiene tareas por ubicación.
+     */
+    @Query("SELECT * FROM tasks WHERE location_id = :locationId AND is_deleted = 0 ORDER BY priority DESC, due_date ASC")
+    fun getTasksByLocation(locationId: Int): LiveData<List<Task>>
+    
+    /**
+     * Obtiene tareas asignadas a un usuario.
+     */
+    @Query("SELECT * FROM tasks WHERE assigned_to = :userId AND is_deleted = 0 ORDER BY priority DESC, due_date ASC")
+    fun getTasksAssignedToUser(userId: Int): LiveData<List<Task>>
+    
+    /**
+     * Obtiene tareas asignadas a un usuario con un estado específico.
+     */
+    @Query("SELECT * FROM tasks WHERE assigned_to = :userId AND status = :status AND is_deleted = 0 ORDER BY priority DESC, due_date ASC")
+    fun getTasksAssignedToUserByStatus(userId: Int, status: String): LiveData<List<Task>>
     
     /**
      * Busca tareas por título o descripción.
      */
-    @Query("SELECT * FROM tasks WHERE title LIKE '%' || :query || '%' OR description LIKE '%' || :query || '%' ORDER BY due_date ASC")
+    @Query("SELECT * FROM tasks WHERE (title LIKE '%' || :query || '%' OR description LIKE '%' || :query || '%') AND is_deleted = 0 ORDER BY priority DESC, due_date ASC")
     fun searchTasks(query: String): LiveData<List<Task>>
+    
+    /**
+     * Marca una tarea como eliminada.
+     */
+    @Query("UPDATE tasks SET is_deleted = 1 WHERE id = :taskId")
+    suspend fun markTaskAsDeleted(taskId: Int): Int
+    
+    /**
+     * Actualiza el estado de una tarea.
+     */
+    @Query("UPDATE tasks SET status = :status, updated_at = :updatedAt WHERE id = :taskId")
+    suspend fun updateTaskStatus(taskId: Int, status: String, updatedAt: String): Int
     
     /**
      * Elimina una tarea por su ID.
@@ -89,26 +105,8 @@ interface TaskDao {
     suspend fun deleteAllTasks()
     
     /**
-     * Actualiza el estado de una tarea.
+     * Cuenta el número de tareas por estado.
      */
-    @Query("UPDATE tasks SET status = :newStatus WHERE id = :taskId")
-    suspend fun updateTaskStatus(taskId: Int, newStatus: String): Int
-    
-    /**
-     * Obtiene tareas pendientes o en progreso.
-     */
-    @Query("SELECT * FROM tasks WHERE status IN ('pending', 'in_progress') ORDER BY due_date ASC")
-    fun getActiveTasks(): LiveData<List<Task>>
-    
-    /**
-     * Obtiene tareas que tienen sincronización pendiente.
-     */
-    @Query("SELECT * FROM tasks WHERE syncPending = 1")
-    suspend fun getTasksWithPendingSync(): List<Task>
-    
-    /**
-     * Marca una tarea como sincronizada.
-     */
-    @Query("UPDATE tasks SET syncPending = 0 WHERE id = :taskId")
-    suspend fun markTaskSynced(taskId: Int): Int
+    @Query("SELECT COUNT(*) FROM tasks WHERE status = :status AND is_deleted = 0")
+    suspend fun getTasksCountByStatus(status: String): Int
 }

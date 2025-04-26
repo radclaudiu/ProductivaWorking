@@ -16,14 +16,12 @@ interface UserDao {
     
     /**
      * Inserta un usuario en la base de datos.
-     * Si ya existe un usuario con el mismo ID, lo reemplaza.
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(user: User): Long
     
     /**
      * Inserta varios usuarios en la base de datos.
-     * Si ya existen usuarios con los mismos IDs, los reemplaza.
      */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAll(users: List<User>): List<Long>
@@ -47,21 +45,21 @@ interface UserDao {
     suspend fun getUserByUsername(username: String): User?
     
     /**
-     * Obtiene todos los usuarios de la base de datos.
+     * Obtiene todos los usuarios.
      */
     @Query("SELECT * FROM users ORDER BY name")
     fun getAllUsers(): LiveData<List<User>>
     
     /**
-     * Obtiene todos los usuarios activos.
+     * Obtiene usuarios activos por compañía.
      */
-    @Query("SELECT * FROM users WHERE is_active = 1 ORDER BY name")
-    fun getActiveUsers(): LiveData<List<User>>
+    @Query("SELECT * FROM users WHERE company_id = :companyId AND is_active = 1 ORDER BY name")
+    fun getActiveUsersByCompany(companyId: Int): LiveData<List<User>>
     
     /**
-     * Busca usuarios por nombre o nombre de usuario.
+     * Busca usuarios por nombre o email.
      */
-    @Query("SELECT * FROM users WHERE name LIKE '%' || :query || '%' OR username LIKE '%' || :query || '%' ORDER BY name")
+    @Query("SELECT * FROM users WHERE name LIKE '%' || :query || '%' OR email LIKE '%' || :query || '%' ORDER BY name")
     fun searchUsers(query: String): LiveData<List<User>>
     
     /**
@@ -77,20 +75,8 @@ interface UserDao {
     suspend fun deleteAllUsers()
     
     /**
-     * Verifica si existe algún usuario en la base de datos.
+     * Cuenta el número de usuarios.
      */
     @Query("SELECT COUNT(*) FROM users")
     suspend fun getUsersCount(): Int
-    
-    /**
-     * Obtiene usuarios por empresa.
-     */
-    @Query("SELECT * FROM users WHERE company_id = :companyId ORDER BY name")
-    fun getUsersByCompany(companyId: Int): LiveData<List<User>>
-    
-    /**
-     * Obtiene usuarios por ubicación.
-     */
-    @Query("SELECT * FROM users WHERE location_id = :locationId ORDER BY name")
-    fun getUsersByLocation(locationId: Int): LiveData<List<User>>
 }

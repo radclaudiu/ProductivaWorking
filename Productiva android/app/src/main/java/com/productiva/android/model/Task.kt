@@ -2,130 +2,130 @@ package com.productiva.android.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import androidx.room.ColumnInfo
 import com.google.gson.annotations.SerializedName
 import java.util.Date
 
 /**
- * Entidad que representa una tarea en el sistema.
+ * Entidad que representa una tarea en la aplicación.
  */
 @Entity(tableName = "tasks")
 data class Task(
     @PrimaryKey
-    @SerializedName("id")
+    @ColumnInfo(name = "id")
+    @SerializedName("id") 
     val id: Int,
     
-    @SerializedName("title")
+    @ColumnInfo(name = "title")
+    @SerializedName("title") 
     val title: String,
     
-    @SerializedName("description")
-    val description: String? = null,
+    @ColumnInfo(name = "description")
+    @SerializedName("description") 
+    val description: String?,
     
-    @SerializedName("status")
-    val status: String = STATUS_PENDING,
+    @ColumnInfo(name = "status")
+    @SerializedName("status") 
+    val status: String,
     
-    @SerializedName("created_date")
-    val createdDate: Date? = null,
+    @ColumnInfo(name = "priority")
+    @SerializedName("priority") 
+    val priority: Int,
     
-    @SerializedName("due_date")
-    val dueDate: Date? = null,
+    @ColumnInfo(name = "due_date")
+    @SerializedName("due_date") 
+    val dueDate: String?,
     
-    @SerializedName("completed_date")
-    val completedDate: Date? = null,
+    @ColumnInfo(name = "created_at")
+    @SerializedName("created_at") 
+    val createdAt: String,
     
-    @SerializedName("priority")
-    val priority: Int = 0, // 0: Baja, 1: Normal, 2: Alta
+    @ColumnInfo(name = "updated_at")
+    @SerializedName("updated_at") 
+    val updatedAt: String,
     
-    @SerializedName("user_id")
-    val userId: Int? = null,
+    @ColumnInfo(name = "created_by")
+    @SerializedName("created_by") 
+    val createdBy: Int,
     
-    @SerializedName("user_name")
-    val userName: String? = null,
+    @ColumnInfo(name = "assigned_to")
+    @SerializedName("assigned_to") 
+    val assignedTo: Int?,
     
-    @SerializedName("location_id")
-    val locationId: Int? = null,
+    @ColumnInfo(name = "assignee_name")
+    @SerializedName("assignee_name") 
+    val assigneeName: String?,
     
-    @SerializedName("location_name")
-    val locationName: String? = null,
+    @ColumnInfo(name = "company_id")
+    @SerializedName("company_id") 
+    val companyId: Int,
     
-    @SerializedName("company_id")
-    val companyId: Int? = null,
+    @ColumnInfo(name = "location_id")
+    @SerializedName("location_id") 
+    val locationId: Int?,
     
-    @SerializedName("company_name")
-    val companyName: String? = null,
+    @ColumnInfo(name = "location_name")
+    @SerializedName("location_name") 
+    val locationName: String?,
     
-    @SerializedName("requires_signature")
-    val requiresSignature: Boolean = false,
+    @ColumnInfo(name = "is_deleted")
+    @SerializedName("is_deleted") 
+    val isDeleted: Boolean = false,
     
-    @SerializedName("requires_photo")
-    val requiresPhoto: Boolean = false,
-    
-    @SerializedName("has_attachments")
-    val hasAttachments: Boolean = false,
-    
-    @SerializedName("tags")
-    val tags: List<String>? = null,
-    
-    // Campo para sincronización, no se envía al servidor
-    var syncPending: Boolean = false
+    @ColumnInfo(name = "last_sync")
+    val lastSync: Long = System.currentTimeMillis()
 ) {
     /**
-     * Verifica si la tarea está completada
+     * Estados posibles de una tarea.
      */
-    fun isCompleted(): Boolean {
-        return status == STATUS_COMPLETED
-    }
-    
-    /**
-     * Verifica si la tarea está en progreso
-     */
-    fun isInProgress(): Boolean {
-        return status == STATUS_IN_PROGRESS
-    }
-    
-    /**
-     * Verifica si la tarea está cancelada
-     */
-    fun isCancelled(): Boolean {
-        return status == STATUS_CANCELLED
-    }
-    
-    /**
-     * Verifica si la tarea está pendiente
-     */
-    fun isPending(): Boolean {
-        return status == STATUS_PENDING
-    }
-    
-    /**
-     * Verifica si la tarea está vencida
-     */
-    fun isPastDue(): Boolean {
-        val now = Date()
-        return dueDate != null && dueDate.before(now) && !isCompleted() && !isCancelled()
-    }
-    
-    /**
-     * Obtiene el color de la prioridad
-     */
-    fun getPriorityColor(): Int {
-        return when (priority) {
-            2 -> 0xFFE53935.toInt() // Rojo para alta prioridad
-            1 -> 0xFFFB8C00.toInt() // Naranja para prioridad media
-            else -> 0xFF4CAF50.toInt() // Verde para prioridad baja
-        }
-    }
-    
     companion object {
         const val STATUS_PENDING = "pending"
         const val STATUS_IN_PROGRESS = "in_progress"
         const val STATUS_COMPLETED = "completed"
         const val STATUS_CANCELLED = "cancelled"
         
-        val ALL_STATUSES = listOf(
-            STATUS_PENDING,
-            STATUS_IN_PROGRESS,
-            STATUS_COMPLETED,
-            STATUS_CANCELLED
-        )
+        const val PRIORITY_LOW = 1
+        const val PRIORITY_MEDIUM = 2
+        const val PRIORITY_HIGH = 3
+    }
+    
+    /**
+     * Convierte la prioridad numérica a texto.
+     */
+    fun getPriorityText(): String {
+        return when (priority) {
+            PRIORITY_LOW -> "Baja"
+            PRIORITY_MEDIUM -> "Media"
+            PRIORITY_HIGH -> "Alta"
+            else -> "Desconocida"
+        }
+    }
+    
+    /**
+     * Verifica si la tarea está vencida.
+     */
+    fun isOverdue(): Boolean {
+        if (dueDate.isNullOrEmpty() || status == STATUS_COMPLETED || status == STATUS_CANCELLED) {
+            return false
+        }
+        
+        try {
+            // Formato esperado: DD-MM-YYYY
+            val parts = dueDate.split("-")
+            if (parts.size != 3) return false
+            
+            val day = parts[0].toInt()
+            val month = parts[1].toInt() - 1  // Los meses en Java son 0-based
+            val year = parts[2].toInt()
+            
+            val dueDateObj = java.util.Calendar.getInstance().apply {
+                set(year, month, day, 23, 59, 59)
+            }.time
+            
+            val now = Date()
+            return now.after(dueDateObj)
+        } catch (e: Exception) {
+            return false
+        }
     }
 }

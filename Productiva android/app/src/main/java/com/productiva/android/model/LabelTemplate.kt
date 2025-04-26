@@ -2,95 +2,75 @@ package com.productiva.android.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import androidx.room.ColumnInfo
 import com.google.gson.annotations.SerializedName
 
 /**
- * Entidad que representa una plantilla de etiqueta en el sistema.
+ * Entidad que representa una plantilla de etiqueta en la aplicación.
  */
 @Entity(tableName = "label_templates")
 data class LabelTemplate(
     @PrimaryKey
-    @SerializedName("id")
+    @ColumnInfo(name = "id")
+    @SerializedName("id") 
     val id: Int,
     
-    @SerializedName("name")
+    @ColumnInfo(name = "name")
+    @SerializedName("name") 
     val name: String,
     
-    @SerializedName("description")
-    val description: String? = null,
+    @ColumnInfo(name = "description")
+    @SerializedName("description") 
+    val description: String?,
     
-    @SerializedName("html_template")
-    val htmlTemplate: String? = null,
+    @ColumnInfo(name = "html_content")
+    @SerializedName("html_content") 
+    val htmlContent: String,
     
-    @SerializedName("fields")
-    val fields: String? = null, // Lista separada por comas de campos en la plantilla
+    @ColumnInfo(name = "css_content")
+    @SerializedName("css_content") 
+    val cssContent: String?,
     
-    @SerializedName("width")
-    val width: Int = 62, // Ancho en mm
+    @ColumnInfo(name = "preview_url")
+    @SerializedName("preview_url") 
+    val previewUrl: String?,
     
-    @SerializedName("height")
-    val height: Int = 29, // Alto en mm
+    @ColumnInfo(name = "width")
+    @SerializedName("width") 
+    val width: Int,
     
-    @SerializedName("image_path")
-    val imagePath: String? = null, // Vista previa de la etiqueta
+    @ColumnInfo(name = "height")
+    @SerializedName("height") 
+    val height: Int,
     
-    @SerializedName("company_id")
-    val companyId: Int? = null,
+    @ColumnInfo(name = "company_id")
+    @SerializedName("company_id") 
+    val companyId: Int?,
     
-    @SerializedName("company_name")
-    val companyName: String? = null,
-    
-    @SerializedName("created_by")
-    val createdBy: Int? = null,
-    
-    @SerializedName("created_date")
-    val createdDate: String? = null,
-    
-    @SerializedName("is_system")
-    val isSystem: Boolean = false,
-    
-    @SerializedName("times_used")
-    val timesUsed: Int = 0,
-    
-    @SerializedName("is_favorite")
+    @ColumnInfo(name = "is_favorite")
     val isFavorite: Boolean = false,
     
-    @SerializedName("last_used")
-    val lastUsed: Long = 0
+    @ColumnInfo(name = "times_used")
+    val timesUsed: Int = 0,
+    
+    @ColumnInfo(name = "last_used")
+    val lastUsed: Long = 0,
+    
+    @ColumnInfo(name = "last_sync")
+    val lastSync: Long = System.currentTimeMillis()
 ) {
     /**
-     * Genera una representación en texto de la plantilla
+     * Obtiene la descripción del tamaño de la etiqueta.
      */
-    override fun toString(): String {
-        return name
+    fun getSizeDescription(): String {
+        return "${width}mm x ${height}mm"
     }
     
     /**
-     * Obtiene la lista de campos como lista
+     * Verifica si esta plantilla coincide con el tamaño de papel especificado.
      */
-    fun getFieldsList(): List<String> {
-        return fields?.split(",")?.map { it.trim() } ?: emptyList()
-    }
-    
-    /**
-     * Verifica si la plantilla tiene campos definidos
-     */
-    fun hasFields(): Boolean {
-        return !fields.isNullOrBlank()
-    }
-    
-    /**
-     * Calcula el aspecto (ratio) de la etiqueta
-     */
-    fun getAspectRatio(): Float {
-        return if (height > 0) width.toFloat() / height.toFloat() else 1f
-    }
-    
-    companion object {
-        // Tipos de plantillas predefinidas
-        const val TYPE_ADDRESS = "address"
-        const val TYPE_PRODUCT = "product"
-        const val TYPE_BARCODE = "barcode"
-        const val TYPE_CUSTOM = "custom"
+    fun matchesPaperSize(paperWidth: Int, paperHeight: Int): Boolean {
+        // Si la plantilla es más pequeña o igual que el papel, puede imprimirse
+        return width <= paperWidth && height <= paperHeight
     }
 }

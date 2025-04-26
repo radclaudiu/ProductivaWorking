@@ -2,76 +2,105 @@ package com.productiva.android.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.google.gson.annotations.SerializedName
+import androidx.room.ColumnInfo
 
 /**
- * Entidad que representa una impresora guardada en el sistema.
- * Guarda configuración de impresoras Brother para etiquetas.
+ * Entidad que representa una impresora guardada en la aplicación.
  */
 @Entity(tableName = "saved_printers")
 data class SavedPrinter(
     @PrimaryKey(autoGenerate = true)
+    @ColumnInfo(name = "id")
     val id: Int = 0,
     
-    @SerializedName("name")
+    @ColumnInfo(name = "name")
     val name: String,
     
-    @SerializedName("address")
-    val address: String, // MAC o IP según tipo
+    @ColumnInfo(name = "model")
+    val model: String,
     
-    @SerializedName("model")
-    val model: String = "QL-720NW", // Modelo por defecto Brother QL-720NW
+    @ColumnInfo(name = "address")
+    val address: String,
     
-    @SerializedName("connection_type")
-    val connectionType: String = TYPE_BLUETOOTH, // bluetooth, wifi, usb
+    @ColumnInfo(name = "connection_type")
+    val connectionType: String,
     
-    @SerializedName("paper_width")
-    val paperWidth: Int = 62, // Ancho papel en mm (62mm es estándar)
+    @ColumnInfo(name = "paper_width")
+    val paperWidth: Int = 62,  // Ancho en mm
     
-    @SerializedName("paper_height")
-    val paperHeight: Int = 29, // Alto papel en mm (29mm para etiquetas direcciones)
+    @ColumnInfo(name = "paper_height")
+    val paperHeight: Int = 29, // Alto en mm
     
-    @SerializedName("orientation")
-    val orientation: String = ORIENTATION_LANDSCAPE,
+    @ColumnInfo(name = "orientation")
+    val orientation: Int = ORIENTATION_PORTRAIT,
     
-    @SerializedName("print_quality")
-    val printQuality: String = QUALITY_HIGH,
+    @ColumnInfo(name = "print_quality")
+    val printQuality: Int = QUALITY_NORMAL,
     
-    @SerializedName("is_default")
+    @ColumnInfo(name = "is_default")
     val isDefault: Boolean = false,
     
-    @SerializedName("last_used")
+    @ColumnInfo(name = "last_used")
     val lastUsed: Long = 0
 ) {
-    /**
-     * Genera una representación en texto de la impresora
-     */
-    override fun toString(): String {
-        return name
-    }
-    
     companion object {
         // Tipos de conexión
-        const val TYPE_BLUETOOTH = "bluetooth"
         const val TYPE_WIFI = "wifi"
+        const val TYPE_BLUETOOTH = "bluetooth"
         const val TYPE_USB = "usb"
         
-        // Orientación
-        const val ORIENTATION_PORTRAIT = "portrait"
-        const val ORIENTATION_LANDSCAPE = "landscape"
+        // Orientaciones
+        const val ORIENTATION_PORTRAIT = 0
+        const val ORIENTATION_LANDSCAPE = 1
         
-        // Calidad de impresión
-        const val QUALITY_HIGH = "high"
-        const val QUALITY_NORMAL = "normal"
-        const val QUALITY_DRAFT = "draft"
+        // Calidades de impresión
+        const val QUALITY_NORMAL = 0
+        const val QUALITY_HIGH = 1
         
-        // Modelos comunes Brother
-        val BROTHER_MODELS = listOf(
-            "QL-720NW",
-            "QL-820NWB",
-            "QL-1110NWB",
-            "PT-P910BT",
-            "PT-P950NW"
+        // Tamaños de papel comunes para Brother
+        val PAPER_SIZE_62_29 = PaperSize(62, 29, "Address Label 62x29mm")
+        val PAPER_SIZE_29_90 = PaperSize(29, 90, "Shipping Label 29x90mm")
+        val PAPER_SIZE_17_54 = PaperSize(17, 54, "Name Badge 17x54mm")
+        val PAPER_SIZE_62_100 = PaperSize(62, 100, "Shipping Label 62x100mm")
+        
+        // Lista de tamaños disponibles
+        val AVAILABLE_SIZES = listOf(
+            PAPER_SIZE_62_29,
+            PAPER_SIZE_29_90,
+            PAPER_SIZE_17_54,
+            PAPER_SIZE_62_100
         )
+    }
+    
+    /**
+     * Clase para representar un tamaño de papel.
+     */
+    data class PaperSize(
+        val width: Int,
+        val height: Int,
+        val description: String
+    )
+    
+    /**
+     * Obtiene la descripción del tipo de conexión.
+     */
+    fun getConnectionTypeString(): String {
+        return when (connectionType) {
+            TYPE_WIFI -> "WiFi"
+            TYPE_BLUETOOTH -> "Bluetooth"
+            TYPE_USB -> "USB"
+            else -> "Desconocido"
+        }
+    }
+    
+    /**
+     * Obtiene la descripción de la orientación.
+     */
+    fun getOrientationString(): String {
+        return when (orientation) {
+            ORIENTATION_PORTRAIT -> "Vertical"
+            ORIENTATION_LANDSCAPE -> "Horizontal"
+            else -> "Desconocido"
+        }
     }
 }

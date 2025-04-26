@@ -2,100 +2,80 @@ package com.productiva.android.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import androidx.room.ColumnInfo
+import androidx.room.ForeignKey
 import com.google.gson.annotations.SerializedName
-import java.util.Date
 
 /**
- * Entidad que representa la completación de una tarea.
+ * Entidad que representa la completación de una tarea en la aplicación.
  */
-@Entity(tableName = "task_completions")
+@Entity(
+    tableName = "task_completions",
+    foreignKeys = [
+        ForeignKey(
+            entity = Task::class,
+            parentColumns = ["id"],
+            childColumns = ["task_id"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ]
+)
 data class TaskCompletion(
     @PrimaryKey(autoGenerate = true)
+    @ColumnInfo(name = "id")
     val id: Int = 0,
     
-    @SerializedName("task_id")
+    @ColumnInfo(name = "remote_id")
+    @SerializedName("id") 
+    val remoteId: Int? = null,
+    
+    @ColumnInfo(name = "task_id", index = true)
+    @SerializedName("task_id") 
     val taskId: Int,
     
-    @SerializedName("user_id")
+    @ColumnInfo(name = "user_id")
+    @SerializedName("user_id") 
     val userId: Int,
     
-    @SerializedName("user_name")
-    val userName: String? = null,
+    @ColumnInfo(name = "user_name")
+    @SerializedName("user_name") 
+    val userName: String,
     
-    @SerializedName("completion_date")
-    val completionDate: Date? = null,
+    @ColumnInfo(name = "completion_date")
+    @SerializedName("completion_date") 
+    val completionDate: String,
     
-    @SerializedName("notes")
-    val notes: String? = null,
+    @ColumnInfo(name = "notes")
+    @SerializedName("notes") 
+    val notes: String?,
     
-    @SerializedName("location_id")
-    val locationId: Int? = null,
+    @ColumnInfo(name = "signature_path")
+    @SerializedName("signature_path") 
+    val signaturePath: String?,
     
-    @SerializedName("location_name")
-    val locationName: String? = null,
+    @ColumnInfo(name = "photo_path")
+    @SerializedName("photo_path") 
+    val photoPath: String?,
     
-    @SerializedName("has_signature")
-    val hasSignature: Boolean = false,
+    @ColumnInfo(name = "location_id")
+    @SerializedName("location_id") 
+    val locationId: Int?,
     
-    @SerializedName("signature_path")
-    val signaturePath: String? = null,
+    @ColumnInfo(name = "location_name")
+    @SerializedName("location_name") 
+    val locationName: String?,
     
-    @SerializedName("has_photo")
-    val hasPhoto: Boolean = false,
+    @ColumnInfo(name = "latitude")
+    @SerializedName("latitude") 
+    val latitude: Double?,
     
-    @SerializedName("photo_path")
-    val photoPath: String? = null,
+    @ColumnInfo(name = "longitude")
+    @SerializedName("longitude") 
+    val longitude: Double?,
     
-    @SerializedName("has_attachments")
-    val hasAttachments: Boolean = false,
+    @ColumnInfo(name = "sync_pending")
+    val syncPending: Boolean = false,
     
-    @SerializedName("attachment_paths")
-    val attachmentPaths: List<String>? = null,
-    
-    @SerializedName("geolocation")
-    val geolocation: String? = null,
-    
-    // Campos para sincronización, no se envían al servidor
-    var syncPending: Boolean = false,
-    var remoteId: Int? = null
-) {
-    /**
-     * Verifica si la completación tiene recursos adjuntos (firma, foto, etc)
-     */
-    fun hasResources(): Boolean {
-        return hasSignature || hasPhoto || hasAttachments
-    }
-    
-    /**
-     * Verifica si la completación tiene suficiente información para ser enviada
-     */
-    fun isValid(): Boolean {
-        return taskId > 0 && userId > 0 && completionDate != null
-    }
-    
-    /**
-     * Obtiene una descripción para la completación (para mostrar en la UI)
-     */
-    fun getDisplayDescription(): String {
-        val description = StringBuilder()
-        
-        if (!notes.isNullOrBlank()) {
-            description.append(notes)
-        } else {
-            description.append("Tarea completada")
-        }
-        
-        val resources = mutableListOf<String>()
-        if (hasSignature) resources.add("firma")
-        if (hasPhoto) resources.add("foto")
-        if (hasAttachments) resources.add("archivos adjuntos")
-        
-        if (resources.isNotEmpty()) {
-            description.append(" (")
-            description.append(resources.joinToString(", "))
-            description.append(")")
-        }
-        
-        return description.toString()
-    }
-}
+    @ColumnInfo(name = "last_sync")
+    val lastSync: Long = System.currentTimeMillis()
+)

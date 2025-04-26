@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_tasks"
+            android:icon="@android:drawable/ic_menu_edit"
+            android:title="Tareas" />
+        <item
+            android:id="@+id/nav_printers"
+            android:icon="@android:drawable/ic_menu_send"
+            android:title="Impresoras" />
+        <item
+            android:id="@+id/nav_templates"
+            android:icon="@android:drawable/ic_menu_agenda"
+            android:title="Plantillas de etiquetas" />
+        <item
+            android:id="@+id/nav_sync"
+            android:icon="@android:drawable/ic_popup_sync"
+            android:title="Sincronizar datos" />
+    </group>
+    <item android:title="Configuración">
+        <menu>
+            <item
+                android:id="@+id/nav_settings"
+                android:icon="@android:drawable/ic_menu_preferences"
+                android:title="Ajustes" />
+            <item
+                android:id="@+id/nav_logout"
+                android:icon="@android:drawable/ic_menu_close_clear_cancel"
+                android:title="Cerrar sesión" />
+        </menu>
+    </item>
+</menu>

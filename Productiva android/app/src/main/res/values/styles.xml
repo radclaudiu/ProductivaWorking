@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base application theme -->
+    <style name="AppTheme" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <!-- Customize your theme here -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:windowBackground">@color/colorBackground</item>
+        <item name="android:textColorPrimary">@color/colorTextPrimary</item>
+        <item name="android:textColorSecondary">@color/colorTextSecondary</item>
+        <item name="android:textColor">@color/colorTextPrimary</item>
+        <item name="android:statusBarColor">@color/colorPrimaryDark</item>
+        <item name="android:navigationBarColor">@color/colorPrimaryDark</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="toolbarStyle">@style/Widget.App.Toolbar</item>
+        <item name="buttonStyle">@style/Widget.App.Button</item>
+        <item name="textInputStyle">@style/Widget.App.TextInputLayout</item>
+        <item name="cardViewStyle">@style/Widget.App.CardView</item>
+    </style>
+
+    <!-- Toolbar style -->
+    <style name="Widget.App.Toolbar" parent="Widget.MaterialComponents.Toolbar">
+        <item name="android:background">@color/colorPrimary</item>
+        <item name="titleTextColor">@color/colorWhite</item>
+        <item name="subtitleTextColor">@color/colorWhite</item>
+        <item name="android:elevation">4dp</item>
+        <item name="popupTheme">@style/ThemeOverlay.MaterialComponents.Light</item>
+    </style>
+
+    <!-- Button style -->
+    <style name="Widget.App.Button" parent="Widget.MaterialComponents.Button">
+        <item name="android:textColor">@color/colorWhite</item>
+        <item name="backgroundTint">@color/colorPrimary</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">8dp</item>
+        <item name="cornerRadius">8dp</item>
+    </style>
+
+    <!-- Text Input style -->
+    <style name="Widget.App.TextInputLayout" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/colorPrimary</item>
+        <item name="hintTextColor">@color/colorPrimary</item>
+        <item name="android:textColorHint">@color/colorTextSecondary</item>
+        <item name="boxCornerRadiusBottomEnd">8dp</item>
+        <item name="boxCornerRadiusBottomStart">8dp</item>
+        <item name="boxCornerRadiusTopEnd">8dp</item>
+        <item name="boxCornerRadiusTopStart">8dp</item>
+    </style>
+
+    <!-- Card style -->
+    <style name="Widget.App.CardView" parent="Widget.MaterialComponents.CardView">
+        <item name="cardCornerRadius">8dp</item>
+        <item name="cardElevation">4dp</item>
+        <item name="contentPadding">16dp</item>
+        <item name="cardBackgroundColor">@color/colorWhite</item>
+    </style>
+
+    <!-- Task item styles -->
+    <style name="TaskItemStyle">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:padding">16dp</item>
+        <item name="android:layout_marginTop">8dp</item>
+        <item name="android:layout_marginBottom">8dp</item>
+        <item name="android:layout_marginStart">8dp</item>
+        <item name="android:layout_marginEnd">8dp</item>
+    </style>
+
+    <style name="TaskItemCompletedStyle" parent="TaskItemStyle">
+        <item name="cardBackgroundColor">@color/colorCompletedTask</item>
+    </style>
+
+    <style name="TaskItemPendingStyle" parent="TaskItemStyle">
+        <item name="cardBackgroundColor">@color/colorPendingTask</item>
+    </style>
+
+    <style name="TaskItemInProgressStyle" parent="TaskItemStyle">
+        <item name="cardBackgroundColor">@color/colorInProgressTask</item>
+    </style>
+
+    <style name="TaskItemCanceledStyle" parent="TaskItemStyle">
+        <item name="cardBackgroundColor">@color/colorCanceledTask</item>
+    </style>
+
+    <!-- Text styles -->
+    <style name="TextAppearance.App.Headline" parent="TextAppearance.MaterialComponents.Headline6">
+        <item name="android:textColor">@color/colorPrimaryDark</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.App.Subtitle" parent="TextAppearance.MaterialComponents.Subtitle1">
+        <item name="android:textColor">@color/colorTextPrimary</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="TextAppearance.App.Body" parent="TextAppearance.MaterialComponents.Body1">
+        <item name="android:textColor">@color/colorTextPrimary</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="TextAppearance.App.Caption" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textColor">@color/colorTextSecondary</item>
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <!-- Task priority styles -->
+    <style name="TaskPriorityHigh">
+        <item name="android:textColor">@color/colorPriorityHigh</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TaskPriorityMedium">
+        <item name="android:textColor">@color/colorPriorityMedium</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <style name="TaskPriorityLow">
+        <item name="android:textColor">@color/colorPriorityLow</item>
+        <item name="android:textStyle">normal</item>
+    </style>
+
+    <!-- Button styles -->
+    <style name="Button.Primary" parent="Widget.App.Button">
+        <item name="backgroundTint">@color/colorPrimary</item>
+    </style>
+
+    <style name="Button.Secondary" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="strokeColor">@color/colorPrimary</item>
+        <item name="android:textColor">@color/colorPrimary</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="cornerRadius">8dp</item>
+    </style>
+
+    <style name="Button.Danger" parent="Widget.App.Button">
+        <item name="backgroundTint">@color/colorError</item>
+    </style>
+
+    <style name="Button.Success" parent="Widget.App.Button">
+        <item name="backgroundTint">@color/colorSuccess</item>
+    </style>
+</resources>

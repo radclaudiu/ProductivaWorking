@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#0062B2</color>
+    <color name="colorPrimaryDark">#004985</color>
+    <color name="colorPrimaryLight">#4D90CE</color>
+    <color name="colorAccent">#FF9800</color>
+    <color name="colorBackground">#F5F5F5</color>
+    <color name="colorTextPrimary">#212121</color>
+    <color name="colorTextSecondary">#757575</color>
+    <color name="colorError">#B00020</color>
+    <color name="colorSuccess">#4CAF50</color>
+    <color name="colorWarning">#FFC107</color>
+    <color name="colorWhite">#FFFFFF</color>
+    <color name="colorDivider">#BDBDBD</color>
+    <color name="colorCompletedTask">#E8F5E9</color>
+    <color name="colorPendingTask">#FFF8E1</color>
+    <color name="colorInProgressTask">#E3F2FD</color>
+    <color name="colorCanceledTask">#FFEBEE</color>
+    <color name="colorPriorityHigh">#F44336</color>
+    <color name="colorPriorityMedium">#FF9800</color>
+    <color name="colorPriorityLow">#4CAF50</color>
+    <color name="colorSignatureBackground">#FFFFFF</color>
+    <color name="colorSignaturePen">#000000</color>
+</resources>

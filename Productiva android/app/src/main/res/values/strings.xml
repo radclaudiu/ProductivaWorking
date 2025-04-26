@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App Information -->
+    <string name="app_name">Productiva</string>
+    <string name="app_logo">Logotipo de Productiva</string>
+    <string name="version_info">Versión 1.0.0</string>
+    
+    <!-- Authentication -->
+    <string name="login_title">Iniciar sesión</string>
+    <string name="username_hint">Usuario</string>
+    <string name="password_hint">Contraseña</string>
+    <string name="server_url_hint">URL del servidor (opcional)</string>
+    <string name="login_button">Entrar</string>
+    <string name="logout_button">Cerrar sesión</string>
+    <string name="error_login">No se pudo iniciar sesión. Compruebe sus credenciales e intente de nuevo.</string>
+    <string name="error_server_url">URL del servidor incorrecta</string>
+    <string name="authenticating_message">Autenticando...</string>
+    
+    <!-- User Selection -->
+    <string name="select_user_title">Seleccione su perfil de usuario</string>
+    <string name="error_loading_users">No se pudieron cargar los perfiles de usuario</string>
+    <string name="loading_users">Cargando perfiles...</string>
+    
+    <!-- Tasks -->
+    <string name="tasks_title">Tareas</string>
+    <string name="task_details_title">Detalles de la tarea</string>
+    <string name="task_description">Descripción</string>
+    <string name="task_due_date">Fecha límite</string>
+    <string name="task_status">Estado</string>
+    <string name="task_priority">Prioridad</string>
+    <string name="task_assigned_to">Asignada a</string>
+    <string name="task_created_by">Creada por</string>
+    <string name="task_created_at">Fecha de creación</string>
+    <string name="task_updated_at">Última actualización</string>
+    <string name="task_location">Ubicación</string>
+    <string name="task_comment_hint">Añadir comentario...</string>
+    <string name="complete_task_button">Completar tarea</string>
+    <string name="cancel_task_button">Cancelar tarea</string>
+    <string name="save_task_button">Guardar</string>
+    <string name="error_loading_task">No se pudo cargar la tarea</string>
+    <string name="error_completing_task">Error al completar la tarea</string>
+    <string name="task_completed_success">Tarea completada correctamente</string>
+    <string name="take_photo_button">Tomar foto</string>
+    <string name="signature_button">Firma</string>
+    <string name="print_label_button">Imprimir etiqueta</string>
+    
+    <!-- Status Values -->
+    <string name="status_pending">Pendiente</string>
+    <string name="status_in_progress">En progreso</string>
+    <string name="status_completed">Completada</string>
+    <string name="status_canceled">Cancelada</string>
+    
+    <!-- Priority Values -->
+    <string name="priority_low">Baja</string>
+    <string name="priority_medium">Media</string>
+    <string name="priority_high">Alta</string>
+    
+    <!-- Signature -->
+    <string name="signature_title">Firma</string>
+    <string name="clear_signature_button">Borrar</string>
+    <string name="save_signature_button">Guardar</string>
+    <string name="cancel_signature_button">Cancelar</string>
+    
+    <!-- Camera -->
+    <string name="photo_title">Tomar foto</string>
+    <string name="capture_button">Capturar</string>
+    <string name="retake_button">Repetir</string>
+    
+    <!-- Label Printing -->
+    <string name="print_label_title">Imprimir etiqueta</string>
+    <string name="scan_printers_button">Buscar impresoras</string>
+    <string name="connecting_to_printer">Conectando con la impresora...</string>
+    <string name="printing_label">Imprimiendo etiqueta...</string>
+    <string name="print_success">Etiqueta impresa correctamente</string>
+    <string name="print_error">Error al imprimir la etiqueta</string>
+    <string name="extra_text_hint">Texto adicional (opcional)</string>
+    <string name="printer_status">Estado de la impresora</string>
+    
+    <!-- Bluetooth -->
+    <string name="bluetooth_disabled">Bluetooth desactivado</string>
+    <string name="bluetooth_enable_request">Se requiere activar Bluetooth para buscar impresoras</string>
+    <string name="bluetooth_permission_denied">Se requieren permisos de Bluetooth para buscar impresoras</string>
+    <string name="bluetooth_devices">Dispositivos Bluetooth</string>
+    
+    <!-- Printer Settings -->
+    <string name="printer_settings_title">Configuración de impresora</string>
+    <string name="printer_name">Nombre de la impresora</string>
+    <string name="printer_address">Dirección</string>
+    <string name="paper_size">Tamaño de papel</string>
+    <string name="print_density">Densidad de impresión</string>
+    <string name="printer_default">Impresora predeterminada</string>
+    <string name="save_printer_settings">Guardar configuración</string>
+    
+    <!-- Label Templates -->
+    <string name="label_templates_title">Plantillas de etiquetas</string>
+    <string name="new_template">Nueva plantilla</string>
+    <string name="edit_template">Editar plantilla</string>
+    <string name="template_name">Nombre de la plantilla</string>
+    <string name="template_content">Contenido</string>
+    <string name="template_preview">Vista previa</string>
+    <string name="save_template">Guardar plantilla</string>
+    <string name="delete_template">Eliminar plantilla</string>
+    <string name="template_default">Plantilla predeterminada</string>
+    
+    <!-- Synchronization -->
+    <string name="sync_title">Sincronizar datos</string>
+    <string name="sync_now">Sincronizar ahora</string>
+    <string name="sync_in_progress">Sincronizando...</string>
+    <string name="sync_success">Sincronización completada</string>
+    <string name="sync_error">Error durante la sincronización</string>
+    <string name="sync_last_time">Última sincronización:</string>
+    <string name="offline_mode">Modo sin conexión</string>
+    
+    <!-- Settings -->
+    <string name="settings_title">Configuración</string>
+    <string name="settings_server_url">URL del servidor</string>
+    <string name="settings_sync_frequency">Frecuencia de sincronización</string>
+    <string name="settings_notifications">Notificaciones</string>
+    <string name="settings_bluetooth">Configuración Bluetooth</string>
+    <string name="settings_theme">Tema</string>
+    <string name="settings_language">Idioma</string>
+    <string name="settings_about">Acerca de</string>
+    
+    <!-- General -->
+    <string name="loading">Cargando...</string>
+    <string name="error_title">Error</string>
+    <string name="success_title">Éxito</string>
+    <string name="warning_title">Advertencia</string>
+    <string name="ok">Aceptar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="retry">Reintentar</string>
+    <string name="save">Guardar</string>
+    <string name="delete">Eliminar</string>
+    <string name="edit">Editar</string>
+    <string name="search">Buscar</string>
+    <string name="filter">Filtrar</string>
+    <string name="sort">Ordenar</string>
+    <string name="refresh">Actualizar</string>
+    <string name="next">Siguiente</string>
+    <string name="previous">Anterior</string>
+    <string name="yes">Sí</string>
+    <string name="no">No</string>
+</resources>

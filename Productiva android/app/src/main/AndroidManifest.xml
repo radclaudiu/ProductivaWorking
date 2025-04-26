@@ -39,7 +39,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Productiva"
         android:usesCleartextTraffic="true"
-        tools:resourceValidation="@xml/resource_validation"
         tools:targetApi="33">
         
         <!-- Actividad principal -->

@@ -1,332 +1,358 @@
 package com.productiva.android.activities
 
-import android.Manifest
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.RecyclerView
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.productiva.android.R
 import com.productiva.android.model.LabelTemplate
 import com.productiva.android.model.SavedPrinter
 import com.productiva.android.viewmodel.PrintLabelViewModel
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 
 /**
- * Activity para imprimir etiquetas
+ * Actividad para imprimir etiquetas
  */
 class PrintLabelActivity : AppCompatActivity() {
     
     private lateinit var viewModel: PrintLabelViewModel
     
-    // Componentes de UI
+    // UI components
     private lateinit var toolbar: Toolbar
-    private lateinit var taskTitleTextView: TextView
     private lateinit var printerSpinner: Spinner
     private lateinit var templateSpinner: Spinner
-    private lateinit var copiesSpinner: Spinner
-    private lateinit var previewTextView: TextView
-    private lateinit var printButton: Button
-    private lateinit var settingsButton: Button
+    private lateinit var formContainer: LinearLayout
     private lateinit var progressBar: ProgressBar
+    private lateinit var printButton: Button
+    private lateinit var addPrinterButton: FloatingActionButton
+    private lateinit var noPrintersText: TextView
+    private lateinit var noTemplatesText: TextView
     
-    // Adaptadores para spinners
-    private lateinit var printerAdapter: ArrayAdapter<String>
-    private lateinit var templateAdapter: ArrayAdapter<String>
+    // Adapters
+    private lateinit var printerAdapter: ArrayAdapter<SavedPrinter>
+    private lateinit var templateAdapter: ArrayAdapter<LabelTemplate>
     
-    // Listas de datos
-    private val printers = mutableListOf<SavedPrinter>()
-    private val templates = mutableListOf<LabelTemplate>()
-    
-    // ID de la tarea
-    private var taskId: Int = -1
-    
-    // Código de solicitud para permiso de Bluetooth
-    private val BLUETOOTH_PERMISSION_REQUEST_CODE = 100
+    // Current data
+    private var fieldEditTexts = mutableListOf<EditText>()
+    private var fieldNames = mutableListOf<String>()
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_print_label)
         
-        // Obtener ID de la tarea si existe
-        taskId = intent.getIntExtra("task_id", -1)
+        // Initialize UI components
+        toolbar = findViewById(R.id.toolbar)
+        printerSpinner = findViewById(R.id.printer_spinner)
+        templateSpinner = findViewById(R.id.template_spinner)
+        formContainer = findViewById(R.id.form_container)
+        progressBar = findViewById(R.id.progress_bar)
+        printButton = findViewById(R.id.print_button)
+        addPrinterButton = findViewById(R.id.add_printer_button)
+        noPrintersText = findViewById(R.id.no_printers_text)
+        noTemplatesText = findViewById(R.id.no_templates_text)
         
-        // Inicializar ViewModel
+        // Setup ActionBar
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayShowHomeEnabled(true)
+        supportActionBar?.title = "Imprimir Etiqueta"
+        
+        // Initialize ViewModel
         viewModel = ViewModelProvider(this).get(PrintLabelViewModel::class.java)
         
-        // Configurar componentes de UI
-        setupUI()
+        // Setup spinners
+        setupSpinners()
         
-        // Configurar observadores
+        // Setup buttons
+        setupButtons()
+        
+        // Set observers
         setupObservers()
         
-        // Verificar permisos de Bluetooth
-        checkBluetoothPermissions()
-        
-        // Cargar tarea si existe
-        if (taskId != -1) {
-            viewModel.loadTask(taskId)
-        }
+        // Refresh templates from server
+        viewModel.refreshTemplates()
     }
     
     /**
-     * Configura las referencias y eventos de UI
+     * Configura los spinners para seleccionar impresora y plantilla
      */
-    private fun setupUI() {
-        toolbar = findViewById(R.id.toolbar)
-        setSupportActionBar(toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        title = getString(R.string.print_label)
-        
-        taskTitleTextView = findViewById(R.id.task_title)
-        printerSpinner = findViewById(R.id.printer_spinner)
-        templateSpinner = findViewById(R.id.template_spinner)
-        copiesSpinner = findViewById(R.id.copies_spinner)
-        previewTextView = findViewById(R.id.preview_text)
-        printButton = findViewById(R.id.print_button)
-        settingsButton = findViewById(R.id.settings_button)
-        progressBar = findViewById(R.id.progressBar)
-        
-        // Configurar spinner de impresoras
-        printerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, mutableListOf<String>())
+    private fun setupSpinners() {
+        // Printer spinner
+        printerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, mutableListOf<SavedPrinter>())
         printerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         printerSpinner.adapter = printerAdapter
         
         printerSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                if (position >= 0 && position < printers.size) {
-                    viewModel.selectPrinter(printers[position])
+                val printer = printerAdapter.getItem(position)
+                printer?.let {
+                    viewModel.selectPrinter(it)
                 }
             }
             
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                // No hacer nada
-            }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
         
-        // Configurar spinner de plantillas
-        templateAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, mutableListOf<String>())
+        // Template spinner
+        templateAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, mutableListOf<LabelTemplate>())
         templateAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         templateSpinner.adapter = templateAdapter
         
         templateSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                if (position >= 0 && position < templates.size) {
-                    viewModel.selectTemplate(templates[position])
+                val template = templateAdapter.getItem(position)
+                template?.let {
+                    viewModel.selectTemplate(it)
+                    updateFormFields(it)
                 }
             }
             
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                // No hacer nada
-            }
-        }
-        
-        // Configurar spinner de copias
-        val copiesOptions = (1..10).map { it.toString() }
-        val copiesAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, copiesOptions)
-        copiesAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        copiesSpinner.adapter = copiesAdapter
-        
-        copiesSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val copies = (position + 1)
-                viewModel.setCopies(copies)
-            }
-            
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                // No hacer nada
-            }
-        }
-        
-        // Configurar botones
-        printButton.setOnClickListener {
-            viewModel.printLabel()
-        }
-        
-        settingsButton.setOnClickListener {
-            val intent = Intent(this, PrinterSettingsActivity::class.java)
-            startActivity(intent)
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
     }
     
     /**
-     * Configura los observadores de LiveData
+     * Configura los botones
+     */
+    private fun setupButtons() {
+        // Print button
+        printButton.setOnClickListener {
+            printLabel()
+        }
+        
+        // Add printer button
+        addPrinterButton.setOnClickListener {
+            showAddPrinterDialog()
+        }
+    }
+    
+    /**
+     * Configura los observadores para el ViewModel
      */
     private fun setupObservers() {
-        // Observar tarea
-        lifecycleScope.launch {
-            viewModel.task.collect { task ->
-                task?.let {
-                    taskTitleTextView.text = it.title
-                    taskTitleTextView.visibility = View.VISIBLE
-                } ?: run {
-                    taskTitleTextView.visibility = View.GONE
-                }
-            }
+        // Observe saved printers
+        viewModel.savedPrinters.observe(this) { printers ->
+            updatePrintersList(printers)
         }
         
-        // Observar impresoras
-        viewModel.printers.observe(this) { printersList ->
-            printers.clear()
-            printers.addAll(printersList)
-            
-            val printerNames = printersList.map { "${it.name} (${it.printerType})" }
-            printerAdapter.clear()
-            printerAdapter.addAll(printerNames)
-            printerAdapter.notifyDataSetChanged()
-            
-            // Actualizar UI según disponibilidad
-            updatePrintButtonState()
+        // Observe label templates
+        viewModel.labelTemplates.observe(this) { templates ->
+            updateTemplatesList(templates)
         }
         
-        // Observar plantillas
-        viewModel.templates.observe(this) { templatesList ->
-            templates.clear()
-            templates.addAll(templatesList)
-            
-            val templateNames = templatesList.map { it.name }
-            templateAdapter.clear()
-            templateAdapter.addAll(templateNames)
-            templateAdapter.notifyDataSetChanged()
-            
-            // Actualizar UI según disponibilidad
-            updatePrintButtonState()
-        }
-        
-        // Observar impresora seleccionada
+        // Observe selected printer
         viewModel.selectedPrinter.observe(this) { printer ->
-            printer?.let {
-                val position = printers.indexOf(it)
-                if (position >= 0) {
-                    printerSpinner.setSelection(position)
-                }
-            }
+            // Actualizar UI si es necesario
         }
         
-        // Observar plantilla seleccionada
-        viewModel.selectedTemplate.observe(this) { template ->
-            template?.let {
-                val position = templates.indexOf(it)
-                if (position >= 0) {
-                    templateSpinner.setSelection(position)
-                }
-                
-                // Mostrar vista previa
-                previewTextView.text = it.content
-            }
-        }
-        
-        // Observar estado de carga
+        // Observe loading state
         viewModel.isLoading.observe(this) { isLoading ->
             progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-            printButton.isEnabled = !isLoading
         }
         
-        // Observar mensajes de error
-        viewModel.errorMessage.observe(this) { errorMessage ->
-            if (errorMessage.isNotEmpty()) {
-                Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
+        // Observe error messages
+        viewModel.errorMessage.observe(this) { message ->
+            if (!message.isNullOrEmpty()) {
+                showError(message)
             }
         }
         
-        // Observar estado de impresión
-        viewModel.printState.observe(this) { state ->
+        // Observe printing state
+        viewModel.printingState.observe(this) { state ->
             when (state) {
-                is PrintLabelViewModel.PrintState.Success -> {
-                    Toast.makeText(this, R.string.label_printed_successfully, Toast.LENGTH_SHORT).show()
+                PrintLabelViewModel.PrintingState.PRINTING -> {
+                    showPrintingStatus("Imprimiendo etiqueta...")
                 }
-                is PrintLabelViewModel.PrintState.Error -> {
-                    Toast.makeText(this, state.message, Toast.LENGTH_LONG).show()
+                PrintLabelViewModel.PrintingState.SENT -> {
+                    showPrintingStatus("Etiqueta enviada a la impresora")
+                    viewModel.resetPrintingState()
                 }
-                is PrintLabelViewModel.PrintState.Printing -> {
-                    Toast.makeText(this, R.string.printing_label, Toast.LENGTH_SHORT).show()
+                PrintLabelViewModel.PrintingState.ERROR -> {
+                    showPrintingStatus("Error al imprimir etiqueta", true)
+                    viewModel.resetPrintingState()
                 }
-                else -> {
-                    // No hacer nada con el estado inicial
-                }
+                else -> {}
             }
         }
     }
     
     /**
-     * Actualiza el estado del botón de impresión según disponibilidad
+     * Actualiza la lista de impresoras
      */
-    private fun updatePrintButtonState() {
-        printButton.isEnabled = printers.isNotEmpty() && templates.isNotEmpty()
-    }
-    
-    /**
-     * Verifica y solicita permisos de Bluetooth si es necesario
-     */
-    private fun checkBluetoothPermissions() {
-        val bluetoothPermission = Manifest.permission.BLUETOOTH
-        val bluetoothAdminPermission = Manifest.permission.BLUETOOTH_ADMIN
+    private fun updatePrintersList(printers: List<SavedPrinter>?) {
+        printerAdapter.clear()
         
-        val hasBluetoothPermission = ContextCompat.checkSelfPermission(this, bluetoothPermission) == PackageManager.PERMISSION_GRANTED
-        val hasBluetoothAdminPermission = ContextCompat.checkSelfPermission(this, bluetoothAdminPermission) == PackageManager.PERMISSION_GRANTED
-        
-        if (!hasBluetoothPermission || !hasBluetoothAdminPermission) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(bluetoothPermission, bluetoothAdminPermission),
-                BLUETOOTH_PERMISSION_REQUEST_CODE
-            )
+        if (printers.isNullOrEmpty()) {
+            noPrintersText.visibility = View.VISIBLE
+            printerSpinner.visibility = View.GONE
+        } else {
+            noPrintersText.visibility = View.GONE
+            printerSpinner.visibility = View.VISIBLE
+            printerAdapter.addAll(printers)
         }
     }
     
     /**
-     * Maneja la respuesta a la solicitud de permisos
+     * Actualiza la lista de plantillas
      */
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    private fun updateTemplatesList(templates: List<LabelTemplate>?) {
+        templateAdapter.clear()
         
-        if (requestCode == BLUETOOTH_PERMISSION_REQUEST_CODE) {
-            if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
-                // Permisos concedidos, recargar impresoras
-                viewModel.loadPrinters()
-            } else {
-                // Permisos denegados
-                Toast.makeText(this, R.string.bluetooth_permission_required, Toast.LENGTH_LONG).show()
-                finish()
+        if (templates.isNullOrEmpty()) {
+            noTemplatesText.visibility = View.VISIBLE
+            templateSpinner.visibility = View.GONE
+            formContainer.visibility = View.GONE
+            printButton.isEnabled = false
+        } else {
+            noTemplatesText.visibility = View.GONE
+            templateSpinner.visibility = View.VISIBLE
+            formContainer.visibility = View.VISIBLE
+            printButton.isEnabled = true
+            templateAdapter.addAll(templates)
+            
+            // Seleccionar la primera plantilla
+            templates.firstOrNull()?.let {
+                viewModel.selectTemplate(it)
+                updateFormFields(it)
             }
         }
     }
     
     /**
-     * Maneja las selecciones en el menú de opciones
+     * Actualiza los campos del formulario según la plantilla seleccionada
      */
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            android.R.id.home -> {
-                onBackPressed()
-                true
+    private fun updateFormFields(template: LabelTemplate) {
+        formContainer.removeAllViews()
+        fieldEditTexts.clear()
+        fieldNames.clear()
+        
+        val fields = template.fields?.split(",") ?: emptyList()
+        
+        for (field in fields) {
+            val fieldName = field.trim()
+            if (fieldName.isNotEmpty()) {
+                fieldNames.add(fieldName)
+                
+                // Crear TextView para label
+                val labelView = TextView(this)
+                labelView.text = fieldName
+                labelView.setPadding(0, 16, 0, 8)
+                formContainer.addView(labelView)
+                
+                // Crear EditText para el valor
+                val editText = EditText(this)
+                editText.hint = "Ingrese $fieldName"
+                editText.tag = fieldName // Guardar nombre de campo como tag
+                formContainer.addView(editText)
+                
+                fieldEditTexts.add(editText)
             }
-            else -> super.onOptionsItemSelected(item)
         }
     }
     
     /**
-     * Se ejecuta al reanudar la actividad (por ejemplo, después de volver de Configuración)
+     * Imprime la etiqueta con los datos del formulario
      */
-    override fun onResume() {
-        super.onResume()
+    private fun printLabel() {
+        if (fieldEditTexts.isEmpty()) {
+            showError("No hay campos para imprimir")
+            return
+        }
         
-        // Recargar datos
-        viewModel.loadPrinters()
-        viewModel.loadTemplates()
+        val data = mutableMapOf<String, String>()
+        
+        for (i in fieldEditTexts.indices) {
+            val value = fieldEditTexts[i].text.toString()
+            val name = fieldNames[i]
+            data[name] = value
+        }
+        
+        viewModel.printLabel(data)
+    }
+    
+    /**
+     * Muestra un diálogo para añadir una nueva impresora
+     */
+    private fun showAddPrinterDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_add_printer, null)
+        
+        val nameEdit = dialogView.findViewById<EditText>(R.id.printer_name_edit)
+        val addressEdit = dialogView.findViewById<EditText>(R.id.printer_address_edit)
+        val modelEdit = dialogView.findViewById<EditText>(R.id.printer_model_edit)
+        val widthEdit = dialogView.findViewById<EditText>(R.id.paper_width_edit)
+        val heightEdit = dialogView.findViewById<EditText>(R.id.paper_height_edit)
+        val defaultCheckBox = dialogView.findViewById<TextView>(R.id.default_checkbox)
+        
+        AlertDialog.Builder(this)
+            .setTitle("Añadir impresora")
+            .setView(dialogView)
+            .setPositiveButton("Guardar") { _, _ ->
+                val name = nameEdit.text.toString()
+                val address = addressEdit.text.toString()
+                val model = modelEdit.text.toString()
+                val widthText = widthEdit.text.toString()
+                val heightText = heightEdit.text.toString()
+                
+                if (name.isEmpty() || address.isEmpty()) {
+                    showError("Nombre y dirección son obligatorios")
+                    return@setPositiveButton
+                }
+                
+                val width = if (widthText.isEmpty()) 62 else widthText.toInt()
+                val height = if (heightText.isEmpty()) 29 else heightText.toInt()
+                val isDefault = defaultCheckBox.isSelected
+                
+                val printer = SavedPrinter(
+                    id = 0, // ID temporal, se asignará en la BD
+                    name = name,
+                    address = address,
+                    model = model,
+                    paperWidth = width,
+                    paperHeight = height,
+                    isDefault = isDefault,
+                    lastUsed = System.currentTimeMillis()
+                )
+                
+                viewModel.savePrinter(printer)
+                
+                if (isDefault) {
+                    viewModel.setDefaultPrinter(printer)
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+    
+    /**
+     * Muestra un mensaje de error
+     */
+    private fun showError(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+    }
+    
+    /**
+     * Muestra el estado de la impresión
+     */
+    private fun showPrintingStatus(message: String, isError: Boolean = false) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+    }
+    
+    override fun onSupportNavigateUp(): Boolean {
+        onBackPressed()
+        return true
     }
 }

@@ -11,118 +11,102 @@ import android.view.MotionEvent
 import android.view.View
 
 /**
- * Vista personalizada para capturar la firma del usuario
+ * Vista personalizada para capturar firmas
  */
-class SignatureView(context: Context, attrs: AttributeSet?) : View(context, attrs) {
+class SignatureView @JvmOverloads constructor(
+    context: Context,
+    attrs: AttributeSet? = null,
+    defStyleAttr: Int = 0
+) : View(context, attrs, defStyleAttr) {
     
-    // Configuración del pincel para dibujar
     private val paint = Paint().apply {
-        color = Color.BLACK
         isAntiAlias = true
+        isDither = true
+        color = Color.BLACK
         style = Paint.Style.STROKE
         strokeJoin = Paint.Join.ROUND
         strokeCap = Paint.Cap.ROUND
-        strokeWidth = 8f
+        strokeWidth = 12f
     }
     
-    // Path para almacenar los trazos de la firma
     private val path = Path()
+    private var latestX = 0f
+    private var latestY = 0f
     
-    // Coordenadas del último punto tocado
-    private var lastX = 0f
-    private var lastY = 0f
-    
-    // Tolerancia para el movimiento (evita dibujar puntos muy cercanos)
-    private val touchTolerance = 4f
+    // Para determinar si la vista está vacía o no
+    private var hasSignature = false
     
     /**
-     * Limpia la firma (borra todos los trazos)
+     * Propiedad para verificar si la firma está vacía
      */
-    fun clear() {
-        path.reset()
-        invalidate()
+    val isEmpty: Boolean
+        get() = !hasSignature
+    
+    init {
+        // Establecer un fondo blanco para la vista
+        setBackgroundColor(Color.WHITE)
     }
     
-    /**
-     * Verifica si la firma está vacía (sin trazos)
-     */
-    fun isEmpty(): Boolean {
-        return path.isEmpty
-    }
-    
-    /**
-     * Obtiene un bitmap con la firma actual
-     */
-    fun getSignatureBitmap(): Bitmap {
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
-        canvas.drawColor(Color.WHITE)
-        canvas.drawPath(path, paint)
-        return bitmap
-    }
-    
-    /**
-     * Dibuja el path de la firma en el canvas
-     */
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         canvas.drawPath(path, paint)
     }
     
-    /**
-     * Maneja los eventos de toque para dibujar la firma
-     */
     override fun onTouchEvent(event: MotionEvent): Boolean {
         val x = event.x
         val y = event.y
         
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
-                touch_start(x, y)
+                path.moveTo(x, y)
+                latestX = x
+                latestY = y
+                hasSignature = true
                 invalidate()
             }
             MotionEvent.ACTION_MOVE -> {
-                touch_move(x, y)
+                val dx = Math.abs(x - latestX)
+                val dy = Math.abs(y - latestY)
+                if (dx >= TOUCH_TOLERANCE || dy >= TOUCH_TOLERANCE) {
+                    path.quadTo(latestX, latestY, (x + latestX) / 2, (y + latestY) / 2)
+                    latestX = x
+                    latestY = y
+                }
                 invalidate()
             }
             MotionEvent.ACTION_UP -> {
-                touch_up()
+                path.lineTo(latestX, latestY)
                 invalidate()
             }
-            else -> return false
         }
         return true
     }
     
     /**
-     * Inicia un nuevo trazo en las coordenadas especificadas
+     * Limpia la firma
      */
-    private fun touch_start(x: Float, y: Float) {
-        path.moveTo(x, y)
-        lastX = x
-        lastY = y
+    fun clear() {
+        path.reset()
+        hasSignature = false
+        invalidate()
     }
     
     /**
-     * Continúa el trazo actual hasta las nuevas coordenadas
-     * Usa quadTo para crear curvas suaves entre puntos
+     * Obtiene un bitmap de la firma
      */
-    private fun touch_move(x: Float, y: Float) {
-        val dx = Math.abs(x - lastX)
-        val dy = Math.abs(y - lastY)
-        if (dx >= touchTolerance || dy >= touchTolerance) {
-            // Curva cuadrática para suavizar la línea
-            path.quadTo(lastX, lastY, (x + lastX) / 2, (y + lastY) / 2)
-            lastX = x
-            lastY = y
+    fun getSignatureBitmap(): Bitmap? {
+        if (isEmpty) {
+            return null
         }
+        
+        val signatureBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(signatureBitmap)
+        canvas.drawColor(Color.WHITE)
+        draw(canvas)
+        return signatureBitmap
     }
     
-    /**
-     * Finaliza el trazo actual
-     */
-    private fun touch_up() {
-        // Completa el trazo conectando al último punto
-        path.lineTo(lastX, lastY)
+    companion object {
+        private const val TOUCH_TOLERANCE = 4f
     }
 }

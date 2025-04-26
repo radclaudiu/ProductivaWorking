@@ -5,88 +5,103 @@ import android.os.Bundle
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
-import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.SearchView
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.navigation.NavigationView
+import com.google.android.material.tabs.TabLayout
 import com.productiva.android.R
 import com.productiva.android.adapters.TaskAdapter
 import com.productiva.android.model.Task
 import com.productiva.android.model.User
 import com.productiva.android.viewmodel.MainViewModel
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 
 /**
- * Activity principal que muestra la lista de tareas
+ * Actividad principal de la aplicación
  */
-class MainActivity : AppCompatActivity(), TaskAdapter.OnTaskClickListener, NavigationView.OnNavigationItemSelectedListener {
+class MainActivity : AppCompatActivity(), TaskAdapter.OnTaskClickListener,
+    NavigationView.OnNavigationItemSelectedListener {
+    
+    companion object {
+        const val EXTRA_USER_ID = "extra_user_id"
+    }
     
     private lateinit var viewModel: MainViewModel
     
-    // Componentes de UI
+    // UI components
+    private lateinit var toolbar: Toolbar
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var navigationView: NavigationView
-    private lateinit var toolbar: Toolbar
     private lateinit var recyclerView: RecyclerView
-    private lateinit var progressBar: ProgressBar
     private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     private lateinit var emptyView: TextView
+    private lateinit var tabLayout: TabLayout
     private lateinit var fab: FloatingActionButton
-    private lateinit var searchView: SearchView
     
-    // Adaptador para la lista de tareas
+    // Navigation header
+    private lateinit var userNameText: TextView
+    private lateinit var userEmailText: TextView
+    
+    // Adapter
     private lateinit var taskAdapter: TaskAdapter
-    
-    // Usuario actual
-    private var currentUser: User? = null
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         
-        // Inicializar ViewModel
+        // Initialize UI components
+        toolbar = findViewById(R.id.toolbar)
+        drawerLayout = findViewById(R.id.drawer_layout)
+        navigationView = findViewById(R.id.nav_view)
+        recyclerView = findViewById(R.id.recycler_view)
+        swipeRefreshLayout = findViewById(R.id.swipe_refresh_layout)
+        emptyView = findViewById(R.id.empty_view)
+        tabLayout = findViewById(R.id.tab_layout)
+        fab = findViewById(R.id.fab)
+        
+        // Setup ActionBar
+        setSupportActionBar(toolbar)
+        
+        // Setup Navigation Drawer
+        setupNavigationDrawer()
+        
+        // Setup RecyclerView
+        setupRecyclerView()
+        
+        // Setup SwipeRefreshLayout
+        setupSwipeRefreshLayout()
+        
+        // Setup TabLayout for task status filtering
+        setupTabLayout()
+        
+        // Setup FAB
+        setupFab()
+        
+        // Initialize ViewModel
         viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         
-        // Configurar componentes de UI
-        setupUI()
-        
-        // Configurar observadores
+        // Set observers
         setupObservers()
+        
+        // Load user data
+        loadUserData()
     }
     
     /**
-     * Configura las referencias y eventos de UI
+     * Configura el Navigation Drawer
      */
-    private fun setupUI() {
-        toolbar = findViewById(R.id.toolbar)
-        setSupportActionBar(toolbar)
-        
-        drawerLayout = findViewById(R.id.drawer_layout)
-        navigationView = findViewById(R.id.nav_view)
-        recyclerView = findViewById(R.id.tasksRecyclerView)
-        progressBar = findViewById(R.id.progressBar)
-        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
-        emptyView = findViewById(R.id.emptyView)
-        fab = findViewById(R.id.fab)
-        
-        // Configurar drawer
+    private fun setupNavigationDrawer() {
         val toggle = ActionBarDrawerToggle(
-            this,
-            drawerLayout,
-            toolbar,
+            this, drawerLayout, toolbar,
             R.string.navigation_drawer_open,
             R.string.navigation_drawer_close
         )
@@ -95,205 +110,181 @@ class MainActivity : AppCompatActivity(), TaskAdapter.OnTaskClickListener, Navig
         
         navigationView.setNavigationItemSelectedListener(this)
         
-        // Configurar RecyclerView
-        recyclerView.layoutManager = LinearLayoutManager(this)
+        // Inicializar vistas del header del navigation drawer
+        val headerView = navigationView.getHeaderView(0)
+        userNameText = headerView.findViewById(R.id.user_name_text)
+        userEmailText = headerView.findViewById(R.id.user_email_text)
+    }
+    
+    /**
+     * Configura el RecyclerView
+     */
+    private fun setupRecyclerView() {
         taskAdapter = TaskAdapter(this)
-        recyclerView.adapter = taskAdapter
-        
-        // Configurar SwipeRefreshLayout
-        swipeRefreshLayout.setOnRefreshListener {
-            viewModel.syncTasks()
-        }
-        
-        // Configurar FAB
-        fab.setOnClickListener {
-            goToScannerOrCamera()
+        recyclerView.apply {
+            layoutManager = LinearLayoutManager(this@MainActivity)
+            adapter = taskAdapter
         }
     }
     
     /**
-     * Configura los observadores de LiveData
+     * Configura el SwipeRefreshLayout
+     */
+    private fun setupSwipeRefreshLayout() {
+        swipeRefreshLayout.setOnRefreshListener {
+            viewModel.refreshTasks()
+        }
+    }
+    
+    /**
+     * Configura el TabLayout para filtrar tareas por estado
+     */
+    private fun setupTabLayout() {
+        // Añadir pestañas para cada estado de tarea
+        tabLayout.addTab(tabLayout.newTab().setText("Pendientes"))
+        tabLayout.addTab(tabLayout.newTab().setText("En Progreso"))
+        tabLayout.addTab(tabLayout.newTab().setText("Completadas"))
+        
+        tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab) {
+                when (tab.position) {
+                    0 -> viewModel.setStatusFilter(Task.STATUS_PENDING)
+                    1 -> viewModel.setStatusFilter(Task.STATUS_IN_PROGRESS)
+                    2 -> viewModel.setStatusFilter(Task.STATUS_COMPLETED)
+                }
+            }
+            
+            override fun onTabUnselected(tab: TabLayout.Tab) {}
+            
+            override fun onTabReselected(tab: TabLayout.Tab) {}
+        })
+    }
+    
+    /**
+     * Configura el Floating Action Button
+     */
+    private fun setupFab() {
+        fab.setOnClickListener {
+            // Por ahora, mostrar mensaje
+            Toast.makeText(this, "Función para crear tarea no implementada", Toast.LENGTH_SHORT).show()
+            
+            // TODO: Implementar creación de tareas
+            // val intent = Intent(this, CreateTaskActivity::class.java)
+            // startActivity(intent)
+        }
+    }
+    
+    /**
+     * Configura los observadores para el ViewModel
      */
     private fun setupObservers() {
-        // Observar estado de carga
+        // Observe current user
+        viewModel.currentUser.observe(this) { user ->
+            user?.let {
+                updateUserInfo(it)
+            }
+        }
+        
+        // Observe tasks
+        viewModel.tasks.observe(this) { tasks ->
+            if (tasks.isNullOrEmpty()) {
+                emptyView.visibility = View.VISIBLE
+                recyclerView.visibility = View.GONE
+            } else {
+                emptyView.visibility = View.GONE
+                recyclerView.visibility = View.VISIBLE
+                taskAdapter.submitList(tasks)
+            }
+        }
+        
+        // Observe loading state
         viewModel.isLoading.observe(this) { isLoading ->
-            progressBar.visibility = if (isLoading && !swipeRefreshLayout.isRefreshing) View.VISIBLE else View.GONE
-            if (!isLoading) {
-                swipeRefreshLayout.isRefreshing = false
+            swipeRefreshLayout.isRefreshing = isLoading
+        }
+        
+        // Observe error messages
+        viewModel.errorMessage.observe(this) { message ->
+            if (!message.isNullOrEmpty()) {
+                showError(message)
             }
         }
         
-        // Observar mensajes de error
-        viewModel.errorMessage.observe(this) { errorMessage ->
-            if (errorMessage.isNotEmpty()) {
-                Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
+        // Observe selected task
+        viewModel.selectedTask.observe(this) { task ->
+            task?.let {
+                navigateToTaskDetail(it)
+                viewModel.clearSelectedTask()
             }
         }
         
-        // Observar tareas filtradas
-        viewModel.filteredTasks.observe(this) { tasks ->
-            updateTaskList(tasks)
-        }
-        
-        // Observar usuario actual
-        lifecycleScope.launch {
-            viewModel.currentUser.collect { user ->
-                currentUser = user
-                updateUserInformation(user)
+        // Observe current status filter
+        viewModel.currentStatusFilter.observe(this) { status ->
+            when (status) {
+                Task.STATUS_PENDING -> tabLayout.getTabAt(0)?.select()
+                Task.STATUS_IN_PROGRESS -> tabLayout.getTabAt(1)?.select()
+                Task.STATUS_COMPLETED -> tabLayout.getTabAt(2)?.select()
             }
-        }
-    }
-    
-    /**
-     * Actualiza la lista de tareas en el adaptador
-     */
-    private fun updateTaskList(tasks: List<Task>) {
-        taskAdapter.submitList(tasks)
-        
-        // Mostrar vista vacía si no hay tareas
-        if (tasks.isEmpty()) {
-            emptyView.visibility = View.VISIBLE
-            recyclerView.visibility = View.GONE
-        } else {
-            emptyView.visibility = View.GONE
-            recyclerView.visibility = View.VISIBLE
         }
     }
     
     /**
      * Actualiza la información del usuario en el drawer
      */
-    private fun updateUserInformation(user: User?) {
-        val headerView = navigationView.getHeaderView(0)
-        val nameTextView = headerView.findViewById<TextView>(R.id.user_name)
-        val emailTextView = headerView.findViewById<TextView>(R.id.user_email)
-        val companyTextView = headerView.findViewById<TextView>(R.id.user_company)
+    private fun updateUserInfo(user: User) {
+        userNameText.text = user.name
+        userEmailText.text = user.email
         
-        user?.let {
-            nameTextView.text = user.name
-            emailTextView.text = user.email
-            companyTextView.text = user.companyName
-            
-            // Actualizar título de la toolbar
-            title = getString(R.string.app_name)
+        // Actualizar título de la toolbar
+        supportActionBar?.title = "Tareas de ${user.name}"
+    }
+    
+    /**
+     * Carga los datos del usuario
+     */
+    private fun loadUserData() {
+        val userId = intent.getIntExtra(EXTRA_USER_ID, -1)
+        if (userId != -1) {
+            viewModel.loadUserById(userId)
+        } else {
+            // Si no hay ID de usuario, intentar obtener usuario actual
+            viewModel.loadCurrentUser()
         }
     }
     
     /**
-     * Navega a la actividad de escaneo o cámara
+     * Navega a la pantalla de detalle de tarea
      */
-    private fun goToScannerOrCamera() {
-        // Implementación pendiente - podría ser para escanear códigos QR/barcode o tomar fotos
-        Toast.makeText(this, "Funcionalidad de escáner pendiente", Toast.LENGTH_SHORT).show()
-    }
-    
-    /**
-     * Maneja el clic en una tarea
-     */
-    override fun onTaskClick(task: Task) {
-        val intent = Intent(this, TaskDetailActivity::class.java)
-        intent.putExtra("task_id", task.id)
+    private fun navigateToTaskDetail(task: Task) {
+        val intent = Intent(this, TaskDetailActivity::class.java).apply {
+            putExtra(TaskDetailActivity.EXTRA_TASK_ID, task.id)
+        }
         startActivity(intent)
     }
     
     /**
-     * Infla el menú de opciones
+     * Muestra un mensaje de error
      */
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.main_menu, menu)
-        
-        // Configurar SearchView
-        val searchItem = menu.findItem(R.id.action_search)
-        searchView = searchItem.actionView as SearchView
-        
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                viewModel.setSearchQuery(query ?: "")
-                return true
-            }
-            
-            override fun onQueryTextChange(newText: String?): Boolean {
-                viewModel.setSearchQuery(newText ?: "")
-                return true
-            }
-        })
-        
-        return true
+    private fun showError(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
     
     /**
-     * Maneja las selecciones en el menú de opciones
-     */
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.action_sync -> {
-                viewModel.syncTasks()
-                true
-            }
-            R.id.action_filter_all -> {
-                viewModel.setTaskFilter(MainViewModel.TaskFilter.ALL)
-                true
-            }
-            R.id.action_filter_pending -> {
-                viewModel.setTaskFilter(MainViewModel.TaskFilter.PENDING)
-                true
-            }
-            R.id.action_filter_in_progress -> {
-                viewModel.setTaskFilter(MainViewModel.TaskFilter.IN_PROGRESS)
-                true
-            }
-            R.id.action_filter_completed -> {
-                viewModel.setTaskFilter(MainViewModel.TaskFilter.COMPLETED)
-                true
-            }
-            R.id.action_filter_today -> {
-                viewModel.setTaskFilter(MainViewModel.TaskFilter.TODAY)
-                true
-            }
-            R.id.action_filter_overdue -> {
-                viewModel.setTaskFilter(MainViewModel.TaskFilter.OVERDUE)
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
-        }
-    }
-    
-    /**
-     * Maneja las selecciones en el drawer
+     * Maneja los clics en los elementos del menú del drawer
      */
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.nav_tasks -> {
                 // Ya estamos en la pantalla de tareas
             }
-            R.id.nav_print_label -> {
-                // Ir a la pantalla de impresión de etiquetas
+            R.id.nav_print -> {
                 val intent = Intent(this, PrintLabelActivity::class.java)
                 startActivity(intent)
             }
-            R.id.nav_printers -> {
-                // Ir a la pantalla de gestión de impresoras
-                val intent = Intent(this, PrinterSettingsActivity::class.java)
-                startActivity(intent)
-            }
-            R.id.nav_templates -> {
-                // Ir a la pantalla de gestión de plantillas
-                val intent = Intent(this, LabelTemplatesActivity::class.java)
-                startActivity(intent)
-            }
-            R.id.nav_change_user -> {
-                // Volver a la pantalla de selección de usuario
-                val intent = Intent(this, UserSelectionActivity::class.java)
-                startActivity(intent)
-                finish()
+            R.id.nav_settings -> {
+                Toast.makeText(this, "Configuración no implementada", Toast.LENGTH_SHORT).show()
             }
             R.id.nav_logout -> {
-                // Cerrar sesión y volver a login
-                viewModel.logout()
-                val intent = Intent(this, LoginActivity::class.java)
-                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
-                startActivity(intent)
-                finish()
+                logout()
             }
         }
         
@@ -302,13 +293,52 @@ class MainActivity : AppCompatActivity(), TaskAdapter.OnTaskClickListener, Navig
     }
     
     /**
-     * Comportamiento al pulsar el botón Atrás
+     * Cierra la sesión del usuario
      */
+    private fun logout() {
+        viewModel.logout()
+        
+        // Navegar a LoginActivity
+        val intent = Intent(this, LoginActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP
+        startActivity(intent)
+        finish()
+    }
+    
+    /**
+     * Maneja los clics en las tareas
+     */
+    override fun onTaskClick(task: Task) {
+        viewModel.selectTask(task)
+    }
+    
+    /**
+     * Maneja los cambios de estado de las tareas
+     */
+    override fun onTaskStatusChange(task: Task, newStatus: String) {
+        viewModel.updateTaskStatus(task.id, newStatus)
+    }
+    
     override fun onBackPressed() {
         if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
             drawerLayout.closeDrawer(GravityCompat.START)
         } else {
             super.onBackPressed()
+        }
+    }
+    
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.main, menu)
+        return true
+    }
+    
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        return when (item.itemId) {
+            R.id.action_refresh -> {
+                viewModel.refreshTasks()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
         }
     }
 }

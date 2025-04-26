@@ -1,5 +1,6 @@
 package com.productiva.android.adapters
 
+import android.graphics.BitmapFactory
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,17 +11,19 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.productiva.android.R
 import com.productiva.android.model.TaskCompletion
+import java.io.File
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 
 /**
  * Adaptador para mostrar completaciones de tareas en un RecyclerView
  */
-class CompletionAdapter : ListAdapter<TaskCompletion, CompletionAdapter.CompletionViewHolder>(CompletionDiffCallback()) {
+class CompletionAdapter :
+    ListAdapter<TaskCompletion, CompletionAdapter.CompletionViewHolder>(COMPLETION_COMPARATOR) {
     
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CompletionViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_completion, parent, false)
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.item_completion, parent, false)
         return CompletionViewHolder(view)
     }
     
@@ -30,86 +33,94 @@ class CompletionAdapter : ListAdapter<TaskCompletion, CompletionAdapter.Completi
     }
     
     /**
-     * ViewHolder para las completaciones
+     * ViewHolder para mostrar una completación de tarea
      */
     inner class CompletionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val dateTextView: TextView = itemView.findViewById(R.id.completion_date)
-        private val userTextView: TextView = itemView.findViewById(R.id.completion_user)
-        private val notesTextView: TextView = itemView.findViewById(R.id.completion_notes)
-        private val statusTextView: TextView = itemView.findViewById(R.id.completion_status)
-        private val timeSpentTextView: TextView = itemView.findViewById(R.id.completion_time_spent)
-        private val clientNameTextView: TextView = itemView.findViewById(R.id.completion_client_name)
-        private val hasSignatureIcon: ImageView = itemView.findViewById(R.id.has_signature_icon)
-        private val hasPhotoIcon: ImageView = itemView.findViewById(R.id.has_photo_icon)
+        private val userNameText: TextView = itemView.findViewById(R.id.user_name_text)
+        private val dateText: TextView = itemView.findViewById(R.id.date_text)
+        private val notesText: TextView = itemView.findViewById(R.id.notes_text)
+        private val locationText: TextView = itemView.findViewById(R.id.location_text)
+        private val signatureImage: ImageView = itemView.findViewById(R.id.signature_image)
+        private val photoImage: ImageView = itemView.findViewById(R.id.photo_image)
+        private val signatureLabel: TextView = itemView.findViewById(R.id.signature_label)
+        private val photoLabel: TextView = itemView.findViewById(R.id.photo_label)
+        
+        private val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
         
         /**
-         * Vincula los datos de la completación con la vista
+         * Vincula los datos de la completación a la vista
          */
         fun bind(completion: TaskCompletion) {
-            // Fecha y hora
-            dateTextView.text = completion.completionDate?.let { formatDate(it) } ?: ""
+            // Información del usuario
+            userNameText.text = completion.userName ?: "Usuario desconocido"
             
-            // Usuario
-            userTextView.text = completion.userName ?: "ID: ${completion.userId}"
+            // Fecha de completación
+            dateText.text = completion.completionDate?.let { dateFormat.format(it) } ?: "Fecha desconocida"
             
             // Notas
-            notesTextView.text = completion.notes ?: itemView.context.getString(R.string.no_notes)
-            notesTextView.visibility = if (completion.notes.isNullOrEmpty()) View.GONE else View.VISIBLE
-            
-            // Estado
-            statusTextView.text = when (completion.status) {
-                "completed" -> itemView.context.getString(R.string.status_completed)
-                "in_progress" -> itemView.context.getString(R.string.status_in_progress)
-                "pending" -> itemView.context.getString(R.string.status_pending)
-                else -> completion.status
-            }
-            
-            // Tiempo empleado
-            if (completion.timeSpent != null && completion.timeSpent > 0) {
-                timeSpentTextView.text = itemView.context.getString(
-                    R.string.time_spent_minutes,
-                    completion.timeSpent
-                )
-                timeSpentTextView.visibility = View.VISIBLE
+            if (!completion.notes.isNullOrEmpty()) {
+                notesText.visibility = View.VISIBLE
+                notesText.text = completion.notes
             } else {
-                timeSpentTextView.visibility = View.GONE
+                notesText.visibility = View.GONE
             }
             
-            // Nombre del cliente
-            if (!completion.clientName.isNullOrEmpty()) {
-                clientNameTextView.text = itemView.context.getString(
-                    R.string.client_name,
-                    completion.clientName
-                )
-                clientNameTextView.visibility = View.VISIBLE
+            // Ubicación
+            if (!completion.locationName.isNullOrEmpty()) {
+                locationText.visibility = View.VISIBLE
+                locationText.text = "En: ${completion.locationName}"
             } else {
-                clientNameTextView.visibility = View.GONE
+                locationText.visibility = View.GONE
             }
             
-            // Iconos de firma y foto
-            hasSignatureIcon.visibility = if (completion.hasSignature == true) View.VISIBLE else View.GONE
-            hasPhotoIcon.visibility = if (completion.hasPhoto == true) View.VISIBLE else View.GONE
-        }
-        
-        /**
-         * Formatea una fecha para mostrarla
-         */
-        private fun formatDate(date: Date): String {
-            val format = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
-            return format.format(date)
+            // Firma
+            if (completion.hasSignature && !completion.signaturePath.isNullOrEmpty()) {
+                val signatureFile = File(completion.signaturePath)
+                if (signatureFile.exists()) {
+                    val bitmap = BitmapFactory.decodeFile(signatureFile.absolutePath)
+                    signatureImage.setImageBitmap(bitmap)
+                    signatureImage.visibility = View.VISIBLE
+                    signatureLabel.visibility = View.VISIBLE
+                } else {
+                    signatureImage.visibility = View.GONE
+                    signatureLabel.visibility = View.GONE
+                }
+            } else {
+                signatureImage.visibility = View.GONE
+                signatureLabel.visibility = View.GONE
+            }
+            
+            // Foto
+            if (completion.hasPhoto && !completion.photoPath.isNullOrEmpty()) {
+                val photoFile = File(completion.photoPath)
+                if (photoFile.exists()) {
+                    val bitmap = BitmapFactory.decodeFile(photoFile.absolutePath)
+                    photoImage.setImageBitmap(bitmap)
+                    photoImage.visibility = View.VISIBLE
+                    photoLabel.visibility = View.VISIBLE
+                } else {
+                    photoImage.visibility = View.GONE
+                    photoLabel.visibility = View.GONE
+                }
+            } else {
+                photoImage.visibility = View.GONE
+                photoLabel.visibility = View.GONE
+            }
         }
     }
     
-    /**
-     * DiffUtil para comparar completaciones eficientemente
-     */
-    class CompletionDiffCallback : DiffUtil.ItemCallback<TaskCompletion>() {
-        override fun areItemsTheSame(oldItem: TaskCompletion, newItem: TaskCompletion): Boolean {
-            return oldItem.id == newItem.id
-        }
-        
-        override fun areContentsTheSame(oldItem: TaskCompletion, newItem: TaskCompletion): Boolean {
-            return oldItem == newItem
+    companion object {
+        /**
+         * Comparador para detectar cambios en la lista
+         */
+        private val COMPLETION_COMPARATOR = object : DiffUtil.ItemCallback<TaskCompletion>() {
+            override fun areItemsTheSame(oldItem: TaskCompletion, newItem: TaskCompletion): Boolean {
+                return oldItem.id == newItem.id
+            }
+            
+            override fun areContentsTheSame(oldItem: TaskCompletion, newItem: TaskCompletion): Boolean {
+                return oldItem == newItem
+            }
         }
     }
 }

@@ -3,12 +3,11 @@ package com.productiva.android.activities
 import android.content.Intent
 import android.graphics.Bitmap
 import android.os.Bundle
+import android.view.Menu
 import android.view.MenuItem
-import android.view.View
 import android.widget.Button
-import android.widget.EditText
-import android.widget.ProgressBar
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.ViewModelProvider
@@ -17,143 +16,172 @@ import com.productiva.android.view.SignatureView
 import com.productiva.android.viewmodel.SignatureViewModel
 
 /**
- * Activity para capturar la firma del cliente
+ * Actividad para capturar firmas
  */
 class SignatureActivity : AppCompatActivity() {
     
+    companion object {
+        const val EXTRA_SIGNATURE_PATH = "extra_signature_path"
+        const val EXTRA_TASK_ID = "extra_task_id"
+    }
+    
     private lateinit var viewModel: SignatureViewModel
     
-    // Componentes de UI
+    // UI components
     private lateinit var toolbar: Toolbar
     private lateinit var signatureView: SignatureView
     private lateinit var clearButton: Button
     private lateinit var saveButton: Button
-    private lateinit var clientNameEditText: EditText
-    private lateinit var progressBar: ProgressBar
     
-    // Datos de la tarea
+    // Task ID
     private var taskId: Int = -1
-    private var notes: String? = null
-    private var timeSpent: Int? = null
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_signature)
         
-        // Obtener datos de la tarea
-        taskId = intent.getIntExtra("task_id", -1)
-        notes = intent.getStringExtra("notes")
-        timeSpent = intent.getIntExtra("time_spent", -1).takeIf { it != -1 }
+        // Initialize UI components
+        toolbar = findViewById(R.id.toolbar)
+        signatureView = findViewById(R.id.signature_view)
+        clearButton = findViewById(R.id.clear_button)
+        saveButton = findViewById(R.id.save_button)
         
-        if (taskId == -1) {
-            Toast.makeText(this, R.string.error_task_not_found, Toast.LENGTH_LONG).show()
-            finish()
-            return
-        }
+        // Setup ActionBar
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayShowHomeEnabled(true)
+        supportActionBar?.title = "Firma"
         
-        // Inicializar ViewModel
+        // Get task ID if available
+        taskId = intent.getIntExtra(EXTRA_TASK_ID, -1)
+        
+        // Initialize ViewModel
         viewModel = ViewModelProvider(this).get(SignatureViewModel::class.java)
         
-        // Configurar información de la tarea
-        viewModel.setTaskCompletionData(taskId, notes, timeSpent, null)
+        // Set button click listeners
+        setupButtons()
         
-        // Configurar componentes de UI
-        setupUI()
-        
-        // Configurar observadores
+        // Set observers
         setupObservers()
     }
     
     /**
-     * Configura las referencias y eventos de UI
+     * Configura los botones
      */
-    private fun setupUI() {
-        toolbar = findViewById(R.id.toolbar)
-        setSupportActionBar(toolbar)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        title = getString(R.string.capture_signature)
-        
-        signatureView = findViewById(R.id.signature_view)
-        clearButton = findViewById(R.id.clear_button)
-        saveButton = findViewById(R.id.save_button)
-        clientNameEditText = findViewById(R.id.client_name_edittext)
-        progressBar = findViewById(R.id.progressBar)
-        
-        // Configurar eventos de botones
+    private fun setupButtons() {
+        // Clear button
         clearButton.setOnClickListener {
             signatureView.clear()
         }
         
+        // Save button
         saveButton.setOnClickListener {
-            if (signatureView.isEmpty()) {
-                Toast.makeText(this, R.string.error_empty_signature, Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
+            if (signatureView.isEmpty) {
+                Toast.makeText(this, "La firma no puede estar vacía", Toast.LENGTH_SHORT).show()
+            } else {
+                saveSignature()
             }
-            
-            val clientName = clientNameEditText.text.toString().trim().takeIf { it.isNotEmpty() }
-            
-            // Actualizar nombre del cliente en ViewModel
-            viewModel.setTaskCompletionData(taskId, notes, timeSpent, clientName)
-            
-            // Obtener bitmap de la firma y guardarlo
-            val signatureBitmap = signatureView.getSignatureBitmap()
-            viewModel.saveSignatureAndCompleteTask(signatureBitmap)
         }
     }
     
     /**
-     * Configura los observadores de LiveData
+     * Configura los observadores para el ViewModel
      */
     private fun setupObservers() {
-        // Observar estado de carga
-        viewModel.isLoading.observe(this) { isLoading ->
-            progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-            saveButton.isEnabled = !isLoading
-            clearButton.isEnabled = !isLoading
-        }
-        
-        // Observar mensajes de error
-        viewModel.errorMessage.observe(this) { errorMessage ->
-            if (errorMessage.isNotEmpty()) {
-                Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
+        // Observe signature file path
+        viewModel.signatureFilePath.observe(this) { path ->
+            if (!path.isNullOrEmpty()) {
+                returnResult(path)
             }
         }
         
-        // Observar estado de firma
-        viewModel.signatureState.observe(this) { state ->
-            when (state) {
-                is SignatureViewModel.SignatureState.Success -> {
-                    Toast.makeText(this, R.string.signature_saved_successfully, Toast.LENGTH_SHORT).show()
-                    
-                    // Volver a la pantalla de detalles
-                    val intent = Intent(this, TaskDetailActivity::class.java)
-                    intent.putExtra("task_id", taskId)
-                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                    startActivity(intent)
-                    finish()
-                }
-                is SignatureViewModel.SignatureState.Error -> {
-                    Toast.makeText(this, state.message, Toast.LENGTH_LONG).show()
-                }
-                else -> {
-                    // No hacer nada con el estado inicial
-                }
+        // Observe error messages
+        viewModel.errorMessage.observe(this) { message ->
+            if (!message.isNullOrEmpty()) {
+                showError(message)
             }
         }
     }
     
     /**
-     * Maneja las selecciones en el menú de opciones
+     * Guarda la firma como imagen
      */
+    private fun saveSignature() {
+        val bitmap = signatureView.getSignatureBitmap()
+        if (bitmap != null) {
+            val savedFile = viewModel.saveSignature(bitmap, if (taskId != -1) taskId else 0)
+            
+            if (savedFile == null) {
+                showError("Error al guardar la firma")
+            }
+        } else {
+            showError("Error al capturar la firma")
+        }
+    }
+    
+    /**
+     * Retorna el resultado a la actividad que llamó
+     */
+    private fun returnResult(signaturePath: String) {
+        val resultIntent = Intent().apply {
+            putExtra(EXTRA_SIGNATURE_PATH, signaturePath)
+        }
+        setResult(RESULT_OK, resultIntent)
+        finish()
+    }
+    
+    /**
+     * Muestra un mensaje de error
+     */
+    private fun showError(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+    }
+    
+    /**
+     * Muestra diálogo de confirmación al salir sin guardar
+     */
+    private fun showExitConfirmationDialog() {
+        if (!signatureView.isEmpty) {
+            AlertDialog.Builder(this)
+                .setTitle("Firma sin guardar")
+                .setMessage("¿Estás seguro de que quieres salir? La firma no se guardará.")
+                .setPositiveButton("Salir") { _, _ -> finish() }
+                .setNegativeButton("Cancelar", null)
+                .show()
+        } else {
+            finish()
+        }
+    }
+    
+    override fun onSupportNavigateUp(): Boolean {
+        showExitConfirmationDialog()
+        return true
+    }
+    
+    override fun onBackPressed() {
+        showExitConfirmationDialog()
+    }
+    
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.signature, menu)
+        return true
+    }
+    
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
-            android.R.id.home -> {
-                onBackPressed()
+            R.id.action_clear -> {
+                signatureView.clear()
+                true
+            }
+            R.id.action_save -> {
+                if (signatureView.isEmpty) {
+                    Toast.makeText(this, "La firma no puede estar vacía", Toast.LENGTH_SHORT).show()
+                } else {
+                    saveSignature()
+                }
                 true
             }
             else -> super.onOptionsItemSelected(item)
         }
     }
-    
-    // La clase SignatureView se ha movido a un archivo separado en el paquete com.productiva.android.view
 }

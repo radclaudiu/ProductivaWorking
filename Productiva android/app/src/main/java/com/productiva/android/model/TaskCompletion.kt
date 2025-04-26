@@ -1,14 +1,15 @@
 package com.productiva.android.model
 
 import androidx.room.Entity
-import androidx.room.PrimaryKey
 import androidx.room.ForeignKey
 import androidx.room.Index
+import androidx.room.PrimaryKey
 import com.google.gson.annotations.SerializedName
+import java.util.Date
 
 /**
- * Modelo de datos para completados de tareas
- * Representa el registro de una tarea completada en el sistema Productiva
+ * Modelo de completado de tarea
+ * Representa el registro de finalización de una tarea, incluyendo firmas e imágenes
  */
 @Entity(
     tableName = "task_completions",
@@ -26,39 +27,30 @@ data class TaskCompletion(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     
-    @SerializedName("task_id")
+    // Relación con tarea
     val taskId: Int,
     
-    @SerializedName("user_id")
-    val userId: Int,
+    // Datos del completado
+    @SerializedName("completed_by")
+    val completedBy: Int? = null,
+    @SerializedName("completed_at")
+    val completedAt: Date? = null,
+    val comments: String? = null,
     
-    @SerializedName("location_id")
-    val locationId: Int,
-    
-    @SerializedName("completion_date")
-    val completionDate: String,
-    
-    @SerializedName("notes")
-    val notes: String? = null,
-    
+    // Archivos adjuntos
+    @SerializedName("signature_path")
+    val signaturePath: String? = null,
     @SerializedName("photo_path")
     val photoPath: String? = null,
     
-    @SerializedName("signature_path")
-    val signaturePath: String? = null,
+    // Geolocalización
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     
-    @SerializedName("sync_status")
-    var syncStatus: Int = SYNC_PENDING,
-    
-    @SerializedName("server_id")
-    var serverId: Int? = null,
-    
-    @SerializedName("last_sync")
-    var lastSync: Long = System.currentTimeMillis()
-) {
-    companion object {
-        const val SYNC_PENDING = 0
-        const val SYNC_COMPLETE = 1
-        const val SYNC_ERROR = 2
-    }
-}
+    // Estado del registro
+    val synced: Boolean = false,
+    @SerializedName("is_local_only")
+    val isLocalOnly: Boolean = true,
+    @SerializedName("last_synced")
+    val lastSynced: Date? = null
+)

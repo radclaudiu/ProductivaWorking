@@ -3,52 +3,53 @@ package com.productiva.android.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.google.gson.annotations.SerializedName
+import java.util.Date
 
 /**
- * Modelo de datos para tareas
- * Representa una tarea del sistema Productiva
+ * Modelo de tarea
+ * Representa las tareas asignadas a los empleados
  */
 @Entity(tableName = "tasks")
 data class Task(
     @PrimaryKey
     val id: Int,
     
-    @SerializedName("title")
+    // Información básica
     val title: String,
-    
-    @SerializedName("description")
     val description: String? = null,
     
-    @SerializedName("company_id")
-    val companyId: Int,
+    // Asignación
+    @SerializedName("assigned_to")
+    val assignedTo: Int? = null,
+    @SerializedName("created_by")
+    val createdBy: Int? = null,
     
+    // Ubicación y empresa
     @SerializedName("location_id")
-    val locationId: Int,
+    val locationId: Int? = null,
+    @SerializedName("company_id")
+    val companyId: Int? = null,
     
-    @SerializedName("frequency")
-    val frequency: String,
+    // Fechas
+    @SerializedName("created_at")
+    val createdAt: Date? = null,
+    @SerializedName("updated_at")
+    val updatedAt: Date? = null,
+    @SerializedName("due_date")
+    val dueDate: Date? = null,
     
-    @SerializedName("needs_photo")
-    val needsPhoto: Boolean = false,
+    // Estado
+    val status: String,
+    val priority: Int = 1,
     
-    @SerializedName("needs_signature")
-    val needsSignature: Boolean = false,
+    // Metadatos
+    val tags: String? = null,
+    val category: String? = null,
     
-    @SerializedName("print_label")
-    val printLabel: Boolean = false,
-    
-    @SerializedName("is_active")
-    val isActive: Boolean = true,
-    
-    @SerializedName("created_date")
-    val createdDate: String? = null,
-    
-    @SerializedName("priority")
-    val priority: Int = 0,
-    
-    @SerializedName("label_template_id")
-    val labelTemplateId: Int? = null,
-    
-    @SerializedName("last_sync")
-    var lastSync: Long = System.currentTimeMillis()
+    // Campos de control
+    @SerializedName("last_synced")
+    val lastSynced: Date? = null,
+    val synced: Boolean = false,
+    @SerializedName("is_local_only")
+    val isLocalOnly: Boolean = false
 )

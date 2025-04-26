@@ -5,35 +5,40 @@ import androidx.room.PrimaryKey
 import com.google.gson.annotations.SerializedName
 
 /**
- * Modelo de datos para usuarios
- * Representa un usuario del sistema Productiva
+ * Modelo de usuario
+ * Representa tanto a usuarios de autenticación como perfiles de empleados
  */
 @Entity(tableName = "users")
 data class User(
     @PrimaryKey
     val id: Int,
     
-    @SerializedName("username")
+    // Datos de autenticación
     val username: String,
+    val email: String? = null,
     
-    @SerializedName("name")
-    val name: String?,
+    // Datos personales
+    val name: String? = null,
+    val lastName: String? = null,
+    @SerializedName("profile_image")
+    val profileImage: String? = null,
+    val phone: String? = null,
+    val address: String? = null,
     
-    @SerializedName("email")
-    val email: String?,
-    
-    @SerializedName("role")
+    // Rol en el sistema
     val role: String,
     
-    @SerializedName("profile_id")
-    val profileId: Int?,
-    
-    @SerializedName("location_id")
-    val locationId: Int?,
-    
+    // Datos organizacionales
     @SerializedName("company_id")
-    val companyId: Int?,
+    val companyId: Int? = null,
+    @SerializedName("location_id")
+    val locationId: Int? = null,
     
-    @SerializedName("last_sync")
-    var lastSync: Long = System.currentTimeMillis()
+    // Información laboral
+    val position: String? = null,
+    @SerializedName("employee_id")
+    val employeeId: String? = null,
+    
+    // Estado
+    val active: Boolean = true
 )

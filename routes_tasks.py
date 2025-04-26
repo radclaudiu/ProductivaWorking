@@ -347,12 +347,21 @@ def view_location(id):
     # Obtener tareas para hoy
     today = date.today()
     active_tasks = []
-    pending_tasks = Task.query.filter_by(location_id=location.id, status=TaskStatus.PENDIENTE).all()
-    completed_tasks = Task.query.filter_by(location_id=location.id, status=TaskStatus.COMPLETADA).all()
+    pending_tasks = []
     
-    for task in pending_tasks:
-        if task.is_due_today():
-            active_tasks.append(task)
+    # Obtener todas las tareas del local
+    location_tasks = Task.query.filter_by(location_id=location.id).all()
+    
+    # Clasificar tareas según su estado
+    completed_tasks = []
+    for task in location_tasks:
+        if task.status == TaskStatus.COMPLETADA:
+            completed_tasks.append(task)
+        elif task.status == TaskStatus.PENDIENTE:
+            pending_tasks.append(task)
+            # Si además está programada para hoy, es una tarea activa
+            if task.is_due_today():
+                active_tasks.append(task)
     
     # Obtener usuarios locales
     local_users = LocalUser.query.filter_by(location_id=location.id).all()

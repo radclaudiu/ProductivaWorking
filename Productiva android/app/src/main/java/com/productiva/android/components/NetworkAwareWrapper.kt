@@ -1,12 +1,23 @@
 package com.productiva.android.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -14,123 +25,142 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.productiva.android.utils.ApiConnectionChecker
+import com.productiva.android.ui.theme.ProductivaRed
+import com.productiva.android.utils.ConnectionState
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collect
 
 /**
- * Componente wrapper que muestra estado de conexión y mensaje apropiado para trabajar offline.
- * Este componente gestiona automáticamente la visualización de banners de estado de conexión.
+ * Componente que envuelve el contenido y muestra una barra de estado de conexión
+ * cuando el dispositivo está offline o cuando está verificando la conexión.
  */
 @Composable
 fun NetworkAwareWrapper(
-    connectionState: ApiConnectionChecker.ConnectionResult,
+    connectionState: ConnectionState,
     isCheckingConnection: Boolean = false,
-    showOfflineBanner: Boolean = true,
-    showConnectionStatusBar: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    // Determinar si estamos offline basado en el estado de conexión
-    val isOffline = when (connectionState) {
-        is ApiConnectionChecker.ConnectionResult.NoInternet,
-        is ApiConnectionChecker.ConnectionResult.ServerUnavailable,
-        is ApiConnectionChecker.ConnectionResult.Timeout -> true
-        else -> false
+    // Estado de la barra de offline
+    var showOfflineBanner by remember { mutableStateOf(false) }
+    
+    // Ocultar la barra después de un tiempo cuando se reconecta
+    LaunchedEffect(connectionState.isConnected) {
+        if (!connectionState.isConnected) {
+            showOfflineBanner = true
+        } else if (showOfflineBanner) {
+            // Esperar un momento antes de ocultar la barra
+            delay(3000)
+            showOfflineBanner = false
+        }
     }
     
-    // Determinar si el servidor está caído específicamente
-    val isServerDown = connectionState is ApiConnectionChecker.ConnectionResult.ServerUnavailable
-    
-    // UI principal con banners de estado
-    Column {
-        // Barra de estado de conexión (si está activada)
-        if (showConnectionStatusBar) {
-            ConnectionStatusBar(
-                connectionStatus = connectionState,
-                visible = connectionState !is ApiConnectionChecker.ConnectionResult.Connected
-            )
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Barra de estado de conexión
+        AnimatedVisibility(
+            visible = !connectionState.isConnected || showOfflineBanner,
+            enter = slideInVertically() + expandVertically() + fadeIn(),
+            exit = slideOutVertically() + shrinkVertically() + fadeOut()
+        ) {
+            ConnectionStatusBar(connectionState = connectionState)
         }
         
-        // Banner de modo offline (si está activado)
-        if (showOfflineBanner) {
-            OfflineBanner(
-                isOffline = isOffline,
-                isServerUnavailable = isServerDown
-            )
+        // Barra de verificación de conexión
+        AnimatedVisibility(
+            visible = isCheckingConnection,
+            enter = slideInVertically() + expandVertically() + fadeIn(),
+            exit = slideOutVertically() + shrinkVertically() + fadeOut()
+        ) {
+            SyncStatusIndicator()
         }
         
         // Contenido principal
-        Box(modifier = Modifier.fillMaxSize()) {
-            if (isCheckingConnection) {
-                // Mostrar indicador de carga mientras se verifica la conexión
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                    color = MaterialTheme.colorScheme.primary
-                )
-            } else {
-                // Mostrar el contenido principal
-                content()
+        Box(modifier = Modifier.weight(1f)) {
+            content()
+            
+            // Overlay cuando está offline
+            if (!connectionState.isConnected) {
+                OfflineBanner()
             }
         }
     }
 }
 
 /**
- * Versión del componente NetworkAwareWrapper que verifica la conexión automáticamente.
- * Realiza una verificación de estado de conexión y muestra indicadores apropiados.
+ * Barra que muestra el estado de la conexión.
  */
 @Composable
-fun AutoCheckNetworkAwareWrapper(
-    connectionChecker: ApiConnectionChecker,
-    checkOnAppear: Boolean = true,
-    showOfflineBanner: Boolean = true,
-    showConnectionStatusBar: Boolean = true,
-    checkInterval: Long = 0, // 0 = sin verificación periódica
-    content: @Composable () -> Unit
-) {
-    var connectionState by remember { 
-        mutableStateOf<ApiConnectionChecker.ConnectionResult>(
-            ApiConnectionChecker.ConnectionResult.Checking
-        ) 
+fun ConnectionStatusBar(connectionState: ConnectionState) {
+    val backgroundColor = if (connectionState.isConnected) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        ProductivaRed
     }
-    var isCheckingConnection by remember { mutableStateOf(checkOnAppear) }
     
-    // Efecto para verificar la conexión al aparecer
-    LaunchedEffect(checkOnAppear) {
-        if (checkOnAppear) {
-            isCheckingConnection = true
-            connectionChecker.checkApiConnection().collect { result ->
-                connectionState = result
-                isCheckingConnection = false
-            }
+    val message = if (connectionState.isConnected) {
+        "Conectado - ${connectionState.connectionType.name}"
+    } else {
+        "Sin conexión - Trabajando en modo offline"
+    }
+    
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = backgroundColor,
+        shadowElevation = 4.dp
+    ) {
+        Text(
+            text = message,
+            modifier = Modifier.padding(vertical = 4.dp),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onPrimary,
+            textAlign = TextAlign.Center
+        )
+    }
+}
+
+/**
+ * Banner translúcido que se muestra sobre el contenido cuando está offline.
+ */
+@Composable
+fun OfflineBanner() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Surface(
+            color = MaterialTheme.colorScheme.errorContainer,
+            shape = MaterialTheme.shapes.medium,
+            shadowElevation = 4.dp
+        ) {
+            Text(
+                text = "No hay conexión a Internet\nLos cambios se sincronizarán cuando vuelva la conexión",
+                modifier = Modifier.padding(16.dp),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                textAlign = TextAlign.Center
+            )
         }
     }
-    
-    // Efecto para verificación periódica (si está habilitada)
-    if (checkInterval > 0) {
-        LaunchedEffect(Unit) {
-            while (true) {
-                delay(checkInterval)
-                
-                // No iniciar nueva verificación si ya hay una en curso
-                if (!isCheckingConnection) {
-                    isCheckingConnection = true
-                    connectionChecker.checkApiConnection().collect { result ->
-                        connectionState = result
-                        isCheckingConnection = false
-                    }
-                }
-            }
-        }
+}
+
+/**
+ * Indicador de estado de sincronización.
+ */
+@Composable
+fun SyncStatusIndicator() {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.tertiary,
+        shadowElevation = 4.dp
+    ) {
+        Text(
+            text = "Sincronizando datos...",
+            modifier = Modifier.padding(vertical = 4.dp),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onTertiary,
+            textAlign = TextAlign.Center
+        )
     }
-    
-    // Renderizar el wrapper con el estado actual
-    NetworkAwareWrapper(
-        connectionState = connectionState,
-        isCheckingConnection = isCheckingConnection,
-        showOfflineBanner = showOfflineBanner,
-        showConnectionStatusBar = showConnectionStatusBar,
-        content = content
-    )
 }

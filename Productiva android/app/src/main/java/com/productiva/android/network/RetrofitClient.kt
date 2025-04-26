@@ -2,98 +2,100 @@ package com.productiva.android.network
 
 import android.content.Context
 import android.util.Log
-import com.productiva.android.utils.SessionManager
-import okhttp3.Interceptor
+import com.google.gson.GsonBuilder
+import com.productiva.android.BuildConfig
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 /**
- * Cliente Retrofit para realizar peticiones a la API.
+ * Cliente Retrofit que proporciona la instancia para realizar peticiones a la API.
  */
 object RetrofitClient {
     private const val TAG = "RetrofitClient"
-    private const val BASE_URL = "https://api.productiva.es/" // URL base de la API
-    private const val TIMEOUT = 30L // Timeout en segundos
     
+    // Cache de la instancia de ApiService
     private var apiService: ApiService? = null
     
     /**
-     * Obtiene una instancia del ApiService.
+     * Obtiene la URL base de la API.
+     */
+    fun getApiBaseUrl(context: Context): String {
+        // En producción, obtener la URL del BuildConfig
+        return BuildConfig.API_BASE_URL
+    }
+    
+    /**
+     * Obtiene una instancia de ApiService para realizar peticiones.
+     * 
+     * @param context Contexto de la aplicación.
+     * @return Instancia de ApiService.
      */
     fun getApiService(context: Context): ApiService {
-        if (apiService == null) {
-            apiService = createApiService(context)
+        // Si ya existe una instancia, devolverla
+        apiService?.let { return it }
+        
+        // Crear cliente OkHttp con interceptores
+        val client = createOkHttpClient()
+        
+        // Crear convertidor Gson
+        val gson = GsonBuilder()
+            .setDateFormat("yyyy-MM-dd'T'HH:mm:ss")
+            .create()
+        
+        // Crear instancia de Retrofit
+        val retrofit = Retrofit.Builder()
+            .baseUrl(getApiBaseUrl(context))
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
+        
+        // Crear instancia de ApiService
+        return retrofit.create(ApiService::class.java).also {
+            apiService = it
+            Log.d(TAG, "ApiService creado")
         }
-        return apiService!!
     }
     
     /**
-     * Crea una nueva instancia del ApiService.
+     * Crea una instancia configurada del cliente OkHttp.
+     * 
+     * @return Cliente OkHttp configurado.
      */
-    private fun createApiService(context: Context): ApiService {
-        val sessionManager = SessionManager(context)
-        
+    private fun createOkHttpClient(): OkHttpClient {
         // Interceptor para logging
-        val loggingInterceptor = HttpLoggingInterceptor { message ->
-            Log.d(TAG, message)
-        }.apply {
-            level = HttpLoggingInterceptor.Level.BODY
-        }
-        
-        // Interceptor para añadir token de autenticación
-        val authInterceptor = Interceptor { chain ->
-            val original = chain.request()
-            
-            // Obtener token de sesión
-            val token = sessionManager.getAuthToken()
-            
-            // Si hay token, añadirlo a los headers
-            val requestBuilder = if (token != null) {
-                original.newBuilder()
-                    .addHeader("Authorization", "Bearer $token")
-                    .method(original.method, original.body)
+        val loggingInterceptor = HttpLoggingInterceptor().apply {
+            level = if (BuildConfig.DEBUG) {
+                HttpLoggingInterceptor.Level.BODY
             } else {
-                original.newBuilder()
-                    .method(original.method, original.body)
+                HttpLoggingInterceptor.Level.NONE
             }
-            
-            // Añadir headers comunes
-            val request = requestBuilder
-                .addHeader("Accept", "application/json")
-                .addHeader("Content-Type", "application/json")
-                .addHeader("User-Agent", "Productiva-Android-App")
-                .build()
-            
-            chain.proceed(request)
         }
         
-        // Cliente OkHttp con interceptores
-        val client = OkHttpClient.Builder()
+        // Interceptor para añadir headers comunes
+        val headerInterceptor = HeaderInterceptor()
+        
+        // Interceptor para gestionar el token de autenticación
+        val authInterceptor = AuthInterceptor()
+        
+        // Construcción del cliente
+        return OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .writeTimeout(15, TimeUnit.SECONDS)
+            .addInterceptor(headerInterceptor)
             .addInterceptor(authInterceptor)
             .addInterceptor(loggingInterceptor)
-            .connectTimeout(TIMEOUT, TimeUnit.SECONDS)
-            .readTimeout(TIMEOUT, TimeUnit.SECONDS)
-            .writeTimeout(TIMEOUT, TimeUnit.SECONDS)
             .build()
-        
-        // Crear Retrofit
-        val retrofit = Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .client(client)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-        
-        return retrofit.create(ApiService::class.java)
     }
     
     /**
-     * Invalida la instancia actual del ApiService, forzando una nueva creación.
+     * Invalida la caché del cliente para forzar la creación de una nueva instancia.
      */
-    fun invalidate() {
+    fun invalidateCache() {
         apiService = null
+        Log.d(TAG, "Caché de ApiService invalidada")
     }
 }

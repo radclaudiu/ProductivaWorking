@@ -2,178 +2,196 @@ package com.productiva.android.utils
 
 import android.content.Context
 import android.util.Log
-import com.productiva.android.network.ApiService
 import com.productiva.android.network.RetrofitClient
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import retrofit2.Response
-import java.net.ConnectException
-import java.net.SocketTimeoutException
-import java.net.UnknownHostException
+import java.net.HttpURLConnection
+import java.net.URL
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Utilidad para verificar la conexión con el servidor de la API.
+ * Verificador de conexión a la API que comprueba periódicamente si el servidor está disponible.
+ * Proporciona información sobre si el servidor está accesible y notifica a los observadores
+ * cuando cambia el estado de la conexión.
  */
 class ApiConnectionChecker(private val context: Context) {
     
     private val TAG = "ApiConnectionChecker"
     
-    // Servicio de API
-    private val apiService: ApiService by lazy {
-        RetrofitClient.getApiService(context)
+    // Monitor de conectividad
+    private val connectivityMonitor = ConnectivityMonitor(context)
+    
+    // Estado de conexión con la API
+    private val _apiConnectionState = MutableStateFlow(getInitialConnectionState())
+    val apiConnectionState: StateFlow<ConnectionState> = _apiConnectionState
+    
+    // Indicador de comprobación en curso
+    private val isChecking = AtomicBoolean(false)
+    
+    // Trabajo de comprobación periódica
+    private var checkJob: Job? = null
+    
+    // Ámbito de corrutina para comprobaciones
+    private val checkerScope = CoroutineScope(Dispatchers.IO)
+    
+    // URL base de la API
+    private val apiBaseUrl = RetrofitClient.getApiBaseUrl(context)
+    
+    init {
+        // Observar cambios en la conectividad de red
+        connectivityMonitor.observe { isConnected ->
+            if (isConnected) {
+                // Cuando hay conexión, verificar la API
+                checkApiConnection()
+            } else {
+                // Sin conexión, actualizar estado
+                updateConnectionState(false)
+            }
+        }
     }
     
-    // Timestamp de la última verificación
-    private var lastCheckTimestamp = 0L
-    
-    // Resultado de la última verificación
-    private var lastCheckResult: ConnectionResult? = null
-    
-    // Tiempo mínimo entre verificaciones (para evitar demasiadas llamadas)
-    private val MIN_CHECK_INTERVAL = TimeUnit.MINUTES.toMillis(2)
+    /**
+     * Obtiene el estado inicial de la conexión.
+     */
+    private fun getInitialConnectionState(): ConnectionState {
+        val isConnected = connectivityMonitor.isConnected()
+        
+        return ConnectionState(
+            isConnected = isConnected,
+            connectionType = ConnectionType.UNKNOWN,
+            timestamp = System.currentTimeMillis()
+        )
+    }
     
     /**
-     * Verifica la conexión con el servidor de API.
+     * Inicia la comprobación periódica de la conexión a la API.
      * 
-     * @param forceCheck Si es true, fuerza una nueva verificación incluso si hay una reciente.
-     * @return Flow que emite un ConnectionResult con el resultado de la verificación.
+     * @param intervalMinutes Intervalo entre comprobaciones en minutos.
      */
-    fun checkApiConnection(forceCheck: Boolean = false): Flow<ConnectionResult> = flow {
-        // Comprobar si podemos usar el resultado de cache
-        val now = System.currentTimeMillis()
-        if (!forceCheck && lastCheckResult != null && (now - lastCheckTimestamp) < MIN_CHECK_INTERVAL) {
-            emit(lastCheckResult!!)
-            return@flow
+    fun startPeriodicChecks(intervalMinutes: Long = 15) {
+        // Cancelar trabajo anterior si existe
+        stopPeriodicChecks()
+        
+        // Iniciar nuevo trabajo
+        checkJob = checkerScope.launch {
+            while (true) {
+                checkApiConnection()
+                withContext(Dispatchers.IO) {
+                    // Esperar para la siguiente comprobación
+                    Thread.sleep(TimeUnit.MINUTES.toMillis(intervalMinutes))
+                }
+            }
         }
         
-        // Primero verificar si hay conexión a Internet
-        val connectivityMonitor = ConnectivityMonitor(context)
+        Log.d(TAG, "Comprobación periódica iniciada con intervalo de $intervalMinutes minutos")
+    }
+    
+    /**
+     * Detiene la comprobación periódica de la conexión a la API.
+     */
+    fun stopPeriodicChecks() {
+        checkJob?.cancel()
+        checkJob = null
+        Log.d(TAG, "Comprobación periódica detenida")
+    }
+    
+    /**
+     * Comprueba la conexión a la API.
+     * 
+     * @return true si la API está accesible, false en caso contrario.
+     */
+    fun checkApiConnection() {
+        // Evitar comprobaciones simultáneas
+        if (isChecking.getAndSet(true)) {
+            return
+        }
+        
+        // Verificar primero si hay conexión a Internet
         if (!connectivityMonitor.isConnected()) {
-            val result = ConnectionResult.NoInternet
-            lastCheckResult = result
-            lastCheckTimestamp = now
-            emit(result)
-            return@flow
+            updateConnectionState(false)
+            isChecking.set(false)
+            return
         }
         
-        // Verificar conexión al servidor
-        emit(ConnectionResult.Checking)
-        
-        try {
-            val result = withContext(Dispatchers.IO) {
-                try {
-                    // Intentar obtener información de sincronización del servidor
-                    val response = apiService.getSyncStatus()
-                    processApiResponse(response)
-                } catch (e: Exception) {
-                    handleNetworkException(e)
-                }
-            }
-            
-            lastCheckResult = result
-            lastCheckTimestamp = now
-            emit(result)
-        } catch (e: Exception) {
-            Log.e(TAG, "Error durante la verificación de API", e)
-            val result = ConnectionResult.Error("Error: ${e.message}")
-            lastCheckResult = result
-            lastCheckTimestamp = now
-            emit(result)
-        }
-    }
-    
-    /**
-     * Procesa la respuesta de la API y determina el resultado de conexión.
-     */
-    private fun <T> processApiResponse(response: Response<T>): ConnectionResult {
-        return if (response.isSuccessful) {
-            ConnectionResult.Connected(response.code())
-        } else {
-            when (response.code()) {
-                401, 403 -> ConnectionResult.AuthError(response.code(), response.message())
-                404 -> ConnectionResult.ServerError(response.code(), "Endpoint no encontrado")
-                500, 502, 503, 504 -> ConnectionResult.ServerError(
-                    response.code(),
-                    "Error en el servidor: ${response.message()}"
-                )
-                else -> ConnectionResult.Error(
-                    "Error de API: ${response.code()} - ${response.message()}"
-                )
-            }
-        }
-    }
-    
-    /**
-     * Maneja excepciones de red y determina el tipo de error.
-     */
-    private fun handleNetworkException(exception: Exception): ConnectionResult {
-        return when (exception) {
-            is SocketTimeoutException -> ConnectionResult.Timeout
-            is ConnectException -> ConnectionResult.ServerUnavailable
-            is UnknownHostException -> ConnectionResult.ServerUnavailable
-            else -> ConnectionResult.Error("Error de red: ${exception.message}")
-        }
-    }
-    
-    /**
-     * Realiza una verificación completa del estado de la API incluyendo autenticación.
-     */
-    fun checkApiWithAuth(forceCheck: Boolean = false): Flow<ConnectionResult> = flow {
-        // Verificar primero la conexión básica
-        checkApiConnection(forceCheck).collect { basicResult ->
-            if (basicResult !is ConnectionResult.Connected) {
-                emit(basicResult)
-                return@collect
-            }
-            
-            // Si está conectado, verificar la autenticación
-            val sessionManager = SessionManager(context)
-            if (!sessionManager.isLoggedIn()) {
-                emit(ConnectionResult.NotAuthenticated)
-                return@collect
-            }
-            
-            // Verificar si el token ha expirado
-            if (sessionManager.isTokenExpired()) {
-                emit(ConnectionResult.TokenExpired)
-                return@collect
-            }
-            
+        // Iniciar comprobación en segundo plano
+        checkerScope.launch {
             try {
-                // Intentar obtener información del usuario actual
-                val result = withContext(Dispatchers.IO) {
-                    try {
-                        val response = apiService.getCurrentUser()
-                        processApiResponse(response)
-                    } catch (e: Exception) {
-                        handleNetworkException(e)
-                    }
-                }
-                
-                emit(result)
+                val isApiConnected = pingApi()
+                updateConnectionState(isApiConnected)
             } catch (e: Exception) {
-                Log.e(TAG, "Error durante la verificación de autenticación", e)
-                emit(ConnectionResult.Error("Error: ${e.message}"))
+                Log.e(TAG, "Error al comprobar conexión con API", e)
+                updateConnectionState(false)
+            } finally {
+                isChecking.set(false)
             }
         }
     }
     
     /**
-     * Resultados posibles de la verificación de conexión.
+     * Realiza un ping a la API para verificar su disponibilidad.
+     * 
+     * @return true si la API está accesible, false en caso contrario.
      */
-    sealed class ConnectionResult {
-        object Checking : ConnectionResult()
-        object NoInternet : ConnectionResult()
-        object ServerUnavailable : ConnectionResult()
-        object Timeout : ConnectionResult()
-        object NotAuthenticated : ConnectionResult()
-        object TokenExpired : ConnectionResult()
-        data class Connected(val statusCode: Int) : ConnectionResult()
-        data class AuthError(val statusCode: Int, val message: String) : ConnectionResult()
-        data class ServerError(val statusCode: Int, val message: String) : ConnectionResult()
-        data class Error(val message: String) : ConnectionResult()
+    private suspend fun pingApi(): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val url = URL("$apiBaseUrl/api/ping")
+                val connection = url.openConnection() as HttpURLConnection
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+                connection.requestMethod = "GET"
+                
+                val responseCode = connection.responseCode
+                Log.d(TAG, "Código de respuesta de la API: $responseCode")
+                
+                return@withContext responseCode == HttpURLConnection.HTTP_OK
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al hacer ping a la API", e)
+                return@withContext false
+            }
+        }
+    }
+    
+    /**
+     * Actualiza el estado de conexión con la API.
+     * 
+     * @param isConnected true si la API está accesible, false en caso contrario.
+     */
+    private fun updateConnectionState(isConnected: Boolean) {
+        val currentState = _apiConnectionState.value
+        
+        // Solo actualizar si cambia el estado
+        if (currentState.isConnected != isConnected) {
+            val newState = ConnectionState(
+                isConnected = isConnected,
+                connectionType = connectivityMonitor.getCurrentConnectionState().connectionType,
+                timestamp = System.currentTimeMillis()
+            )
+            
+            _apiConnectionState.value = newState
+            Log.d(TAG, "Estado de conexión con API actualizado: $isConnected")
+        }
+    }
+    
+    /**
+     * Obtiene el estado actual de la conexión.
+     */
+    fun getCurrentConnectionState(): ConnectionState {
+        return _apiConnectionState.value
+    }
+    
+    /**
+     * Libera recursos cuando el componente que utiliza este verificador se destruye.
+     */
+    fun release() {
+        stopPeriodicChecks()
+        connectivityMonitor.release()
+        Log.d(TAG, "Verificador de conexión liberado")
     }
 }

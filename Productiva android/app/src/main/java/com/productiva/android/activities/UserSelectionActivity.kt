@@ -2,271 +2,179 @@ package com.productiva.android.activities
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.Menu
-import android.view.MenuItem
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
+import android.widget.EditText
 import android.widget.ProgressBar
-import android.widget.SearchView
-import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.productiva.android.R
 import com.productiva.android.adapters.UserAdapter
 import com.productiva.android.model.User
 import com.productiva.android.viewmodel.UserSelectionViewModel
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
 
 /**
- * Activity para seleccionar un usuario para trabajar
+ * Activity para la selección de usuario
  */
 class UserSelectionActivity : AppCompatActivity(), UserAdapter.OnUserClickListener {
     
     private lateinit var viewModel: UserSelectionViewModel
     
-    // Componentes de UI
+    // UI components
+    private lateinit var toolbar: Toolbar
+    private lateinit var titleText: TextView
+    private lateinit var searchInput: EditText
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
     private lateinit var emptyView: TextView
-    private lateinit var searchView: SearchView
-    private lateinit var companySpinner: Spinner
+    private lateinit var swipeRefreshLayout: SwipeRefreshLayout
     
-    // Adaptador para la lista de usuarios
+    // Adapter
     private lateinit var userAdapter: UserAdapter
-    
-    // Lista de empresas para el spinner
-    private val companies = mutableListOf<Pair<Int, String>>()
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_user_selection)
         
-        // Configurar toolbar
-        setSupportActionBar(findViewById(R.id.toolbar))
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        title = getString(R.string.select_user)
+        // Initialize UI components
+        toolbar = findViewById(R.id.toolbar)
+        titleText = findViewById(R.id.title_text)
+        searchInput = findViewById(R.id.search_input)
+        recyclerView = findViewById(R.id.recycler_view)
+        progressBar = findViewById(R.id.progress_bar)
+        emptyView = findViewById(R.id.empty_view)
+        swipeRefreshLayout = findViewById(R.id.swipe_refresh_layout)
         
-        // Inicializar ViewModel
+        // Setup toolbar
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setDisplayShowHomeEnabled(true)
+        
+        // Initialize ViewModel
         viewModel = ViewModelProvider(this).get(UserSelectionViewModel::class.java)
         
-        // Configurar componentes de UI
-        setupUI()
+        // Setup RecyclerView
+        setupRecyclerView()
         
-        // Configurar observadores
+        // Setup SwipeRefreshLayout
+        setupSwipeRefreshLayout()
+        
+        // Setup search
+        setupSearch()
+        
+        // Set observers
         setupObservers()
-        
-        // Cargar usuarios
-        viewModel.loadUsers()
     }
     
     /**
-     * Configura las referencias y eventos de UI
+     * Configura el RecyclerView para mostrar usuarios
      */
-    private fun setupUI() {
-        recyclerView = findViewById(R.id.usersRecyclerView)
-        progressBar = findViewById(R.id.progressBar)
-        emptyView = findViewById(R.id.emptyView)
-        searchView = findViewById(R.id.searchView)
-        companySpinner = findViewById(R.id.companySpinner)
-        
-        // Configurar RecyclerView
-        recyclerView.layoutManager = LinearLayoutManager(this)
+    private fun setupRecyclerView() {
         userAdapter = UserAdapter(this)
-        recyclerView.adapter = userAdapter
-        
-        // Configurar SearchView
-        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                filterUsers(query ?: "")
-                return true
-            }
+        recyclerView.apply {
+            layoutManager = LinearLayoutManager(this@UserSelectionActivity)
+            adapter = userAdapter
+        }
+    }
+    
+    /**
+     * Configura el SwipeRefreshLayout para actualizar la lista
+     */
+    private fun setupSwipeRefreshLayout() {
+        swipeRefreshLayout.setOnRefreshListener {
+            viewModel.refreshUsers()
+        }
+    }
+    
+    /**
+     * Configura la búsqueda de usuarios
+     */
+    private fun setupSearch() {
+        searchInput.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             
-            override fun onQueryTextChange(newText: String?): Boolean {
-                filterUsers(newText ?: "")
-                return true
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            
+            override fun afterTextChanged(s: Editable?) {
+                viewModel.setSearchQuery(s.toString())
             }
         })
-        
-        // Configurar Spinner de empresas
-        val spinnerAdapter = ArrayAdapter<String>(
-            this,
-            android.R.layout.simple_spinner_item,
-            mutableListOf("Todas las empresas")
-        )
-        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        companySpinner.adapter = spinnerAdapter
-        
-        companySpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                if (position == 0) {
-                    // Opción "Todas las empresas"
-                    viewModel.loadUsers()
-                } else {
-                    // Filtrar por empresa seleccionada
-                    val companyId = companies[position - 1].first
-                    viewModel.loadUsersByCompany(companyId)
-                }
-            }
-            
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                // No hacer nada
-            }
-        }
     }
     
     /**
-     * Configura los observadores de LiveData
+     * Configura los observadores para el ViewModel
      */
     private fun setupObservers() {
-        // Observar estado de carga
+        // Observe users list
+        viewModel.filteredUsers.observe(this) { users ->
+            if (users.isNullOrEmpty()) {
+                emptyView.visibility = View.VISIBLE
+                recyclerView.visibility = View.GONE
+            } else {
+                emptyView.visibility = View.GONE
+                recyclerView.visibility = View.VISIBLE
+                userAdapter.submitList(users)
+            }
+        }
+        
+        // Observe loading state
         viewModel.isLoading.observe(this) { isLoading ->
-            progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-        }
-        
-        // Observar mensajes de error
-        viewModel.errorMessage.observe(this) { errorMessage ->
-            if (errorMessage.isNotEmpty()) {
-                Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
+            if (isLoading) {
+                progressBar.visibility = View.VISIBLE
+            } else {
+                progressBar.visibility = View.GONE
+                swipeRefreshLayout.isRefreshing = false
             }
         }
         
-        // Observar lista de usuarios
-        viewModel.users.observe(this) { userList ->
-            updateUserList(userList)
-            updateCompaniesSpinner(userList)
+        // Observe error messages
+        viewModel.errorMessage.observe(this) { message ->
+            if (!message.isNullOrEmpty()) {
+                showError(message)
+            }
         }
         
-        // Observar usuario seleccionado
-        lifecycleScope.launch {
-            viewModel.selectedUser.collect { user ->
-                user?.let {
-                    // Navegar a la pantalla principal
-                    val intent = Intent(this@UserSelectionActivity, MainActivity::class.java)
-                    startActivity(intent)
-                    finish()
-                }
+        // Observe selected user
+        viewModel.selectedUser.observe(this) { user ->
+            user?.let {
+                navigateToMainActivity(it)
             }
         }
     }
     
     /**
-     * Actualiza la lista de usuarios en el adaptador
-     */
-    private fun updateUserList(users: List<User>) {
-        userAdapter.submitList(users)
-        
-        // Mostrar vista vacía si no hay usuarios
-        if (users.isEmpty()) {
-            emptyView.visibility = View.VISIBLE
-            recyclerView.visibility = View.GONE
-        } else {
-            emptyView.visibility = View.GONE
-            recyclerView.visibility = View.VISIBLE
-        }
-        
-        // Comprobar si hay un usuario seleccionado previamente
-        val lastSelectedUserId = viewModel.getLastSelectedUserId()
-        if (lastSelectedUserId != -1) {
-            val user = users.find { it.id == lastSelectedUserId }
-            if (user != null) {
-                // Si encontramos el usuario, seleccionarlo automáticamente
-                viewModel.selectUser(user)
-            }
-        }
-    }
-    
-    /**
-     * Actualiza el spinner de empresas basado en los usuarios disponibles
-     */
-    private fun updateCompaniesSpinner(users: List<User>) {
-        // Extraer empresas únicas
-        val uniqueCompanies = users
-            .map { Pair(it.companyId, it.companyName) }
-            .distinctBy { it.first }
-            .sortedBy { it.second }
-        
-        companies.clear()
-        companies.addAll(uniqueCompanies)
-        
-        // Actualizar adaptador del spinner
-        val companyNames = mutableListOf("Todas las empresas")
-        companyNames.addAll(companies.map { it.second })
-        
-        val spinnerAdapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_item,
-            companyNames
-        )
-        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        
-        companySpinner.adapter = spinnerAdapter
-    }
-    
-    /**
-     * Filtra los usuarios por texto de búsqueda
-     */
-    private fun filterUsers(query: String) {
-        val filteredUsers = viewModel.filterUsers(query)
-        userAdapter.submitList(filteredUsers)
-        
-        // Mostrar vista vacía si no hay resultados
-        if (filteredUsers.isEmpty()) {
-            emptyView.visibility = View.VISIBLE
-            emptyView.text = getString(R.string.no_results_found)
-            recyclerView.visibility = View.GONE
-        } else {
-            emptyView.visibility = View.GONE
-            recyclerView.visibility = View.VISIBLE
-        }
-    }
-    
-    /**
-     * Maneja el clic en un usuario
+     * Manejador para cuando se hace clic en un usuario
      */
     override fun onUserClick(user: User) {
         viewModel.selectUser(user)
     }
     
     /**
-     * Infla el menú de opciones
+     * Navega a la actividad principal con el usuario seleccionado
      */
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.user_selection_menu, menu)
-        return true
+    private fun navigateToMainActivity(user: User) {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            putExtra(MainActivity.EXTRA_USER_ID, user.id)
+        }
+        startActivity(intent)
     }
     
     /**
-     * Maneja las selecciones en el menú de opciones
+     * Muestra un mensaje de error
      */
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            android.R.id.home -> {
-                // Volver a la pantalla de login
-                val intent = Intent(this, LoginActivity::class.java)
-                startActivity(intent)
-                finish()
-                true
-            }
-            R.id.action_sync -> {
-                // Sincronizar usuarios
-                viewModel.syncUsers()
-                true
-            }
-            R.id.action_logout -> {
-                // Cerrar sesión y volver a la pantalla de login
-                val intent = Intent(this, LoginActivity::class.java)
-                startActivity(intent)
-                finish()
-                true
-            }
-            else -> super.onOptionsItemSelected(item)
-        }
+    private fun showError(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+    }
+    
+    override fun onSupportNavigateUp(): Boolean {
+        onBackPressed()
+        return true
     }
 }

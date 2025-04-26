@@ -4,248 +4,230 @@ import android.content.Context
 import androidx.lifecycle.LiveData
 import com.productiva.android.api.ApiClient
 import com.productiva.android.api.ApiResponse
-import com.productiva.android.dao.LabelTemplateDao
 import com.productiva.android.database.AppDatabase
+import com.productiva.android.database.LabelTemplateDao
 import com.productiva.android.model.LabelTemplate
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import retrofit2.Response
+import java.util.Date
 
 /**
- * Repositorio para manejar operaciones relacionadas con plantillas de etiquetas
+ * Repositorio para gestionar plantillas de etiquetas
  */
-class LabelTemplateRepository(private val context: Context) {
+class LabelTemplateRepository(context: Context) {
     
-    private val labelTemplateDao: LabelTemplateDao = AppDatabase.getDatabase(context).labelTemplateDao()
     private val apiClient = ApiClient.getInstance(context)
+    private val templateDao: LabelTemplateDao
+    
+    init {
+        val database = AppDatabase.getInstance(context)
+        templateDao = database.labelTemplateDao()
+    }
     
     /**
-     * Obtiene todas las plantillas como LiveData desde la base de datos local
+     * Obtiene todas las plantillas
      */
     fun getAllTemplates(): LiveData<List<LabelTemplate>> {
-        return labelTemplateDao.getAllTemplates()
+        return templateDao.getAllTemplates()
     }
     
     /**
-     * Obtiene las plantillas por usuario como LiveData desde la base de datos local
+     * Obtiene una plantilla por su ID
+     */
+    suspend fun getTemplateById(templateId: Int): LabelTemplate? {
+        return withContext(Dispatchers.IO) {
+            templateDao.getTemplateById(templateId)
+        }
+    }
+    
+    /**
+     * Obtiene plantillas por usuario
      */
     fun getTemplatesByUser(userId: Int): LiveData<List<LabelTemplate>> {
-        return labelTemplateDao.getTemplatesByUser(userId)
+        return templateDao.getTemplatesByUser(userId)
     }
     
     /**
-     * Obtiene las plantillas por compañía como LiveData desde la base de datos local
+     * Obtiene plantillas por empresa
      */
     fun getTemplatesByCompany(companyId: Int): LiveData<List<LabelTemplate>> {
-        return labelTemplateDao.getTemplatesByCompany(companyId)
+        return templateDao.getTemplatesByCompany(companyId)
     }
     
     /**
-     * Obtiene una plantilla por su ID desde la base de datos local
+     * Busca plantillas por nombre o descripción
      */
-    suspend fun getTemplateById(templateId: Int): LabelTemplate? = withContext(Dispatchers.IO) {
-        return@withContext labelTemplateDao.getTemplateById(templateId)
+    fun searchTemplates(query: String): LiveData<List<LabelTemplate>> {
+        return templateDao.searchTemplates(query)
     }
     
     /**
-     * Obtiene la plantilla predeterminada desde la base de datos local
+     * Inserta una plantilla
      */
-    suspend fun getDefaultTemplate(): LabelTemplate? = withContext(Dispatchers.IO) {
-        return@withContext labelTemplateDao.getDefaultTemplate()
-    }
-    
-    /**
-     * Establece una plantilla como predeterminada
-     */
-    suspend fun setDefaultTemplate(templateId: Int): Result<Boolean> = withContext(Dispatchers.IO) {
-        try {
-            labelTemplateDao.clearDefaultTemplates()
-            labelTemplateDao.setDefaultTemplate(templateId)
-            return@withContext Result.success(true)
-        } catch (e: Exception) {
-            return@withContext Result.failure(e)
+    suspend fun insertTemplate(template: LabelTemplate): Long {
+        return withContext(Dispatchers.IO) {
+            templateDao.insert(template)
         }
     }
     
     /**
-     * Obtiene las plantillas desde el servidor y las almacena localmente
+     * Actualiza una plantilla
      */
-    suspend fun fetchLabelTemplates(): Result<List<LabelTemplate>> = withContext(Dispatchers.IO) {
-        try {
-            val response: Response<ApiResponse<List<LabelTemplate>>> = apiClient.apiService.getLabelTemplates()
-            
-            if (response.isSuccessful) {
-                val apiResponse = response.body()
-                if (apiResponse != null && apiResponse.success && apiResponse.data != null) {
-                    // Guarda las plantillas en la base de datos local
-                    labelTemplateDao.insertAll(apiResponse.data)
-                    return@withContext Result.success(apiResponse.data)
-                } else {
-                    return@withContext Result.failure(Exception(apiResponse?.message ?: "Error en la respuesta"))
-                }
-            } else {
-                return@withContext Result.failure(Exception("Error al obtener plantillas: ${response.code()}"))
+    suspend fun updateTemplate(template: LabelTemplate): Int {
+        return withContext(Dispatchers.IO) {
+            templateDao.update(template)
+        }
+    }
+    
+    /**
+     * Elimina una plantilla
+     */
+    suspend fun deleteTemplate(templateId: Int): Int {
+        return withContext(Dispatchers.IO) {
+            templateDao.deleteTemplateById(templateId)
+        }
+    }
+    
+    /**
+     * Obtiene una plantilla por su ID desde la API
+     */
+    suspend fun fetchTemplateById(templateId: Int): Result<LabelTemplate> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiClient.apiService.getLabelTemplateById(templateId)
+                handleTemplateResponse(response)
+            } catch (e: Exception) {
+                Result.failure(e)
             }
-        } catch (e: Exception) {
-            return@withContext Result.failure(e)
         }
     }
     
     /**
-     * Obtiene las plantillas por usuario desde el servidor
+     * Obtiene plantillas desde la API y las guarda en la base de datos local
      */
-    suspend fun fetchLabelTemplatesByUser(userId: Int): Result<List<LabelTemplate>> = withContext(Dispatchers.IO) {
-        try {
-            val response = apiClient.apiService.getLabelTemplatesByUser(userId)
-            
-            if (response.isSuccessful) {
-                val apiResponse = response.body()
-                if (apiResponse != null && apiResponse.success && apiResponse.data != null) {
-                    // Guarda las plantillas en la base de datos local
-                    labelTemplateDao.insertAll(apiResponse.data)
-                    return@withContext Result.success(apiResponse.data)
-                } else {
-                    return@withContext Result.failure(Exception(apiResponse?.message ?: "Error en la respuesta"))
+    suspend fun fetchTemplates(userId: Int? = null, companyId: Int? = null): Result<List<LabelTemplate>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiClient.apiService.getLabelTemplates(userId, companyId)
+                
+                if (response.isSuccessful && response.body()?.success == true) {
+                    response.body()?.data?.let { templates ->
+                        templateDao.insertAll(templates)
+                        return@withContext Result.success(templates)
+                    }
                 }
-            } else {
-                return@withContext Result.failure(Exception("Error al obtener plantillas: ${response.code()}"))
+                
+                Result.failure(Exception(response.message() ?: "Error al obtener plantillas"))
+            } catch (e: Exception) {
+                Result.failure(e)
             }
-        } catch (e: Exception) {
-            return@withContext Result.failure(e)
         }
     }
     
     /**
-     * Obtiene las plantillas por compañía desde el servidor
+     * Crea una nueva plantilla en la API
      */
-    suspend fun fetchLabelTemplatesByCompany(companyId: Int): Result<List<LabelTemplate>> = withContext(Dispatchers.IO) {
-        try {
-            val response = apiClient.apiService.getLabelTemplatesByCompany(companyId)
-            
-            if (response.isSuccessful) {
-                val apiResponse = response.body()
-                if (apiResponse != null && apiResponse.success && apiResponse.data != null) {
-                    // Guarda las plantillas en la base de datos local
-                    labelTemplateDao.insertAll(apiResponse.data)
-                    return@withContext Result.success(apiResponse.data)
-                } else {
-                    return@withContext Result.failure(Exception(apiResponse?.message ?: "Error en la respuesta"))
-                }
-            } else {
-                return@withContext Result.failure(Exception("Error al obtener plantillas: ${response.code()}"))
+    suspend fun createTemplate(template: LabelTemplate): Result<LabelTemplate> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiClient.apiService.createLabelTemplate(template)
+                handleTemplateResponse(response)
+            } catch (e: Exception) {
+                Result.failure(e)
             }
-        } catch (e: Exception) {
-            return@withContext Result.failure(e)
         }
     }
     
     /**
-     * Crea una nueva plantilla en el servidor y localmente
+     * Actualiza una plantilla existente en la API
      */
-    suspend fun createLabelTemplate(template: LabelTemplate): Result<LabelTemplate> = withContext(Dispatchers.IO) {
-        try {
-            val response = apiClient.apiService.createLabelTemplate(template)
-            
-            if (response.isSuccessful) {
-                val apiResponse = response.body()
-                if (apiResponse != null && apiResponse.success && apiResponse.data != null) {
-                    // Guarda la plantilla en la base de datos local
-                    labelTemplateDao.insert(apiResponse.data)
-                    return@withContext Result.success(apiResponse.data)
-                } else {
-                    return@withContext Result.failure(Exception(apiResponse?.message ?: "Error en la respuesta"))
-                }
-            } else {
-                return@withContext Result.failure(Exception("Error al crear plantilla: ${response.code()}"))
+    suspend fun updateTemplateOnServer(template: LabelTemplate): Result<LabelTemplate> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiClient.apiService.updateLabelTemplate(template.id, template)
+                handleTemplateResponse(response)
+            } catch (e: Exception) {
+                Result.failure(e)
             }
-        } catch (e: Exception) {
-            // Si hay un error de conexión, guardamos localmente y marcamos para sincronizar después
-            val templateWithSyncFlag = template.copy(isSynced = false, lastSync = System.currentTimeMillis())
-            val id = labelTemplateDao.insert(templateWithSyncFlag)
-            return@withContext Result.failure(e)
         }
     }
     
     /**
-     * Actualiza una plantilla en el servidor y localmente
+     * Elimina una plantilla en la API
      */
-    suspend fun updateLabelTemplate(template: LabelTemplate): Result<LabelTemplate> = withContext(Dispatchers.IO) {
-        try {
-            val response = apiClient.apiService.updateLabelTemplate(template.id, template)
-            
-            if (response.isSuccessful) {
-                val apiResponse = response.body()
-                if (apiResponse != null && apiResponse.success && apiResponse.data != null) {
-                    // Actualiza la plantilla en la base de datos local
-                    labelTemplateDao.update(apiResponse.data)
-                    return@withContext Result.success(apiResponse.data)
-                } else {
-                    return@withContext Result.failure(Exception(apiResponse?.message ?: "Error en la respuesta"))
-                }
-            } else {
-                return@withContext Result.failure(Exception("Error al actualizar plantilla: ${response.code()}"))
-            }
-        } catch (e: Exception) {
-            // Si hay un error de conexión, actualizamos localmente y marcamos para sincronizar después
-            val templateWithSyncFlag = template.copy(isSynced = false, lastSync = System.currentTimeMillis())
-            labelTemplateDao.update(templateWithSyncFlag)
-            return@withContext Result.failure(e)
-        }
-    }
-    
-    /**
-     * Elimina una plantilla del servidor y localmente
-     */
-    suspend fun deleteLabelTemplate(templateId: Int): Result<Boolean> = withContext(Dispatchers.IO) {
-        try {
-            val response = apiClient.apiService.deleteLabelTemplate(templateId)
-            
-            if (response.isSuccessful) {
-                val apiResponse = response.body()
-                if (apiResponse != null && apiResponse.success) {
-                    // Elimina la plantilla de la base de datos local
-                    labelTemplateDao.deleteTemplateById(templateId)
+    suspend fun deleteTemplateOnServer(templateId: Int): Result<Boolean> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiClient.apiService.deleteLabelTemplate(templateId)
+                
+                if (response.isSuccessful && response.body()?.success == true) {
+                    templateDao.deleteTemplateById(templateId)
                     return@withContext Result.success(true)
-                } else {
-                    return@withContext Result.failure(Exception(apiResponse?.message ?: "Error en la respuesta"))
                 }
-            } else {
-                return@withContext Result.failure(Exception("Error al eliminar plantilla: ${response.code()}"))
+                
+                Result.failure(Exception(response.message() ?: "Error al eliminar plantilla"))
+            } catch (e: Exception) {
+                Result.failure(e)
             }
-        } catch (e: Exception) {
-            return@withContext Result.failure(e)
         }
     }
     
     /**
      * Sincroniza las plantillas con el servidor
      */
-    suspend fun syncLabelTemplates(): Result<Int> = withContext(Dispatchers.IO) {
-        try {
-            // Obtener la última sincronización
-            val lastSync = System.currentTimeMillis() - (24 * 60 * 60 * 1000) // 24 horas por defecto
-            
-            val response = apiClient.apiService.syncLabelTemplates(lastSync)
-            
-            if (response.isSuccessful) {
-                val apiResponse = response.body()
-                if (apiResponse != null && apiResponse.success && apiResponse.data != null) {
-                    // Guarda las plantillas en la base de datos local
-                    labelTemplateDao.insertAll(apiResponse.data)
-                    
-                    // Sincroniza las plantillas modificadas localmente
-                    val templatesToSync = labelTemplateDao.getTemplatesToSync(lastSync)
-                    // Aquí deberías implementar la lógica para enviar las plantillas al servidor
-                    
-                    return@withContext Result.success(apiResponse.data.size)
-                } else {
-                    return@withContext Result.failure(Exception(apiResponse?.message ?: "Error en la respuesta"))
+    suspend fun syncTemplates(since: Date? = null): Result<List<LabelTemplate>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val sinceStr = since?.time?.toString()
+                val response = apiClient.apiService.syncTemplates(sinceStr)
+                
+                if (response.isSuccessful && response.body()?.success == true) {
+                    response.body()?.data?.let { templates ->
+                        templateDao.insertAll(templates)
+                        return@withContext Result.success(templates)
+                    }
                 }
-            } else {
-                return@withContext Result.failure(Exception("Error al sincronizar plantillas: ${response.code()}"))
+                
+                Result.failure(Exception(response.message() ?: "Error al sincronizar plantillas"))
+            } catch (e: Exception) {
+                Result.failure(e)
             }
-        } catch (e: Exception) {
-            return@withContext Result.failure(e)
         }
+    }
+    
+    /**
+     * Obtiene plantillas pendientes de subir al servidor
+     */
+    suspend fun getPendingUploadTemplates(): List<LabelTemplate> {
+        return withContext(Dispatchers.IO) {
+            templateDao.getPendingUpload()
+        }
+    }
+    
+    /**
+     * Marca una plantilla como sincronizada
+     */
+    suspend fun markAsSynced(templateId: Int): Int {
+        return withContext(Dispatchers.IO) {
+            templateDao.markAsSynced(templateId)
+        }
+    }
+    
+    /**
+     * Gestiona la respuesta de la API para operaciones con plantillas
+     */
+    private fun handleTemplateResponse(response: Response<ApiResponse<LabelTemplate>>): Result<LabelTemplate> {
+        if (response.isSuccessful) {
+            val apiResponse = response.body()
+            if (apiResponse != null && apiResponse.success && apiResponse.data != null) {
+                // Guardar la plantilla en la base de datos local
+                templateDao.insert(apiResponse.data)
+                
+                return Result.success(apiResponse.data)
+            }
+            return Result.failure(Exception(apiResponse?.message ?: "Respuesta sin datos"))
+        }
+        return Result.failure(Exception(response.message() ?: "Error desconocido"))
     }
 }

@@ -2,259 +2,309 @@ package com.productiva.android.repository
 
 import android.content.Context
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.asLiveData
 import com.productiva.android.api.ApiClient
 import com.productiva.android.api.ApiResponse
-import com.productiva.android.dao.TaskDao
 import com.productiva.android.database.AppDatabase
+import com.productiva.android.database.TaskDao
 import com.productiva.android.model.Task
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import retrofit2.Response
 import java.util.Date
 
 /**
- * Repositorio para manejar operaciones relacionadas con tareas
+ * Repositorio para gestionar tareas
  */
-class TaskRepository(private val context: Context) {
+class TaskRepository(context: Context) {
     
-    private val taskDao: TaskDao = AppDatabase.getDatabase(context).taskDao()
     private val apiClient = ApiClient.getInstance(context)
+    private val taskDao: TaskDao
+    
+    init {
+        val database = AppDatabase.getInstance(context)
+        taskDao = database.taskDao()
+    }
     
     /**
-     * Obtiene todas las tareas como LiveData desde la base de datos local
+     * Obtiene todas las tareas de la base de datos local
      */
     fun getAllTasks(): LiveData<List<Task>> {
         return taskDao.getAllTasks()
     }
     
     /**
-     * Obtiene las tareas por usuario como LiveData desde la base de datos local
+     * Obtiene una tarea por su ID de la base de datos local
+     */
+    suspend fun getTaskById(taskId: Int): Task? {
+        return withContext(Dispatchers.IO) {
+            taskDao.getTaskById(taskId)
+        }
+    }
+    
+    /**
+     * Obtiene tareas por usuario
      */
     fun getTasksByUser(userId: Int): LiveData<List<Task>> {
         return taskDao.getTasksByUser(userId)
     }
     
     /**
-     * Obtiene las tareas por estado como LiveData desde la base de datos local
+     * Obtiene tareas por estado
      */
     fun getTasksByStatus(status: String): LiveData<List<Task>> {
         return taskDao.getTasksByStatus(status)
     }
     
     /**
-     * Obtiene las tareas por usuario y estado como LiveData desde la base de datos local
+     * Obtiene tareas por usuario y estado
      */
     fun getTasksByUserAndStatus(userId: Int, status: String): LiveData<List<Task>> {
         return taskDao.getTasksByUserAndStatus(userId, status)
     }
     
     /**
-     * Obtiene las tareas por ubicación como LiveData desde la base de datos local
+     * Busca tareas por título o descripción
      */
-    fun getTasksByLocation(locationId: Int): LiveData<List<Task>> {
-        return taskDao.getTasksByLocation(locationId)
+    fun searchTasks(query: String): LiveData<List<Task>> {
+        return taskDao.searchTasks(query)
     }
     
     /**
-     * Obtiene las tareas por rango de fechas como LiveData desde la base de datos local
+     * Inserta una tarea en la base de datos local
      */
-    fun getTasksByDateRange(startDate: Date, endDate: Date): LiveData<List<Task>> {
-        return taskDao.getTasksByDateRange(startDate.time, endDate.time)
-    }
-    
-    /**
-     * Obtiene una tarea por su ID desde la base de datos local
-     */
-    suspend fun getTaskById(taskId: Int): Task? = withContext(Dispatchers.IO) {
-        return@withContext taskDao.getTaskById(taskId)
-    }
-    
-    /**
-     * Obtiene la cantidad de tareas pendientes para un usuario
-     */
-    suspend fun getPendingTaskCount(userId: Int): Int = withContext(Dispatchers.IO) {
-        return@withContext taskDao.getPendingTaskCount(userId)
-    }
-    
-    /**
-     * Obtiene las tareas asignadas a un usuario desde el servidor
-     */
-    suspend fun fetchTasksByUser(userId: Int): Result<List<Task>> = withContext(Dispatchers.IO) {
-        try {
-            val response: Response<ApiResponse<List<Task>>> = apiClient.apiService.getTasksByUser(userId)
-            
-            if (response.isSuccessful) {
-                val apiResponse = response.body()
-                if (apiResponse != null && apiResponse.success && apiResponse.data != null) {
-                    // Guarda las tareas en la base de datos local
-                    taskDao.insertAll(apiResponse.data)
-                    return@withContext Result.success(apiResponse.data)
-                } else {
-                    return@withContext Result.failure(Exception(apiResponse?.message ?: "Error en la respuesta"))
-                }
-            } else {
-                return@withContext Result.failure(Exception("Error al obtener tareas: ${response.code()}"))
-            }
-        } catch (e: Exception) {
-            return@withContext Result.failure(e)
+    suspend fun insertTask(task: Task): Long {
+        return withContext(Dispatchers.IO) {
+            taskDao.insert(task)
         }
     }
     
     /**
-     * Obtiene las tareas por compañía desde el servidor
+     * Actualiza una tarea en la base de datos local
      */
-    suspend fun fetchTasksByCompany(companyId: Int): Result<List<Task>> = withContext(Dispatchers.IO) {
-        try {
-            val response = apiClient.apiService.getTasksByCompany(companyId)
-            
-            if (response.isSuccessful) {
-                val apiResponse = response.body()
-                if (apiResponse != null && apiResponse.success && apiResponse.data != null) {
-                    // Guarda las tareas en la base de datos local
-                    taskDao.insertAll(apiResponse.data)
-                    return@withContext Result.success(apiResponse.data)
-                } else {
-                    return@withContext Result.failure(Exception(apiResponse?.message ?: "Error en la respuesta"))
-                }
-            } else {
-                return@withContext Result.failure(Exception("Error al obtener tareas: ${response.code()}"))
-            }
-        } catch (e: Exception) {
-            return@withContext Result.failure(e)
+    suspend fun updateTask(task: Task): Int {
+        return withContext(Dispatchers.IO) {
+            taskDao.update(task)
         }
     }
     
     /**
-     * Obtiene las tareas por ubicación desde el servidor
+     * Cambia el estado de una tarea
      */
-    suspend fun fetchTasksByLocation(locationId: Int): Result<List<Task>> = withContext(Dispatchers.IO) {
-        try {
-            val response = apiClient.apiService.getTasksByLocation(locationId)
-            
-            if (response.isSuccessful) {
-                val apiResponse = response.body()
-                if (apiResponse != null && apiResponse.success && apiResponse.data != null) {
-                    // Guarda las tareas en la base de datos local
-                    taskDao.insertAll(apiResponse.data)
-                    return@withContext Result.success(apiResponse.data)
-                } else {
-                    return@withContext Result.failure(Exception(apiResponse?.message ?: "Error en la respuesta"))
-                }
-            } else {
-                return@withContext Result.failure(Exception("Error al obtener tareas: ${response.code()}"))
-            }
-        } catch (e: Exception) {
-            return@withContext Result.failure(e)
-        }
-    }
-    
-    /**
-     * Actualiza una tarea en el servidor y localmente
-     */
-    suspend fun updateTask(task: Task): Result<Task> = withContext(Dispatchers.IO) {
-        try {
-            val response = apiClient.apiService.updateTask(task.id, task)
-            
-            if (response.isSuccessful) {
-                val apiResponse = response.body()
-                if (apiResponse != null && apiResponse.success && apiResponse.data != null) {
-                    // Actualiza la tarea en la base de datos local
-                    taskDao.update(apiResponse.data)
-                    return@withContext Result.success(apiResponse.data)
-                } else {
-                    return@withContext Result.failure(Exception(apiResponse?.message ?: "Error en la respuesta"))
-                }
-            } else {
-                return@withContext Result.failure(Exception("Error al actualizar tarea: ${response.code()}"))
-            }
-        } catch (e: Exception) {
-            // Si hay un error de conexión, actualizamos localmente y marcamos para sincronizar después
-            val taskWithSyncFlag = task.copy(isSynced = false, lastSync = System.currentTimeMillis())
-            taskDao.update(taskWithSyncFlag)
-            return@withContext Result.failure(e)
-        }
-    }
-    
-    /**
-     * Crea una nueva tarea en el servidor y localmente
-     */
-    suspend fun createTask(task: Task): Result<Task> = withContext(Dispatchers.IO) {
-        try {
-            val response = apiClient.apiService.createTask(task)
-            
-            if (response.isSuccessful) {
-                val apiResponse = response.body()
-                if (apiResponse != null && apiResponse.success && apiResponse.data != null) {
-                    // Guarda la tarea en la base de datos local
-                    taskDao.insert(apiResponse.data)
-                    return@withContext Result.success(apiResponse.data)
-                } else {
-                    return@withContext Result.failure(Exception(apiResponse?.message ?: "Error en la respuesta"))
-                }
-            } else {
-                return@withContext Result.failure(Exception("Error al crear tarea: ${response.code()}"))
-            }
-        } catch (e: Exception) {
-            // Si hay un error de conexión, guardamos localmente y marcamos para sincronizar después
-            val taskWithSyncFlag = task.copy(isSynced = false, lastSync = System.currentTimeMillis())
-            val id = taskDao.insert(taskWithSyncFlag)
-            return@withContext Result.failure(e)
-        }
-    }
-    
-    /**
-     * Elimina una tarea del servidor y localmente
-     */
-    suspend fun deleteTask(taskId: Int): Result<Boolean> = withContext(Dispatchers.IO) {
-        try {
-            val response = apiClient.apiService.deleteTask(taskId)
-            
-            if (response.isSuccessful) {
-                val apiResponse = response.body()
-                if (apiResponse != null && apiResponse.success) {
-                    // Elimina la tarea de la base de datos local
-                    taskDao.deleteTaskById(taskId)
-                    return@withContext Result.success(true)
-                } else {
-                    return@withContext Result.failure(Exception(apiResponse?.message ?: "Error en la respuesta"))
-                }
-            } else {
-                return@withContext Result.failure(Exception("Error al eliminar tarea: ${response.code()}"))
-            }
-        } catch (e: Exception) {
-            return@withContext Result.failure(e)
-        }
-    }
-    
-    /**
-     * Sincroniza las tareas con el servidor
-     */
-    suspend fun syncTasks(): Result<Int> = withContext(Dispatchers.IO) {
-        try {
-            // Obtener la última sincronización
-            val lastSync = System.currentTimeMillis() - (24 * 60 * 60 * 1000) // 24 horas por defecto
-            
-            val response = apiClient.apiService.syncTasks(lastSync)
-            
-            if (response.isSuccessful) {
-                val apiResponse = response.body()
-                if (apiResponse != null && apiResponse.success && apiResponse.data != null) {
-                    // Guarda las tareas en la base de datos local
-                    taskDao.insertAll(apiResponse.data)
+    suspend fun updateTaskStatus(taskId: Int, status: String): Result<Task> {
+        return withContext(Dispatchers.IO) {
+            try {
+                // Actualizar en la API
+                val statusData = mapOf("status" to status)
+                val response = apiClient.apiService.updateTaskStatus(taskId, statusData)
+                
+                if (response.isSuccessful && response.body()?.success == true && response.body()?.data != null) {
+                    // Actualizar localmente
+                    taskDao.updateTaskStatus(taskId, status, Date())
                     
-                    // Sincroniza las tareas modificadas localmente
-                    val tasksToSync = taskDao.getTasksToSync(lastSync)
-                    // Aquí deberías implementar la lógica para enviar las tareas al servidor
-                    
-                    return@withContext Result.success(apiResponse.data.size)
-                } else {
-                    return@withContext Result.failure(Exception(apiResponse?.message ?: "Error en la respuesta"))
+                    // Obtener la tarea actualizada
+                    val updatedTask = response.body()?.data
+                    if (updatedTask != null) {
+                        taskDao.insert(updatedTask)
+                        return@withContext Result.success(updatedTask)
+                    }
                 }
+                
+                Result.failure(Exception(response.message() ?: "Error al actualizar estado"))
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    /**
+     * Elimina una tarea por su ID
+     */
+    suspend fun deleteTask(taskId: Int): Int {
+        return withContext(Dispatchers.IO) {
+            taskDao.deleteTaskById(taskId)
+        }
+    }
+    
+    /**
+     * Obtiene una tarea por su ID desde la API y la guarda localmente
+     */
+    suspend fun fetchTaskById(taskId: Int): Result<Task> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiClient.apiService.getTaskById(taskId)
+                handleTaskResponse(response)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    /**
+     * Obtiene tareas desde la API y las guarda en la base de datos local
+     */
+    suspend fun fetchTasks(
+        userId: Int? = null,
+        status: String? = null,
+        companyId: Int? = null,
+        locationId: Int? = null
+    ): Result<List<Task>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiClient.apiService.getTasks(
+                    userId = userId,
+                    status = status,
+                    companyId = companyId,
+                    locationId = locationId
+                )
+                
+                if (response.isSuccessful && response.body()?.success == true) {
+                    response.body()?.data?.let { tasks ->
+                        taskDao.insertAll(tasks)
+                        return@withContext Result.success(tasks)
+                    }
+                }
+                
+                Result.failure(Exception(response.message() ?: "Error al obtener tareas"))
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    /**
+     * Crea una nueva tarea
+     */
+    suspend fun createTask(task: Task): Result<Task> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiClient.apiService.createTask(task)
+                handleTaskResponse(response)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    /**
+     * Actualiza una tarea existente
+     */
+    suspend fun updateTaskOnServer(task: Task): Result<Task> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiClient.apiService.updateTask(task.id, task)
+                handleTaskResponse(response)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    /**
+     * Sincroniza tareas actualizadas desde una fecha específica
+     */
+    suspend fun syncTasksUpdatedSince(since: Date, userId: Int? = null): Result<List<Task>> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val sinceStr = since.time.toString()
+                val response = apiClient.apiService.syncTasks(sinceStr, userId)
+                
+                if (response.isSuccessful && response.body()?.success == true) {
+                    response.body()?.data?.let { tasks ->
+                        taskDao.insertAll(tasks)
+                        return@withContext Result.success(tasks)
+                    }
+                }
+                
+                Result.failure(Exception(response.message() ?: "Error al sincronizar tareas"))
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    /**
+     * Obtiene tareas pendientes de sincronización
+     */
+    suspend fun getUnsyncedTasks(): List<Task> {
+        return withContext(Dispatchers.IO) {
+            taskDao.getUnsynced()
+        }
+    }
+    
+    /**
+     * Gestiona la respuesta de la API para operaciones con tareas
+     */
+    private fun handleTaskResponse(response: Response<ApiResponse<Task>>): Result<Task> {
+        if (response.isSuccessful) {
+            val apiResponse = response.body()
+            if (apiResponse != null && apiResponse.success && apiResponse.data != null) {
+                // Guardar la tarea en la base de datos local
+                taskDao.insert(apiResponse.data)
+                
+                return Result.success(apiResponse.data)
+            }
+            return Result.failure(Exception(apiResponse?.message ?: "Respuesta sin datos"))
+        }
+        return Result.failure(Exception(response.message() ?: "Error desconocido"))
+    }
+    
+    /**
+     * Carga tareas desde API con indicador de carga
+     */
+    fun loadTasksWithStatusFlow(
+        userId: Int? = null,
+        status: String? = null,
+        companyId: Int? = null
+    ): Flow<Resource<List<Task>>> = flow {
+        emit(Resource.Loading())
+        
+        try {
+            // Emitir datos locales primero
+            val localTasks = if (userId != null && status != null) {
+                taskDao.getTasksByUserAndStatus(userId, status)
+            } else if (userId != null) {
+                taskDao.getTasksByUser(userId)
+            } else if (status != null) {
+                taskDao.getTasksByStatus(status)
             } else {
-                return@withContext Result.failure(Exception("Error al sincronizar tareas: ${response.code()}"))
+                taskDao.getAllTasks()
+            }
+            
+            emit(Resource.Loading(data = localTasks.value))
+            
+            // Cargar desde API
+            val response = apiClient.apiService.getTasks(
+                userId = userId,
+                status = status,
+                companyId = companyId
+            )
+            
+            if (response.isSuccessful && response.body()?.success == true) {
+                response.body()?.data?.let { tasks ->
+                    taskDao.insertAll(tasks)
+                    emit(Resource.Success(tasks))
+                } ?: emit(Resource.Error("No se encontraron tareas"))
+            } else {
+                emit(Resource.Error(response.message() ?: "Error al cargar tareas"))
             }
         } catch (e: Exception) {
-            return@withContext Result.failure(e)
+            emit(Resource.Error(e.message ?: "Error desconocido"))
         }
+    }.flowOn(Dispatchers.IO)
+    
+    /**
+     * Clase para representar el estado de un recurso
+     */
+    sealed class Resource<T>(
+        val data: T? = null,
+        val message: String? = null
+    ) {
+        class Success<T>(data: T) : Resource<T>(data)
+        class Loading<T>(data: T? = null) : Resource<T>(data)
+        class Error<T>(message: String, data: T? = null) : Resource<T>(data, message)
     }
 }

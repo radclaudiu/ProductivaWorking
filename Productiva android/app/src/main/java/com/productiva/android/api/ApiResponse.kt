@@ -1,45 +1,44 @@
 package com.productiva.android.api
 
-import com.google.gson.annotations.SerializedName
-
 /**
- * Clase para encapsular las respuestas de la API
- * 
- * @param T Tipo de datos en el campo "data" de la respuesta
+ * Clase para envolver las respuestas de la API
  */
 data class ApiResponse<T>(
-    @SerializedName("success")
     val success: Boolean,
-    
-    @SerializedName("message")
-    val message: String? = null,
-    
-    @SerializedName("data")
     val data: T? = null,
+    val message: String? = null,
+    val errors: Map<String, List<String>>? = null,
+    val token: String? = null
+) {
+    companion object {
+        /**
+         * Crea una instancia de ApiResponse que indica éxito
+         */
+        fun <T> success(data: T?, message: String? = null, token: String? = null): ApiResponse<T> {
+            return ApiResponse(
+                success = true,
+                data = data,
+                message = message,
+                token = token
+            )
+        }
+        
+        /**
+         * Crea una instancia de ApiResponse que indica error
+         */
+        fun <T> error(message: String, errors: Map<String, List<String>>? = null): ApiResponse<T> {
+            return ApiResponse(
+                success = false,
+                message = message,
+                errors = errors
+            )
+        }
+    }
     
-    @SerializedName("errors")
-    val errors: List<String>? = null,
-    
-    @SerializedName("count")
-    val count: Int? = null,
-    
-    @SerializedName("pagination")
-    val pagination: PaginationInfo? = null
-)
-
-/**
- * Clase para la información de paginación en respuestas
- */
-data class PaginationInfo(
-    @SerializedName("current_page")
-    val currentPage: Int,
-    
-    @SerializedName("last_page")
-    val lastPage: Int,
-    
-    @SerializedName("per_page")
-    val perPage: Int,
-    
-    @SerializedName("total")
-    val total: Int
-)
+    /**
+     * Determina si la respuesta es exitosa y contiene datos
+     */
+    fun isSuccessfulWithData(): Boolean {
+        return success && data != null
+    }
+}

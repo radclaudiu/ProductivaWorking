@@ -1,169 +1,100 @@
 package com.productiva.android.viewmodel
 
 import android.app.Application
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.pdf.PdfDocument
+import android.os.Environment
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.productiva.android.model.LabelTemplate
 import com.productiva.android.model.SavedPrinter
-import com.productiva.android.model.Task
 import com.productiva.android.repository.LabelTemplateRepository
 import com.productiva.android.repository.PrinterRepository
-import com.productiva.android.repository.TaskRepository
-import com.productiva.android.util.PrinterManager
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 /**
- * ViewModel para la pantalla de impresión de etiquetas
+ * ViewModel para la impresión de etiquetas
  */
 class PrintLabelViewModel(application: Application) : AndroidViewModel(application) {
     
     private val printerRepository = PrinterRepository(application)
-    private val labelTemplateRepository = LabelTemplateRepository(application)
-    private val taskRepository = TaskRepository(application)
-    private val printerManager = PrinterManager(application)
+    private val templateRepository = LabelTemplateRepository(application)
     
-    // Tarea actual
-    private val _task = MutableStateFlow<Task?>(null)
-    val task: StateFlow<Task?> = _task
+    // Impresoras guardadas
+    val savedPrinters = printerRepository.getAllPrinters()
     
-    // Impresoras disponibles
-    private val _printers = MutableLiveData<List<SavedPrinter>>()
-    val printers: LiveData<List<SavedPrinter>> = _printers
-    
-    // Plantillas disponibles
-    private val _templates = MutableLiveData<List<LabelTemplate>>()
-    val templates: LiveData<List<LabelTemplate>> = _templates
+    // Plantillas de etiquetas
+    val labelTemplates = templateRepository.getAllTemplates()
     
     // Impresora seleccionada
-    private val _selectedPrinter = MutableLiveData<SavedPrinter?>()
-    val selectedPrinter: LiveData<SavedPrinter?> = _selectedPrinter
+    private val _selectedPrinter = MutableLiveData<SavedPrinter>()
+    val selectedPrinter: LiveData<SavedPrinter> get() = _selectedPrinter
     
     // Plantilla seleccionada
-    private val _selectedTemplate = MutableLiveData<LabelTemplate?>()
-    val selectedTemplate: LiveData<LabelTemplate?> = _selectedTemplate
+    private val _selectedTemplate = MutableLiveData<LabelTemplate>()
+    val selectedTemplate: LiveData<LabelTemplate> get() = _selectedTemplate
     
     // Estado de carga
     private val _isLoading = MutableLiveData<Boolean>()
-    val isLoading: LiveData<Boolean> = _isLoading
+    val isLoading: LiveData<Boolean> get() = _isLoading
     
     // Mensaje de error
     private val _errorMessage = MutableLiveData<String>()
-    val errorMessage: LiveData<String> = _errorMessage
+    val errorMessage: LiveData<String> get() = _errorMessage
     
     // Estado de impresión
-    private val _printState = MutableLiveData<PrintState>()
-    val printState: LiveData<PrintState> = _printState
+    private val _printingState = MutableLiveData<PrintingState>()
+    val printingState: LiveData<PrintingState> get() = _printingState
     
-    // Número de copias
-    private val _copies = MutableLiveData<Int>(1)
-    val copies: LiveData<Int> = _copies
+    // Ruta del archivo generado
+    private val _generatedFilePath = MutableLiveData<String>()
+    val generatedFilePath: LiveData<String> get() = _generatedFilePath
     
     init {
-        loadPrinters()
-        loadTemplates()
+        loadDefaultPrinter()
+        refreshTemplates()
     }
     
     /**
-     * Carga la tarea por su ID
+     * Carga la impresora predeterminada
      */
-    fun loadTask(taskId: Int) {
-        _isLoading.value = true
-        
+    private fun loadDefaultPrinter() {
         viewModelScope.launch {
             try {
-                val loadedTask = taskRepository.getTaskById(taskId)
-                
-                if (loadedTask != null) {
-                    _task.value = loadedTask
-                    _isLoading.value = false
-                } else {
-                    _errorMessage.value = "No se encontró la tarea"
-                    _isLoading.value = false
-                    
-                    // Intentar cargar desde el servidor
-                    val response = taskRepository.fetchTaskFromServer(taskId)
-                    
-                    response.fold(
-                        onSuccess = { fetchedTask ->
-                            _task.value = fetchedTask
-                            _isLoading.value = false
-                        },
-                        onFailure = { error ->
-                            _errorMessage.value = error.message ?: "Error al obtener la tarea del servidor"
-                            _isLoading.value = false
-                        }
-                    )
-                }
+                val defaultPrinter = printerRepository.getDefaultPrinter()
+                _selectedPrinter.value = defaultPrinter
             } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Error al cargar la tarea"
-                _isLoading.value = false
+                _errorMessage.value = e.message ?: "Error al cargar impresora predeterminada"
             }
         }
     }
     
     /**
-     * Carga las impresoras guardadas
+     * Refresca las plantillas desde el servidor
      */
-    fun loadPrinters() {
+    fun refreshTemplates() {
         _isLoading.value = true
         
         viewModelScope.launch {
             try {
-                val savedPrinters = printerRepository.getAllPrinters().value ?: emptyList()
-                _printers.value = savedPrinters
-                _isLoading.value = false
-                
-                // Seleccionar la última impresora usada si existe
-                val lastPrinterId = getLastUsedPrinterId()
-                if (lastPrinterId != -1) {
-                    val lastPrinter = savedPrinters.find { it.id == lastPrinterId }
-                    if (lastPrinter != null) {
-                        _selectedPrinter.value = lastPrinter
-                    }
-                }
-                
-                // Si no hay impresoras guardadas, mostrar mensaje
-                if (savedPrinters.isEmpty()) {
-                    _errorMessage.value = "No hay impresoras guardadas. Añade una en la configuración."
+                val result = templateRepository.syncTemplates()
+                if (result.isFailure) {
+                    _errorMessage.value = result.exceptionOrNull()?.message ?: "Error al sincronizar plantillas"
                 }
             } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Error al cargar impresoras"
-                _isLoading.value = false
-            }
-        }
-    }
-    
-    /**
-     * Carga las plantillas de etiquetas
-     */
-    fun loadTemplates() {
-        _isLoading.value = true
-        
-        viewModelScope.launch {
-            try {
-                val labelTemplates = labelTemplateRepository.getAllTemplates().value ?: emptyList()
-                _templates.value = labelTemplates
-                _isLoading.value = false
-                
-                // Seleccionar la última plantilla usada si existe
-                val lastTemplateId = getLastUsedTemplateId()
-                if (lastTemplateId != -1) {
-                    val lastTemplate = labelTemplates.find { it.id == lastTemplateId }
-                    if (lastTemplate != null) {
-                        _selectedTemplate.value = lastTemplate
-                    }
-                }
-                
-                // Si no hay plantillas, mostrar mensaje
-                if (labelTemplates.isEmpty()) {
-                    _errorMessage.value = "No hay plantillas guardadas. Añade una en la configuración."
-                }
-            } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Error al cargar plantillas"
+                _errorMessage.value = e.message ?: "Error desconocido"
+            } finally {
                 _isLoading.value = false
             }
         }
@@ -175,8 +106,14 @@ class PrintLabelViewModel(application: Application) : AndroidViewModel(applicati
     fun selectPrinter(printer: SavedPrinter) {
         _selectedPrinter.value = printer
         
-        // Guardar selección
-        saveLastUsedPrinterId(printer.id)
+        viewModelScope.launch {
+            try {
+                // Actualizar timestamp de último uso
+                printerRepository.updateLastUsed(printer.id)
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Error al actualizar impresora"
+            }
+        }
     }
     
     /**
@@ -184,145 +121,195 @@ class PrintLabelViewModel(application: Application) : AndroidViewModel(applicati
      */
     fun selectTemplate(template: LabelTemplate) {
         _selectedTemplate.value = template
-        
-        // Guardar selección
-        saveLastUsedTemplateId(template.id)
     }
     
     /**
-     * Establece el número de copias
+     * Carga una plantilla por su ID
      */
-    fun setCopies(copies: Int) {
-        _copies.value = copies
-    }
-    
-    /**
-     * Imprime la etiqueta
-     */
-    fun printLabel() {
-        val currentTask = _task.value
-        val printer = _selectedPrinter.value
-        val template = _selectedTemplate.value
-        val copyCount = _copies.value ?: 1
-        
-        if (currentTask == null) {
-            _errorMessage.value = "No hay una tarea para imprimir"
-            return
-        }
-        
-        if (printer == null) {
-            _errorMessage.value = "No hay una impresora seleccionada"
-            return
-        }
-        
-        if (template == null) {
-            _errorMessage.value = "No hay una plantilla seleccionada"
-            return
-        }
-        
+    fun loadTemplateById(templateId: Int) {
         _isLoading.value = true
-        _printState.value = PrintState.Printing
         
         viewModelScope.launch {
             try {
-                // Procesar la plantilla con los datos de la tarea
-                val processedTemplate = processTemplate(template, currentTask)
+                // Buscar primero en la base de datos local
+                var template = templateRepository.getTemplateById(templateId)
                 
-                // Imprimir usando PrinterManager
-                val result = printerManager.printLabel(
-                    printer = printer,
-                    template = processedTemplate,
-                    copies = copyCount
-                )
-                
-                if (result) {
-                    _printState.value = PrintState.Success
-                } else {
-                    _printState.value = PrintState.Error("Error al imprimir la etiqueta")
-                    _errorMessage.value = "Error al imprimir la etiqueta"
+                if (template == null) {
+                    // Si no está en la BD local, buscar en el servidor
+                    val result = templateRepository.fetchTemplateById(templateId)
+                    if (result.isSuccess) {
+                        template = result.getOrNull()
+                    } else {
+                        _errorMessage.value = result.exceptionOrNull()?.message ?: "Error al cargar plantilla"
+                    }
                 }
                 
-                _isLoading.value = false
+                template?.let {
+                    _selectedTemplate.value = it
+                }
             } catch (e: Exception) {
-                _printState.value = PrintState.Error(e.message ?: "Error desconocido")
                 _errorMessage.value = e.message ?: "Error desconocido"
+            } finally {
                 _isLoading.value = false
             }
         }
     }
     
     /**
-     * Procesa la plantilla reemplazando variables con datos de la tarea
+     * Guarda una impresora
      */
-    private fun processTemplate(template: LabelTemplate, task: Task): String {
-        var processedTemplate = template.content
+    fun savePrinter(printer: SavedPrinter) {
+        _isLoading.value = true
         
-        // Reemplazar variables de la tarea
-        processedTemplate = processedTemplate.replace("{{task.id}}", task.id.toString())
-        processedTemplate = processedTemplate.replace("{{task.title}}", task.title)
-        processedTemplate = processedTemplate.replace("{{task.description}}", task.description ?: "")
-        processedTemplate = processedTemplate.replace("{{task.status}}", task.status)
-        processedTemplate = processedTemplate.replace("{{task.location}}", task.locationName ?: "")
+        viewModelScope.launch {
+            try {
+                val id = printerRepository.savePrinter(printer)
+                
+                // Cargar la impresora guardada
+                val savedPrinter = printerRepository.getPrinterById(id.toInt())
+                _selectedPrinter.value = savedPrinter
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Error al guardar impresora"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+    
+    /**
+     * Establece una impresora como predeterminada
+     */
+    fun setDefaultPrinter(printer: SavedPrinter) {
+        viewModelScope.launch {
+            try {
+                printerRepository.setAsDefault(printer.id)
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Error al establecer impresora predeterminada"
+            }
+        }
+    }
+    
+    /**
+     * Genera un PDF con la etiqueta para imprimir
+     */
+    fun generateLabelPdf(data: Map<String, String>): File? {
+        try {
+            val template = _selectedTemplate.value ?: return null
+            val printer = _selectedPrinter.value ?: return null
+            
+            // TODO: Implementar generación real de PDF con los datos de la plantilla
+            // Por ahora, generar un PDF simple
+            
+            val pdfDocument = PdfDocument()
+            val pageInfo = PdfDocument.PageInfo.Builder(
+                printer.paperWidth * 10,
+                printer.paperHeight * 10,
+                1
+            ).create()
+            
+            val page = pdfDocument.startPage(pageInfo)
+            val canvas = page.canvas
+            
+            // Dibujar fondo blanco
+            canvas.drawColor(Color.WHITE)
+            
+            // Dibujar algunos datos
+            val paint = Paint()
+            paint.color = Color.BLACK
+            paint.textSize = 24f
+            
+            var y = 50f
+            data.forEach { (key, value) ->
+                canvas.drawText("$key: $value", 50f, y, paint)
+                y += 40f
+            }
+            
+            pdfDocument.finishPage(page)
+            
+            // Guardar PDF en almacenamiento
+            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+            val fileName = "LABEL_${template.id}_$timeStamp.pdf"
+            
+            val storageDir = getApplication<Application>().getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS)
+            storageDir?.mkdirs()
+            
+            val file = File(storageDir, fileName)
+            pdfDocument.writeTo(FileOutputStream(file))
+            pdfDocument.close()
+            
+            _generatedFilePath.value = file.absolutePath
+            _printingState.value = PrintingState.GENERATED
+            
+            return file
+        } catch (e: Exception) {
+            _errorMessage.value = e.message ?: "Error al generar etiqueta"
+            _printingState.value = PrintingState.ERROR
+            return null
+        }
+    }
+    
+    /**
+     * Imprime una etiqueta
+     */
+    fun printLabel(data: Map<String, String>) {
+        _printingState.value = PrintingState.PRINTING
         
-        // Formatear y reemplazar fecha
-        val dateFormat = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
-        processedTemplate = processedTemplate.replace(
-            "{{task.date}}",
-            task.dueDate?.let { dateFormat.format(it) } ?: ""
-        )
+        // Generar archivo primero
+        val file = generateLabelPdf(data)
         
-        // Fecha actual
-        processedTemplate = processedTemplate.replace(
-            "{{current.date}}",
-            dateFormat.format(java.util.Date())
-        )
-        
-        return processedTemplate
+        if (file != null) {
+            // TODO: Implementar integración real con la impresora
+            // Por ahora, simular impresión
+            
+            viewModelScope.launch {
+                try {
+                    // Simular proceso de impresión
+                    _printingState.value = PrintingState.SENT
+                } catch (e: Exception) {
+                    _errorMessage.value = e.message ?: "Error al imprimir etiqueta"
+                    _printingState.value = PrintingState.ERROR
+                }
+            }
+        } else {
+            _printingState.value = PrintingState.ERROR
+        }
     }
     
     /**
-     * Obtiene el ID de la última impresora utilizada
+     * Elimina una impresora
      */
-    private fun getLastUsedPrinterId(): Int {
-        return getApplication<Application>().getSharedPreferences("productiva_prefs", Application.MODE_PRIVATE)
-            .getInt("last_printer_id", -1)
+    fun deletePrinter(printerId: Int) {
+        viewModelScope.launch {
+            try {
+                printerRepository.deletePrinter(printerId)
+                
+                // Si era la impresora seleccionada, limpiar selección
+                if (_selectedPrinter.value?.id == printerId) {
+                    _selectedPrinter.value = null
+                    loadDefaultPrinter()
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Error al eliminar impresora"
+            }
+        }
     }
     
     /**
-     * Guarda el ID de la última impresora utilizada
+     * Resetea el estado de impresión
      */
-    private fun saveLastUsedPrinterId(printerId: Int) {
-        getApplication<Application>().getSharedPreferences("productiva_prefs", Application.MODE_PRIVATE)
-            .edit()
-            .putInt("last_printer_id", printerId)
-            .apply()
+    fun resetPrintingState() {
+        _printingState.value = PrintingState.IDLE
     }
     
     /**
-     * Obtiene el ID de la última plantilla utilizada
+     * Estados de impresión
      */
-    private fun getLastUsedTemplateId(): Int {
-        return getApplication<Application>().getSharedPreferences("productiva_prefs", Application.MODE_PRIVATE)
-            .getInt("last_template_id", -1)
-    }
-    
-    /**
-     * Guarda el ID de la última plantilla utilizada
-     */
-    private fun saveLastUsedTemplateId(templateId: Int) {
-        getApplication<Application>().getSharedPreferences("productiva_prefs", Application.MODE_PRIVATE)
-            .edit()
-            .putInt("last_template_id", templateId)
-            .apply()
-    }
-    
-    /**
-     * Estados posibles del proceso de impresión
-     */
-    sealed class PrintState {
-        object Initial : PrintState()
-        object Printing : PrintState()
-        object Success : PrintState()
-        data class Error(val message: String) : PrintState()
+    enum class PrintingState {
+        IDLE,
+        GENERATING,
+        GENERATED,
+        PRINTING,
+        SENT,
+        ERROR
     }
 }

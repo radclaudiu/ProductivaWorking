@@ -9,8 +9,7 @@ import com.productiva.android.model.Task
 import com.productiva.android.model.TaskCompletion
 import com.productiva.android.repository.TaskCompletionRepository
 import com.productiva.android.repository.TaskRepository
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import com.productiva.android.repository.UserRepository
 import kotlinx.coroutines.launch
 import java.io.File
 import java.util.Date
@@ -21,27 +20,40 @@ import java.util.Date
 class TaskDetailViewModel(application: Application) : AndroidViewModel(application) {
     
     private val taskRepository = TaskRepository(application)
-    private val taskCompletionRepository = TaskCompletionRepository(application)
+    private val completionRepository = TaskCompletionRepository(application)
+    private val userRepository = UserRepository(application)
     
     // Tarea actual
-    private val _task = MutableStateFlow<Task?>(null)
-    val task: StateFlow<Task?> = _task
+    private val _currentTask = MutableLiveData<Task>()
+    val currentTask: LiveData<Task> get() = _currentTask
     
     // Completaciones de la tarea
     private val _completions = MutableLiveData<List<TaskCompletion>>()
-    val completions: LiveData<List<TaskCompletion>> = _completions
+    val completions: LiveData<List<TaskCompletion>> get() = _completions
+    
+    // Completación actual
+    private val _currentCompletion = MutableLiveData<TaskCompletion>()
+    val currentCompletion: LiveData<TaskCompletion> get() = _currentCompletion
     
     // Estado de carga
     private val _isLoading = MutableLiveData<Boolean>()
-    val isLoading: LiveData<Boolean> = _isLoading
+    val isLoading: LiveData<Boolean> get() = _isLoading
     
     // Mensaje de error
     private val _errorMessage = MutableLiveData<String>()
-    val errorMessage: LiveData<String> = _errorMessage
+    val errorMessage: LiveData<String> get() = _errorMessage
     
-    // Estado de completado
-    private val _completionState = MutableLiveData<CompletionState>()
-    val completionState: LiveData<CompletionState> = _completionState
+    // Estado de completación (éxito)
+    private val _completionSuccess = MutableLiveData<Boolean>()
+    val completionSuccess: LiveData<Boolean> get() = _completionSuccess
+    
+    // Ruta del archivo de firma
+    private val _signatureFilePath = MutableLiveData<String>()
+    val signatureFilePath: LiveData<String> get() = _signatureFilePath
+    
+    // Ruta del archivo de foto
+    private val _photoFilePath = MutableLiveData<String>()
+    val photoFilePath: LiveData<String> get() = _photoFilePath
     
     /**
      * Carga una tarea por su ID
@@ -51,277 +63,243 @@ class TaskDetailViewModel(application: Application) : AndroidViewModel(applicati
         
         viewModelScope.launch {
             try {
-                val loadedTask = taskRepository.getTaskById(taskId)
+                // Intentar primero desde la base de datos local
+                var task = taskRepository.getTaskById(taskId)
                 
-                if (loadedTask != null) {
-                    _task.value = loadedTask
-                    
-                    // Cargar completaciones
-                    _completions.value = taskCompletionRepository.getCompletionsByTaskId(taskId).value ?: emptyList()
-                    
-                    _isLoading.value = false
-                } else {
-                    _errorMessage.value = "No se encontró la tarea"
-                    _isLoading.value = false
-                    
-                    // Intentar cargar desde el servidor
-                    fetchTaskFromServer(taskId)
+                if (task == null) {
+                    // Si no está en la BD local, buscar en el servidor
+                    val result = taskRepository.fetchTaskById(taskId)
+                    if (result.isSuccess) {
+                        task = result.getOrNull()
+                    } else {
+                        _errorMessage.value = result.exceptionOrNull()?.message ?: "Error al cargar tarea"
+                    }
+                }
+                
+                task?.let {
+                    _currentTask.value = it
+                    loadCompletions(it.id)
                 }
             } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Error al cargar la tarea"
+                _errorMessage.value = e.message ?: "Error desconocido"
+            } finally {
                 _isLoading.value = false
             }
         }
     }
     
     /**
-     * Obtiene una tarea desde el servidor
+     * Carga las completaciones de una tarea
      */
-    private fun fetchTaskFromServer(taskId: Int) {
-        _isLoading.value = true
-        
+    private fun loadCompletions(taskId: Int) {
         viewModelScope.launch {
             try {
-                val response = taskRepository.fetchTaskFromServer(taskId)
+                // Obtener completaciones locales primero
+                val localCompletions = completionRepository.getCompletionsByTaskId(taskId)
                 
-                response.fold(
-                    onSuccess = { fetchedTask ->
-                        _task.value = fetchedTask
-                        _isLoading.value = false
-                    },
-                    onFailure = { error ->
-                        _errorMessage.value = error.message ?: "Error al obtener la tarea del servidor"
-                        _isLoading.value = false
-                    }
-                )
+                // Obtener de la API
+                // Nota: Deberíamos implementar un método en el repositorio para esto
+                
+                // Por ahora, usar los datos locales
+                _completions.value = localCompletions.value ?: emptyList()
             } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Error al obtener la tarea del servidor"
-                _isLoading.value = false
+                _errorMessage.value = e.message ?: "Error al cargar completaciones"
             }
         }
     }
     
     /**
-     * Actualiza el estado de una tarea
+     * Crea una nueva completación para la tarea
      */
-    fun updateTaskStatus(status: String) {
-        val currentTask = _task.value ?: return
+    fun createCompletion(notes: String, currentUserId: Int) {
         _isLoading.value = true
         
         viewModelScope.launch {
             try {
-                val updatedTask = currentTask.copy(
-                    status = status,
-                    updatedAt = Date()
-                )
+                val currentTask = _currentTask.value ?: return@launch
                 
-                val result = taskRepository.updateTask(updatedTask)
+                // Buscar información del usuario
+                val user = userRepository.getUserById(currentUserId)
                 
-                result.fold(
-                    onSuccess = { task ->
-                        _task.value = task
-                        _isLoading.value = false
-                    },
-                    onFailure = { error ->
-                        _errorMessage.value = error.message ?: "Error al actualizar la tarea"
-                        _isLoading.value = false
-                    }
-                )
-            } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Error al actualizar la tarea"
-                _isLoading.value = false
-            }
-        }
-    }
-    
-    /**
-     * Completa una tarea
-     */
-    fun completeTask(notes: String?, timeSpent: Int?) {
-        val currentTask = _task.value ?: return
-        val userId = getSelectedUserId()
-        
-        if (userId == -1) {
-            _errorMessage.value = "No hay un usuario seleccionado"
-            return
-        }
-        
-        _isLoading.value = true
-        
-        viewModelScope.launch {
-            try {
-                // Crear objeto de completación
                 val completion = TaskCompletion(
                     taskId = currentTask.id,
-                    userId = userId,
+                    userId = currentUserId,
+                    userName = user?.name,
                     notes = notes,
-                    status = "completed",
-                    timeSpent = timeSpent,
-                    completionDate = Date()
-                )
-                
-                val result = taskCompletionRepository.createTaskCompletion(completion)
-                
-                result.fold(
-                    onSuccess = { savedCompletion ->
-                        // Actualizar estado de la tarea
-                        updateTaskStatus("completed")
-                        
-                        _completionState.value = CompletionState.Success(savedCompletion)
-                        _isLoading.value = false
-                        
-                        // Recargar completaciones
-                        _completions.value = taskCompletionRepository.getCompletionsByTaskId(currentTask.id).value ?: emptyList()
-                    },
-                    onFailure = { error ->
-                        _errorMessage.value = error.message ?: "Error al completar la tarea"
-                        _completionState.value = CompletionState.Error(error.message ?: "Error al completar la tarea")
-                        _isLoading.value = false
-                    }
-                )
-            } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Error al completar la tarea"
-                _completionState.value = CompletionState.Error(e.message ?: "Error al completar la tarea")
-                _isLoading.value = false
-            }
-        }
-    }
-    
-    /**
-     * Completa una tarea con firma
-     */
-    fun completeTaskWithSignature(notes: String?, timeSpent: Int?, signatureFile: File, clientName: String?) {
-        val currentTask = _task.value ?: return
-        val userId = getSelectedUserId()
-        
-        if (userId == -1) {
-            _errorMessage.value = "No hay un usuario seleccionado"
-            return
-        }
-        
-        _isLoading.value = true
-        
-        viewModelScope.launch {
-            try {
-                // Crear objeto de completación
-                val completion = TaskCompletion(
-                    taskId = currentTask.id,
-                    userId = userId,
-                    notes = notes,
-                    status = "completed",
-                    timeSpent = timeSpent,
                     completionDate = Date(),
-                    clientName = clientName
+                    locationId = currentTask.locationId,
+                    locationName = currentTask.locationName
                 )
                 
-                val result = taskCompletionRepository.createTaskCompletionWithSignature(completion, signatureFile)
+                val result = completionRepository.createTaskCompletion(currentTask.id, completion)
                 
-                result.fold(
-                    onSuccess = { savedCompletion ->
-                        // Actualizar estado de la tarea
-                        updateTaskStatus("completed")
-                        
-                        _completionState.value = CompletionState.Success(savedCompletion)
-                        _isLoading.value = false
-                        
-                        // Recargar completaciones
-                        _completions.value = taskCompletionRepository.getCompletionsByTaskId(currentTask.id).value ?: emptyList()
-                    },
-                    onFailure = { error ->
-                        _errorMessage.value = error.message ?: "Error al completar la tarea con firma"
-                        _completionState.value = CompletionState.Error(error.message ?: "Error al completar la tarea con firma")
-                        _isLoading.value = false
-                    }
-                )
+                if (result.isSuccess) {
+                    _currentCompletion.value = result.getOrNull()
+                    _completionSuccess.value = true
+                    
+                    // Cambiar estado de la tarea a completada
+                    taskRepository.updateTaskStatus(currentTask.id, Task.STATUS_COMPLETED)
+                    
+                    // Recargar tarea y completaciones
+                    loadTask(currentTask.id)
+                } else {
+                    _errorMessage.value = result.exceptionOrNull()?.message ?: "Error al crear completación"
+                }
             } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Error al completar la tarea con firma"
-                _completionState.value = CompletionState.Error(e.message ?: "Error al completar la tarea con firma")
+                _errorMessage.value = e.message ?: "Error desconocido"
+            } finally {
                 _isLoading.value = false
             }
         }
     }
     
     /**
-     * Completa una tarea con foto
+     * Crea una completación con firma
      */
-    fun completeTaskWithPhoto(notes: String?, timeSpent: Int?, photoFile: File) {
-        val currentTask = _task.value ?: return
-        val userId = getSelectedUserId()
-        
-        if (userId == -1) {
-            _errorMessage.value = "No hay un usuario seleccionado"
-            return
-        }
-        
+    fun createCompletionWithSignature(notes: String, currentUserId: Int, signatureFile: File) {
         _isLoading.value = true
         
         viewModelScope.launch {
             try {
-                // Crear objeto de completación
+                val currentTask = _currentTask.value ?: return@launch
+                
+                // Buscar información del usuario
+                val user = userRepository.getUserById(currentUserId)
+                
                 val completion = TaskCompletion(
                     taskId = currentTask.id,
-                    userId = userId,
+                    userId = currentUserId,
+                    userName = user?.name,
                     notes = notes,
-                    status = "completed",
-                    timeSpent = timeSpent,
-                    completionDate = Date()
+                    completionDate = Date(),
+                    locationId = currentTask.locationId,
+                    locationName = currentTask.locationName,
+                    hasSignature = true
                 )
                 
-                val result = taskCompletionRepository.createTaskCompletionWithPhoto(completion, photoFile)
-                
-                result.fold(
-                    onSuccess = { savedCompletion ->
-                        // Actualizar estado de la tarea
-                        updateTaskStatus("completed")
-                        
-                        _completionState.value = CompletionState.Success(savedCompletion)
-                        _isLoading.value = false
-                        
-                        // Recargar completaciones
-                        _completions.value = taskCompletionRepository.getCompletionsByTaskId(currentTask.id).value ?: emptyList()
-                    },
-                    onFailure = { error ->
-                        _errorMessage.value = error.message ?: "Error al completar la tarea con foto"
-                        _completionState.value = CompletionState.Error(error.message ?: "Error al completar la tarea con foto")
-                        _isLoading.value = false
-                    }
+                val result = completionRepository.createTaskCompletionWithSignature(
+                    currentTask.id,
+                    completion,
+                    signatureFile
                 )
+                
+                if (result.isSuccess) {
+                    _currentCompletion.value = result.getOrNull()
+                    _signatureFilePath.value = signatureFile.absolutePath
+                    _completionSuccess.value = true
+                    
+                    // Cambiar estado de la tarea a completada
+                    taskRepository.updateTaskStatus(currentTask.id, Task.STATUS_COMPLETED)
+                    
+                    // Recargar tarea y completaciones
+                    loadTask(currentTask.id)
+                } else {
+                    _errorMessage.value = result.exceptionOrNull()?.message ?: "Error al crear completación con firma"
+                }
             } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Error al completar la tarea con foto"
-                _completionState.value = CompletionState.Error(e.message ?: "Error al completar la tarea con foto")
+                _errorMessage.value = e.message ?: "Error desconocido"
+            } finally {
                 _isLoading.value = false
             }
         }
     }
     
     /**
-     * Inicia una tarea (cambia el estado a "in_progress")
+     * Crea una completación con foto
      */
-    fun startTask() {
-        updateTaskStatus("in_progress")
+    fun createCompletionWithPhoto(notes: String, currentUserId: Int, photoFile: File) {
+        _isLoading.value = true
+        
+        viewModelScope.launch {
+            try {
+                val currentTask = _currentTask.value ?: return@launch
+                
+                // Buscar información del usuario
+                val user = userRepository.getUserById(currentUserId)
+                
+                val completion = TaskCompletion(
+                    taskId = currentTask.id,
+                    userId = currentUserId,
+                    userName = user?.name,
+                    notes = notes,
+                    completionDate = Date(),
+                    locationId = currentTask.locationId,
+                    locationName = currentTask.locationName,
+                    hasPhoto = true
+                )
+                
+                val result = completionRepository.createTaskCompletionWithPhoto(
+                    currentTask.id,
+                    completion,
+                    photoFile
+                )
+                
+                if (result.isSuccess) {
+                    _currentCompletion.value = result.getOrNull()
+                    _photoFilePath.value = photoFile.absolutePath
+                    _completionSuccess.value = true
+                    
+                    // Cambiar estado de la tarea a completada
+                    taskRepository.updateTaskStatus(currentTask.id, Task.STATUS_COMPLETED)
+                    
+                    // Recargar tarea y completaciones
+                    loadTask(currentTask.id)
+                } else {
+                    _errorMessage.value = result.exceptionOrNull()?.message ?: "Error al crear completación con foto"
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Error desconocido"
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
     
     /**
-     * Obtiene el ID del usuario seleccionado
+     * Cambia el estado de la tarea actual
      */
-    private fun getSelectedUserId(): Int {
-        return getApplication<Application>().getSharedPreferences("productiva_prefs", Application.MODE_PRIVATE)
-            .getInt("selected_user_id", -1)
+    fun updateTaskStatus(newStatus: String) {
+        _isLoading.value = true
+        
+        viewModelScope.launch {
+            try {
+                val currentTask = _currentTask.value ?: return@launch
+                
+                val result = taskRepository.updateTaskStatus(currentTask.id, newStatus)
+                
+                if (result.isSuccess) {
+                    // Recargar tarea
+                    loadTask(currentTask.id)
+                } else {
+                    _errorMessage.value = result.exceptionOrNull()?.message ?: "Error al actualizar estado"
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Error desconocido"
+            } finally {
+                _isLoading.value = false
+            }
+        }
     }
     
     /**
-     * Resetea el estado de completado
+     * Establece la ruta del archivo de firma
      */
-    fun resetCompletionState() {
-        _completionState.value = CompletionState.Initial
+    fun setSignatureFilePath(path: String) {
+        _signatureFilePath.value = path
     }
     
     /**
-     * Estados posibles del proceso de completado
+     * Establece la ruta del archivo de foto
      */
-    sealed class CompletionState {
-        object Initial : CompletionState()
-        data class Success(val completion: TaskCompletion) : CompletionState()
-        data class Error(val message: String) : CompletionState()
+    fun setPhotoFilePath(path: String) {
+        _photoFilePath.value = path
+    }
+    
+    /**
+     * Limpia el estado de completación
+     */
+    fun clearCompletionState() {
+        _completionSuccess.value = false
+        _currentCompletion.value = null
     }
 }

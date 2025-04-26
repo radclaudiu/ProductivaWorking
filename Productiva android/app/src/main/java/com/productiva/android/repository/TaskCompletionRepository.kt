@@ -1,196 +1,261 @@
 package com.productiva.android.repository
 
 import android.content.Context
+import android.net.Uri
 import androidx.lifecycle.LiveData
 import com.productiva.android.api.ApiClient
 import com.productiva.android.api.ApiResponse
-import com.productiva.android.dao.TaskCompletionDao
 import com.productiva.android.database.AppDatabase
+import com.productiva.android.database.TaskCompletionDao
 import com.productiva.android.model.TaskCompletion
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.asRequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import retrofit2.Response
 import java.io.File
 import java.util.Date
 
 /**
- * Repositorio para manejar operaciones relacionadas con completaciones de tareas
+ * Repositorio para gestionar completaciones de tareas
  */
 class TaskCompletionRepository(private val context: Context) {
     
-    private val taskCompletionDao: TaskCompletionDao = AppDatabase.getDatabase(context).taskCompletionDao()
     private val apiClient = ApiClient.getInstance(context)
+    private val completionDao: TaskCompletionDao
+    
+    init {
+        val database = AppDatabase.getInstance(context)
+        completionDao = database.taskCompletionDao()
+    }
     
     /**
-     * Obtiene las completaciones por tarea como LiveData desde la base de datos local
+     * Obtiene todas las completaciones
+     */
+    fun getAllCompletions(): LiveData<List<TaskCompletion>> {
+        return completionDao.getAllCompletions()
+    }
+    
+    /**
+     * Obtiene una completación por su ID
+     */
+    suspend fun getCompletionById(completionId: Int): TaskCompletion? {
+        return withContext(Dispatchers.IO) {
+            completionDao.getCompletionById(completionId)
+        }
+    }
+    
+    /**
+     * Obtiene completaciones por tarea
      */
     fun getCompletionsByTaskId(taskId: Int): LiveData<List<TaskCompletion>> {
-        return taskCompletionDao.getCompletionsByTaskId(taskId)
+        return completionDao.getCompletionsByTaskId(taskId)
     }
     
     /**
-     * Obtiene las completaciones por usuario como LiveData desde la base de datos local
+     * Obtiene completaciones por usuario
      */
     fun getCompletionsByUserId(userId: Int): LiveData<List<TaskCompletion>> {
-        return taskCompletionDao.getCompletionsByUserId(userId)
+        return completionDao.getCompletionsByUserId(userId)
     }
     
     /**
-     * Obtiene las completaciones por rango de fechas como LiveData desde la base de datos local
+     * Inserta una completación
      */
-    fun getCompletionsByDateRange(startDate: Date, endDate: Date): LiveData<List<TaskCompletion>> {
-        return taskCompletionDao.getCompletionsByDateRange(startDate.time, endDate.time)
-    }
-    
-    /**
-     * Obtiene una completación por su ID desde la base de datos local
-     */
-    suspend fun getCompletionById(completionId: Int): TaskCompletion? = withContext(Dispatchers.IO) {
-        return@withContext taskCompletionDao.getCompletionById(completionId)
-    }
-    
-    /**
-     * Obtiene la cantidad de completaciones en un rango de fechas
-     */
-    suspend fun getCompletionCountInDateRange(userId: Int, startDate: Date, endDate: Date): Int = withContext(Dispatchers.IO) {
-        return@withContext taskCompletionDao.getCompletionCountInDateRange(userId, startDate.time, endDate.time)
-    }
-    
-    /**
-     * Obtiene las completaciones con firma
-     */
-    suspend fun getCompletionsWithSignatures(): List<TaskCompletion> = withContext(Dispatchers.IO) {
-        return@withContext taskCompletionDao.getCompletionsWithSignatures()
-    }
-    
-    /**
-     * Crea una nueva completación en el servidor y localmente
-     */
-    suspend fun createTaskCompletion(completion: TaskCompletion): Result<TaskCompletion> = withContext(Dispatchers.IO) {
-        try {
-            val response: Response<ApiResponse<TaskCompletion>> = apiClient.apiService.createTaskCompletion(completion)
-            
-            if (response.isSuccessful) {
-                val apiResponse = response.body()
-                if (apiResponse != null && apiResponse.success && apiResponse.data != null) {
-                    // Guarda la completación en la base de datos local
-                    taskCompletionDao.insert(apiResponse.data)
-                    return@withContext Result.success(apiResponse.data)
-                } else {
-                    return@withContext Result.failure(Exception(apiResponse?.message ?: "Error en la respuesta"))
-                }
-            } else {
-                return@withContext Result.failure(Exception("Error al crear completación: ${response.code()}"))
-            }
-        } catch (e: Exception) {
-            // Si hay un error de conexión, guardamos localmente y marcamos para sincronizar después
-            val completionWithSyncFlag = completion.copy(isSynced = false, lastSync = System.currentTimeMillis())
-            val id = taskCompletionDao.insert(completionWithSyncFlag)
-            return@withContext Result.failure(e)
+    suspend fun insertCompletion(completion: TaskCompletion): Long {
+        return withContext(Dispatchers.IO) {
+            completionDao.insert(completion)
         }
     }
     
     /**
-     * Crea una nueva completación con firma en el servidor y localmente
+     * Actualiza una completación
      */
-    suspend fun createTaskCompletionWithSignature(completion: TaskCompletion, signatureFile: File): Result<TaskCompletion> = withContext(Dispatchers.IO) {
-        try {
-            // Crear la parte de la firma
-            val requestFile = signatureFile.asRequestBody("image/png".toMediaTypeOrNull())
-            val signaturePart = MultipartBody.Part.createFormData("signature", signatureFile.name, requestFile)
-            
-            val response = apiClient.apiService.createTaskCompletionWithSignature(completion, signaturePart)
-            
-            if (response.isSuccessful) {
-                val apiResponse = response.body()
-                if (apiResponse != null && apiResponse.success && apiResponse.data != null) {
-                    // Guarda la completación en la base de datos local
-                    taskCompletionDao.insert(apiResponse.data)
-                    return@withContext Result.success(apiResponse.data)
-                } else {
-                    return@withContext Result.failure(Exception(apiResponse?.message ?: "Error en la respuesta"))
-                }
-            } else {
-                return@withContext Result.failure(Exception("Error al crear completación con firma: ${response.code()}"))
-            }
-        } catch (e: Exception) {
-            // Si hay un error de conexión, guardamos localmente y marcamos para sincronizar después
-            val completionWithSignaturePath = completion.copy(
-                signaturePath = signatureFile.absolutePath,
-                isSynced = false,
-                lastSync = System.currentTimeMillis()
-            )
-            val id = taskCompletionDao.insert(completionWithSignaturePath)
-            return@withContext Result.failure(e)
+    suspend fun updateCompletion(completion: TaskCompletion): Int {
+        return withContext(Dispatchers.IO) {
+            completionDao.update(completion)
         }
     }
     
     /**
-     * Crea una nueva completación con foto en el servidor y localmente
+     * Crea una completación de tarea
      */
-    suspend fun createTaskCompletionWithPhoto(completion: TaskCompletion, photoFile: File): Result<TaskCompletion> = withContext(Dispatchers.IO) {
-        try {
-            // Crear la parte de la foto
-            val requestFile = photoFile.asRequestBody("image/jpeg".toMediaTypeOrNull())
-            val photoPart = MultipartBody.Part.createFormData("photo", photoFile.name, requestFile)
-            
-            val response = apiClient.apiService.createTaskCompletionWithPhoto(completion, photoPart)
-            
-            if (response.isSuccessful) {
-                val apiResponse = response.body()
-                if (apiResponse != null && apiResponse.success && apiResponse.data != null) {
-                    // Guarda la completación en la base de datos local
-                    taskCompletionDao.insert(apiResponse.data)
-                    return@withContext Result.success(apiResponse.data)
-                } else {
-                    return@withContext Result.failure(Exception(apiResponse?.message ?: "Error en la respuesta"))
-                }
-            } else {
-                return@withContext Result.failure(Exception("Error al crear completación con foto: ${response.code()}"))
+    suspend fun createTaskCompletion(taskId: Int, completion: TaskCompletion): Result<TaskCompletion> {
+        return withContext(Dispatchers.IO) {
+            try {
+                val response = apiClient.apiService.createTaskCompletion(taskId, completion)
+                handleCompletionResponse(response)
+            } catch (e: Exception) {
+                Result.failure(e)
             }
-        } catch (e: Exception) {
-            // Si hay un error de conexión, guardamos localmente y marcamos para sincronizar después
-            val completionWithPhotoPath = completion.copy(
-                photoPath = photoFile.absolutePath,
-                isSynced = false,
-                lastSync = System.currentTimeMillis()
-            )
-            val id = taskCompletionDao.insert(completionWithPhotoPath)
-            return@withContext Result.failure(e)
         }
     }
     
     /**
-     * Sincroniza las completaciones no sincronizadas con el servidor
+     * Actualiza la ruta de firma de una completación
      */
-    suspend fun syncTaskCompletions(): Result<Int> = withContext(Dispatchers.IO) {
-        try {
-            // Obtener las completaciones no sincronizadas
-            val unsyncedCompletions = taskCompletionDao.getUnsyncedCompletions()
-            
-            if (unsyncedCompletions.isEmpty()) {
-                return@withContext Result.success(0)
-            }
-            
-            val response = apiClient.apiService.syncTaskCompletions(unsyncedCompletions)
-            
-            if (response.isSuccessful) {
-                val apiResponse = response.body()
-                if (apiResponse != null && apiResponse.success && apiResponse.data != null) {
-                    // Actualizar las completaciones con las del servidor
-                    taskCompletionDao.insertAll(apiResponse.data)
-                    return@withContext Result.success(apiResponse.data.size)
-                } else {
-                    return@withContext Result.failure(Exception(apiResponse?.message ?: "Error en la respuesta"))
-                }
-            } else {
-                return@withContext Result.failure(Exception("Error al sincronizar completaciones: ${response.code()}"))
-            }
-        } catch (e: Exception) {
-            return@withContext Result.failure(e)
+    suspend fun updateSignaturePath(completionId: Int, path: String): Int {
+        return withContext(Dispatchers.IO) {
+            completionDao.updateSignaturePath(completionId, path)
         }
+    }
+    
+    /**
+     * Actualiza la ruta de foto de una completación
+     */
+    suspend fun updatePhotoPath(completionId: Int, path: String): Int {
+        return withContext(Dispatchers.IO) {
+            completionDao.updatePhotoPath(completionId, path)
+        }
+    }
+    
+    /**
+     * Crea una completación de tarea con firma
+     */
+    suspend fun createTaskCompletionWithSignature(
+        taskId: Int,
+        completion: TaskCompletion,
+        signatureFile: File
+    ): Result<TaskCompletion> {
+        return withContext(Dispatchers.IO) {
+            try {
+                // Convertir objeto de completación a JSON
+                val completionJson = JSONObject().apply {
+                    put("userId", completion.userId)
+                    put("notes", completion.notes ?: "")
+                    put("locationId", completion.locationId ?: JSONObject.NULL)
+                    put("locationName", completion.locationName ?: "")
+                    put("latitude", completion.latitude ?: JSONObject.NULL)
+                    put("longitude", completion.longitude ?: JSONObject.NULL)
+                }.toString()
+                
+                // Crear parte de datos
+                val completionData = completionJson.toRequestBody("application/json".toMediaTypeOrNull())
+                
+                // Crear parte de firma
+                val signatureRequestBody = signatureFile.asRequestBody("image/png".toMediaTypeOrNull())
+                val signaturePart = MultipartBody.Part.createFormData(
+                    "signature",
+                    signatureFile.name,
+                    signatureRequestBody
+                )
+                
+                // Enviar a la API
+                val response = apiClient.apiService.createTaskCompletionWithSignature(
+                    taskId,
+                    completionData,
+                    signaturePart
+                )
+                
+                // Manejar respuesta
+                val result = handleCompletionResponse(response)
+                
+                // Si fue exitoso, guardar la ruta de la firma localmente
+                if (result.isSuccess) {
+                    result.getOrNull()?.let { savedCompletion ->
+                        // Guardar ruta localmente
+                        completionDao.updateSignaturePath(savedCompletion.id, signatureFile.absolutePath)
+                    }
+                }
+                
+                result
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    /**
+     * Crea una completación de tarea con foto
+     */
+    suspend fun createTaskCompletionWithPhoto(
+        taskId: Int,
+        completion: TaskCompletion,
+        photoFile: File
+    ): Result<TaskCompletion> {
+        return withContext(Dispatchers.IO) {
+            try {
+                // Convertir objeto de completación a JSON
+                val completionJson = JSONObject().apply {
+                    put("userId", completion.userId)
+                    put("notes", completion.notes ?: "")
+                    put("locationId", completion.locationId ?: JSONObject.NULL)
+                    put("locationName", completion.locationName ?: "")
+                    put("latitude", completion.latitude ?: JSONObject.NULL)
+                    put("longitude", completion.longitude ?: JSONObject.NULL)
+                }.toString()
+                
+                // Crear parte de datos
+                val completionData = completionJson.toRequestBody("application/json".toMediaTypeOrNull())
+                
+                // Crear parte de foto
+                val photoRequestBody = photoFile.asRequestBody("image/jpeg".toMediaTypeOrNull())
+                val photoPart = MultipartBody.Part.createFormData(
+                    "photo",
+                    photoFile.name,
+                    photoRequestBody
+                )
+                
+                // Enviar a la API
+                val response = apiClient.apiService.createTaskCompletionWithPhoto(
+                    taskId,
+                    completionData,
+                    photoPart
+                )
+                
+                // Manejar respuesta
+                val result = handleCompletionResponse(response)
+                
+                // Si fue exitoso, guardar la ruta de la foto localmente
+                if (result.isSuccess) {
+                    result.getOrNull()?.let { savedCompletion ->
+                        // Guardar ruta localmente
+                        completionDao.updatePhotoPath(savedCompletion.id, photoFile.absolutePath)
+                    }
+                }
+                
+                result
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    /**
+     * Obtiene completaciones pendientes de sincronización
+     */
+    suspend fun getPendingUploadCompletions(): List<TaskCompletion> {
+        return withContext(Dispatchers.IO) {
+            completionDao.getPendingUpload()
+        }
+    }
+    
+    /**
+     * Marca una completación como sincronizada
+     */
+    suspend fun markAsSynced(completionId: Int): Int {
+        return withContext(Dispatchers.IO) {
+            completionDao.markAsSynced(completionId, Date())
+        }
+    }
+    
+    /**
+     * Gestiona la respuesta de la API para operaciones con completaciones
+     */
+    private fun handleCompletionResponse(response: Response<ApiResponse<TaskCompletion>>): Result<TaskCompletion> {
+        if (response.isSuccessful) {
+            val apiResponse = response.body()
+            if (apiResponse != null && apiResponse.success && apiResponse.data != null) {
+                // Guardar la completación en la base de datos local
+                completionDao.insert(apiResponse.data)
+                
+                return Result.success(apiResponse.data)
+            }
+            return Result.failure(Exception(apiResponse?.message ?: "Respuesta sin datos"))
+        }
+        return Result.failure(Exception(response.message() ?: "Error desconocido"))
     }
 }

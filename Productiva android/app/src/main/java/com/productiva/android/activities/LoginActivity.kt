@@ -8,152 +8,184 @@ import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import com.productiva.android.R
+import com.productiva.android.api.ApiClient
 import com.productiva.android.viewmodel.LoginViewModel
+import com.google.android.material.textfield.TextInputLayout
 
 /**
- * Activity para el inicio de sesión en la aplicación
+ * Activity para la pantalla de inicio de sesión
  */
 class LoginActivity : AppCompatActivity() {
     
     private lateinit var viewModel: LoginViewModel
     
-    // Componentes de UI
-    private lateinit var usernameEditText: EditText
-    private lateinit var passwordEditText: EditText
+    // UI components
+    private lateinit var usernameInput: TextInputLayout
+    private lateinit var passwordInput: TextInputLayout
     private lateinit var loginButton: Button
     private lateinit var progressBar: ProgressBar
-    private lateinit var errorText: TextView
-    private lateinit var serverUrlTextView: TextView
+    private lateinit var serverUrlText: TextView
+    private lateinit var serverUrlInput: EditText
+    private lateinit var saveUrlButton: Button
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
         
-        // Inicializar ViewModel
+        // Initialize UI components
+        usernameInput = findViewById(R.id.username_input)
+        passwordInput = findViewById(R.id.password_input)
+        loginButton = findViewById(R.id.login_button)
+        progressBar = findViewById(R.id.progress_bar)
+        serverUrlText = findViewById(R.id.server_url_text)
+        serverUrlInput = findViewById(R.id.server_url_input)
+        saveUrlButton = findViewById(R.id.save_url_button)
+        
+        // Initialize ViewModel
         viewModel = ViewModelProvider(this).get(LoginViewModel::class.java)
         
-        // Configurar componentes de UI
-        setupUI()
-        
-        // Configurar observadores
+        // Set observers
         setupObservers()
         
-        // Verificar si hay una sesión activa
-        viewModel.checkActiveSession()
+        // Set click listeners
+        setupClickListeners()
+        
+        // Load server URL
+        loadServerUrl()
+        
+        // Check authentication status
+        viewModel.checkAuthStatus()
     }
     
     /**
-     * Configura las referencias y eventos de UI
-     */
-    private fun setupUI() {
-        usernameEditText = findViewById(R.id.usernameEditText)
-        passwordEditText = findViewById(R.id.passwordEditText)
-        loginButton = findViewById(R.id.loginButton)
-        progressBar = findViewById(R.id.progressBar)
-        errorText = findViewById(R.id.errorText)
-        serverUrlTextView = findViewById(R.id.serverUrlTextView)
-        
-        // Rellenar campo de usuario si hay uno guardado
-        usernameEditText.setText(viewModel.getLastUsername())
-        
-        // Mostrar URL del servidor
-        serverUrlTextView.text = viewModel.getServerUrl()
-        
-        // Configurar evento de clic para botón de login
-        loginButton.setOnClickListener {
-            login()
-        }
-        
-        // Configurar evento de clic para configuración de servidor
-        serverUrlTextView.setOnClickListener {
-            showServerUrlDialog()
-        }
-    }
-    
-    /**
-     * Configura los observadores de LiveData
+     * Configura los observadores para el ViewModel
      */
     private fun setupObservers() {
-        // Observar estado de carga
-        viewModel.isLoading.observe(this) { isLoading ->
-            progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-            loginButton.isEnabled = !isLoading
-        }
-        
-        // Observar mensajes de error
-        viewModel.errorMessage.observe(this) { errorMessage ->
-            if (errorMessage.isNotEmpty()) {
-                errorText.text = errorMessage
-                errorText.visibility = View.VISIBLE
-            } else {
-                errorText.visibility = View.GONE
-            }
-        }
-        
-        // Observar estado de autenticación
-        viewModel.loginState.observe(this) { state ->
+        // Observe authentication state
+        viewModel.authState.observe(this) { state ->
             when (state) {
-                is LoginViewModel.LoginState.Success -> {
-                    // Ir a la pantalla de selección de usuario
-                    val intent = Intent(this, UserSelectionActivity::class.java)
-                    startActivity(intent)
-                    finish()
+                LoginViewModel.AuthState.LOADING -> {
+                    showLoading(true)
                 }
-                is LoginViewModel.LoginState.Error -> {
-                    Toast.makeText(this, state.message, Toast.LENGTH_LONG).show()
+                LoginViewModel.AuthState.AUTHENTICATED -> {
+                    showLoading(false)
+                    navigateToUserSelection()
                 }
-                else -> {
-                    // Estado inicial, no hacer nada
+                LoginViewModel.AuthState.UNAUTHENTICATED -> {
+                    showLoading(false)
                 }
+            }
+        }
+        
+        // Observe error messages
+        viewModel.errorMessage.observe(this) { message ->
+            if (!message.isNullOrEmpty()) {
+                showError(message)
+            }
+        }
+        
+        // Observe server URL
+        viewModel.serverUrl.observe(this) { url ->
+            if (!url.isNullOrEmpty()) {
+                serverUrlInput.setText(url)
             }
         }
     }
     
     /**
-     * Realiza el proceso de inicio de sesión
+     * Configura los listeners para los botones
      */
-    private fun login() {
-        val username = usernameEditText.text.toString().trim()
-        val password = passwordEditText.text.toString().trim()
-        
-        if (username.isEmpty() || password.isEmpty()) {
-            errorText.text = getString(R.string.error_empty_fields)
-            errorText.visibility = View.VISIBLE
-            return
-        }
-        
-        errorText.visibility = View.GONE
-        viewModel.login(username, password)
-    }
-    
-    /**
-     * Muestra un diálogo para configurar la URL del servidor
-     */
-    private fun showServerUrlDialog() {
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle(getString(R.string.server_url_title))
-        
-        val input = EditText(this)
-        input.setText(viewModel.getServerUrl())
-        builder.setView(input)
-        
-        builder.setPositiveButton(getString(R.string.save)) { _, _ ->
-            val newUrl = input.text.toString().trim()
-            if (newUrl.isNotEmpty()) {
-                viewModel.updateServerUrl(newUrl)
-                serverUrlTextView.text = newUrl
-                Toast.makeText(this, getString(R.string.server_url_updated), Toast.LENGTH_SHORT).show()
+    private fun setupClickListeners() {
+        // Login button
+        loginButton.setOnClickListener {
+            val username = usernameInput.editText?.text.toString()
+            val password = passwordInput.editText?.text.toString()
+            
+            // Validate inputs
+            if (validateInputs(username, password)) {
+                viewModel.login(username, password)
             }
         }
         
-        builder.setNegativeButton(getString(R.string.cancel)) { dialog, _ ->
-            dialog.cancel()
+        // Save URL button
+        saveUrlButton.setOnClickListener {
+            val url = serverUrlInput.text.toString()
+            if (url.isNotEmpty()) {
+                saveServerUrl(url)
+                Toast.makeText(this, "URL del servidor actualizada", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    
+    /**
+     * Valida los campos de entrada
+     */
+    private fun validateInputs(username: String, password: String): Boolean {
+        var isValid = true
+        
+        if (username.isEmpty()) {
+            usernameInput.error = "El nombre de usuario es requerido"
+            isValid = false
+        } else {
+            usernameInput.error = null
         }
         
-        builder.show()
+        if (password.isEmpty()) {
+            passwordInput.error = "La contraseña es requerida"
+            isValid = false
+        } else {
+            passwordInput.error = null
+        }
+        
+        return isValid
+    }
+    
+    /**
+     * Muestra u oculta el indicador de carga
+     */
+    private fun showLoading(isLoading: Boolean) {
+        if (isLoading) {
+            progressBar.visibility = View.VISIBLE
+            loginButton.isEnabled = false
+        } else {
+            progressBar.visibility = View.GONE
+            loginButton.isEnabled = true
+        }
+    }
+    
+    /**
+     * Muestra un mensaje de error
+     */
+    private fun showError(message: String) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+    }
+    
+    /**
+     * Navega a la pantalla de selección de usuario
+     */
+    private fun navigateToUserSelection() {
+        val intent = Intent(this, UserSelectionActivity::class.java)
+        startActivity(intent)
+        // No finalizamos esta actividad para permitir volver al login si se cierra sesión
+    }
+    
+    /**
+     * Carga la URL del servidor desde ApiClient
+     */
+    private fun loadServerUrl() {
+        val apiClient = ApiClient.getInstance(this)
+        serverUrlInput.setText(apiClient.getServerUrl())
+    }
+    
+    /**
+     * Guarda y actualiza la URL del servidor
+     */
+    private fun saveServerUrl(url: String) {
+        val apiClient = ApiClient.getInstance(this)
+        apiClient.updateServerUrl(url)
+        viewModel.updateServerUrl(url)
     }
 }

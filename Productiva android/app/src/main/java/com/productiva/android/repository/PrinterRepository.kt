@@ -2,97 +2,154 @@ package com.productiva.android.repository
 
 import android.content.Context
 import androidx.lifecycle.LiveData
-import com.productiva.android.dao.SavedPrinterDao
 import com.productiva.android.database.AppDatabase
+import com.productiva.android.database.SavedPrinterDao
 import com.productiva.android.model.SavedPrinter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * Repositorio para manejar operaciones relacionadas con impresoras guardadas
+ * Repositorio para gestionar impresoras guardadas
  */
-class PrinterRepository(private val context: Context) {
+class PrinterRepository(context: Context) {
     
-    private val savedPrinterDao: SavedPrinterDao = AppDatabase.getDatabase(context).savedPrinterDao()
+    private val printerDao: SavedPrinterDao
+    
+    init {
+        val database = AppDatabase.getInstance(context)
+        printerDao = database.savedPrinterDao()
+    }
     
     /**
-     * Obtiene todas las impresoras guardadas como LiveData desde la base de datos local
+     * Obtiene todas las impresoras guardadas
      */
     fun getAllPrinters(): LiveData<List<SavedPrinter>> {
-        return savedPrinterDao.getAllPrinters()
+        return printerDao.getAllPrinters()
     }
     
     /**
-     * Obtiene una impresora por su ID desde la base de datos local
+     * Obtiene una impresora por su ID
      */
-    suspend fun getPrinterById(printerId: Int): SavedPrinter? = withContext(Dispatchers.IO) {
-        return@withContext savedPrinterDao.getPrinterById(printerId)
-    }
-    
-    /**
-     * Obtiene una impresora por su dirección desde la base de datos local
-     */
-    suspend fun getPrinterByAddress(address: String): SavedPrinter? = withContext(Dispatchers.IO) {
-        return@withContext savedPrinterDao.getPrinterByAddress(address)
-    }
-    
-    /**
-     * Obtiene la impresora predeterminada desde la base de datos local
-     */
-    suspend fun getDefaultPrinter(): SavedPrinter? = withContext(Dispatchers.IO) {
-        return@withContext savedPrinterDao.getDefaultPrinter()
-    }
-    
-    /**
-     * Guarda una nueva impresora en la base de datos local
-     */
-    suspend fun savePrinter(printer: SavedPrinter): Long = withContext(Dispatchers.IO) {
-        if (printer.isDefault) {
-            savedPrinterDao.clearDefaultPrinters()
+    suspend fun getPrinterById(printerId: Int): SavedPrinter? {
+        return withContext(Dispatchers.IO) {
+            printerDao.getPrinterById(printerId)
         }
-        return@withContext savedPrinterDao.insert(printer)
     }
     
     /**
-     * Actualiza una impresora existente en la base de datos local
+     * Obtiene una impresora por su dirección
      */
-    suspend fun updatePrinter(printer: SavedPrinter) = withContext(Dispatchers.IO) {
-        if (printer.isDefault) {
-            savedPrinterDao.clearDefaultPrinters()
+    suspend fun getPrinterByAddress(address: String): SavedPrinter? {
+        return withContext(Dispatchers.IO) {
+            printerDao.getPrinterByAddress(address)
         }
-        savedPrinterDao.update(printer)
     }
     
     /**
-     * Elimina una impresora de la base de datos local
+     * Obtiene la impresora predeterminada
      */
-    suspend fun deletePrinter(printerId: Int) = withContext(Dispatchers.IO) {
-        savedPrinterDao.deletePrinterById(printerId)
+    suspend fun getDefaultPrinter(): SavedPrinter? {
+        return withContext(Dispatchers.IO) {
+            printerDao.getDefaultPrinter()
+        }
+    }
+    
+    /**
+     * Obtiene impresoras por tipo
+     */
+    fun getPrintersByType(printerType: String): LiveData<List<SavedPrinter>> {
+        return printerDao.getPrintersByType(printerType)
+    }
+    
+    /**
+     * Busca impresoras por nombre
+     */
+    fun searchPrinters(query: String): LiveData<List<SavedPrinter>> {
+        return printerDao.searchPrinters(query)
+    }
+    
+    /**
+     * Inserta una nueva impresora
+     */
+    suspend fun insertPrinter(printer: SavedPrinter): Long {
+        return withContext(Dispatchers.IO) {
+            printerDao.insert(printer)
+        }
+    }
+    
+    /**
+     * Inserta múltiples impresoras
+     */
+    suspend fun insertAllPrinters(printers: List<SavedPrinter>): List<Long> {
+        return withContext(Dispatchers.IO) {
+            printerDao.insertAll(printers)
+        }
+    }
+    
+    /**
+     * Actualiza una impresora existente
+     */
+    suspend fun updatePrinter(printer: SavedPrinter): Int {
+        return withContext(Dispatchers.IO) {
+            printerDao.update(printer)
+        }
+    }
+    
+    /**
+     * Elimina una impresora por su ID
+     */
+    suspend fun deletePrinter(printerId: Int): Int {
+        return withContext(Dispatchers.IO) {
+            printerDao.deletePrinterById(printerId)
+        }
+    }
+    
+    /**
+     * Actualiza el timestamp de último uso de una impresora
+     */
+    suspend fun updateLastUsed(printerId: Int): Int {
+        return withContext(Dispatchers.IO) {
+            printerDao.updateLastUsed(printerId, System.currentTimeMillis())
+        }
     }
     
     /**
      * Establece una impresora como predeterminada
      */
-    suspend fun setDefaultPrinter(printerId: Int) = withContext(Dispatchers.IO) {
-        savedPrinterDao.clearDefaultPrinters()
-        savedPrinterDao.setDefaultPrinter(printerId)
+    suspend fun setAsDefault(printerId: Int): Int {
+        return withContext(Dispatchers.IO) {
+            printerDao.setAsDefault(printerId)
+        }
     }
     
     /**
-     * Obtiene la cantidad de impresoras guardadas
+     * Guarda una impresora, actualizándola si ya existe o insertándola si es nueva
      */
-    suspend fun getPrinterCount(): Int = withContext(Dispatchers.IO) {
-        return@withContext savedPrinterDao.getPrinterCount()
+    suspend fun savePrinter(printer: SavedPrinter): Long {
+        return withContext(Dispatchers.IO) {
+            val existingPrinter = printerDao.getPrinterByAddress(printer.address)
+            
+            if (existingPrinter != null) {
+                printerDao.update(printer)
+                existingPrinter.id.toLong()
+            } else {
+                printerDao.insert(printer)
+            }
+        }
     }
     
     /**
-     * Actualiza el último uso de una impresora
+     * Guarda una impresora y la establece como predeterminada
      */
-    suspend fun updateLastUsed(printerId: Int) = withContext(Dispatchers.IO) {
-        val printer = savedPrinterDao.getPrinterById(printerId)
-        printer?.let {
-            val updatedPrinter = it.copy(lastUsed = System.currentTimeMillis())
-            savedPrinterDao.update(updatedPrinter)
+    suspend fun saveAndSetAsDefault(printer: SavedPrinter): Long {
+        return withContext(Dispatchers.IO) {
+            val id = savePrinter(printer)
+            
+            // Si es una nueva impresora, necesitamos recuperar su ID
+            val printerId = if (printer.id != 0) printer.id else id.toInt()
+            printerDao.setAsDefault(printerId)
+            
+            id
         }
     }
 }

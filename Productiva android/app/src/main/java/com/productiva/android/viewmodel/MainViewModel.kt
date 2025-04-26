@@ -8,246 +8,182 @@ import androidx.lifecycle.viewModelScope
 import com.productiva.android.model.Task
 import com.productiva.android.model.User
 import com.productiva.android.repository.TaskRepository
+import com.productiva.android.repository.TaskRepository.Resource
 import com.productiva.android.repository.UserRepository
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import java.util.Date
 
 /**
  * ViewModel para la pantalla principal
  */
 class MainViewModel(application: Application) : AndroidViewModel(application) {
     
-    private val taskRepository = TaskRepository(application)
     private val userRepository = UserRepository(application)
+    private val taskRepository = TaskRepository(application)
     
     // Usuario actual
-    private val _currentUser = MutableStateFlow<User?>(null)
-    val currentUser: StateFlow<User?> = _currentUser
-    
-    // Estado de carga
-    private val _isLoading = MutableLiveData<Boolean>()
-    val isLoading: LiveData<Boolean> = _isLoading
-    
-    // Mensaje de error
-    private val _errorMessage = MutableLiveData<String>()
-    val errorMessage: LiveData<String> = _errorMessage
-    
-    // Filtro de tareas
-    private val _taskFilter = MutableStateFlow(TaskFilter.ALL)
-    val taskFilter: StateFlow<TaskFilter> = _taskFilter
+    private val _currentUser = MutableLiveData<User>()
+    val currentUser: LiveData<User> get() = _currentUser
     
     // Tareas
     private val _tasks = MutableLiveData<List<Task>>()
-    val tasks: LiveData<List<Task>> = _tasks
+    val tasks: LiveData<List<Task>> get() = _tasks
     
-    // Tareas filtradas
-    private val _filteredTasks = MutableLiveData<List<Task>>()
-    val filteredTasks: LiveData<List<Task>> = _filteredTasks
+    // Estado de carga
+    private val _isLoading = MutableLiveData<Boolean>()
+    val isLoading: LiveData<Boolean> get() = _isLoading
     
-    // Consulta de búsqueda
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery
+    // Mensaje de error
+    private val _errorMessage = MutableLiveData<String>()
+    val errorMessage: LiveData<String> get() = _errorMessage
+    
+    // Filtro de estado
+    private val _currentStatusFilter = MutableLiveData<String>()
+    val currentStatusFilter: LiveData<String> get() = _currentStatusFilter
+    
+    // Tarea seleccionada
+    private val _selectedTask = MutableLiveData<Task>()
+    val selectedTask: LiveData<Task> get() = _selectedTask
     
     init {
-        loadCurrentUser()
+        // Por defecto, mostrar tareas pendientes
+        _currentStatusFilter.value = Task.STATUS_PENDING
     }
     
     /**
-     * Carga el usuario actual
+     * Carga el usuario actual y sus tareas
      */
-    private fun loadCurrentUser() {
-        val userId = getSelectedUserId()
-        
-        if (userId != -1) {
-            viewModelScope.launch {
-                val user = userRepository.getUserById(userId)
-                _currentUser.value = user
-                
-                if (user != null) {
-                    // Cargar tareas para el usuario actual
-                    loadTasksForUser(userId)
+    fun loadCurrentUser() {
+        viewModelScope.launch {
+            try {
+                val result = userRepository.getCurrentUser()
+                if (result.isSuccess) {
+                    val user = result.getOrNull()
+                    if (user != null) {
+                        _currentUser.value = user
+                        loadTasks(user.id)
+                    }
+                } else {
+                    _errorMessage.value = result.exceptionOrNull()?.message ?: "Error al obtener usuario"
                 }
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Error desconocido"
             }
         }
     }
     
     /**
-     * Carga las tareas para un usuario específico
+     * Carga el usuario por ID y sus tareas
      */
-    fun loadTasksForUser(userId: Int) {
+    fun loadUserById(userId: Int) {
+        viewModelScope.launch {
+            try {
+                val user = userRepository.getUserById(userId)
+                if (user != null) {
+                    _currentUser.value = user
+                    loadTasks(user.id)
+                }
+            } catch (e: Exception) {
+                _errorMessage.value = e.message ?: "Error al obtener usuario"
+            }
+        }
+    }
+    
+    /**
+     * Carga las tareas del usuario con el estado actual
+     */
+    fun loadTasks(userId: Int) {
         _isLoading.value = true
         
         viewModelScope.launch {
             try {
-                // Obtener tareas del servidor
-                val result = taskRepository.fetchTasksByUser(userId)
-                
-                result.fold(
-                    onSuccess = {
-                        _isLoading.value = false
-                        applyFilter()
-                    },
-                    onFailure = { error ->
-                        _errorMessage.value = error.message ?: "Error al cargar tareas"
-                        _isLoading.value = false
-                        
-                        // Si hay un error, intentamos cargar desde la base de datos local
-                        val localTasks = taskRepository.getTasksByUser(userId).value
-                        if (localTasks != null) {
-                            _tasks.value = localTasks
-                            applyFilter()
+                taskRepository.loadTasksWithStatusFlow(
+                    userId = userId,
+                    status = _currentStatusFilter.value
+                ).collect { resource ->
+                    when (resource) {
+                        is Resource.Loading -> {
+                            _isLoading.value = true
+                            resource.data?.let { _tasks.value = it }
+                        }
+                        is Resource.Success -> {
+                            _isLoading.value = false
+                            _tasks.value = resource.data ?: emptyList()
+                        }
+                        is Resource.Error -> {
+                            _isLoading.value = false
+                            _errorMessage.value = resource.message ?: "Error desconocido"
+                            resource.data?.let { _tasks.value = it }
                         }
                     }
-                )
-            } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Error al cargar tareas"
-                _isLoading.value = false
-                
-                // Si hay un error, intentamos cargar desde la base de datos local
-                val localTasks = taskRepository.getTasksByUser(userId).value
-                if (localTasks != null) {
-                    _tasks.value = localTasks
-                    applyFilter()
                 }
+            } catch (e: Exception) {
+                _isLoading.value = false
+                _errorMessage.value = e.message ?: "Error desconocido"
             }
         }
     }
     
     /**
-     * Sincroniza las tareas con el servidor
+     * Cambia el filtro de estado y recarga las tareas
      */
-    fun syncTasks() {
+    fun setStatusFilter(status: String) {
+        if (_currentStatusFilter.value != status) {
+            _currentStatusFilter.value = status
+            _currentUser.value?.let { loadTasks(it.id) }
+        }
+    }
+    
+    /**
+     * Actualiza el estado de una tarea
+     */
+    fun updateTaskStatus(taskId: Int, newStatus: String) {
         _isLoading.value = true
         
         viewModelScope.launch {
             try {
-                val result = taskRepository.syncTasks()
-                
-                result.fold(
-                    onSuccess = { count ->
-                        _isLoading.value = false
-                        loadCurrentUser() // Recargar tareas después de sincronizar
-                    },
-                    onFailure = { error ->
-                        _errorMessage.value = error.message ?: "Error al sincronizar tareas"
-                        _isLoading.value = false
-                    }
-                )
+                val result = taskRepository.updateTaskStatus(taskId, newStatus)
+                if (result.isFailure) {
+                    _errorMessage.value = result.exceptionOrNull()?.message ?: "Error al actualizar tarea"
+                } else {
+                    // Recargar las tareas si el estado cambió
+                    _currentUser.value?.let { loadTasks(it.id) }
+                }
             } catch (e: Exception) {
-                _errorMessage.value = e.message ?: "Error al sincronizar tareas"
+                _errorMessage.value = e.message ?: "Error desconocido"
+            } finally {
                 _isLoading.value = false
             }
         }
     }
     
     /**
-     * Establece el filtro de tareas
+     * Selecciona una tarea para ver sus detalles
      */
-    fun setTaskFilter(filter: TaskFilter) {
-        _taskFilter.value = filter
-        applyFilter()
+    fun selectTask(task: Task) {
+        _selectedTask.value = task
     }
     
     /**
-     * Aplica el filtro y la búsqueda a las tareas
+     * Limpia la tarea seleccionada
      */
-    private fun applyFilter() {
-        val userId = getSelectedUserId()
-        if (userId == -1) return
-        
-        viewModelScope.launch {
-            val tasksToFilter = when (taskFilter.value) {
-                TaskFilter.ALL -> taskRepository.getTasksByUser(userId).value ?: emptyList()
-                TaskFilter.PENDING -> taskRepository.getTasksByUserAndStatus(userId, "pending").value ?: emptyList()
-                TaskFilter.IN_PROGRESS -> taskRepository.getTasksByUserAndStatus(userId, "in_progress").value ?: emptyList()
-                TaskFilter.COMPLETED -> taskRepository.getTasksByUserAndStatus(userId, "completed").value ?: emptyList()
-                TaskFilter.TODAY -> {
-                    // Filtrar tareas para hoy
-                    val startOfDay = getStartOfDay(Date())
-                    val endOfDay = getEndOfDay(Date())
-                    taskRepository.getTasksByDateRange(startOfDay, endOfDay).value ?: emptyList()
-                }
-                TaskFilter.OVERDUE -> {
-                    // Filtrar tareas vencidas (con fecha de vencimiento anterior a hoy y no completadas)
-                    val today = Date()
-                    (taskRepository.getTasksByUser(userId).value ?: emptyList()).filter { task ->
-                        task.dueDate?.before(today) == true && task.status != "completed"
-                    }
-                }
-            }
-            
-            // Aplicar búsqueda si existe
-            val query = searchQuery.value
-            _filteredTasks.value = if (query.isNotEmpty()) {
-                val lowercaseQuery = query.lowercase()
-                tasksToFilter.filter { task ->
-                    task.title.lowercase().contains(lowercaseQuery) ||
-                            (task.description?.lowercase()?.contains(lowercaseQuery) ?: false) ||
-                            (task.locationName?.lowercase()?.contains(lowercaseQuery) ?: false)
-                }
-            } else {
-                tasksToFilter
-            }
-        }
+    fun clearSelectedTask() {
+        _selectedTask.value = null
     }
     
     /**
-     * Establece la consulta de búsqueda
+     * Refresca las tareas desde el servidor
      */
-    fun setSearchQuery(query: String) {
-        _searchQuery.value = query
-        applyFilter()
+    fun refreshTasks() {
+        _currentUser.value?.let { loadTasks(it.id) }
     }
     
     /**
-     * Obtiene el ID del usuario seleccionado
-     */
-    private fun getSelectedUserId(): Int {
-        return getApplication<Application>().getSharedPreferences("productiva_prefs", Application.MODE_PRIVATE)
-            .getInt("selected_user_id", -1)
-    }
-    
-    /**
-     * Cierra la sesión
+     * Cierra la sesión del usuario actual
      */
     fun logout() {
         viewModelScope.launch {
             userRepository.logout()
         }
-    }
-    
-    /**
-     * Obtiene la fecha de inicio del día
-     */
-    private fun getStartOfDay(date: Date): Date {
-        val calendar = java.util.Calendar.getInstance()
-        calendar.time = date
-        calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
-        calendar.set(java.util.Calendar.MINUTE, 0)
-        calendar.set(java.util.Calendar.SECOND, 0)
-        calendar.set(java.util.Calendar.MILLISECOND, 0)
-        return calendar.time
-    }
-    
-    /**
-     * Obtiene la fecha de fin del día
-     */
-    private fun getEndOfDay(date: Date): Date {
-        val calendar = java.util.Calendar.getInstance()
-        calendar.time = date
-        calendar.set(java.util.Calendar.HOUR_OF_DAY, 23)
-        calendar.set(java.util.Calendar.MINUTE, 59)
-        calendar.set(java.util.Calendar.SECOND, 59)
-        calendar.set(java.util.Calendar.MILLISECOND, 999)
-        return calendar.time
-    }
-    
-    /**
-     * Filtros posibles para las tareas
-     */
-    enum class TaskFilter {
-        ALL, PENDING, IN_PROGRESS, COMPLETED, TODAY, OVERDUE
     }
 }

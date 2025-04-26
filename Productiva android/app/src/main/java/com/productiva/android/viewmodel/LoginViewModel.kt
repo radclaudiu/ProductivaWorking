@@ -5,162 +5,105 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import com.productiva.android.api.ApiClient
 import com.productiva.android.model.User
 import com.productiva.android.repository.UserRepository
 import kotlinx.coroutines.launch
 
 /**
- * ViewModel para la pantalla de inicio de sesión
+ * ViewModel para la pantalla de login
  */
 class LoginViewModel(application: Application) : AndroidViewModel(application) {
     
     private val userRepository = UserRepository(application)
-    private val apiClient = ApiClient.getInstance(application)
     
-    // Estado de la autenticación
-    private val _loginState = MutableLiveData<LoginState>()
-    val loginState: LiveData<LoginState> = _loginState
-    
-    // Estado de carga
-    private val _isLoading = MutableLiveData<Boolean>()
-    val isLoading: LiveData<Boolean> = _isLoading
+    // Estado de autenticación
+    private val _authState = MutableLiveData<AuthState>()
+    val authState: LiveData<AuthState> get() = _authState
     
     // Mensaje de error
     private val _errorMessage = MutableLiveData<String>()
-    val errorMessage: LiveData<String> = _errorMessage
+    val errorMessage: LiveData<String> get() = _errorMessage
+    
+    // URL del servidor
+    private val _serverUrl = MutableLiveData<String>()
+    val serverUrl: LiveData<String> get() = _serverUrl
     
     /**
-     * Realiza el proceso de inicio de sesión
+     * Intenta iniciar sesión con las credenciales proporcionadas
      */
     fun login(username: String, password: String) {
-        if (username.isEmpty() || password.isEmpty()) {
-            _errorMessage.value = "El nombre de usuario y la contraseña son obligatorios"
+        if (username.isBlank() || password.isBlank()) {
+            _errorMessage.value = "Usuario y contraseña son requeridos"
             return
         }
         
-        _isLoading.value = true
+        _authState.value = AuthState.LOADING
         
         viewModelScope.launch {
             try {
                 val result = userRepository.login(username, password)
                 
-                result.fold(
-                    onSuccess = { user ->
-                        _loginState.value = LoginState.Success(user)
-                        _isLoading.value = false
-                        
-                        // Guardar información relevante para sesiones futuras si es necesario
-                        saveLoginInfo(username)
-                    },
-                    onFailure = { error ->
-                        _loginState.value = LoginState.Error(error.message ?: "Error de autenticación")
-                        _errorMessage.value = error.message ?: "Error de autenticación"
-                        _isLoading.value = false
-                    }
-                )
-            } catch (e: Exception) {
-                _loginState.value = LoginState.Error(e.message ?: "Error de conexión")
-                _errorMessage.value = e.message ?: "Error de conexión"
-                _isLoading.value = false
-            }
-        }
-    }
-    
-    /**
-     * Verifica si hay una sesión activa
-     */
-    fun checkActiveSession() {
-        _isLoading.value = true
-        
-        viewModelScope.launch {
-            if (apiClient.hasAuthToken()) {
-                // Si hay un token guardado, intentamos obtener el usuario actual
-                try {
-                    val response = apiClient.apiService.getCurrentUser()
-                    
-                    if (response.isSuccessful && response.body()?.success == true && response.body()?.data != null) {
-                        _loginState.value = LoginState.Success(response.body()?.data!!)
+                if (result.isSuccess) {
+                    val user = result.getOrNull()
+                    if (user != null) {
+                        _authState.value = AuthState.AUTHENTICATED
                     } else {
-                        // Token inválido o expirado
-                        apiClient.clearAuthToken()
-                        _loginState.value = LoginState.Initial
+                        _authState.value = AuthState.UNAUTHENTICATED
+                        _errorMessage.value = "Error de inicio de sesión"
                     }
-                } catch (e: Exception) {
-                    // Error de conexión, mantenemos el token por si es un problema temporal
-                    _loginState.value = LoginState.Error(e.message ?: "Error de conexión")
-                    _errorMessage.value = e.message ?: "Error de conexión"
+                } else {
+                    _authState.value = AuthState.UNAUTHENTICATED
+                    _errorMessage.value = result.exceptionOrNull()?.message ?: "Error de conexión"
                 }
-            } else {
-                _loginState.value = LoginState.Initial
+            } catch (e: Exception) {
+                _authState.value = AuthState.UNAUTHENTICATED
+                _errorMessage.value = e.message ?: "Error desconocido"
             }
-            
-            _isLoading.value = false
         }
     }
     
     /**
-     * Cierra la sesión actual
+     * Verifica si hay un token guardado y valida la sesión
      */
-    fun logout() {
-        _isLoading.value = true
-        
+    fun checkAuthStatus() {
         viewModelScope.launch {
-            userRepository.logout()
-            _loginState.value = LoginState.Initial
-            _isLoading.value = false
+            try {
+                val result = userRepository.getCurrentUser()
+                
+                if (result.isSuccess) {
+                    _authState.value = AuthState.AUTHENTICATED
+                } else {
+                    _authState.value = AuthState.UNAUTHENTICATED
+                }
+            } catch (e: Exception) {
+                _authState.value = AuthState.UNAUTHENTICATED
+            }
         }
-    }
-    
-    /**
-     * Guarda información de inicio de sesión para futuras sesiones
-     */
-    private fun saveLoginInfo(username: String) {
-        // Guardar el nombre de usuario para autocompletar en futuros inicios de sesión
-        getApplication<Application>().getSharedPreferences("productiva_prefs", Application.MODE_PRIVATE)
-            .edit()
-            .putString("last_username", username)
-            .apply()
-    }
-    
-    /**
-     * Obtiene el último nombre de usuario utilizado
-     */
-    fun getLastUsername(): String {
-        return getApplication<Application>().getSharedPreferences("productiva_prefs", Application.MODE_PRIVATE)
-            .getString("last_username", "") ?: ""
-    }
-    
-    /**
-     * Obtiene la URL del servidor guardada
-     */
-    fun getServerUrl(): String {
-        return getApplication<Application>().getSharedPreferences("productiva_prefs", Application.MODE_PRIVATE)
-            .getString("server_url", "https://productiva.example.com/api/") ?: "https://productiva.example.com/api/"
     }
     
     /**
      * Actualiza la URL del servidor
      */
     fun updateServerUrl(url: String) {
-        if (url.isNotEmpty()) {
-            // Asegurarse de que termina con una barra
-            val formattedUrl = if (url.endsWith("/")) url else "$url/"
-            
-            apiClient.updateServerUrl(formattedUrl)
-            getApplication<Application>().getSharedPreferences("productiva_prefs", Application.MODE_PRIVATE)
-                .edit()
-                .putString("server_url", formattedUrl)
-                .apply()
+        _serverUrl.value = url
+    }
+    
+    /**
+     * Cierra la sesión del usuario actual
+     */
+    fun logout() {
+        viewModelScope.launch {
+            userRepository.logout()
+            _authState.value = AuthState.UNAUTHENTICATED
         }
     }
     
     /**
-     * Estados posibles de la autenticación
+     * Estados de autenticación
      */
-    sealed class LoginState {
-        object Initial : LoginState()
-        data class Success(val user: User) : LoginState()
-        data class Error(val message: String) : LoginState()
+    enum class AuthState {
+        LOADING,
+        AUTHENTICATED,
+        UNAUTHENTICATED
     }
 }

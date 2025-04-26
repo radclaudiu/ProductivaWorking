@@ -1,260 +1,187 @@
 package com.productiva.android.sync
 
+import android.app.job.JobInfo
+import android.app.job.JobScheduler
+import android.content.ComponentName
 import android.content.Context
-import android.content.SharedPreferences
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.PersistableBundle
 import android.util.Log
-import androidx.work.*
-import com.productiva.android.repository.LabelTemplateRepository
-import com.productiva.android.repository.ResourceState
-import com.productiva.android.repository.TaskRepository
-import com.productiva.android.repository.UserRepository
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.launch
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import java.util.concurrent.TimeUnit
 
 /**
- * Administrador de sincronización que coordina las operaciones de sincronización
- * entre la aplicación móvil y el servidor web de Productiva.
+ * Administrador de sincronización que coordina las operaciones de sincronización.
  */
-class SyncManager(
-    private val context: Context,
-    private val userRepository: UserRepository,
-    private val taskRepository: TaskRepository,
-    private val labelTemplateRepository: LabelTemplateRepository
-) {
+class SyncManager(private val context: Context) {
+    
     private val TAG = "SyncManager"
-    private val prefs: SharedPreferences = context.getSharedPreferences(SYNC_PREFERENCES, Context.MODE_PRIVATE)
-    private val coroutineScope = CoroutineScope(Dispatchers.IO)
+    
+    // Estado actual de la sincronización
+    private val _syncState = MutableLiveData<SyncState>()
+    val syncState: LiveData<SyncState> = _syncState
+    
+    // Preferencias de sincronización
+    private val syncPrefs = context.getSharedPreferences(SYNC_PREFERENCES, Context.MODE_PRIVATE)
     
     companion object {
         private const val SYNC_PREFERENCES = "sync_preferences"
         private const val LAST_SYNC_TIME = "last_sync_time"
-        private const val WORK_TAG_PERIODIC = "sync_periodic"
-        private const val WORK_TAG_IMMEDIATE = "sync_immediate"
-        private const val SYNC_INTERVAL_HOURS = 2L // Sincronización cada 2 horas
-    }
-    
-    /**
-     * Inicia la sincronización periódica en segundo plano.
-     */
-    fun setupPeriodicSync() {
-        try {
-            // Restricciones para la sincronización (necesita conectividad)
-            val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build()
-            
-            // Configurar trabajo periódico
-            val syncWorkRequest = PeriodicWorkRequestBuilder<SyncWorker>(
-                SYNC_INTERVAL_HOURS, TimeUnit.HOURS,
-                PeriodicWorkRequest.MIN_PERIODIC_FLEX_MILLIS, TimeUnit.MILLISECONDS
-            )
-                .setConstraints(constraints)
-                .addTag(WORK_TAG_PERIODIC)
-                .build()
-            
-            // Registrar trabajo con WorkManager
-            WorkManager.getInstance(context)
-                .enqueueUniquePeriodicWork(
-                    WORK_TAG_PERIODIC,
-                    ExistingPeriodicWorkPolicy.REPLACE,
-                    syncWorkRequest
-                )
-            
-            Log.d(TAG, "Sincronización periódica configurada cada $SYNC_INTERVAL_HOURS horas")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error al configurar sincronización periódica", e)
-        }
-    }
-    
-    /**
-     * Realiza una sincronización inmediata.
-     */
-    fun syncNow() {
-        try {
-            // Restricciones para la sincronización (necesita conectividad)
-            val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build()
-            
-            // Configurar trabajo único
-            val syncWorkRequest = OneTimeWorkRequestBuilder<SyncWorker>()
-                .setConstraints(constraints)
-                .addTag(WORK_TAG_IMMEDIATE)
-                .build()
-            
-            // Registrar trabajo con WorkManager
-            WorkManager.getInstance(context)
-                .enqueueUniqueWork(
-                    WORK_TAG_IMMEDIATE,
-                    ExistingWorkPolicy.REPLACE,
-                    syncWorkRequest
-                )
-            
-            Log.d(TAG, "Sincronización inmediata solicitada")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error al solicitar sincronización inmediata", e)
-            // Intentar sincronización manual si falla WorkManager
-            syncManually()
-        }
-    }
-    
-    /**
-     * Realiza una sincronización manual (sin usar WorkManager).
-     */
-    private fun syncManually() {
-        coroutineScope.launch {
-            try {
-                Log.d(TAG, "Iniciando sincronización manual")
-                syncUsers()
-                syncTasks()
-                syncLabelTemplates()
-                syncPendingCompletions()
-                updateLastSyncTime()
-                Log.d(TAG, "Sincronización manual completada")
-            } catch (e: Exception) {
-                Log.e(TAG, "Error en sincronización manual", e)
-            }
-        }
-    }
-    
-    /**
-     * Sincroniza los usuarios desde el servidor.
-     */
-    private suspend fun syncUsers() {
-        try {
-            userRepository.syncUsers().collect { state ->
-                when (state) {
-                    is ResourceState.Success -> {
-                        Log.d(TAG, "Sincronización de usuarios completada: ${state.data?.size ?: 0} usuarios")
-                    }
-                    is ResourceState.Error -> {
-                        Log.e(TAG, "Error en sincronización de usuarios: ${state.message}")
-                    }
-                    else -> {} // Estado de carga, no hacer nada
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error en sincronización de usuarios", e)
-        }
-    }
-    
-    /**
-     * Sincroniza las tareas desde el servidor.
-     */
-    private suspend fun syncTasks() {
-        try {
-            taskRepository.syncTasks().collect { state ->
-                when (state) {
-                    is ResourceState.Success -> {
-                        Log.d(TAG, "Sincronización de tareas completada: ${state.data?.size ?: 0} tareas")
-                    }
-                    is ResourceState.Error -> {
-                        Log.e(TAG, "Error en sincronización de tareas: ${state.message}")
-                    }
-                    else -> {} // Estado de carga, no hacer nada
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error en sincronización de tareas", e)
-        }
-    }
-    
-    /**
-     * Sincroniza las plantillas de etiquetas desde el servidor.
-     */
-    private suspend fun syncLabelTemplates() {
-        try {
-            labelTemplateRepository.syncLabelTemplates().collect { state ->
-                when (state) {
-                    is ResourceState.Success -> {
-                        Log.d(TAG, "Sincronización de plantillas completada: ${state.data?.size ?: 0} plantillas")
-                    }
-                    is ResourceState.Error -> {
-                        Log.e(TAG, "Error en sincronización de plantillas: ${state.message}")
-                    }
-                    else -> {} // Estado de carga, no hacer nada
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error en sincronización de plantillas", e)
-        }
-    }
-    
-    /**
-     * Sincroniza las finalizaciones de tareas pendientes al servidor.
-     */
-    private suspend fun syncPendingCompletions() {
-        try {
-            taskRepository.syncPendingCompletions().collect { state ->
-                when (state) {
-                    is ResourceState.Success -> {
-                        val count = state.data ?: 0
-                        if (count > 0) {
-                            Log.d(TAG, "Sincronización de finalizaciones completada: $count finalizaciones")
-                        }
-                    }
-                    is ResourceState.Error -> {
-                        Log.e(TAG, "Error en sincronización de finalizaciones: ${state.message}")
-                    }
-                    else -> {} // Estado de carga, no hacer nada
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error en sincronización de finalizaciones", e)
-        }
-    }
-    
-    /**
-     * Actualiza la marca de tiempo de la última sincronización.
-     */
-    private fun updateLastSyncTime() {
-        prefs.edit().putLong(LAST_SYNC_TIME, System.currentTimeMillis()).apply()
-    }
-    
-    /**
-     * Obtiene el tiempo transcurrido desde la última sincronización.
-     * @return Tiempo en milisegundos desde la última sincronización, o -1 si nunca se ha sincronizado.
-     */
-    fun getTimeSinceLastSync(): Long {
-        val lastSync = prefs.getLong(LAST_SYNC_TIME, -1)
-        if (lastSync == -1L) return -1
+        private const val SYNC_INTERVAL = "sync_interval_hours"
+        private const val SYNC_JOB_ID = 1000
         
-        return System.currentTimeMillis() - lastSync
+        private const val DEFAULT_SYNC_INTERVAL_HOURS = 2
+        private const val MIN_SYNC_INTERVAL_HOURS = 1
+        private const val MAX_SYNC_INTERVAL_HOURS = 24
+    }
+    
+    init {
+        _syncState.value = SyncState.Idle
     }
     
     /**
-     * Formatea el tiempo desde la última sincronización para mostrar al usuario.
+     * Estados posibles de sincronización.
      */
-    fun getFormattedLastSyncTime(): String {
-        val timeSinceLastSync = getTimeSinceLastSync()
+    sealed class SyncState {
+        object Idle : SyncState()
+        object Syncing : SyncState()
+        data class Success(val timestamp: Long) : SyncState()
+        data class Error(val message: String) : SyncState()
+    }
+    
+    /**
+     * Verifica si hay conexión a Internet disponible.
+     */
+    fun isNetworkAvailable(): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork
+        val capabilities = connectivityManager.getNetworkCapabilities(network)
         
-        return when {
-            timeSinceLastSync < 0 -> "Nunca"
-            timeSinceLastSync < 60 * 1000 -> "Hace menos de un minuto"
-            timeSinceLastSync < 60 * 60 * 1000 -> {
-                val minutes = timeSinceLastSync / (60 * 1000)
-                "Hace $minutes ${if (minutes == 1L) "minuto" else "minutos"}"
-            }
-            timeSinceLastSync < 24 * 60 * 60 * 1000 -> {
-                val hours = timeSinceLastSync / (60 * 60 * 1000)
-                "Hace $hours ${if (hours == 1L) "hora" else "horas"}"
-            }
-            else -> {
-                val days = timeSinceLastSync / (24 * 60 * 60 * 1000)
-                "Hace $days ${if (days == 1L) "día" else "días"}"
-            }
+        return capabilities != null && (
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET))
+    }
+    
+    /**
+     * Programa sincronizaciones periódicas.
+     */
+    fun schedulePeriodicalSync() {
+        val jobScheduler = context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
+        
+        // Obtener intervalo de sincronización
+        val intervalHours = getSyncInterval()
+        val intervalMillis = TimeUnit.HOURS.toMillis(intervalHours.toLong())
+        
+        // Configurar trabajo
+        val componentName = ComponentName(context, SyncJobService::class.java)
+        val jobInfo = JobInfo.Builder(SYNC_JOB_ID, componentName)
+            .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+            .setPersisted(true)
+            .setPeriodic(intervalMillis)
+            .build()
+        
+        // Programar trabajo
+        val result = jobScheduler.schedule(jobInfo)
+        if (result == JobScheduler.RESULT_SUCCESS) {
+            Log.d(TAG, "Sincronización periódica programada cada $intervalHours horas")
+        } else {
+            Log.e(TAG, "Error al programar sincronización periódica")
         }
     }
     
     /**
-     * Cancela todas las operaciones de sincronización programadas.
+     * Cancela las sincronizaciones programadas.
      */
-    fun cancelAllSync() {
-        WorkManager.getInstance(context).cancelAllWorkByTag(WORK_TAG_PERIODIC)
-        WorkManager.getInstance(context).cancelAllWorkByTag(WORK_TAG_IMMEDIATE)
-        Log.d(TAG, "Todas las sincronizaciones canceladas")
+    fun cancelScheduledSync() {
+        val jobScheduler = context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
+        jobScheduler.cancel(SYNC_JOB_ID)
+        Log.d(TAG, "Sincronización periódica cancelada")
+    }
+    
+    /**
+     * Ejecuta una sincronización inmediata.
+     */
+    fun syncNow(): Flow<SyncState> = flow {
+        if (!isNetworkAvailable()) {
+            emit(SyncState.Error("No hay conexión a Internet disponible"))
+            return@flow
+        }
+        
+        emit(SyncState.Syncing)
+        _syncState.postValue(SyncState.Syncing)
+        
+        try {
+            // Crear trabajo de sincronización inmediata
+            val jobScheduler = context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
+            val componentName = ComponentName(context, SyncJobService::class.java)
+            
+            val extras = PersistableBundle()
+            extras.putBoolean("immediate", true)
+            
+            val jobInfo = JobInfo.Builder(SYNC_JOB_ID + 1, componentName)
+                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
+                .setExtras(extras)
+                .setOverrideDeadline(0) // Ejecutar inmediatamente
+                .build()
+            
+            val result = jobScheduler.schedule(jobInfo)
+            
+            if (result == JobScheduler.RESULT_SUCCESS) {
+                // Actualizar tiempo de última sincronización
+                val timestamp = System.currentTimeMillis()
+                updateLastSyncTime(timestamp)
+                
+                val state = SyncState.Success(timestamp)
+                emit(state)
+                _syncState.postValue(state)
+            } else {
+                val state = SyncState.Error("No se pudo iniciar la sincronización")
+                emit(state)
+                _syncState.postValue(state)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error durante la sincronización", e)
+            val state = SyncState.Error("Error: ${e.message}")
+            emit(state)
+            _syncState.postValue(state)
+        }
+    }
+    
+    /**
+     * Obtiene la última fecha de sincronización.
+     */
+    fun getLastSyncTime(): Long {
+        return syncPrefs.getLong(LAST_SYNC_TIME, 0)
+    }
+    
+    /**
+     * Actualiza la fecha de última sincronización.
+     */
+    fun updateLastSyncTime(timestamp: Long) {
+        syncPrefs.edit().putLong(LAST_SYNC_TIME, timestamp).apply()
+    }
+    
+    /**
+     * Obtiene el intervalo de sincronización en horas.
+     */
+    fun getSyncInterval(): Int {
+        return syncPrefs.getInt(SYNC_INTERVAL, DEFAULT_SYNC_INTERVAL_HOURS)
+    }
+    
+    /**
+     * Establece el intervalo de sincronización en horas.
+     */
+    fun setSyncInterval(hours: Int) {
+        val validHours = hours.coerceIn(MIN_SYNC_INTERVAL_HOURS, MAX_SYNC_INTERVAL_HOURS)
+        syncPrefs.edit().putInt(SYNC_INTERVAL, validHours).apply()
+        
+        // Reprogramar con el nuevo intervalo
+        cancelScheduledSync()
+        schedulePeriodicalSync()
     }
 }

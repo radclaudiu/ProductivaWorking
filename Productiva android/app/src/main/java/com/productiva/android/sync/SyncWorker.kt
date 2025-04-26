@@ -10,72 +10,102 @@ import com.productiva.android.repository.LabelTemplateRepository
 import com.productiva.android.repository.ResourceState
 import com.productiva.android.repository.TaskRepository
 import com.productiva.android.repository.UserRepository
-import kotlinx.coroutines.Dispatchers
+import com.productiva.android.utils.SessionManager
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.firstOrNull
 
 /**
- * Worker de sincronización que ejecuta las operaciones en segundo plano.
- * Utiliza WorkManager para programar y ejecutar las sincronizaciones.
+ * Worker para ejecutar tareas de sincronización en segundo plano.
  */
 class SyncWorker(
-    appContext: Context,
+    context: Context,
     workerParams: WorkerParameters
-) : CoroutineWorker(appContext, workerParams) {
+) : CoroutineWorker(context, workerParams) {
     
     private val TAG = "SyncWorker"
-    private val prefs = appContext.getSharedPreferences("sync_preferences", Context.MODE_PRIVATE)
-    
-    // Repositorios
-    private val apiService = RetrofitClient.getApiService(appContext)
-    private val database = (appContext.applicationContext as ProductivaApplication).database
-    private val userRepository = UserRepository(database.userDao(), apiService)
-    private val taskRepository = TaskRepository(appContext, database.taskDao(), database.taskCompletionDao(), apiService)
-    private val labelTemplateRepository = LabelTemplateRepository(database.labelTemplateDao(), apiService)
     
     /**
-     * Ejecuta las operaciones de sincronización.
+     * Método principal que ejecuta el trabajo de sincronización.
      */
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+    override suspend fun doWork(): Result {
+        Log.d(TAG, "Iniciando trabajo de sincronización")
+        
+        // Verificar si hay sesión activa
+        val sessionManager = SessionManager(applicationContext)
+        if (!sessionManager.isLoggedIn()) {
+            Log.d(TAG, "No hay sesión activa, cancelando sincronización")
+            return Result.failure()
+        }
+        
+        // Obtener las instancias necesarias
+        val app = applicationContext as ProductivaApplication
+        val database = app.database
+        val apiService = RetrofitClient.getApiService(applicationContext)
+        
+        // Inicializar repositorios
+        val userRepository = UserRepository(database.userDao(), apiService)
+        val taskRepository = TaskRepository(
+            applicationContext,
+            database.taskDao(),
+            database.taskCompletionDao(),
+            apiService
+        )
+        val labelTemplateRepository = LabelTemplateRepository(
+            database.labelTemplateDao(),
+            apiService
+        )
+        
         try {
-            Log.d(TAG, "Iniciando sincronización programada")
-            
-            // Sincronizar usuarios
-            userRepository.syncUsers().collect { state ->
-                if (state is ResourceState.Error) {
-                    Log.e(TAG, "Error sincronizando usuarios: ${state.message}")
-                }
+            // 1. Sincronizar usuarios
+            val userSyncResult = userRepository.syncUsers().firstOrNull()
+            if (userSyncResult is ResourceState.Error) {
+                Log.e(TAG, "Error sincronizando usuarios: ${userSyncResult.message}")
+            } else {
+                Log.d(TAG, "Sincronización de usuarios completada")
             }
             
-            // Sincronizar tareas
-            taskRepository.syncTasks().collect { state ->
-                if (state is ResourceState.Error) {
-                    Log.e(TAG, "Error sincronizando tareas: ${state.message}")
-                }
+            // 2. Sincronizar tareas
+            val taskSyncResult = taskRepository.syncTasks().firstOrNull()
+            if (taskSyncResult is ResourceState.Error) {
+                Log.e(TAG, "Error sincronizando tareas: ${taskSyncResult.message}")
+            } else {
+                Log.d(TAG, "Sincronización de tareas completada")
             }
             
-            // Sincronizar plantillas de etiquetas
-            labelTemplateRepository.syncLabelTemplates().collect { state ->
-                if (state is ResourceState.Error) {
-                    Log.e(TAG, "Error sincronizando plantillas: ${state.message}")
-                }
+            // 3. Sincronizar plantillas de etiquetas
+            val templateSyncResult = labelTemplateRepository.syncLabelTemplates().firstOrNull()
+            if (templateSyncResult is ResourceState.Error) {
+                Log.e(TAG, "Error sincronizando plantillas: ${templateSyncResult.message}")
+            } else {
+                Log.d(TAG, "Sincronización de plantillas completada")
             }
             
-            // Sincronizar finalizaciones pendientes
-            taskRepository.syncPendingCompletions().collect { state ->
-                if (state is ResourceState.Error) {
-                    Log.e(TAG, "Error sincronizando finalizaciones: ${state.message}")
-                }
+            // 4. Sincronizar finalizaciones pendientes
+            val completionSyncResult = taskRepository.syncPendingCompletions().firstOrNull()
+            if (completionSyncResult is ResourceState.Error) {
+                Log.e(TAG, "Error sincronizando finalizaciones: ${completionSyncResult.message}")
+            } else {
+                Log.d(TAG, "Sincronización de finalizaciones completada")
             }
             
             // Actualizar tiempo de última sincronización
-            prefs.edit().putLong("last_sync_time", System.currentTimeMillis()).apply()
+            val syncManager = SyncManager(applicationContext)
+            syncManager.updateLastSyncTime(System.currentTimeMillis())
             
-            Log.d(TAG, "Sincronización completada con éxito")
-            Result.success()
+            // Comprobar si hubo errores críticos
+            if (userSyncResult is ResourceState.Error && 
+                taskSyncResult is ResourceState.Error && 
+                templateSyncResult is ResourceState.Error) {
+                // Si todos los procesos principales fallaron, considerar fallida la sincronización
+                Log.e(TAG, "La sincronización falló en todos los componentes principales")
+                return Result.retry()
+            }
+            
+            Log.d(TAG, "Trabajo de sincronización completado con éxito")
+            return Result.success()
         } catch (e: Exception) {
-            Log.e(TAG, "Error durante la sincronización", e)
-            Result.retry()
+            Log.e(TAG, "Error durante el trabajo de sincronización", e)
+            return Result.retry()
         }
     }
 }

@@ -2,153 +2,174 @@ package com.productiva.android.utils
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
+import java.io.IOException
+import java.security.GeneralSecurityException
 
 /**
- * Gestor de sesión para almacenar datos de autenticación y configuración
+ * Gestor de sesión para manejar la autenticación y tokens de usuario.
  */
-class SessionManager(context: Context) {
+class SessionManager(private val context: Context) {
     
-    private val sharedPreferences: SharedPreferences = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-    private val editor = sharedPreferences.edit()
+    private val TAG = "SessionManager"
     
-    /**
-     * Guarda el token de autenticación
-     */
-    fun saveAuthToken(token: String) {
-        editor.putString(KEY_AUTH_TOKEN, token)
-        editor.apply()
-    }
-    
-    /**
-     * Obtiene el token de autenticación
-     */
-    fun getAuthToken(): String? {
-        return sharedPreferences.getString(KEY_AUTH_TOKEN, null)
-    }
-    
-    /**
-     * Guarda el ID del usuario autenticado
-     */
-    fun saveUserId(userId: Int) {
-        editor.putInt(KEY_USER_ID, userId)
-        editor.apply()
-    }
-    
-    /**
-     * Obtiene el ID del usuario autenticado
-     */
-    fun getUserId(): Int {
-        return sharedPreferences.getInt(KEY_USER_ID, -1)
-    }
-    
-    /**
-     * Guarda el ID del usuario seleccionado (perfil)
-     */
-    fun saveSelectedUserId(userId: Int) {
-        editor.putInt(KEY_SELECTED_USER_ID, userId)
-        editor.apply()
-    }
-    
-    /**
-     * Obtiene el ID del usuario seleccionado (perfil)
-     */
-    fun getSelectedUserId(): Int {
-        return sharedPreferences.getInt(KEY_SELECTED_USER_ID, -1)
-    }
-    
-    /**
-     * Guarda el ID de la ubicación seleccionada
-     */
-    fun saveLocationId(locationId: Int) {
-        editor.putInt(KEY_LOCATION_ID, locationId)
-        editor.apply()
-    }
-    
-    /**
-     * Obtiene el ID de la ubicación seleccionada
-     */
-    fun getLocationId(): Int {
-        return sharedPreferences.getInt(KEY_LOCATION_ID, -1)
-    }
-    
-    /**
-     * Guarda la URL del servidor
-     */
-    fun saveServerUrl(url: String) {
-        editor.putString(KEY_SERVER_URL, url)
-        editor.apply()
-    }
-    
-    /**
-     * Obtiene la URL del servidor
-     */
-    fun getServerUrl(): String {
-        return sharedPreferences.getString(KEY_SERVER_URL, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
-    }
-    
-    /**
-     * Verifica si el usuario está logueado
-     */
-    fun isLoggedIn(): Boolean {
-        return getAuthToken() != null && getUserId() != -1
-    }
-    
-    /**
-     * Verifica si hay un usuario seleccionado
-     */
-    fun isUserSelected(): Boolean {
-        return getSelectedUserId() != -1
-    }
-    
-    /**
-     * Limpia los datos de sesión
-     */
-    fun clearSession() {
-        editor.clear()
-        editor.putString(KEY_SERVER_URL, getServerUrl()) // Mantener la URL del servidor
-        editor.apply()
-    }
-    
-    /**
-     * Guarda la dirección Bluetooth de la última impresora utilizada
-     */
-    fun saveLastPrinterAddress(address: String) {
-        editor.putString(KEY_LAST_PRINTER, address)
-        editor.apply()
-    }
-    
-    /**
-     * Obtiene la dirección Bluetooth de la última impresora utilizada
-     */
-    fun getLastPrinterAddress(): String? {
-        return sharedPreferences.getString(KEY_LAST_PRINTER, null)
-    }
-    
-    /**
-     * Guarda el ID de la última plantilla de etiqueta utilizada
-     */
-    fun saveLastTemplateId(templateId: Int) {
-        editor.putInt(KEY_LAST_TEMPLATE, templateId)
-        editor.apply()
-    }
-    
-    /**
-     * Obtiene el ID de la última plantilla de etiqueta utilizada
-     */
-    fun getLastTemplateId(): Int {
-        return sharedPreferences.getInt(KEY_LAST_TEMPLATE, -1)
-    }
-    
+    // Constantes para las claves de preferencias
     companion object {
-        private const val PREF_NAME = "ProductivaPrefs"
+        private const val PREF_NAME = "productiva_session"
         private const val KEY_AUTH_TOKEN = "auth_token"
         private const val KEY_USER_ID = "user_id"
-        private const val KEY_SELECTED_USER_ID = "selected_user_id"
-        private const val KEY_LOCATION_ID = "location_id"
-        private const val KEY_SERVER_URL = "server_url"
-        private const val KEY_LAST_PRINTER = "last_printer"
-        private const val KEY_LAST_TEMPLATE = "last_template"
+        private const val KEY_USERNAME = "username"
+        private const val KEY_EXPIRES_AT = "expires_at"
+        private const val KEY_REFRESH_TOKEN = "refresh_token"
+        private const val KEY_SELECTED_LOCATION_ID = "selected_location_id"
+        private const val KEY_SELECTED_COMPANY_ID = "selected_company_id"
+    }
+    
+    // Preferencias cifradas para almacenamiento seguro
+    private val preferences: SharedPreferences by lazy {
+        try {
+            // Crear clave maestra para cifrado
+            val masterKey = MasterKey.Builder(context)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
+            
+            // Crear preferencias cifradas
+            EncryptedSharedPreferences.create(
+                context,
+                PREF_NAME,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        } catch (e: GeneralSecurityException) {
+            Log.e(TAG, "Error al crear preferencias cifradas", e)
+            // Fallback a preferencias normales en caso de error
+            context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+        } catch (e: IOException) {
+            Log.e(TAG, "Error de IO al crear preferencias cifradas", e)
+            // Fallback a preferencias normales en caso de error
+            context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+        }
+    }
+    
+    /**
+     * Guarda la información de sesión del usuario.
+     */
+    fun saveUserSession(
+        authToken: String,
+        userId: Int,
+        username: String,
+        expiresAt: Long,
+        refreshToken: String? = null
+    ) {
+        preferences.edit().apply {
+            putString(KEY_AUTH_TOKEN, authToken)
+            putInt(KEY_USER_ID, userId)
+            putString(KEY_USERNAME, username)
+            putLong(KEY_EXPIRES_AT, expiresAt)
+            refreshToken?.let { putString(KEY_REFRESH_TOKEN, it) }
+        }.apply()
         
-        private const val DEFAULT_SERVER_URL = "https://productiva.repl.co/"
+        Log.d(TAG, "Sesión de usuario guardada: $username (ID: $userId)")
+    }
+    
+    /**
+     * Guarda solo el token de autenticación.
+     */
+    fun saveAuthToken(token: String) {
+        preferences.edit().putString(KEY_AUTH_TOKEN, token).apply()
+    }
+    
+    /**
+     * Obtiene el token de autenticación actual.
+     */
+    fun getAuthToken(): String? {
+        return preferences.getString(KEY_AUTH_TOKEN, null)
+    }
+    
+    /**
+     * Obtiene el ID del usuario actual.
+     */
+    fun getUserId(): Int {
+        return preferences.getInt(KEY_USER_ID, -1)
+    }
+    
+    /**
+     * Obtiene el nombre de usuario actual.
+     */
+    fun getUsername(): String? {
+        return preferences.getString(KEY_USERNAME, null)
+    }
+    
+    /**
+     * Obtiene la fecha de expiración del token.
+     */
+    fun getExpiresAt(): Long {
+        return preferences.getLong(KEY_EXPIRES_AT, 0)
+    }
+    
+    /**
+     * Obtiene el token de actualización, si existe.
+     */
+    fun getRefreshToken(): String? {
+        return preferences.getString(KEY_REFRESH_TOKEN, null)
+    }
+    
+    /**
+     * Comprueba si el usuario está autenticado.
+     */
+    fun isLoggedIn(): Boolean {
+        val token = getAuthToken()
+        val expiresAt = getExpiresAt()
+        val currentTime = System.currentTimeMillis()
+        
+        // Verificar si hay token y no ha expirado
+        return !token.isNullOrEmpty() && (expiresAt == 0L || expiresAt > currentTime)
+    }
+    
+    /**
+     * Cierra la sesión del usuario.
+     */
+    fun logout() {
+        preferences.edit().clear().apply()
+        Log.d(TAG, "Sesión de usuario cerrada")
+    }
+    
+    /**
+     * Guarda la ubicación seleccionada por el usuario.
+     */
+    fun saveSelectedLocationId(locationId: Int) {
+        preferences.edit().putInt(KEY_SELECTED_LOCATION_ID, locationId).apply()
+    }
+    
+    /**
+     * Obtiene la ubicación seleccionada por el usuario.
+     */
+    fun getSelectedLocationId(): Int {
+        return preferences.getInt(KEY_SELECTED_LOCATION_ID, -1)
+    }
+    
+    /**
+     * Guarda la empresa seleccionada por el usuario.
+     */
+    fun saveSelectedCompanyId(companyId: Int) {
+        preferences.edit().putInt(KEY_SELECTED_COMPANY_ID, companyId).apply()
+    }
+    
+    /**
+     * Obtiene la empresa seleccionada por el usuario.
+     */
+    fun getSelectedCompanyId(): Int {
+        return preferences.getInt(KEY_SELECTED_COMPANY_ID, -1)
+    }
+    
+    /**
+     * Verifica si el token actual ha expirado.
+     */
+    fun isTokenExpired(): Boolean {
+        val expiresAt = getExpiresAt()
+        return expiresAt > 0 && System.currentTimeMillis() >= expiresAt
     }
 }

@@ -1,5 +1,6 @@
 package com.productiva.android.components
 
+import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -8,171 +9,178 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.material.Icon
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Surface
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Sync
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.productiva.android.utils.ConnectionState
+import com.productiva.android.utils.ConnectivityMonitor
+import kotlinx.coroutines.delay
 
 /**
- * Componente que muestra una interfaz adaptada al estado de la conexión a Internet.
- * Muestra un banner de advertencia cuando no hay conexión y el contenido normal cuando hay conexión.
- * También puede mostrar un indicador de progreso mientras se comprueba la conexión.
+ * Componente que muestra un contenido diferente según el estado de la conexión.
+ * Muestra una barra superior cuando está trabajando sin conexión.
+ *
+ * @param content Contenido principal a mostrar.
+ * @param offlineContent Contenido opcional a mostrar cuando no hay conexión.
+ * Si es null, se mostrará el contenido principal con una barra de aviso.
  */
 @Composable
 fun NetworkAwareWrapper(
-    connectionState: ConnectionState,
-    isCheckingConnection: Boolean = false,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
+    offlineContent: (@Composable () -> Unit)? = null,
+    syncStatusContent: (@Composable () -> Unit)? = null
 ) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        // Banner de estado de conexión
+    val context = LocalContext.current
+    val connectivityMonitor = remember { ConnectivityMonitor.getInstance(context) }
+    
+    // Observar el estado de la conexión
+    val isNetworkAvailable by connectivityMonitor.isNetworkAvailableFlow.collectAsState(initial = true)
+    
+    // Estado para la animación de aparición/desaparición del banner
+    var showOfflineBanner by remember { mutableStateOf(false) }
+    
+    // Mostrar el banner con un pequeño retraso cuando se pierde la conexión
+    // y ocultarlo inmediatamente cuando se recupera
+    LaunchedEffect(isNetworkAvailable) {
+        if (!isNetworkAvailable) {
+            delay(300) // Pequeño retraso para evitar parpadeos en reconexiones rápidas
+            showOfflineBanner = true
+        } else {
+            showOfflineBanner = false
+        }
+    }
+    
+    // Contenedor principal
+    Column {
+        // Banner de modo sin conexión
         AnimatedVisibility(
-            visible = connectionState is ConnectionState.Disconnected,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut()
+            visible = showOfflineBanner,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically()
         ) {
-            NetworkStatusBanner(connectionState)
+            OfflineBanner()
         }
         
-        // Contenido principal
-        Box(modifier = Modifier.weight(1f)) {
-            when {
-                isCheckingConnection -> {
-                    // Mostrando indicador de progreso mientras se comprueba la conexión
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            CircularProgressIndicator(
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(48.dp)
-                            )
-                            
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
-                            Text(
-                                text = "Comprobando conexión...",
-                                style = MaterialTheme.typography.bodyLarge,
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                }
-                else -> {
-                    // Mostrando contenido normal
-                    content()
-                }
+        // Contenido de estado de sincronización, si se proporciona
+        syncStatusContent?.invoke()
+        
+        // Contenido principal o alternativo según el estado de conexión
+        if (offlineContent != null && !isNetworkAvailable) {
+            offlineContent()
+        } else {
+            content()
+        }
+    }
+    
+    // Registrar/desregistrar listeners cuando el composable entra/sale de la composición
+    DisposableEffect(context) {
+        // No es necesario registrar/desregistrar aquí, ya que ConnectivityMonitor
+        // se inicializa al nivel de aplicación y maneja su ciclo de vida
+        
+        onDispose {
+            // Limpieza si fuera necesaria
+        }
+    }
+}
+
+/**
+ * Banner que se muestra cuando la aplicación está trabajando sin conexión.
+ */
+@Composable
+private fun OfflineBanner() {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = MaterialTheme.colors.error,
+        elevation = 4.dp
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(0xFFF44336))
+                .padding(8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CloudOff,
+                    contentDescription = "Sin conexión",
+                    tint = Color.White,
+                    modifier = Modifier.padding(end = 8.dp)
+                )
+                Text(
+                    text = "Trabajando sin conexión",
+                    color = Color.White,
+                    style = MaterialTheme.typography.body2,
+                    textAlign = TextAlign.Center
+                )
             }
         }
     }
 }
 
 /**
- * Banner que muestra el estado de la conexión a Internet.
+ * Componente que muestra un banner con el estado de sincronización.
  */
 @Composable
-private fun NetworkStatusBanner(connectionState: ConnectionState) {
-    val (backgroundColor, textColor, icon, message) = when (connectionState) {
-        ConnectionState.Connected -> {
-            // No se muestra cuando está conectado
-            return
-        }
-        ConnectionState.Disconnected -> {
-            Color(0xFFFFCC00) to Color.Black to Icons.Default.CloudOff to
-                    "Sin conexión a Internet. Trabajando en modo offline."
-        }
-        ConnectionState.Checking -> {
-            Color(0xFF64B5F6) to Color.White to Icons.Default.Sync to
-                    "Comprobando conexión a Internet..."
-        }
-    }
-    
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(backgroundColor)
-            .padding(8.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = "Estado de conexión",
-                tint = textColor,
-                modifier = Modifier.size(24.dp)
-            )
-            
-            Spacer(modifier = Modifier.width(8.dp))
-            
-            Text(
-                text = message,
-                color = textColor,
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
-    }
-}
-
-/**
- * Componente que muestra un mensaje de advertencia cuando la conexión está offline
- * y el contenido normal cuando hay conexión.
- */
-@Composable
-fun OfflineWarning(
-    connectionState: ConnectionState,
-    message: String = "Esta funcionalidad requiere conexión a Internet",
-    content: @Composable () -> Unit
+fun SyncStatusBanner(
+    isSyncing: Boolean,
+    lastSyncTime: Long? = null
 ) {
-    when (connectionState) {
-        ConnectionState.Connected -> {
-            content()
-        }
-        else -> {
+    AnimatedVisibility(
+        visible = isSyncing,
+        enter = fadeIn() + expandVertically(),
+        exit = fadeOut() + shrinkVertically()
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colors.primary,
+            elevation = 4.dp
+        ) {
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
+                    .fillMaxWidth()
+                    .background(Color(0xFF2196F3))
+                    .padding(8.dp),
                 contentAlignment = Alignment.Center
             ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Warning,
-                        contentDescription = "Advertencia",
-                        tint = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.size(64.dp)
+                        imageVector = Icons.Default.Sync,
+                        contentDescription = "Sincronizando",
+                        tint = Color.White,
+                        modifier = Modifier.padding(end = 8.dp)
                     )
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
                     Text(
-                        text = message,
-                        style = MaterialTheme.typography.bodyLarge,
+                        text = "Sincronizando datos...",
+                        color = Color.White,
+                        style = MaterialTheme.typography.body2,
                         textAlign = TextAlign.Center
                     )
                 }

@@ -1,145 +1,59 @@
 package com.productiva.android.model
 
 import androidx.room.Entity
-import androidx.room.ForeignKey
-import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
-import com.google.gson.annotations.SerializedName
 import com.productiva.android.database.Converters
+import java.util.Date
 
 /**
- * Modelo para tareas.
- * Representa una tarea asignada a un usuario o ubicación.
+ * Modelo de datos para una tarea.
+ * Representa las tareas asignadas a los empleados.
  */
-@Entity(
-    tableName = "tasks",
-    indices = [
-        Index("assignedTo"),
-        Index("locationId")
-    ]
-)
+@Entity(tableName = "tasks")
 @TypeConverters(Converters::class)
 data class Task(
     @PrimaryKey
-    @SerializedName("id")
     val id: Int,
     
-    @SerializedName("title")
+    // Información básica de la tarea
     val title: String,
+    val description: String,
+    val status: String, // "pending", "in_progress", "completed", "cancelled"
     
-    @SerializedName("description")
-    val description: String? = null,
+    // Datos de asignación
+    val assignedToUserId: Int,
+    val assignedToUserName: String,
+    val assignedByUserId: Int,
+    val assignedByUserName: String,
     
-    @SerializedName("assigned_to")
-    val assignedTo: Int? = null, // ID del usuario asignado
+    // Prioridad y categoría
+    val priority: Int, // 1 (baja) a 5 (alta)
+    val category: String,
     
-    @SerializedName("location_id")
-    val locationId: Int? = null, // ID de la ubicación
+    // Plazos y fechas
+    val createdAt: Date,
+    val updatedAt: Date,
+    val dueDate: Date?,
+    val completedAt: Date?,
     
-    @SerializedName("due_date")
-    val dueDate: String? = null, // Fecha de vencimiento (YYYY-MM-DD)
+    // Datos de empresa y ubicación
+    val companyId: Int,
+    val locationId: Int?,
+    val locationName: String?,
     
-    @SerializedName("due_time")
-    val dueTime: String? = null, // Hora de vencimiento (HH:MM)
+    // Archivos adjuntos y referencias
+    val attachments: List<String>?, // URLs o rutas a archivos adjuntos
+    val relatedTaskIds: List<Int>?, // IDs de tareas relacionadas
     
-    @SerializedName("priority")
-    val priority: Int = 1, // 1-3 (baja, media, alta)
+    // Metadatos adicionales
+    val requiresPhoto: Boolean,
+    val requiresSignature: Boolean,
+    val requiresConfirmation: Boolean,
+    val isRecurring: Boolean,
+    val recurringSchedule: String?, // Expresión cron o similar para tareas recurrentes
     
-    @SerializedName("status")
-    val status: String = "pending", // pending, in_progress, completed, cancelled
-    
-    @SerializedName("tags")
-    val tags: List<String> = emptyList(),
-    
-    @SerializedName("requires_photo")
-    val requiresPhoto: Boolean = false,
-    
-    @SerializedName("requires_signature")
-    val requiresSignature: Boolean = false,
-    
-    @SerializedName("requires_scan")
-    val requiresScan: Boolean = false,
-    
-    @SerializedName("created_at")
-    val createdAt: String? = null,
-    
-    @SerializedName("updated_at")
-    val updatedAt: String? = null,
-    
-    @SerializedName("company_id")
-    val companyId: Int? = null,
-    
-    @SerializedName("recurrence")
-    val recurrence: String? = null, // daily, weekly, monthly, custom
-    
-    @SerializedName("recurrence_config")
-    val recurrenceConfig: Map<String, String> = emptyMap(),
-    
-    @SerializedName("completion_data")
-    val completionData: TaskCompletion? = null,
-    
-    // Campos locales
-    var isLocallyModified: Boolean = false,
-    var lastSyncTime: Long = 0
-) {
-    /**
-     * Verifica si la tarea está completada.
-     */
-    fun isCompleted(): Boolean {
-        return status == "completed"
-    }
-    
-    /**
-     * Verifica si la tarea está vencida.
-     */
-    fun isOverdue(): Boolean {
-        // Implementar lógica de verificación de vencimiento
-        return false
-    }
-    
-    /**
-     * Verifica si la tarea está pendiente.
-     */
-    fun isPending(): Boolean {
-        return status == "pending"
-    }
-    
-    /**
-     * Verifica si la tarea está en progreso.
-     */
-    fun isInProgress(): Boolean {
-        return status == "in_progress"
-    }
-    
-    /**
-     * Verifica si la tarea está cancelada.
-     */
-    fun isCancelled(): Boolean {
-        return status == "cancelled"
-    }
-    
-    /**
-     * Obtiene el color basado en la prioridad.
-     */
-    fun getPriorityColor(): String {
-        return when (priority) {
-            1 -> "#28a745" // Verde
-            2 -> "#ffc107" // Amarillo
-            3 -> "#dc3545" // Rojo
-            else -> "#6c757d" // Gris
-        }
-    }
-    
-    /**
-     * Obtiene el nombre de la prioridad.
-     */
-    fun getPriorityName(): String {
-        return when (priority) {
-            1 -> "Baja"
-            2 -> "Media"
-            3 -> "Alta"
-            else -> "Desconocida"
-        }
-    }
-}
+    // Datos para sincronización
+    val lastSyncTime: Long, // Timestamp de última sincronización
+    val isLocalOnly: Boolean = false // Indica si fue creado solo localmente
+)

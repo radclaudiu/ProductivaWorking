@@ -4,11 +4,13 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
-import com.google.gson.annotations.SerializedName
+import androidx.room.TypeConverters
+import com.productiva.android.database.Converters
+import java.util.Date
 
 /**
- * Modelo para completación de tareas.
- * Representa la información sobre cómo se completó una tarea.
+ * Modelo de datos para la completación de una tarea.
+ * Registra los detalles de cómo se completó una tarea específica.
  */
 @Entity(
     tableName = "task_completions",
@@ -24,86 +26,33 @@ import com.google.gson.annotations.SerializedName
         Index("taskId")
     ]
 )
+@TypeConverters(Converters::class)
 data class TaskCompletion(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     
-    @SerializedName("task_id")
+    // Relación con la tarea
     val taskId: Int,
     
-    @SerializedName("completed_by")
-    val completedBy: Int, // ID del usuario que completó la tarea
+    // Detalles de la completación
+    val completedByUserId: Int,
+    val completedByUserName: String,
+    val completedAt: Date,
+    val comments: String?,
     
-    @SerializedName("completed_at")
-    val completedAt: String, // Fecha y hora de completación
+    // Evidencias
+    val photoUrl: String?, // Ruta a la foto de evidencia (local o remota)
+    val signatureUrl: String?, // Ruta a la firma (local o remota)
     
-    @SerializedName("notes")
-    val notes: String? = null,
+    // Datos adicionales
+    val latitude: Double?,
+    val longitude: Double?,
+    val accuracy: Float?,
     
-    @SerializedName("location_id")
-    val locationId: Int? = null,
-    
-    @SerializedName("photo_path")
-    val photoPath: String? = null,
-    
-    @SerializedName("signature_path")
-    val signaturePath: String? = null,
-    
-    @SerializedName("scan_data")
-    val scanData: String? = null,
-    
-    @SerializedName("latitude")
-    val latitude: Double? = null,
-    
-    @SerializedName("longitude")
-    val longitude: Double? = null,
-    
-    @SerializedName("status")
-    val status: String = "completed", // completed, partial, failed
-    
-    @SerializedName("rating")
-    val rating: Int? = null, // 1-5 estrellas
-    
-    // Campos locales
-    var isLocalOnly: Boolean = false,
-    var isSynced: Boolean = false,
-    var retryCount: Int = 0,
-    var lastSyncAttempt: Long = 0,
-    var localPhotoPath: String? = null,     // Ruta local a la foto
-    var localSignaturePath: String? = null  // Ruta local a la firma
-) {
-    /**
-     * Verifica si la completación requiere ser sincronizada.
-     */
-    fun needsSync(): Boolean {
-        return isLocalOnly && !isSynced
-    }
-    
-    /**
-     * Verifica si la completación tiene foto.
-     */
-    fun hasPhoto(): Boolean {
-        return !photoPath.isNullOrEmpty() || !localPhotoPath.isNullOrEmpty()
-    }
-    
-    /**
-     * Verifica si la completación tiene firma.
-     */
-    fun hasSignature(): Boolean {
-        return !signaturePath.isNullOrEmpty() || !localSignaturePath.isNullOrEmpty()
-    }
-    
-    /**
-     * Verifica si la completación tiene datos de escaneo.
-     */
-    fun hasScanData(): Boolean {
-        return !scanData.isNullOrEmpty()
-    }
-    
-    /**
-     * Verifica si la completación tiene coordenadas de ubicación.
-     */
-    fun hasLocation(): Boolean {
-        return latitude != null && longitude != null
-    }
-}
+    // Datos para sincronización
+    val serverCompletionId: Int?, // ID en el servidor, null si aún no está sincronizado
+    val isLocalOnly: Boolean = true, // Indica si fue creado solo localmente
+    val isSynced: Boolean = false, // Indica si ya está sincronizado con el servidor
+    val lastSyncAttempt: Long? = null, // Timestamp del último intento de sincronización
+    val syncError: String? = null // Error durante la sincronización, si lo hubo
+)

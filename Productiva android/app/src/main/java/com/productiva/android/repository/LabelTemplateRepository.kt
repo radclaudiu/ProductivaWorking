@@ -4,211 +4,195 @@ import android.util.Log
 import com.productiva.android.dao.LabelTemplateDao
 import com.productiva.android.model.LabelTemplate
 import com.productiva.android.network.ApiService
-import kotlinx.coroutines.Dispatchers
+import com.productiva.android.network.NetworkResult
+import com.productiva.android.network.safeApiCall
+import com.productiva.android.utils.ConnectivityMonitor
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.withContext
-import retrofit2.HttpException
-import java.io.IOException
 
 /**
- * Repositorio para la gestión de plantillas de etiquetas.
- * Proporciona métodos para obtener, sincronizar y actualizar plantillas.
+ * Repositorio para gestionar las plantillas de etiquetas.
+ * Proporciona métodos para acceder y manipular las plantillas de etiquetas,
+ * incluyendo sincronización con el servidor.
  */
 class LabelTemplateRepository(
     private val labelTemplateDao: LabelTemplateDao,
-    private val apiService: ApiService
+    private val apiService: ApiService,
+    private val connectivityMonitor: ConnectivityMonitor
 ) {
     private val TAG = "LabelTemplateRepository"
     
     /**
-     * Obtiene todas las plantillas de etiquetas de la base de datos local.
+     * Obtiene todas las plantillas de etiquetas.
+     *
+     * @return Flow con el estado del recurso que contiene la lista de plantillas.
      */
-    fun getAllTemplates(): Flow<List<LabelTemplate>> {
-        return labelTemplateDao.getAllTemplates()
-    }
-    
-    /**
-     * Obtiene una plantilla específica por su ID.
-     */
-    fun getTemplateById(templateId: Int): Flow<LabelTemplate?> {
-        return labelTemplateDao.getTemplateById(templateId)
-    }
-    
-    /**
-     * Obtiene plantillas por tipo.
-     */
-    fun getTemplatesByType(type: String): Flow<List<LabelTemplate>> {
-        return labelTemplateDao.getTemplatesByType(type)
-    }
-    
-    /**
-     * Obtiene la plantilla predeterminada para un tipo específico.
-     */
-    fun getDefaultTemplateForType(type: String): Flow<LabelTemplate?> {
-        return labelTemplateDao.getDefaultTemplateForType(type)
-    }
-    
-    /**
-     * Sincroniza las plantillas de etiquetas con el servidor.
-     * Primero sube los contadores de uso pendientes y luego obtiene las últimas plantillas.
-     */
-    fun syncLabelTemplates(): Flow<ResourceState<List<LabelTemplate>>> = flow {
-        emit(ResourceState.Loading)
+    fun getAllLabelTemplates(): Flow<ResourceState<List<LabelTemplate>>> = flow {
+        emit(ResourceState.Loading())
         
         try {
-            // 1. Sincronizar contadores de uso pendientes
-            val pendingTemplates = labelTemplateDao.getTemplatesPendingSync()
-            if (pendingTemplates.isNotEmpty()) {
-                Log.d(TAG, "Sincronizando ${pendingTemplates.size} plantillas con contadores de uso pendientes")
+            // Emitir datos locales primero (caché)
+            val localTemplates = labelTemplateDao.getAllLabelTemplates()
+            localTemplates.collect { templates ->
+                emit(ResourceState.CachedData(templates))
                 
-                for (template in pendingTemplates) {
-                    try {
-                        // Actualizar contadores de uso en el servidor
-                        for (i in 1..template.localUseCount) {
-                            apiService.incrementLabelTemplateUseCount(template.id)
+                // Si hay conexión a Internet, intentar sincronizar
+                if (connectivityMonitor.isNetworkAvailable()) {
+                    fetchAndSyncTemplates()
+                } else {
+                    emit(ResourceState.Offline<List<LabelTemplate>>())
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al obtener plantillas de etiquetas", e)
+            emit(ResourceState.Error("Error al obtener plantillas: ${e.message}", e))
+        }
+    }
+    
+    /**
+     * Obtiene una plantilla de etiqueta por su ID.
+     *
+     * @param templateId ID de la plantilla.
+     * @return Flow con el estado del recurso que contiene la plantilla.
+     */
+    fun getLabelTemplateById(templateId: Int): Flow<ResourceState<LabelTemplate>> = flow {
+        emit(ResourceState.Loading())
+        
+        try {
+            // Emitir datos locales primero (caché)
+            val localTemplate = labelTemplateDao.getLabelTemplateById(templateId)
+            localTemplate.collect { template ->
+                if (template != null) {
+                    emit(ResourceState.Success(template))
+                } else {
+                    // Si hay conexión, intentar obtener del servidor
+                    if (connectivityMonitor.isNetworkAvailable()) {
+                        fetchAndSyncTemplates()
+                        
+                        // Verificar si después de la sincronización ya existe la plantilla
+                        val updatedTemplate = labelTemplateDao.getLabelTemplateByIdSync(templateId)
+                        if (updatedTemplate != null) {
+                            emit(ResourceState.Success(updatedTemplate))
+                        } else {
+                            emit(ResourceState.Error("Plantilla no encontrada"))
                         }
-                        
-                        // Marcar como sincronizada
-                        labelTemplateDao.markAsSynced(template.id)
-                        
-                        Log.d(TAG, "Plantilla ${template.id} sincronizada con ${template.localUseCount} usos")
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error al sincronizar contador de uso para plantilla ${template.id}", e)
-                        // Continuamos con la siguiente plantilla aunque haya error
+                    } else {
+                        emit(ResourceState.Error("Plantilla no encontrada y sin conexión a Internet"))
+                        emit(ResourceState.Offline<LabelTemplate>())
                     }
                 }
             }
-            
-            // 2. Obtener todas las plantillas del servidor
-            val response = apiService.getAllLabelTemplates()
-            
-            if (response.success && response.data != null) {
-                val templates = response.data
-                
-                // 3. Actualizar plantillas en la base de datos local
-                withContext(Dispatchers.IO) {
-                    for (template in templates) {
-                        labelTemplateDao.upsertFromServer(template)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al obtener plantilla por ID", e)
+            emit(ResourceState.Error("Error al obtener plantilla: ${e.message}", e))
+        }
+    }
+    
+    /**
+     * Obtiene la plantilla de etiqueta predeterminada.
+     *
+     * @return Flow con el estado del recurso que contiene la plantilla predeterminada.
+     */
+    fun getDefaultLabelTemplate(): Flow<ResourceState<LabelTemplate>> = flow {
+        emit(ResourceState.Loading())
+        
+        try {
+            // Emitir datos locales primero (caché)
+            val localTemplate = labelTemplateDao.getDefaultLabelTemplate()
+            localTemplate.collect { template ->
+                if (template != null) {
+                    emit(ResourceState.Success(template))
+                } else {
+                    // Si hay conexión, intentar obtener del servidor
+                    if (connectivityMonitor.isNetworkAvailable()) {
+                        fetchAndSyncTemplates()
+                        
+                        // Verificar si después de la sincronización ya existe una plantilla predeterminada
+                        val updatedTemplate = labelTemplateDao.getDefaultLabelTemplate()
+                        updatedTemplate.collect { defaultTemplate ->
+                            if (defaultTemplate != null) {
+                                emit(ResourceState.Success(defaultTemplate))
+                            } else {
+                                emit(ResourceState.Error("No hay plantilla predeterminada"))
+                            }
+                        }
+                    } else {
+                        emit(ResourceState.Error("No hay plantilla predeterminada y sin conexión a Internet"))
+                        emit(ResourceState.Offline<LabelTemplate>())
                     }
                 }
-                
-                // Emitir las plantillas actualizadas
-                val updatedTemplates = labelTemplateDao.getAllTemplates().value ?: emptyList()
-                
-                emit(ResourceState.Success(updatedTemplates))
-            } else {
-                emit(ResourceState.Error(response.message ?: "Error desconocido al obtener plantillas"))
             }
-        } catch (e: HttpException) {
-            Log.e(TAG, "Error HTTP al sincronizar plantillas", e)
-            emit(ResourceState.Error("Error de red: ${e.message()}"))
-        } catch (e: IOException) {
-            Log.e(TAG, "Error IO al sincronizar plantillas", e)
-            emit(ResourceState.Error("Error de conexión: ${e.message}"))
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al obtener plantilla predeterminada", e)
+            emit(ResourceState.Error("Error al obtener plantilla predeterminada: ${e.message}", e))
+        }
+    }
+    
+    /**
+     * Establece una plantilla como predeterminada.
+     *
+     * @param templateId ID de la plantilla a establecer como predeterminada.
+     * @return Flow con el estado del recurso que indica el resultado de la operación.
+     */
+    fun setDefaultTemplate(templateId: Int): Flow<ResourceState<Boolean>> = flow {
+        emit(ResourceState.Loading())
+        
+        try {
+            // Verificar que la plantilla existe
+            val template = labelTemplateDao.getLabelTemplateByIdSync(templateId)
+            if (template == null) {
+                emit(ResourceState.Error("Plantilla no encontrada"))
+                return@flow
+            }
+            
+            // Establecer como predeterminada
+            labelTemplateDao.setAsDefaultTemplate(templateId)
+            emit(ResourceState.Success(true))
+            
+            // Si hay conexión, intentamos sincronizar con el servidor
+            // Nota: Esto requeriría un endpoint específico para establecer la plantilla predeterminada
+            // que no está especificado en la API original
+            if (connectivityMonitor.isNetworkAvailable()) {
+                // Aquí iría la llamada a la API cuando esté disponible
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al establecer plantilla predeterminada", e)
+            emit(ResourceState.Error("Error al establecer plantilla predeterminada: ${e.message}", e))
+        }
+    }
+    
+    /**
+     * Obtiene las plantillas de etiquetas desde el servidor y las sincroniza con la base de datos local.
+     */
+    private suspend fun fetchAndSyncTemplates() {
+        if (!connectivityMonitor.isNetworkAvailable()) {
+            return
+        }
+        
+        try {
+            // Obtener plantillas desde el servidor
+            val result = safeApiCall {
+                apiService.getLabelTemplates()
+            }
+            
+            when (result) {
+                is NetworkResult.Success -> {
+                    val templates = result.data
+                    val currentTime = System.currentTimeMillis()
+                    
+                    // Sincronizar con la base de datos local
+                    labelTemplateDao.syncLabelTemplatesFromServer(templates, emptyList(), currentTime)
+                }
+                is NetworkResult.Error -> {
+                    Log.e(TAG, "Error al obtener plantillas del servidor: ${result.message}")
+                }
+                is NetworkResult.Loading -> {
+                    // No debería ocurrir, pero por si acaso
+                    Log.d(TAG, "Loading state in fetchAndSyncTemplates network call")
+                }
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error al sincronizar plantillas", e)
-            emit(ResourceState.Error("Error al sincronizar: ${e.message}"))
         }
-    }.flowOn(Dispatchers.IO)
-    
-    /**
-     * Sincroniza una plantilla específica con el servidor.
-     */
-    fun syncTemplate(templateId: Int): Flow<ResourceState<LabelTemplate>> = flow {
-        emit(ResourceState.Loading)
-        
-        try {
-            // 1. Verificar si hay contadores de uso pendientes
-            val existingTemplate = labelTemplateDao.getTemplateByIdSync(templateId)
-            
-            if (existingTemplate?.needsSync == true && existingTemplate.localUseCount > 0) {
-                // Sincronizar contador de uso
-                try {
-                    for (i in 1..existingTemplate.localUseCount) {
-                        apiService.incrementLabelTemplateUseCount(templateId)
-                    }
-                    
-                    // Marcar como sincronizada
-                    labelTemplateDao.markAsSynced(templateId)
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error al sincronizar contador de uso para plantilla $templateId", e)
-                    // Continuamos aunque haya error
-                }
-            }
-            
-            // 2. Obtener la plantilla actualizada del servidor
-            val response = apiService.getLabelTemplateById(templateId)
-            
-            if (response.success && response.data != null) {
-                val serverTemplate = response.data
-                
-                // 3. Actualizar en la base de datos local
-                val updatedTemplate = labelTemplateDao.upsertFromServer(serverTemplate)
-                
-                emit(ResourceState.Success(updatedTemplate))
-            } else {
-                // Si no se puede obtener del servidor pero existe localmente,
-                // devolvemos la versión local
-                if (existingTemplate != null) {
-                    emit(ResourceState.Success(existingTemplate))
-                } else {
-                    emit(ResourceState.Error(response.message ?: "Error al obtener la plantilla"))
-                }
-            }
-        } catch (e: HttpException) {
-            Log.e(TAG, "Error HTTP al sincronizar plantilla $templateId", e)
-            emit(ResourceState.Error("Error de red: ${e.message()}"))
-        } catch (e: IOException) {
-            Log.e(TAG, "Error IO al sincronizar plantilla $templateId", e)
-            emit(ResourceState.Error("Error de conexión: ${e.message}"))
-        } catch (e: Exception) {
-            Log.e(TAG, "Error al sincronizar plantilla $templateId", e)
-            emit(ResourceState.Error("Error al sincronizar: ${e.message}"))
-        }
-    }.flowOn(Dispatchers.IO)
-    
-    /**
-     * Incrementa el contador de uso de una plantilla y lo marca para sincronización.
-     */
-    fun incrementTemplateUseCount(templateId: Int): Flow<ResourceState<LabelTemplate>> = flow {
-        emit(ResourceState.Loading)
-        
-        try {
-            // Incrementar contador de uso local
-            val result = labelTemplateDao.incrementUseCount(templateId)
-            
-            if (result > 0) {
-                val updatedTemplate = labelTemplateDao.getTemplateByIdSync(templateId)
-                
-                if (updatedTemplate != null) {
-                    emit(ResourceState.Success(updatedTemplate))
-                    
-                    // Intentar sincronizar inmediatamente si es posible
-                    try {
-                        apiService.incrementLabelTemplateUseCount(templateId)
-                        labelTemplateDao.markAsSynced(templateId)
-                        
-                        // Obtener la plantilla actualizada
-                        val syncedTemplate = labelTemplateDao.getTemplateByIdSync(templateId)
-                        if (syncedTemplate != null) {
-                            emit(ResourceState.Success(syncedTemplate, "Contador de uso sincronizado"))
-                        }
-                    } catch (e: Exception) {
-                        // No hacemos nada si falla la sincronización inmediata,
-                        // se sincronizará más tarde
-                        Log.d(TAG, "La sincronización inmediata del contador falló, se intentará más tarde")
-                    }
-                } else {
-                    emit(ResourceState.Error("No se pudo encontrar la plantilla después de incrementar el contador"))
-                }
-            } else {
-                emit(ResourceState.Error("No se pudo incrementar el contador de uso"))
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error al incrementar contador de uso", e)
-            emit(ResourceState.Error("Error al incrementar contador: ${e.message}"))
-        }
-    }.flowOn(Dispatchers.IO)
+    }
 }

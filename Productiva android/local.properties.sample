@@ -1,0 +1,7 @@
+# Este archivo debe ser ajustado en cada máquina de desarrollo
+# Especifica la ubicación del SDK de Android
+sdk.dir=C:\\Users\\username\\AppData\\Local\\Android\\Sdk
+
+# Opcional: especifica la ubicación de JDK 8 para resolver el error de KAPT
+# Descomenta y ajusta la siguiente línea si deseas usar Java 8 en lugar de Java más reciente
+#org.gradle.java.home=C:\\Program Files\\Java\\jdk1.8.0_301

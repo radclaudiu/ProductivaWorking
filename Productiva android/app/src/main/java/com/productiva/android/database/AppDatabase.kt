@@ -5,74 +5,87 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import com.productiva.android.database.dao.LabelTemplateDao
-import com.productiva.android.database.dao.ProductDao
-import com.productiva.android.database.dao.TaskDao
+import com.productiva.android.dao.LabelTemplateDao
+import com.productiva.android.dao.ProductDao
+import com.productiva.android.dao.TaskCompletionDao
+import com.productiva.android.dao.TaskDao
+import com.productiva.android.dao.UserDao
 import com.productiva.android.model.LabelTemplate
 import com.productiva.android.model.Product
 import com.productiva.android.model.Task
 import com.productiva.android.model.TaskCompletion
 import com.productiva.android.model.User
-import com.productiva.android.utils.DateTimeConverter
-import com.productiva.android.utils.ListTypeConverter
+import java.util.concurrent.Executors
 
 /**
- * Base de datos Room para almacenar los datos de la aplicación localmente.
- * Proporciona acceso a los DAOs para cada tipo de entidad.
+ * Base de datos Room para la aplicación.
+ * Contiene todas las entidades y DAOs.
  */
 @Database(
     entities = [
         User::class,
         Task::class,
         TaskCompletion::class,
-        LabelTemplate::class,
-        Product::class
+        Product::class,
+        LabelTemplate::class
     ],
     version = 1,
     exportSchema = false
 )
-@TypeConverters(DateTimeConverter::class, ListTypeConverter::class)
+@TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
+    /**
+     * DAO para usuarios.
+     */
+    abstract fun userDao(): UserDao
     
     /**
-     * DAO para operaciones con tareas.
+     * DAO para tareas.
      */
     abstract fun taskDao(): TaskDao
     
     /**
-     * DAO para operaciones con plantillas de etiquetas.
+     * DAO para completados de tareas.
      */
-    abstract fun labelTemplateDao(): LabelTemplateDao
+    abstract fun taskCompletionDao(): TaskCompletionDao
     
     /**
-     * DAO para operaciones con productos.
+     * DAO para productos.
      */
     abstract fun productDao(): ProductDao
     
+    /**
+     * DAO para plantillas de etiquetas.
+     */
+    abstract fun labelTemplateDao(): LabelTemplateDao
+    
     companion object {
-        // Singleton para evitar múltiples instancias de la base de datos
+        private const val DATABASE_NAME = "productiva_db"
+        
         @Volatile
-        private var INSTANCE: AppDatabase? = null
+        private var instance: AppDatabase? = null
         
         /**
-         * Obtiene la instancia de la base de datos, creándola si no existe.
-         * 
-         * @param context Contexto de la aplicación.
-         * @return Instancia de AppDatabase.
+         * Obtiene la instancia única de la base de datos.
          */
-        fun getDatabase(context: Context): AppDatabase {
-            return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
-                    context.applicationContext,
-                    AppDatabase::class.java,
-                    "productiva_database"
-                )
-                .fallbackToDestructiveMigration() // Recrear tablas si la versión cambia
-                .build()
-                
-                INSTANCE = instance
-                instance
+        fun getInstance(context: Context): AppDatabase {
+            return instance ?: synchronized(this) {
+                instance ?: buildDatabase(context).also { instance = it }
             }
+        }
+        
+        /**
+         * Construye la base de datos con las opciones necesarias.
+         */
+        private fun buildDatabase(context: Context): AppDatabase {
+            return Room.databaseBuilder(
+                context.applicationContext,
+                AppDatabase::class.java,
+                DATABASE_NAME
+            )
+                .fallbackToDestructiveMigration() // Solo en desarrollo, reemplazar con migraciones reales en producción
+                .setQueryExecutor(Executors.newFixedThreadPool(4)) // Ejecutor de consultas personalizado
+                .build()
         }
     }
 }

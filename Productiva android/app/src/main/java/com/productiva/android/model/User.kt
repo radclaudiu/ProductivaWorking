@@ -2,94 +2,99 @@ package com.productiva.android.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import androidx.room.TypeConverters
 import com.google.gson.annotations.SerializedName
+import com.productiva.android.database.Converters
 
 /**
- * Modelo de datos que representa un usuario en la aplicación.
- * Se almacena en la base de datos local y se sincroniza con el servidor.
+ * Modelo para usuarios.
+ * Representa un usuario en el sistema con todos sus permisos y ubicaciones asignadas.
  */
 @Entity(tableName = "users")
+@TypeConverters(Converters::class)
 data class User(
     @PrimaryKey
     @SerializedName("id")
     val id: Int,
     
-    @SerializedName("username")
-    val username: String,
+    @SerializedName("name")
+    val name: String,
     
     @SerializedName("email")
     val email: String,
     
-    @SerializedName("first_name")
-    val firstName: String?,
-    
-    @SerializedName("last_name")
-    val lastName: String?,
-    
     @SerializedName("role")
-    val role: String, // ADMIN, MANAGER, EMPLOYEE
+    val role: String, // admin, manager, employee, etc.
     
     @SerializedName("company_id")
-    val companyId: Int?,
+    val companyId: Int? = null,
     
     @SerializedName("company_name")
-    val companyName: String?,
-    
-    @SerializedName("is_active")
-    val isActive: Boolean,
-    
-    @SerializedName("last_login")
-    val lastLogin: String?,
-    
-    @SerializedName("created_at")
-    val createdAt: String?,
-    
-    @SerializedName("profile_image")
-    val profileImage: String?,
-    
-    @SerializedName("phone")
-    val phone: String?,
-    
-    @SerializedName("locations")
-    val locations: List<UserLocation>?,
+    val companyName: String? = null,
     
     @SerializedName("permissions")
-    val permissions: List<String>?
-) {
-    /**
-     * Obtiene el nombre completo del usuario.
-     */
-    fun getFullName(): String {
-        return if (firstName != null && lastName != null) {
-            "$firstName $lastName"
-        } else {
-            username
-        }
-    }
+    val permissions: List<String> = emptyList(),
     
+    @SerializedName("locations")
+    val locations: List<UserLocation> = emptyList(),
+    
+    @SerializedName("last_login")
+    val lastLogin: String? = null,
+    
+    @SerializedName("created_at")
+    val createdAt: String? = null,
+    
+    @SerializedName("updated_at")
+    val updatedAt: String? = null,
+    
+    @SerializedName("avatar_url")
+    val avatarUrl: String? = null,
+    
+    @SerializedName("is_active")
+    val isActive: Boolean = true,
+    
+    @SerializedName("settings")
+    val settings: Map<String, String> = emptyMap(),
+    
+    // Campos locales
+    var lastSyncTime: Long = 0
+) {
     /**
      * Verifica si el usuario tiene un permiso específico.
      */
     fun hasPermission(permission: String): Boolean {
-        return permissions?.contains(permission) == true || role == "ADMIN"
+        // Los administradores tienen todos los permisos
+        if (role == "admin") return true
+        
+        return permissions.contains(permission)
     }
     
     /**
-     * Verifica si el usuario está asignado a una ubicación específica.
+     * Verifica si el usuario tiene acceso a una ubicación específica.
      */
-    fun isAssignedToLocation(locationId: Int): Boolean {
-        return locations?.any { it.id == locationId } == true
+    fun canAccessLocation(locationId: Int): Boolean {
+        // Los administradores pueden acceder a todas las ubicaciones
+        if (role == "admin") return true
+        
+        return locations.any { it.id == locationId }
     }
     
     /**
-     * Obtiene una lista con los IDs de las ubicaciones asignadas.
+     * Obtiene las IDs de todas las ubicaciones a las que el usuario tiene acceso.
      */
-    fun getAssignedLocationIds(): List<Int> {
-        return locations?.map { it.id } ?: emptyList()
+    fun getAccessibleLocationIds(): List<Int> {
+        return locations.map { it.id }
     }
     
     /**
-     * Clase que representa una ubicación asignada a un usuario.
+     * Obtiene un valor de configuración específico.
+     */
+    fun getSetting(key: String, defaultValue: String = ""): String {
+        return settings[key] ?: defaultValue
+    }
+    
+    /**
+     * Clase anidada para representar una ubicación asignada a un usuario.
      */
     data class UserLocation(
         @SerializedName("id")
@@ -99,9 +104,9 @@ data class User(
         val name: String,
         
         @SerializedName("address")
-        val address: String?,
+        val address: String? = null,
         
-        @SerializedName("is_primary")
-        val isPrimary: Boolean
+        @SerializedName("is_default")
+        val isDefault: Boolean = false
     )
 }

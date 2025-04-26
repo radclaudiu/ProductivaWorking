@@ -1,52 +1,94 @@
 package com.productiva.android.dao
 
-import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.productiva.android.model.User
+import kotlinx.coroutines.flow.Flow
 
 /**
- * DAO para interactuar con la tabla de usuarios
+ * Data Access Object para los usuarios.
+ * Proporciona métodos para acceder y manipular la tabla de usuarios.
  */
 @Dao
 interface UserDao {
-    
+    /**
+     * Inserta un nuevo usuario en la base de datos.
+     * Si ya existe un usuario con el mismo ID, lo reemplaza.
+     *
+     * @param user Usuario a insertar.
+     * @return ID del usuario insertado.
+     */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(user: User): Long
+    suspend fun insertUser(user: User): Long
     
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(users: List<User>)
-    
+    /**
+     * Actualiza un usuario existente.
+     *
+     * @param user Usuario a actualizar.
+     * @return Número de filas actualizadas.
+     */
     @Update
-    suspend fun update(user: User)
+    suspend fun updateUser(user: User): Int
     
+    /**
+     * Obtiene un usuario por su ID.
+     *
+     * @param userId ID del usuario.
+     * @return Flow con el usuario, o null si no existe.
+     */
     @Query("SELECT * FROM users WHERE id = :userId")
-    suspend fun getUserById(userId: Int): User?
+    fun getUserById(userId: Int): Flow<User?>
     
-    @Query("SELECT * FROM users ORDER BY name ASC")
-    fun getAllUsers(): LiveData<List<User>>
+    /**
+     * Obtiene un usuario por su email.
+     *
+     * @param email Email del usuario.
+     * @return Flow con el usuario, o null si no existe.
+     */
+    @Query("SELECT * FROM users WHERE email = :email")
+    fun getUserByEmail(email: String): Flow<User?>
     
-    @Query("SELECT * FROM users WHERE email = :email LIMIT 1")
-    suspend fun getUserByEmail(email: String): User?
+    /**
+     * Obtiene todos los usuarios.
+     *
+     * @return Flow con la lista de todos los usuarios.
+     */
+    @Query("SELECT * FROM users")
+    fun getAllUsers(): Flow<List<User>>
     
-    @Query("SELECT * FROM users WHERE username = :username LIMIT 1")
-    suspend fun getUserByUsername(username: String): User?
+    /**
+     * Obtiene un usuario por su ID de forma síncrona.
+     *
+     * @param userId ID del usuario.
+     * @return El usuario, o null si no existe.
+     */
+    @Query("SELECT * FROM users WHERE id = :userId")
+    suspend fun getUserByIdSync(userId: Int): User?
     
-    @Query("SELECT COUNT(*) FROM users")
-    suspend fun getUserCount(): Int
+    /**
+     * Obtiene un usuario por su email de forma síncrona.
+     *
+     * @param email Email del usuario.
+     * @return El usuario, o null si no existe.
+     */
+    @Query("SELECT * FROM users WHERE email = :email")
+    suspend fun getUserByEmailSync(email: String): User?
     
+    /**
+     * Elimina todos los usuarios.
+     */
     @Query("DELETE FROM users")
-    suspend fun deleteAll()
+    suspend fun deleteAllUsers()
     
+    /**
+     * Elimina un usuario por su ID.
+     *
+     * @param userId ID del usuario a eliminar.
+     * @return Número de filas eliminadas.
+     */
     @Query("DELETE FROM users WHERE id = :userId")
-    suspend fun deleteUserById(userId: Int)
-    
-    @Query("SELECT * FROM users WHERE company_id = :companyId")
-    suspend fun getUsersByCompany(companyId: Int): List<User>
-    
-    @Query("SELECT * FROM users WHERE last_sync < :timestamp")
-    suspend fun getUsersToSync(timestamp: Long): List<User>
+    suspend fun deleteUserById(userId: Int): Int
 }

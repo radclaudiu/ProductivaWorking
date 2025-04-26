@@ -1,72 +1,59 @@
 package com.productiva.android.network
 
+import retrofit2.Response
+import java.io.IOException
+
 /**
- * Clase genérica para representar respuestas de la API.
- * Contiene información sobre el éxito o fracaso de la petición,
- * así como los datos devueltos o mensajes de error.
+ * Clase genérica que representa la respuesta de la API.
+ * Permite unificar el formato de las respuestas y manejar errores.
  */
 data class ApiResponse<T>(
     val success: Boolean,
     val data: T? = null,
     val message: String? = null,
     val errors: Map<String, List<String>>? = null
-) {
-    /**
-     * Comprueba si hay errores de validación para un campo específico.
-     */
-    fun hasValidationError(field: String): Boolean {
-        return errors?.containsKey(field) == true
-    }
-    
-    /**
-     * Obtiene el primer mensaje de error para un campo específico.
-     */
-    fun getFirstValidationError(field: String): String? {
-        return errors?.get(field)?.firstOrNull()
-    }
-    
-    /**
-     * Obtiene todos los mensajes de error para un campo específico.
-     */
-    fun getValidationErrors(field: String): List<String> {
-        return errors?.get(field) ?: emptyList()
-    }
-    
-    /**
-     * Comprueba si hay algún error de validación.
-     */
-    fun hasAnyValidationError(): Boolean {
-        return errors?.isNotEmpty() == true
-    }
-    
-    /**
-     * Obtiene el mensaje de error general o el primer error de validación.
-     */
-    fun getErrorMessage(): String {
-        return when {
-            message != null -> message
-            hasAnyValidationError() -> {
-                val firstField = errors?.keys?.firstOrNull()
-                val firstError = firstField?.let { getFirstValidationError(it) }
-                firstError ?: "Error de validación"
+)
+
+/**
+ * Enum que representa los posibles estados de una operación de red.
+ */
+sealed class NetworkResult<T> {
+    data class Success<T>(val data: T) : NetworkResult<T>()
+    data class Error<T>(val message: String, val code: Int? = null, val data: T? = null) : NetworkResult<T>()
+    class Loading<T> : NetworkResult<T>()
+}
+
+/**
+ * Función de extensión que convierte una respuesta de Retrofit en un NetworkResult.
+ */
+suspend fun <T> safeApiCall(apiCall: suspend () -> Response<ApiResponse<T>>): NetworkResult<T> {
+    return try {
+        val response = apiCall()
+        if (response.isSuccessful) {
+            val body = response.body()
+            if (body != null) {
+                if (body.success) {
+                    val data = body.data
+                    if (data != null) {
+                        NetworkResult.Success(data)
+                    } else {
+                        NetworkResult.Error("Respuesta exitosa pero sin datos")
+                    }
+                } else {
+                    val errorMessage = body.message ?: body.errors?.values?.flatten()?.joinToString(", ") ?: "Error desconocido"
+                    NetworkResult.Error(errorMessage)
+                }
+            } else {
+                NetworkResult.Error("Respuesta del servidor vacía")
             }
-            else -> "Error desconocido"
+        } else {
+            val errorBody = response.errorBody()
+            val errorMessage = errorBody?.string() ?: "Error en la petición HTTP: ${response.code()}"
+            NetworkResult.Error(errorMessage, response.code())
         }
-    }
-    
-    companion object {
-        /**
-         * Crea una respuesta de éxito.
-         */
-        fun <T> success(data: T, message: String? = null): ApiResponse<T> {
-            return ApiResponse(true, data, message)
-        }
-        
-        /**
-         * Crea una respuesta de error.
-         */
-        fun <T> error(message: String, errors: Map<String, List<String>>? = null): ApiResponse<T> {
-            return ApiResponse(false, null, message, errors)
-        }
+    } catch (e: IOException) {
+        NetworkResult.Error("Error de conexión: ${e.message}", null)
+    } catch (e: Exception) {
+        NetworkResult.Error("Error: ${e.message}", null)
     }
 }

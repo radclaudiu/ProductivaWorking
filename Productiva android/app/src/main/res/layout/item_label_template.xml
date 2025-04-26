@@ -16,16 +16,17 @@
         android:padding="12dp">
 
         <ImageView
-            android:id="@+id/printerIcon"
-            android:layout_width="40dp"
+            android:id="@+id/templatePreview"
+            android:layout_width="60dp"
             android:layout_height="40dp"
-            android:contentDescription="Printer icon"
-            android:src="@android:drawable/ic_menu_edit"
+            android:background="#F5F5F5"
+            android:contentDescription="Template preview"
+            android:scaleType="centerCrop"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
-            android:id="@+id/printerName"
+            android:id="@+id/templateName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
@@ -35,28 +36,28 @@
             android:textColor="#212121"
             android:textSize="16sp"
             android:textStyle="bold"
-            app:layout_constraintEnd_toStartOf="@+id/defaultIndicator"
-            app:layout_constraintStart_toEndOf="@+id/printerIcon"
+            app:layout_constraintEnd_toStartOf="@+id/favoriteIndicator"
+            app:layout_constraintStart_toEndOf="@+id/templatePreview"
             app:layout_constraintTop_toTopOf="parent"
-            tools:text="Brother QL-720NW" />
+            tools:text="Etiqueta de servicio" />
 
         <TextView
-            android:id="@+id/printerAddress"
+            android:id="@+id/templateDescription"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
             android:layout_marginEnd="8dp"
             android:ellipsize="end"
-            android:maxLines="1"
+            android:maxLines="2"
             android:textColor="#757575"
             android:textSize="14sp"
-            app:layout_constraintEnd_toStartOf="@+id/defaultIndicator"
-            app:layout_constraintStart_toEndOf="@+id/printerIcon"
-            app:layout_constraintTop_toBottomOf="@+id/printerName"
-            tools:text="192.168.1.100" />
+            app:layout_constraintEnd_toStartOf="@+id/favoriteIndicator"
+            app:layout_constraintStart_toEndOf="@+id/templatePreview"
+            app:layout_constraintTop_toBottomOf="@+id/templateName"
+            tools:text="Etiqueta para identificación de servicios realizados" />
 
         <TextView
-            android:id="@+id/printerDetails"
+            android:id="@+id/templateDetails"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="12dp"
@@ -66,16 +67,16 @@
             android:maxLines="1"
             android:textColor="#757575"
             android:textSize="12sp"
-            app:layout_constraintEnd_toStartOf="@+id/defaultIndicator"
-            app:layout_constraintStart_toEndOf="@+id/printerIcon"
-            app:layout_constraintTop_toBottomOf="@+id/printerAddress"
-            tools:text="62mm x 29mm, WiFi" />
+            app:layout_constraintEnd_toStartOf="@+id/favoriteIndicator"
+            app:layout_constraintStart_toEndOf="@+id/templatePreview"
+            app:layout_constraintTop_toBottomOf="@+id/templateDescription"
+            tools:text="62mm x 29mm, Usado 10 veces" />
 
         <ImageView
-            android:id="@+id/defaultIndicator"
+            android:id="@+id/favoriteIndicator"
             android:layout_width="24dp"
             android:layout_height="24dp"
-            android:contentDescription="Default printer"
+            android:contentDescription="Favorite template"
             android:src="@android:drawable/btn_star_big_on"
             android:visibility="gone"
             app:layout_constraintEnd_toEndOf="parent"

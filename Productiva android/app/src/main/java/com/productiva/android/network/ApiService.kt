@@ -3,179 +3,181 @@ package com.productiva.android.network
 import com.productiva.android.model.LabelTemplate
 import com.productiva.android.model.Product
 import com.productiva.android.model.Task
+import com.productiva.android.model.TaskCompletion
 import com.productiva.android.model.User
-import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.Field
+import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
 /**
- * Interfaz de Retrofit para comunicarse con la API del servidor.
+ * Interfaz de servicios de API para comunicarse con el servidor web.
+ * Define todos los endpoints disponibles para la aplicación.
  */
 interface ApiService {
-    // Endpoints de autenticación
+    /**
+     * Autenticación de usuario.
+     */
+    @FormUrlEncoded
+    @POST("api/login")
+    suspend fun login(
+        @Field("email") email: String,
+        @Field("password") password: String
+    ): ApiResponse<User>
     
     /**
-     * Inicia sesión con las credenciales proporcionadas.
+     * Cierre de sesión.
      */
-    @POST("api/auth/login")
-    suspend fun login(@Body credentials: Map<String, String>): Response<LoginResponse>
+    @POST("api/logout")
+    suspend fun logout(): ApiResponse<Unit>
     
     /**
-     * Cierra la sesión actual.
+     * Obtiene la información del usuario actual.
      */
-    @POST("api/auth/logout")
-    suspend fun logout(): Response<Map<String, Any>>
+    @GET("api/user")
+    suspend fun getCurrentUser(): ApiResponse<User>
     
-    /**
-     * Obtiene información del usuario actual.
-     */
-    @GET("api/auth/user")
-    suspend fun getCurrentUser(): Response<User>
-    
-    // Endpoints de tareas
+    // ===== TAREAS =====
     
     /**
      * Obtiene todas las tareas.
      */
     @GET("api/tasks")
-    suspend fun getAllTasks(): Response<List<Task>>
+    suspend fun getAllTasks(): ApiResponse<List<Task>>
     
     /**
-     * Obtiene tareas asignadas a un usuario específico.
+     * Obtiene las tareas asignadas a un usuario.
      */
-    @GET("api/tasks/user/{user_id}")
-    suspend fun getTasksAssignedToUser(@Path("user_id") userId: Int): Response<List<Task>>
+    @GET("api/tasks/user/{userId}")
+    suspend fun getTasksByUser(
+        @Path("userId") userId: Int
+    ): ApiResponse<List<Task>>
     
     /**
-     * Obtiene una tarea por su ID.
+     * Obtiene tareas por estado.
      */
-    @GET("api/tasks/{task_id}")
-    suspend fun getTaskById(@Path("task_id") taskId: Int): Response<Task>
+    @GET("api/tasks/status/{status}")
+    suspend fun getTasksByStatus(
+        @Path("status") status: String
+    ): ApiResponse<List<Task>>
     
     /**
-     * Completa una tarea con los datos proporcionados.
+     * Obtiene una tarea específica.
      */
-    @POST("api/tasks/{task_id}/complete")
+    @GET("api/tasks/{taskId}")
+    suspend fun getTaskById(
+        @Path("taskId") taskId: Int
+    ): ApiResponse<Task>
+    
+    /**
+     * Completa una tarea.
+     */
+    @POST("api/tasks/{taskId}/complete")
     suspend fun completeTask(
-        @Path("task_id") taskId: Int,
-        @Body completionData: Map<String, Any>
-    ): Response<Task>
+        @Path("taskId") taskId: Int,
+        @Body taskCompletion: TaskCompletion
+    ): ApiResponse<Task>
     
-    // Endpoints de productos
+    /**
+     * Marca una tarea como cancelada.
+     */
+    @POST("api/tasks/{taskId}/cancel")
+    suspend fun cancelTask(
+        @Path("taskId") taskId: Int,
+        @Body reason: Map<String, String>
+    ): ApiResponse<Task>
+    
+    // ===== PRODUCTOS =====
     
     /**
      * Obtiene todos los productos.
      */
     @GET("api/products")
-    suspend fun getAllProducts(): Response<List<Product>>
+    suspend fun getAllProducts(): ApiResponse<List<Product>>
     
     /**
-     * Obtiene productos por ubicación.
+     * Obtiene los productos de una compañía.
      */
-    @GET("api/products/location/{location_id}")
-    suspend fun getProductsByLocation(@Path("location_id") locationId: Int): Response<List<Product>>
+    @GET("api/products/company/{companyId}")
+    suspend fun getProductsByCompany(
+        @Path("companyId") companyId: Int
+    ): ApiResponse<List<Product>>
     
     /**
-     * Obtiene productos por empresa.
+     * Obtiene los productos de una ubicación.
      */
-    @GET("api/products/company/{company_id}")
-    suspend fun getProductsByCompany(@Path("company_id") companyId: Int): Response<List<Product>>
+    @GET("api/products/location/{locationId}")
+    suspend fun getProductsByLocation(
+        @Path("locationId") locationId: Int
+    ): ApiResponse<List<Product>>
     
     /**
-     * Obtiene un producto por su ID.
+     * Obtiene un producto específico.
      */
-    @GET("api/products/{product_id}")
-    suspend fun getProductById(@Path("product_id") productId: Int): Response<Product>
+    @GET("api/products/{productId}")
+    suspend fun getProductById(
+        @Path("productId") productId: Int
+    ): ApiResponse<Product>
     
     /**
-     * Actualiza un producto con los datos proporcionados.
+     * Busca productos por nombre, código o código de barras.
      */
-    @POST("api/products/{product_id}")
+    @GET("api/products/search")
+    suspend fun searchProducts(
+        @Query("query") query: String
+    ): ApiResponse<List<Product>>
+    
+    /**
+     * Actualiza un producto.
+     */
+    @PUT("api/products/{productId}")
     suspend fun updateProduct(
-        @Path("product_id") productId: Int,
-        @Body productData: Map<String, Any>
-    ): Response<Product>
+        @Path("productId") productId: Int,
+        @Body product: Product
+    ): ApiResponse<Product>
     
-    // Endpoints de plantillas de etiquetas
+    // ===== PLANTILLAS DE ETIQUETAS =====
     
     /**
      * Obtiene todas las plantillas de etiquetas.
      */
     @GET("api/label-templates")
-    suspend fun getLabelTemplates(): Response<List<LabelTemplate>>
+    suspend fun getAllLabelTemplates(): ApiResponse<List<LabelTemplate>>
     
     /**
-     * Obtiene una plantilla de etiqueta por su ID.
+     * Obtiene una plantilla específica.
      */
-    @GET("api/label-templates/{template_id}")
-    suspend fun getLabelTemplateById(@Path("template_id") templateId: Int): Response<LabelTemplate>
+    @GET("api/label-templates/{templateId}")
+    suspend fun getLabelTemplateById(
+        @Path("templateId") templateId: Int
+    ): ApiResponse<LabelTemplate>
+    
+    /**
+     * Obtiene plantillas por tipo.
+     */
+    @GET("api/label-templates/type/{type}")
+    suspend fun getLabelTemplatesByType(
+        @Path("type") type: String
+    ): ApiResponse<List<LabelTemplate>>
+    
+    /**
+     * Actualiza una plantilla.
+     */
+    @PUT("api/label-templates/{templateId}")
+    suspend fun updateLabelTemplate(
+        @Path("templateId") templateId: Int,
+        @Body template: LabelTemplate
+    ): ApiResponse<LabelTemplate>
     
     /**
      * Actualiza el contador de uso de una plantilla.
      */
-    @POST("api/label-templates/{template_id}/usage")
-    suspend fun updateLabelTemplateUsage(
-        @Path("template_id") templateId: Int,
-        @Body usageData: Map<String, Any>
-    ): Response<LabelTemplate>
-    
-    // Endpoints de ubicaciones
-    
-    /**
-     * Obtiene todas las ubicaciones.
-     */
-    @GET("api/locations")
-    suspend fun getLocations(): Response<List<LocationResponse>>
-    
-    /**
-     * Obtiene una ubicación por su ID.
-     */
-    @GET("api/locations/{location_id}")
-    suspend fun getLocationById(@Path("location_id") locationId: Int): Response<LocationResponse>
-    
-    // Endpoints de usuarios
-    
-    /**
-     * Obtiene todos los usuarios.
-     */
-    @GET("api/users")
-    suspend fun getUsers(): Response<List<User>>
-    
-    /**
-     * Obtiene usuarios por empresa.
-     */
-    @GET("api/users/company/{company_id}")
-    suspend fun getUsersByCompany(@Path("company_id") companyId: Int): Response<List<User>>
-    
-    // Endpoints de búsqueda
-    
-    /**
-     * Busca productos por nombre, código o código de barras.
-     */
-    @GET("api/search/products")
-    suspend fun searchProducts(@Query("query") query: String): Response<List<Product>>
+    @POST("api/label-templates/{templateId}/increment-use")
+    suspend fun incrementLabelTemplateUseCount(
+        @Path("templateId") templateId: Int
+    ): ApiResponse<LabelTemplate>
 }
-
-/**
- * Clase de respuesta para el login.
- */
-data class LoginResponse(
-    val token: String,
-    val expiresAt: String,
-    val user: User
-)
-
-/**
- * Clase de respuesta para ubicaciones.
- */
-data class LocationResponse(
-    val id: Int,
-    val name: String,
-    val address: String?,
-    val company_id: Int,
-    val company_name: String?,
-    val is_active: Boolean
-)

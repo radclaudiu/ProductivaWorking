@@ -8,8 +8,8 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Modelo de datos que representa una plantilla de etiqueta para impresión.
- * Se almacena en la base de datos local y se sincroniza con el servidor.
+ * Modelo para plantillas de etiquetas para impresoras Brother.
+ * Contiene la configuración de formato y campos para generar etiquetas.
  */
 @Entity(tableName = "label_templates")
 data class LabelTemplate(
@@ -21,167 +21,154 @@ data class LabelTemplate(
     val name: String,
     
     @SerializedName("description")
-    val description: String?,
+    val description: String? = null,
     
-    @SerializedName("template_data")
-    val templateData: String,
+    @SerializedName("type")
+    val type: String, // "product", "location", "asset", "custom"
     
-    @SerializedName("template_type")
-    val templateType: String, // BROTHER, ZEBRA, GENERIC
-    
-    @SerializedName("label_width")
-    val labelWidth: Int, // in mm
-    
-    @SerializedName("label_height")
-    val labelHeight: Int, // in mm
-    
-    @SerializedName("dpi")
-    val dpi: Int, // 203, 300, 600
+    @SerializedName("paper_size")
+    val paperSize: String, // "62mm", "29mm", etc.
     
     @SerializedName("orientation")
-    val orientation: String, // PORTRAIT, LANDSCAPE
+    val orientation: String = "landscape", // "portrait" o "landscape"
     
-    @SerializedName("created_at")
-    val createdAt: String?,
+    @SerializedName("dpi")
+    val dpi: Int = 300,
     
-    @SerializedName("updated_at")
-    val updatedAt: String?,
+    @SerializedName("font_size")
+    val fontSize: Float = 10f,
     
-    @SerializedName("created_by")
-    val createdBy: Int?,
+    @SerializedName("font_family")
+    val fontFamily: String = "Arial",
     
-    @SerializedName("company_id")
-    val companyId: Int?,
+    @SerializedName("bold_title")
+    val boldTitle: Boolean = true,
+    
+    @SerializedName("include_barcode")
+    val includeBarcode: Boolean = true,
+    
+    @SerializedName("barcode_type")
+    val barcodeType: String = "CODE128",
+    
+    @SerializedName("include_logo")
+    val includeLogo: Boolean = false,
+    
+    @SerializedName("logo_url")
+    val logoUrl: String? = null,
+    
+    @SerializedName("include_price")
+    val includePrice: Boolean = true,
+    
+    @SerializedName("include_date")
+    val includeDate: Boolean = false,
+    
+    @SerializedName("date_format")
+    val dateFormat: String = "dd/MM/yyyy",
+    
+    @SerializedName("custom_fields")
+    val customFields: List<String> = emptyList(),
     
     @SerializedName("is_default")
-    val isDefault: Boolean,
+    val isDefault: Boolean = false,
     
-    @SerializedName("usage_count")
-    val usageCount: Int,
+    @SerializedName("company_id")
+    val companyId: Int? = null,
     
-    @SerializedName("last_used_at")
-    val lastUsedAt: String?,
+    @SerializedName("created_at")
+    val createdAt: String? = null,
     
-    @SerializedName("fields")
-    val fields: List<String>?, // Lista de campos disponibles en la plantilla
+    @SerializedName("updated_at")
+    val updatedAt: String? = null,
+    
+    @SerializedName("use_count")
+    val useCount: Int = 0,
     
     // Campos locales
-    val localUsageCount: Int = 0,
-    val needsSync: Boolean = false
+    var localUseCount: Int = 0,
+    var needsSync: Boolean = false,
+    var lastSyncTime: Long = 0
 ) {
     /**
-     * Incrementa el contador de uso de la plantilla.
+     * Genera los datos necesarios para imprimir una etiqueta para un producto.
      */
-    fun incrementUsage(): LabelTemplate {
-        val now = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(Date())
+    fun generateProductLabelData(product: Product): Map<String, Any> {
+        val labelData = mutableMapOf<String, Any>()
+        
+        // Datos básicos del producto
+        labelData["title"] = product.name
+        labelData["code"] = product.code ?: ""
+        
+        // Código de barras
+        if (includeBarcode && !product.barcode.isNullOrEmpty()) {
+            labelData["barcode"] = product.barcode
+            labelData["barcodeType"] = barcodeType
+        } else if (includeBarcode) {
+            // Si no hay código de barras pero se solicita incluirlo, usamos el código del producto
+            labelData["barcode"] = product.code ?: product.id.toString()
+            labelData["barcodeType"] = barcodeType
+        }
+        
+        // Precio
+        if (includePrice) {
+            labelData["price"] = product.formattedPrice()
+        }
+        
+        // Fecha
+        if (includeDate) {
+            val formatter = SimpleDateFormat(dateFormat, Locale.getDefault())
+            labelData["date"] = formatter.format(Date())
+        }
+        
+        // Logo
+        if (includeLogo && !logoUrl.isNullOrEmpty()) {
+            labelData["logoUrl"] = logoUrl
+        }
+        
+        // Campos personalizados
+        for (field in customFields) {
+            when (field) {
+                "category" -> labelData["category"] = product.category ?: ""
+                "supplier" -> labelData["supplier"] = product.supplier ?: ""
+                "stock" -> product.stock?.let { labelData["stock"] = it.toString() }
+                "description" -> product.description?.let { 
+                    // Truncar descripción para que quepa en la etiqueta
+                    labelData["description"] = if (it.length > 50) it.substring(0, 47) + "..." else it
+                }
+            }
+        }
+        
+        return labelData
+    }
+    
+    /**
+     * Incrementa el contador de uso local y marca para sincronización.
+     */
+    fun incrementUseCount(): LabelTemplate {
         return this.copy(
-            localUsageCount = localUsageCount + 1,
-            lastUsedAt = now,
+            localUseCount = localUseCount + 1,
             needsSync = true
         )
     }
     
     /**
-     * Actualiza esta plantilla con información del servidor.
+     * Actualiza la plantilla con datos del servidor.
      */
     fun updateFromServer(serverTemplate: LabelTemplate): LabelTemplate {
-        return this.copy(
-            name = serverTemplate.name,
-            description = serverTemplate.description,
-            templateData = serverTemplate.templateData,
-            templateType = serverTemplate.templateType,
-            labelWidth = serverTemplate.labelWidth,
-            labelHeight = serverTemplate.labelHeight,
-            dpi = serverTemplate.dpi,
-            orientation = serverTemplate.orientation,
-            updatedAt = serverTemplate.updatedAt,
-            isDefault = serverTemplate.isDefault,
-            usageCount = serverTemplate.usageCount,
-            lastUsedAt = serverTemplate.lastUsedAt,
-            fields = serverTemplate.fields,
-            needsSync = false
-        )
-    }
-    
-    /**
-     * Genera los datos de impresión para un producto específico.
-     */
-    fun generatePrintData(product: Product): String {
-        // Reemplazar los marcadores de posición en la plantilla con los datos del producto
-        var printData = templateData
-        
-        // Datos básicos del producto
-        printData = printData.replace("[PRODUCT_ID]", product.id.toString())
-        printData = printData.replace("[PRODUCT_NAME]", product.name)
-        printData = printData.replace("[PRODUCT_CODE]", product.code ?: "")
-        printData = printData.replace("[PRODUCT_BARCODE]", product.barcode ?: "")
-        printData = printData.replace("[PRODUCT_SKU]", product.sku ?: "")
-        printData = printData.replace("[PRODUCT_PRICE]", product.formattedPrice())
-        
-        // Datos de categoría y marca
-        printData = printData.replace("[PRODUCT_CATEGORY]", product.category ?: "")
-        printData = printData.replace("[PRODUCT_BRAND]", product.brand ?: "")
-        
-        // Fecha y hora actual
-        val currentDate = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(Date())
-        val currentTime = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date())
-        printData = printData.replace("[CURRENT_DATE]", currentDate)
-        printData = printData.replace("[CURRENT_TIME]", currentTime)
-        
-        // Si el producto tiene fecha de creación o actualización
-        product.createdAt?.let { date ->
-            try {
-                val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-                val outputFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                val parsedDate = inputFormat.parse(date)
-                parsedDate?.let {
-                    printData = printData.replace("[PRODUCT_CREATED_DATE]", outputFormat.format(it))
-                }
-            } catch (e: Exception) {
-                printData = printData.replace("[PRODUCT_CREATED_DATE]", "")
-            }
-        } ?: run {
-            printData = printData.replace("[PRODUCT_CREATED_DATE]", "")
-        }
-        
-        // Otros datos opcionales
-        product.description?.let { printData = printData.replace("[PRODUCT_DESCRIPTION]", it) }
-            ?: run { printData = printData.replace("[PRODUCT_DESCRIPTION]", "") }
-            
-        product.weight?.let { printData = printData.replace("[PRODUCT_WEIGHT]", "$it kg") }
-            ?: run { printData = printData.replace("[PRODUCT_WEIGHT]", "") }
-            
-        product.dimensions?.let { printData = printData.replace("[PRODUCT_DIMENSIONS]", it) }
-            ?: run { printData = printData.replace("[PRODUCT_DIMENSIONS]", "") }
-        
-        return printData
-    }
-    
-    companion object {
-        /**
-         * Crea una plantilla vacía para usar como comodín.
-         */
-        fun createEmpty(): LabelTemplate {
-            return LabelTemplate(
-                id = 0,
-                name = "",
-                description = null,
-                templateData = "",
-                templateType = "BROTHER",
-                labelWidth = 62,
-                labelHeight = 29,
-                dpi = 300,
-                orientation = "LANDSCAPE",
-                createdAt = null,
-                updatedAt = null,
-                createdBy = null,
-                companyId = null,
-                isDefault = false,
-                usageCount = 0,
-                lastUsedAt = null,
-                fields = null,
-                localUsageCount = 0,
-                needsSync = false
+        return if (needsSync) {
+            // Si hay cambios locales pendientes, solo actualizamos campos no críticos
+            this.copy(
+                name = serverTemplate.name,
+                description = serverTemplate.description,
+                isDefault = serverTemplate.isDefault,
+                updatedAt = serverTemplate.updatedAt,
+                lastSyncTime = System.currentTimeMillis()
+            )
+        } else {
+            // Actualización completa preservando el contador de uso local
+            serverTemplate.copy(
+                localUseCount = this.localUseCount,
+                needsSync = false,
+                lastSyncTime = System.currentTimeMillis()
             )
         }
     }

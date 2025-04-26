@@ -4,30 +4,29 @@ import androidx.room.TypeConverter
 import java.util.Date
 
 /**
- * Conversor para almacenar y recuperar objetos Date en la base de datos Room.
- * Convierte entre objetos Date y valores Long (timestamp en milisegundos).
+ * Conversor para el tipo Date de Java, que permite almacenar fechas en Room.
+ * Convierte entre Date y Long para persistencia en la base de datos.
  */
 class DateConverter {
-    
     /**
-     * Convierte un timestamp (Long) a un objeto Date.
+     * Convierte una fecha (Date) a un valor Long para almacenamiento.
      *
-     * @param value Timestamp en milisegundos desde epoch.
-     * @return Objeto Date correspondiente al timestamp o null si el valor es null.
+     * @param date Fecha a convertir.
+     * @return Valor en milisegundos (epoch time) o null si la fecha es null.
      */
     @TypeConverter
-    fun fromTimestamp(value: Long?): Date? {
-        return value?.let { Date(it) }
+    fun fromDate(date: Date?): Long? {
+        return date?.time
     }
     
     /**
-     * Convierte un objeto Date a un timestamp (Long).
+     * Convierte un valor Long a una fecha (Date).
      *
-     * @param date Objeto Date a convertir.
-     * @return Timestamp en milisegundos desde epoch o null si el objeto Date es null.
+     * @param value Valor en milisegundos (epoch time).
+     * @return Objeto Date o null si el valor es null.
      */
     @TypeConverter
-    fun dateToTimestamp(date: Date?): Long? {
-        return date?.time
+    fun toDate(value: Long?): Date? {
+        return value?.let { Date(it) }
     }
 }

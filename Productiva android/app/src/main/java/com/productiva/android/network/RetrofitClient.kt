@@ -2,18 +2,23 @@ package com.productiva.android.network
 
 import android.content.Context
 import android.util.Log
-import com.productiva.android.session.SessionManager
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.productiva.android.network.interceptor.AuthInterceptor
+import com.productiva.android.network.interceptor.ConnectionInterceptor
+import com.productiva.android.network.interceptor.LoggingInterceptor
 import com.productiva.android.utils.Constants
-import okhttp3.Interceptor
+import okhttp3.Cache
 import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.io.File
 import java.util.concurrent.TimeUnit
 
 /**
  * Cliente Retrofit para comunicación con la API REST.
- * Proporciona un cliente HTTP configurado con interceptores para autenticación y logging.
+ * Proporciona un cliente HTTP configurado con interceptores para autenticación,
+ * verificación de conectividad y logging.
  */
 class RetrofitClient {
     
@@ -42,46 +47,44 @@ class RetrofitClient {
          * @return Instancia configurada de ApiService.
          */
         private fun createApiService(context: Context): ApiService {
-            // Crear interceptor de logging para depuración
-            val loggingInterceptor = HttpLoggingInterceptor().apply {
-                level = if (Constants.DEBUG) {
-                    HttpLoggingInterceptor.Level.BODY
-                } else {
-                    HttpLoggingInterceptor.Level.NONE
-                }
+            // Crear directorio de caché si no existe
+            val cacheDir = File(context.cacheDir, "http-cache")
+            if (!cacheDir.exists()) {
+                cacheDir.mkdirs()
             }
             
-            // Crear interceptor para añadir headers de autenticación
-            val authInterceptor = Interceptor { chain ->
-                val sessionManager = SessionManager.getInstance()
-                val token = sessionManager.getAuthToken()
-                
-                val newRequest = if (token.isNotEmpty()) {
-                    chain.request().newBuilder()
-                        .addHeader("Authorization", "Bearer $token")
-                        .build()
-                } else {
-                    chain.request()
-                }
-                
-                chain.proceed(newRequest)
-            }
+            // Configurar caché HTTP
+            val cache = Cache(cacheDir, ApiConfig.CACHE_SIZE_BYTES.toLong())
             
-            // Crear cliente HTTP con timeout e interceptores
+            // Crear interceptores
+            val authInterceptor = AuthInterceptor(context)
+            val connectionInterceptor = ConnectionInterceptor(context)
+            val loggingInterceptor = LoggingInterceptor()
+            
+            // Crear cliente HTTP con interceptores y timeouts
             val okHttpClient = OkHttpClient.Builder()
-                .connectTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .addInterceptor(authInterceptor)
-                .addInterceptor(loggingInterceptor)
+                .connectTimeout(ApiConfig.CONNECTION_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .readTimeout(ApiConfig.READ_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .writeTimeout(ApiConfig.WRITE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .cache(cache)
+                .addInterceptor(connectionInterceptor)  // Verificar conectividad primero
+                .addInterceptor(authInterceptor)        // Luego autenticación
+                .addInterceptor(loggingInterceptor)     // Por último logging
                 .build()
+            
+            // Configurar Gson para deserialización correcta
+            val gson: Gson = GsonBuilder()
+                .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'") // ISO 8601
+                .create()
             
             // Crear cliente Retrofit
             val retrofit = Retrofit.Builder()
-                .baseUrl(Constants.API_BASE_URL)
+                .baseUrl(ApiConfig.BASE_URL)
                 .client(okHttpClient)
-                .addConverterFactory(GsonConverterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create(gson))
                 .build()
+            
+            Log.d(TAG, "ApiService creado con URL base: ${ApiConfig.BASE_URL}")
             
             return retrofit.create(ApiService::class.java)
         }

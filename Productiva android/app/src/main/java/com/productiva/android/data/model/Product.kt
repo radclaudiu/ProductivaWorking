@@ -1,130 +1,83 @@
 package com.productiva.android.data.model
 
 import androidx.room.Entity
-import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
 import com.productiva.android.data.converter.DateConverter
-import com.productiva.android.data.converter.ListConverter
 import java.util.Date
 
 /**
- * Entidad que representa un producto en el sistema.
+ * Modelo que representa un producto en el sistema.
  *
- * @property id Identificador único del producto.
+ * @property id ID único del producto.
  * @property name Nombre del producto.
- * @property description Descripción detallada del producto (opcional).
- * @property sku Código SKU (Stock Keeping Unit) del producto.
+ * @property description Descripción del producto (opcional).
+ * @property sku Código SKU del producto (opcional).
  * @property barcode Código de barras del producto (opcional).
- * @property category Categoría del producto (opcional).
  * @property price Precio del producto.
- * @property cost Costo de producción o adquisición del producto (opcional).
  * @property stock Cantidad en stock del producto.
- * @property minimumStock Stock mínimo antes de reordenar (opcional).
- * @property unit Unidad de medida del producto (unidad, kg, litro, etc.).
- * @property weight Peso del producto (opcional).
- * @property dimensions Dimensiones del producto en formato "LxAxA" (opcional).
- * @property imagePath Ruta a la imagen del producto (opcional).
- * @property tags Lista de etiquetas asociadas al producto (opcional).
- * @property active Indica si el producto está activo y disponible.
+ * @property minStock Stock mínimo antes de alertar (opcional).
+ * @property imageUrl URL de la imagen del producto (opcional).
  * @property companyId ID de la empresa a la que pertenece el producto.
+ * @property categoryId ID de la categoría del producto (opcional).
+ * @property isActive Indica si el producto está activo.
  * @property createdAt Fecha de creación del producto.
  * @property updatedAt Fecha de última actualización del producto.
- * @property syncStatus Estado de sincronización con el servidor.
- * @property lastSyncTime Marca de tiempo de la última sincronización.
- * @property isDeleted Indica si el producto ha sido marcado para eliminación.
- * @property pendingChanges Indica si hay cambios locales pendientes de sincronizar.
+ * @property syncStatus Estado de sincronización del producto.
+ * @property pendingChanges Indica si hay cambios pendientes de sincronización.
  */
-@Entity(
-    tableName = "products",
-    indices = [
-        Index("sku", unique = true),
-        Index("barcode"),
-        Index("companyId"),
-        Index("syncStatus")
-    ]
-)
-@TypeConverters(DateConverter::class, ListConverter::class)
+@Entity(tableName = "products")
+@TypeConverters(DateConverter::class)
 data class Product(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
-    
     val name: String,
     val description: String? = null,
-    val sku: String,
+    val sku: String? = null,
     val barcode: String? = null,
-    
-    val category: String? = null,
-    val price: Double,
-    val cost: Double? = null,
-    val stock: Int,
-    val minimumStock: Int? = null,
-    val unit: String, // "unit", "kg", "liter", etc.
-    
-    val weight: Double? = null,
-    val dimensions: String? = null, // Format: "LxWxH"
-    val imagePath: String? = null,
-    
-    val tags: List<String> = emptyList(),
-    val active: Boolean = true,
-    
+    val price: Double = 0.0,
+    val stock: Int = 0,
+    val minStock: Int? = null,
+    val imageUrl: String? = null,
     val companyId: Int,
-    val createdAt: Date,
-    val updatedAt: Date,
-    
-    // Campos para sincronización
-    val syncStatus: String = SyncStatus.SYNCED, // "synced", "pending_upload", "pending_update", "conflict"
-    val lastSyncTime: Long = 0,
-    val isDeleted: Boolean = false,
+    val categoryId: Int? = null,
+    val isActive: Boolean = true,
+    val createdAt: Date = Date(),
+    val updatedAt: Date = Date(),
+    val syncStatus: SyncStatus = SyncStatus.PENDING_UPLOAD,
     val pendingChanges: Boolean = false
 ) {
     /**
-     * Verifica si el stock está por debajo del mínimo.
-     *
-     * @return true si el stock está por debajo del mínimo establecido, false en caso contrario.
+     * Estado de sincronización del producto.
      */
-    fun isLowStock(): Boolean {
-        return minimumStock != null && stock <= minimumStock
+    enum class SyncStatus {
+        /** Sincronizado con el servidor. */
+        SYNCED,
+        /** Pendiente de subir al servidor. */
+        PENDING_UPLOAD,
+        /** Pendiente de actualizar en el servidor. */
+        PENDING_UPDATE,
+        /** Pendiente de eliminar en el servidor. */
+        PENDING_DELETE
     }
     
     /**
-     * Crea una copia del producto con stock actualizado.
+     * Crea una copia del producto con un estado de sincronización específico.
      *
-     * @param newStock Nuevo nivel de stock.
-     * @return Producto actualizado con nuevo nivel de stock.
+     * @param syncStatus Nuevo estado de sincronización.
+     * @return Copia del producto con el nuevo estado.
      */
-    fun updateStock(newStock: Int): Product {
-        return copy(
-            stock = newStock,
-            updatedAt = Date(),
-            syncStatus = SyncStatus.PENDING_UPDATE,
-            pendingChanges = true
-        )
+    fun withSyncStatus(syncStatus: SyncStatus): Product {
+        return this.copy(syncStatus = syncStatus)
     }
     
     /**
-     * Crea una copia del producto con precio actualizado.
+     * Marca el producto como eliminado.
      *
-     * @param newPrice Nuevo precio.
-     * @return Producto actualizado con nuevo precio.
+     * @return Copia del producto marcado para eliminación.
      */
-    fun updatePrice(newPrice: Double): Product {
-        return copy(
-            price = newPrice,
-            updatedAt = Date(),
-            syncStatus = SyncStatus.PENDING_UPDATE,
-            pendingChanges = true
-        )
-    }
-    
-    /**
-     * Crea una copia del producto marcado para eliminación.
-     *
-     * @return Producto actualizado marcado para eliminación.
-     */
-    fun markForDeletion(): Product {
-        return copy(
-            isDeleted = true,
+    fun markAsDeleted(): Product {
+        return this.copy(
             syncStatus = SyncStatus.PENDING_DELETE,
             pendingChanges = true,
             updatedAt = Date()
@@ -132,27 +85,17 @@ data class Product(
     }
     
     /**
-     * Crea una copia del producto con estado de sincronización actualizado.
+     * Actualiza el stock del producto.
      *
-     * @param newSyncStatus Nuevo estado de sincronización.
-     * @return Producto actualizado con nuevo estado de sincronización.
+     * @param newStock Nuevo nivel de stock.
+     * @return Copia del producto con el stock actualizado.
      */
-    fun withSyncStatus(newSyncStatus: String, lastSyncTime: Long = System.currentTimeMillis()): Product {
-        return copy(
-            syncStatus = newSyncStatus,
-            lastSyncTime = lastSyncTime,
-            pendingChanges = newSyncStatus != SyncStatus.SYNCED
+    fun updateStock(newStock: Int): Product {
+        return this.copy(
+            stock = newStock,
+            syncStatus = SyncStatus.PENDING_UPDATE,
+            pendingChanges = true,
+            updatedAt = Date()
         )
-    }
-    
-    /**
-     * Clase auxiliar que define constantes para los estados de sincronización.
-     */
-    object SyncStatus {
-        const val SYNCED = "synced"
-        const val PENDING_UPLOAD = "pending_upload"
-        const val PENDING_UPDATE = "pending_update"
-        const val PENDING_DELETE = "pending_delete"
-        const val CONFLICT = "conflict"
     }
 }

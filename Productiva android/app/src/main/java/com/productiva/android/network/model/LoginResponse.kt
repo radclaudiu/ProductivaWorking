@@ -1,46 +1,27 @@
 package com.productiva.android.network.model
 
+import com.google.gson.annotations.SerializedName
+
 /**
- * Clase que representa la respuesta de un inicio de sesión exitoso.
+ * Modelo de respuesta para el inicio de sesión.
+ * Contiene el token de autenticación y los datos del usuario.
  *
  * @property token Token de autenticación JWT.
- * @property user Datos del usuario autenticado.
- * @property companies Lista de empresas a las que tiene acceso el usuario.
+ * @property userId ID del usuario.
+ * @property username Nombre de usuario.
+ * @property email Correo electrónico del usuario.
+ * @property isAdmin Indica si el usuario es administrador.
+ * @property companyId ID de la empresa a la que pertenece el usuario.
+ * @property companyName Nombre de la empresa.
+ * @property employeeId ID del empleado asociado al usuario (puede ser nulo).
  */
 data class LoginResponse(
-    val token: String,
-    val user: UserData,
-    val companies: List<CompanyData>
-)
-
-/**
- * Datos básicos del usuario.
- *
- * @property id ID único del usuario.
- * @property username Nombre de usuario.
- * @property email Correo electrónico.
- * @property name Nombre completo del usuario.
- * @property role Rol del usuario en el sistema.
- */
-data class UserData(
-    val id: Int,
-    val username: String,
-    val email: String,
-    val name: String,
-    val role: String
-)
-
-/**
- * Datos básicos de una empresa.
- *
- * @property id ID único de la empresa.
- * @property name Nombre de la empresa.
- * @property logo URL del logo de la empresa (opcional).
- * @property active Indica si la empresa está activa.
- */
-data class CompanyData(
-    val id: Int,
-    val name: String,
-    val logo: String? = null,
-    val active: Boolean = true
+    @SerializedName("token") val token: String,
+    @SerializedName("user_id") val userId: Int,
+    @SerializedName("username") val username: String,
+    @SerializedName("email") val email: String?,
+    @SerializedName("is_admin") val isAdmin: Boolean,
+    @SerializedName("company_id") val companyId: Int,
+    @SerializedName("company_name") val companyName: String,
+    @SerializedName("employee_id") val employeeId: Int?
 )

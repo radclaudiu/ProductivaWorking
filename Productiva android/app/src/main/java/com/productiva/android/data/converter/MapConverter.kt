@@ -6,79 +6,35 @@ import com.google.gson.reflect.TypeToken
 import com.productiva.android.data.model.FieldPosition
 
 /**
- * Conversor para almacenar y recuperar mapas de objetos en la base de datos Room.
- * Convierte entre mapas y su representación JSON como string.
+ * Conversor para mapas tipo Map<String, FieldPosition>, que permite almacenar
+ * mapas complejos en Room.
+ * Convierte entre Map<String, FieldPosition> y String para persistencia en la base de datos.
  */
 class MapConverter {
     private val gson = Gson()
     
     /**
-     * Convierte un mapa de strings a su representación JSON.
+     * Convierte un mapa de posiciones de campos a una cadena JSON.
      *
-     * @param map Mapa de strings a convertir.
-     * @return Representación JSON del mapa como string o null si el mapa es null.
+     * @param map Mapa a convertir.
+     * @return Cadena JSON o null si el mapa es null.
      */
     @TypeConverter
-    fun fromStringMap(map: Map<String, String>?): String? {
-        return if (map.isNullOrEmpty()) {
-            null
-        } else {
-            gson.toJson(map)
-        }
+    fun fromMap(map: Map<String, FieldPosition>?): String? {
+        return if (map == null) null else gson.toJson(map)
     }
     
     /**
-     * Convierte una representación JSON a un mapa de strings.
+     * Convierte una cadena JSON a un mapa de posiciones de campos.
      *
-     * @param json Representación JSON del mapa como string.
-     * @return Mapa de strings reconstruido o mapa vacío si el JSON es null o vacío.
+     * @param json Cadena JSON.
+     * @return Mapa de posiciones de campos o un mapa vacío si la cadena es null.
      */
     @TypeConverter
-    fun toStringMap(json: String?): Map<String, String> {
-        if (json.isNullOrEmpty()) {
-            return emptyMap()
-        }
-        
-        val type = object : TypeToken<Map<String, String>>() {}.type
-        return try {
-            gson.fromJson(json, type)
-        } catch (e: Exception) {
-            emptyMap()
-        }
-    }
-    
-    /**
-     * Convierte un mapa de posiciones de campos a su representación JSON.
-     *
-     * @param map Mapa de posiciones de campos a convertir.
-     * @return Representación JSON del mapa como string o null si el mapa es null.
-     */
-    @TypeConverter
-    fun fromFieldPositionMap(map: Map<String, FieldPosition>?): String? {
-        return if (map.isNullOrEmpty()) {
-            null
-        } else {
-            gson.toJson(map)
-        }
-    }
-    
-    /**
-     * Convierte una representación JSON a un mapa de posiciones de campos.
-     *
-     * @param json Representación JSON del mapa como string.
-     * @return Mapa de posiciones de campos reconstruido o mapa vacío si el JSON es null o vacío.
-     */
-    @TypeConverter
-    fun toFieldPositionMap(json: String?): Map<String, FieldPosition> {
-        if (json.isNullOrEmpty()) {
-            return emptyMap()
-        }
+    fun toMap(json: String?): Map<String, FieldPosition> {
+        if (json == null) return emptyMap()
         
         val type = object : TypeToken<Map<String, FieldPosition>>() {}.type
-        return try {
-            gson.fromJson(json, type)
-        } catch (e: Exception) {
-            emptyMap()
-        }
+        return gson.fromJson(json, type) ?: emptyMap()
     }
 }

@@ -1,166 +1,135 @@
 package com.productiva.android.data.model
 
 import androidx.room.Entity
-import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
 import com.productiva.android.data.converter.DateConverter
 import java.util.Date
 
 /**
- * Entidad que representa un registro de fichaje (entrada o salida) de un empleado.
+ * Modelo que representa un registro de fichaje (entrada/salida) en el sistema.
  *
- * @property id Identificador único del registro de fichaje.
- * @property employeeId ID del empleado que realiza el fichaje.
- * @property locationId ID del punto de fichaje donde se realiza.
- * @property companyId ID de la empresa a la que pertenece el empleado.
+ * @property id ID único del fichaje.
+ * @property employeeId ID del empleado.
+ * @property companyId ID de la empresa.
+ * @property locationId ID del punto de fichaje.
  * @property checkInTime Fecha y hora de entrada.
  * @property checkOutTime Fecha y hora de salida (opcional).
- * @property notes Notas o comentarios sobre el fichaje (opcional).
- * @property checkInLatitude Latitud donde se realizó la entrada (opcional).
- * @property checkInLongitude Longitud donde se realizó la entrada (opcional).
- * @property checkOutLatitude Latitud donde se realizó la salida (opcional).
- * @property checkOutLongitude Longitud donde se realizó la salida (opcional).
- * @property hoursWorked Número de horas trabajadas calculadas (opcional).
- * @property status Estado del fichaje ("pending", "completed", "auto_completed", "error").
- * @property createdAt Fecha de creación del registro.
- * @property updatedAt Fecha de última actualización del registro.
- * @property syncStatus Estado de sincronización con el servidor.
- * @property lastSyncTime Marca de tiempo de la última sincronización.
- * @property pendingChanges Indica si hay cambios locales pendientes de sincronizar.
+ * @property checkInLatitude Latitud de la ubicación de entrada (opcional).
+ * @property checkInLongitude Longitud de la ubicación de entrada (opcional).
+ * @property checkOutLatitude Latitud de la ubicación de salida (opcional).
+ * @property checkOutLongitude Longitud de la ubicación de salida (opcional).
+ * @property status Estado del fichaje.
+ * @property hoursWorked Horas trabajadas (calculadas al registrar la salida).
+ * @property notes Notas adicionales (opcional).
+ * @property createdAt Fecha de creación del fichaje.
+ * @property updatedAt Fecha de última actualización del fichaje.
+ * @property syncStatus Estado de sincronización del fichaje.
+ * @property pendingChanges Indica si hay cambios pendientes de sincronización.
  */
-@Entity(
-    tableName = "checkpoints",
-    indices = [
-        Index("employeeId"),
-        Index("locationId"),
-        Index("companyId"),
-        Index("status"),
-        Index("syncStatus")
-    ]
-)
+@Entity(tableName = "checkpoints")
 @TypeConverters(DateConverter::class)
 data class CheckpointData(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
-    
     val employeeId: Int,
-    val locationId: Int,
     val companyId: Int,
-    
+    val locationId: Int,
     val checkInTime: Date,
     val checkOutTime: Date? = null,
-    
-    val notes: String? = null,
-    
     val checkInLatitude: Double? = null,
     val checkInLongitude: Double? = null,
     val checkOutLatitude: Double? = null,
     val checkOutLongitude: Double? = null,
-    
-    val hoursWorked: Double? = null,
-    
-    val status: String, // "pending", "completed", "auto_completed", "error"
-    
-    val createdAt: Date,
-    val updatedAt: Date,
-    
-    // Campos para sincronización
-    val syncStatus: String = SyncStatus.SYNCED, // "synced", "pending_upload", "pending_update", "conflict"
-    val lastSyncTime: Long = 0,
+    val status: Status = Status.PENDING,
+    val hoursWorked: Double = 0.0,
+    val notes: String? = null,
+    val createdAt: Date = Date(),
+    val updatedAt: Date = Date(),
+    val syncStatus: SyncStatus = SyncStatus.PENDING_UPLOAD,
     val pendingChanges: Boolean = false
 ) {
     /**
-     * Comprueba si el fichaje está pendiente (sin fecha de salida).
+     * Estado del fichaje.
+     */
+    enum class Status {
+        /** Pendiente (solo check-in) */
+        PENDING,
+        /** Completado (check-in y check-out) */
+        COMPLETED,
+        /** Marcado como automático */
+        AUTO_COMPLETED
+    }
+    
+    /**
+     * Estado de sincronización del fichaje.
+     */
+    enum class SyncStatus {
+        /** Sincronizado con el servidor */
+        SYNCED,
+        /** Pendiente de subir al servidor */
+        PENDING_UPLOAD,
+        /** Pendiente de actualizar en el servidor */
+        PENDING_UPDATE
+    }
+    
+    /**
+     * Verifica si el fichaje está pendiente (solo tiene check-in).
      *
-     * @return true si el fichaje está pendiente, false en caso contrario.
+     * @return True si está pendiente, False en caso contrario.
      */
     fun isPending(): Boolean {
-        return checkOutTime == null && status == "pending"
+        return status == Status.PENDING && checkOutTime == null
     }
     
     /**
-     * Comprueba si el fichaje está completo (con fecha de entrada y salida).
+     * Verifica si el fichaje está completo (tiene check-in y check-out).
      *
-     * @return true si el fichaje está completo, false en caso contrario.
+     * @return True si está completo, False en caso contrario.
      */
     fun isCompleted(): Boolean {
-        return checkOutTime != null && (status == "completed" || status == "auto_completed")
+        return (status == Status.COMPLETED || status == Status.AUTO_COMPLETED) && checkOutTime != null
     }
     
     /**
-     * Crea una copia del fichaje con salida registrada.
+     * Crea una copia del fichaje con un estado de sincronización específico.
+     *
+     * @param syncStatus Nuevo estado de sincronización.
+     * @return Copia del fichaje con el nuevo estado.
+     */
+    fun withSyncStatus(syncStatus: SyncStatus): CheckpointData {
+        return this.copy(syncStatus = syncStatus)
+    }
+    
+    /**
+     * Registra la salida del fichaje.
      *
      * @param checkOutTime Fecha y hora de salida.
-     * @param latitude Latitud donde se realizó la salida (opcional).
-     * @param longitude Longitud donde se realizó la salida (opcional).
-     * @param autoCompleted Indica si la salida fue registrada automáticamente.
-     * @return Fichaje actualizado con salida registrada.
+     * @param checkOutLatitude Latitud de la ubicación de salida (opcional).
+     * @param checkOutLongitude Longitud de la ubicación de salida (opcional).
+     * @param hoursWorked Horas trabajadas calculadas.
+     * @param isAutomatic Indica si el cierre es automático.
+     * @param notes Notas adicionales (opcional).
+     * @return Copia del fichaje con la salida registrada.
      */
     fun registerCheckOut(
         checkOutTime: Date,
-        latitude: Double? = null,
-        longitude: Double? = null,
-        autoCompleted: Boolean = false
+        checkOutLatitude: Double? = null,
+        checkOutLongitude: Double? = null,
+        hoursWorked: Double,
+        isAutomatic: Boolean = false,
+        notes: String? = null
     ): CheckpointData {
-        val status = if (autoCompleted) "auto_completed" else "completed"
-        val hoursWorked = calculateHoursWorked(this.checkInTime, checkOutTime)
-        
-        return copy(
+        return this.copy(
             checkOutTime = checkOutTime,
-            checkOutLatitude = latitude,
-            checkOutLongitude = longitude,
+            checkOutLatitude = checkOutLatitude,
+            checkOutLongitude = checkOutLongitude,
             hoursWorked = hoursWorked,
-            status = status,
-            updatedAt = Date(),
+            status = if (isAutomatic) Status.AUTO_COMPLETED else Status.COMPLETED,
+            notes = notes ?: this.notes,
             syncStatus = SyncStatus.PENDING_UPDATE,
-            pendingChanges = true
+            pendingChanges = true,
+            updatedAt = Date()
         )
-    }
-    
-    /**
-     * Crea una copia del fichaje con estado de sincronización actualizado.
-     *
-     * @param newSyncStatus Nuevo estado de sincronización.
-     * @return Fichaje actualizado con nuevo estado de sincronización.
-     */
-    fun withSyncStatus(newSyncStatus: String, lastSyncTime: Long = System.currentTimeMillis()): CheckpointData {
-        return copy(
-            syncStatus = newSyncStatus,
-            lastSyncTime = lastSyncTime,
-            pendingChanges = newSyncStatus != SyncStatus.SYNCED
-        )
-    }
-    
-    /**
-     * Calcula las horas trabajadas entre dos fechas.
-     *
-     * @param checkIn Fecha y hora de entrada.
-     * @param checkOut Fecha y hora de salida.
-     * @return Número de horas trabajadas calculadas.
-     */
-    private fun calculateHoursWorked(checkIn: Date, checkOut: Date): Double {
-        val diffMillis = checkOut.time - checkIn.time
-        return (diffMillis / (1000.0 * 60 * 60)) // Convertir milisegundos a horas
-    }
-    
-    /**
-     * Clase auxiliar que define constantes para los estados de sincronización.
-     */
-    object SyncStatus {
-        const val SYNCED = "synced"
-        const val PENDING_UPLOAD = "pending_upload"
-        const val PENDING_UPDATE = "pending_update"
-        const val CONFLICT = "conflict"
-    }
-    
-    /**
-     * Clase auxiliar que define constantes para los estados de fichaje.
-     */
-    object Status {
-        const val PENDING = "pending"
-        const val COMPLETED = "completed"
-        const val AUTO_COMPLETED = "auto_completed"
-        const val ERROR = "error"
     }
 }

@@ -5,7 +5,6 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
-import androidx.sqlite.db.SupportSQLiteDatabase
 import com.productiva.android.data.converter.DateConverter
 import com.productiva.android.data.converter.ListConverter
 import com.productiva.android.data.converter.MapConverter
@@ -20,12 +19,9 @@ import com.productiva.android.data.model.Product
 import com.productiva.android.data.model.Task
 import com.productiva.android.data.model.TaskCompletion
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 /**
- * Base de datos principal de la aplicación utilizando Room.
- * Contiene todas las entidades y DAOs necesarios para el funcionamiento offline.
+ * Clase de base de datos para Room que define las entidades y DAOs.
  */
 @Database(
     entities = [
@@ -47,7 +43,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun taskDao(): TaskDao
     
     /**
-     * DAO para operaciones con completado de tareas.
+     * DAO para operaciones con completados de tareas.
      */
     abstract fun taskCompletionDao(): TaskCompletionDao
     
@@ -62,58 +58,37 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun labelTemplateDao(): LabelTemplateDao
     
     /**
-     * DAO para operaciones con registros de fichaje.
+     * DAO para operaciones con fichajes.
      */
     abstract fun checkpointDao(): CheckpointDao
     
     companion object {
+        private const val DATABASE_NAME = "productiva_database"
+        
         @Volatile
         private var INSTANCE: AppDatabase? = null
         
         /**
-         * Obtiene una instancia de la base de datos, creándola si no existe.
-         * Utiliza el patrón Singleton para garantizar una única instancia.
+         * Obtiene la instancia única de la base de datos.
          *
          * @param context Contexto de la aplicación.
-         * @param scope Scope de corrutina para operaciones de inicialización.
+         * @param scope Ámbito de corrutina para operaciones asíncronas.
          * @return Instancia de la base de datos.
          */
-        fun getDatabase(context: Context, scope: CoroutineScope): AppDatabase {
+        fun getDatabase(
+            context: Context,
+            scope: CoroutineScope
+        ): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "productiva_database"
+                    DATABASE_NAME
                 )
-                .fallbackToDestructiveMigration() // En caso de cambio de versión, recrear la base de datos
-                .addCallback(AppDatabaseCallback(scope))
-                .build()
-                
+                    .fallbackToDestructiveMigration() // Para desarrollo, en producción usar migraciones
+                    .build()
                 INSTANCE = instance
                 instance
-            }
-        }
-        
-        /**
-         * Callback para operaciones a realizar en la creación o apertura de la base de datos.
-         */
-        private class AppDatabaseCallback(private val scope: CoroutineScope) : RoomDatabase.Callback() {
-            
-            override fun onCreate(db: SupportSQLiteDatabase) {
-                super.onCreate(db)
-                
-                INSTANCE?.let { database ->
-                    scope.launch(Dispatchers.IO) {
-                        // Aquí podríamos prepopular la base de datos si fuera necesario
-                    }
-                }
-            }
-            
-            override fun onOpen(db: SupportSQLiteDatabase) {
-                super.onOpen(db)
-                
-                // Activar foreign keys en SQLite
-                db.execSQL("PRAGMA foreign_keys = ON")
             }
         }
     }

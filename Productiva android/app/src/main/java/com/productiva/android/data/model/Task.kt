@@ -1,9 +1,6 @@
 package com.productiva.android.data.model
 
 import androidx.room.Entity
-import androidx.room.ForeignKey
-import androidx.room.Ignore
-import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
 import com.productiva.android.data.converter.DateConverter
@@ -11,181 +8,123 @@ import com.productiva.android.data.converter.ListConverter
 import java.util.Date
 
 /**
- * Entidad que representa una tarea en el sistema.
+ * Modelo que representa una tarea en el sistema.
  *
- * @property id Identificador único de la tarea.
- * @property title Título descriptivo de la tarea.
+ * @property id ID único de la tarea.
+ * @property title Título de la tarea.
  * @property description Descripción detallada de la tarea (opcional).
- * @property status Estado actual de la tarea (pendiente, en progreso, completada, etc.).
- * @property priority Prioridad de la tarea (baja, media, alta).
- * @property assignedTo ID del empleado asignado a la tarea (opcional).
+ * @property assignedToId ID del empleado asignado (opcional).
+ * @property assignedToName Nombre del empleado asignado (opcional).
  * @property companyId ID de la empresa a la que pertenece la tarea.
- * @property createdBy ID del usuario que creó la tarea.
- * @property productId ID del producto relacionado con la tarea (opcional).
- * @property dueDate Fecha límite para completar la tarea (opcional).
+ * @property dueDate Fecha de vencimiento de la tarea (opcional).
+ * @property priority Prioridad de la tarea (1-5, siendo 5 la más alta).
+ * @property status Estado actual de la tarea.
+ * @property tags Lista de etiquetas asociadas a la tarea.
+ * @property requiresSignature Indica si la tarea requiere firma al completarse.
+ * @property requiresPhoto Indica si la tarea requiere foto al completarse.
+ * @property completionId ID del registro de completado asociado (si está completada).
  * @property createdAt Fecha de creación de la tarea.
  * @property updatedAt Fecha de última actualización de la tarea.
- * @property completedAt Fecha de completado de la tarea (opcional).
- * @property tags Lista de etiquetas asociadas a la tarea (opcional).
- * @property requireSignature Indica si se requiere firma al completar.
- * @property requirePhoto Indica si se requiere foto al completar.
- * @property requireNotes Indica si se requieren notas al completar.
- * @property location Ubicación asociada a la tarea (opcional).
- * @property syncStatus Estado de sincronización con el servidor.
- * @property lastSyncTime Marca de tiempo de la última sincronización.
- * @property isDeleted Indica si la tarea ha sido marcada para eliminación.
- * @property pendingChanges Indica si hay cambios locales pendientes de sincronizar.
- * @property completionData Datos de completado de la tarea (opcional).
+ * @property syncStatus Estado de sincronización de la tarea.
+ * @property pendingChanges Indica si hay cambios pendientes de sincronización.
  */
-@Entity(
-    tableName = "tasks",
-    indices = [
-        Index("companyId"),
-        Index("productId"),
-        Index("assignedTo"),
-        Index("syncStatus")
-    ]
-)
+@Entity(tableName = "tasks")
 @TypeConverters(DateConverter::class, ListConverter::class)
 data class Task(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
-    
     val title: String,
     val description: String? = null,
-    val status: String, // "pending", "in_progress", "completed", "cancelled"
-    val priority: String, // "low", "medium", "high"
-    
-    val assignedTo: Int? = null,
+    val assignedToId: Int? = null,
+    val assignedToName: String? = null,
     val companyId: Int,
-    val createdBy: Int,
-    val productId: Int? = null,
-    
     val dueDate: Date? = null,
-    val createdAt: Date,
-    val updatedAt: Date,
-    val completedAt: Date? = null,
-    
+    val priority: Int = 3,
+    val status: TaskStatus = TaskStatus.PENDING,
     val tags: List<String> = emptyList(),
-    
-    val requireSignature: Boolean = false,
-    val requirePhoto: Boolean = false,
-    val requireNotes: Boolean = true,
-    
-    val location: String? = null,
-    
-    // Campos para sincronización
-    val syncStatus: String = SyncStatus.SYNCED, // "synced", "pending_upload", "pending_update", "conflict"
-    val lastSyncTime: Long = 0,
-    val isDeleted: Boolean = false,
-    val pendingChanges: Boolean = false,
-    
-    @Ignore
-    val completionData: TaskCompletion? = null
+    val requiresSignature: Boolean = false,
+    val requiresPhoto: Boolean = false,
+    val completionId: Int? = null,
+    val createdAt: Date = Date(),
+    val updatedAt: Date = Date(),
+    val syncStatus: SyncStatus = SyncStatus.PENDING_UPLOAD,
+    val pendingChanges: Boolean = false
 ) {
     /**
-     * Constructor secundario que incluye el ID para creación desde Room.
+     * Estado de la tarea.
      */
-    constructor(
-        id: Int,
-        title: String,
-        description: String?,
-        status: String,
-        priority: String,
-        assignedTo: Int?,
-        companyId: Int,
-        createdBy: Int,
-        productId: Int?,
-        dueDate: Date?,
-        createdAt: Date,
-        updatedAt: Date,
-        completedAt: Date?,
-        tags: List<String>,
-        requireSignature: Boolean,
-        requirePhoto: Boolean,
-        requireNotes: Boolean,
-        location: String?,
-        syncStatus: String,
-        lastSyncTime: Long,
-        isDeleted: Boolean,
-        pendingChanges: Boolean
-    ) : this(
-        id, title, description, status, priority, assignedTo, companyId, createdBy, productId,
-        dueDate, createdAt, updatedAt, completedAt, tags, requireSignature, requirePhoto, 
-        requireNotes, location, syncStatus, lastSyncTime, isDeleted, pendingChanges, null
-    )
+    enum class TaskStatus {
+        /** Pendiente de iniciar. */
+        PENDING,
+        /** En progreso. */
+        IN_PROGRESS,
+        /** Completada. */
+        COMPLETED,
+        /** Cancelada. */
+        CANCELLED
+    }
     
     /**
-     * Comprueba si la tarea está completada.
+     * Estado de sincronización de la tarea.
+     */
+    enum class SyncStatus {
+        /** Sincronizada con el servidor. */
+        SYNCED,
+        /** Pendiente de subir al servidor. */
+        PENDING_UPLOAD,
+        /** Pendiente de actualizar en el servidor. */
+        PENDING_UPDATE,
+        /** Pendiente de eliminar en el servidor. */
+        PENDING_DELETE
+    }
+    
+    /**
+     * Verifica si la tarea está completada.
      *
-     * @return true si el estado es "completed", false en caso contrario.
+     * @return True si la tarea está completada, False en caso contrario.
      */
     fun isCompleted(): Boolean {
-        return status == "completed"
+        return status == TaskStatus.COMPLETED && completionId != null
     }
     
     /**
-     * Comprueba si la tarea está vencida.
-     *
-     * @return true si la fecha límite ha pasado y la tarea no está completada, false en caso contrario.
-     */
-    fun isOverdue(): Boolean {
-        return dueDate != null && Date().after(dueDate) && status != "completed"
-    }
-    
-    /**
-     * Crea una copia de la tarea con estado completado.
+     * Marca la tarea como completada con los datos de completado proporcionados.
      *
      * @param completion Datos de completado.
-     * @return Tarea actualizada con estado completado.
+     * @return Copia de la tarea marcada como completada.
      */
     fun complete(completion: TaskCompletion): Task {
-        return copy(
-            status = "completed",
-            completedAt = Date(),
-            updatedAt = Date(),
+        return this.copy(
+            status = TaskStatus.COMPLETED,
+            completionId = completion.id,
             syncStatus = SyncStatus.PENDING_UPDATE,
-            pendingChanges = true,
-            completionData = completion
-        )
-    }
-    
-    /**
-     * Crea una copia de la tarea marcada para eliminación.
-     *
-     * @return Tarea actualizada marcada para eliminación.
-     */
-    fun markForDeletion(): Task {
-        return copy(
-            isDeleted = true,
-            syncStatus = SyncStatus.PENDING_DELETE,
             pendingChanges = true,
             updatedAt = Date()
         )
     }
     
     /**
-     * Crea una copia de la tarea con estado de sincronización actualizado.
+     * Crea una copia de la tarea con un estado de sincronización específico.
      *
-     * @param newSyncStatus Nuevo estado de sincronización.
-     * @return Tarea actualizada con nuevo estado de sincronización.
+     * @param syncStatus Nuevo estado de sincronización.
+     * @return Copia de la tarea con el nuevo estado.
      */
-    fun withSyncStatus(newSyncStatus: String, lastSyncTime: Long = System.currentTimeMillis()): Task {
-        return copy(
-            syncStatus = newSyncStatus,
-            lastSyncTime = lastSyncTime,
-            pendingChanges = newSyncStatus != SyncStatus.SYNCED
-        )
+    fun withSyncStatus(syncStatus: SyncStatus): Task {
+        return this.copy(syncStatus = syncStatus)
     }
     
     /**
-     * Clase auxiliar que define constantes para los estados de sincronización.
+     * Actualiza el estado de la tarea.
+     *
+     * @param newStatus Nuevo estado de la tarea.
+     * @return Copia de la tarea con el estado actualizado.
      */
-    object SyncStatus {
-        const val SYNCED = "synced"
-        const val PENDING_UPLOAD = "pending_upload"
-        const val PENDING_UPDATE = "pending_update"
-        const val PENDING_DELETE = "pending_delete"
-        const val CONFLICT = "conflict"
+    fun updateStatus(newStatus: TaskStatus): Task {
+        return this.copy(
+            status = newStatus,
+            syncStatus = SyncStatus.PENDING_UPDATE,
+            pendingChanges = true,
+            updatedAt = Date()
+        )
     }
 }

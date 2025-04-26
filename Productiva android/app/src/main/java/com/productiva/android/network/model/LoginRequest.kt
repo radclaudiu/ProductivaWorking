@@ -1,12 +1,17 @@
 package com.productiva.android.network.model
 
+import com.google.gson.annotations.SerializedName
+
 /**
- * Clase que representa una solicitud de inicio de sesión.
+ * Modelo de petición para el inicio de sesión.
+ * Contiene las credenciales del usuario.
  *
- * @property username Nombre de usuario o email.
+ * @property username Nombre de usuario.
  * @property password Contraseña del usuario.
+ * @property rememberMe Indicador para mantener la sesión iniciada.
  */
 data class LoginRequest(
-    val username: String,
-    val password: String
+    @SerializedName("username") val username: String,
+    @SerializedName("password") val password: String,
+    @SerializedName("remember_me") val rememberMe: Boolean = true
 )

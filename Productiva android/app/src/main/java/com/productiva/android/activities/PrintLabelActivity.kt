@@ -88,14 +88,23 @@ class PrintLabelActivity : AppCompatActivity() {
         // Obtener la aplicación
         app = application as ProductivaApplication
         
-        // Obtener datos de la tarea
+        // Obtener datos de la tarea y verificar si estamos en modo escaneo solamente
+        val scanOnly = intent.getBooleanExtra("scan_only", false)
         taskId = intent.getIntExtra("task_id", -1)
         taskTitle = intent.getStringExtra("task_title")
         
-        if (taskId == -1) {
+        if (!scanOnly && taskId == -1) {
             Toast.makeText(this, "Error: Tarea no especificada", Toast.LENGTH_SHORT).show()
             finish()
             return
+        }
+        
+        // Si estamos en modo de escaneo, cambiar el título y ocultar algunos elementos
+        if (scanOnly) {
+            supportActionBar?.title = "Buscar impresoras"
+            findViewById<View>(R.id.editTextExtraText).visibility = View.GONE
+            findViewById<View>(R.id.buttonPrint).visibility = View.GONE
+            findViewById<TextView>(R.id.textViewExtraText).visibility = View.GONE
         }
         
         // Inicializar el gestor de impresora Bluetooth
@@ -250,6 +259,9 @@ class PrintLabelActivity : AppCompatActivity() {
         textViewStatus.text = "Impresora seleccionada: ${device.name ?: device.address}"
         buttonPrint.isEnabled = true
         
+        // Guardar la impresora seleccionada como la última usada
+        app.sessionManager.saveLastPrinterAddress(device.address)
+        
         // Guardar dispositivo en la base de datos
         lifecycleScope.launch {
             val savedPrinter = SavedPrinter(
@@ -257,6 +269,18 @@ class PrintLabelActivity : AppCompatActivity() {
                 name = device.name ?: "Desconocido"
             )
             app.database.savedPrinterDao().insertPrinter(savedPrinter)
+            
+            // Si estamos en modo escaneo, abrir la pantalla de configuración
+            if (intent.getBooleanExtra("scan_only", false)) {
+                // Esperar un momento para que se pueda ver la selección
+                delay(500)
+                
+                // Abrir configuración de la impresora
+                val intent = Intent(this@PrintLabelActivity, PrinterSettingsActivity::class.java)
+                intent.putExtra("printer_address", device.address)
+                startActivity(intent)
+                finish()
+            }
         }
     }
     
@@ -274,11 +298,17 @@ class PrintLabelActivity : AppCompatActivity() {
             try {
                 textViewStatus.text = "Enviando datos a la impresora..."
                 
+                // Obtener la impresora guardada y la plantilla predeterminada
+                val savedPrinter = app.database.savedPrinterDao().getPrinterByAddressSync(device.address)
+                val labelTemplate = app.database.labelTemplateDao().getDefaultLabelTemplate()
+                
                 val success = bluetoothPrinterManager.printLabel(
                     device = device,
                     title = taskTitle ?: "Tarea #$taskId",
                     extraText = extraText,
-                    date = System.currentTimeMillis()
+                    date = System.currentTimeMillis(),
+                    printer = savedPrinter,
+                    template = labelTemplate
                 )
                 
                 if (success) {

@@ -1,42 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="176dp"
-    android:background="@color/colorPrimary"
+    android:background="?attr/colorPrimary"
     android:gravity="bottom"
     android:orientation="vertical"
     android:padding="16dp"
-    android:theme="@style/ThemeOverlay.MaterialComponents.Dark">
+    android:theme="@style/ThemeOverlay.AppCompat.Dark">
 
     <ImageView
-        android:id="@+id/imageViewProfile"
+        android:id="@+id/userAvatar"
         android:layout_width="64dp"
         android:layout_height="64dp"
-        android:contentDescription="@string/app_logo"
-        android:scaleType="centerCrop"
-        app:srcCompat="@android:drawable/sym_def_app_icon" />
+        android:contentDescription="User avatar"
+        android:src="@drawable/ic_user" />
 
     <TextView
-        android:id="@+id/textViewHeaderName"
-        android:layout_width="match_parent"
+        android:id="@+id/userName"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Nombre del Usuario"
-        android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6" />
+        android:text="Nombre de Usuario"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+        android:textColor="@android:color/white"
+        android:textSize="16sp"
+        android:textStyle="bold" />
 
     <TextView
-        android:id="@+id/textViewHeaderEmail"
+        android:id="@+id/userEmail"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="usuario@ejemplo.com"
-        android:textAppearance="@style/TextAppearance.MaterialComponents.Body2" />
+        android:text="usuario@productiva.com"
+        android:textColor="@android:color/white"
+        android:textSize="14sp" />
 
     <TextView
-        android:id="@+id/textViewHeaderCompany"
+        android:id="@+id/userCompany"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Empresa / Ubicación"
-        android:textAppearance="@style/TextAppearance.MaterialComponents.Caption" />
+        android:text="Empresa: Productiva S.L."
+        android:textColor="@android:color/white"
+        android:textSize="12sp" />
 
 </LinearLayout>

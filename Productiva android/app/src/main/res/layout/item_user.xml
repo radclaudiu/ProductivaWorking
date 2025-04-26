@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
@@ -14,43 +15,62 @@
         android:padding="16dp">
 
         <ImageView
-            android:id="@+id/imageViewUserIcon"
+            android:id="@+id/userAvatar"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:contentDescription="@string/user_icon_description"
+            android:contentDescription="User avatar"
+            android:src="@drawable/ic_user"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:srcCompat="@drawable/ic_user" />
+            app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
-            android:id="@+id/textViewUserName"
+            android:id="@+id/userName"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="8dp"
             android:ellipsize="end"
             android:maxLines="1"
-            android:textSize="18sp"
+            android:textColor="#212121"
+            android:textSize="16sp"
             android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/imageViewUserIcon"
+            app:layout_constraintStart_toEndOf="@+id/userAvatar"
             app:layout_constraintTop_toTopOf="parent"
             tools:text="Juan Pérez" />
 
         <TextView
-            android:id="@+id/textViewUserRole"
+            android:id="@+id/userEmail"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
             android:layout_marginEnd="8dp"
             android:ellipsize="end"
             android:maxLines="1"
+            android:textColor="#757575"
             android:textSize="14sp"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@+id/imageViewUserIcon"
-            app:layout_constraintTop_toBottomOf="@+id/textViewUserName"
-            tools:text="Usuario Local" />
+            app:layout_constraintStart_toEndOf="@+id/userAvatar"
+            app:layout_constraintTop_toBottomOf="@+id/userName"
+            tools:text="juan.perez@example.com" />
+
+        <TextView
+            android:id="@+id/userCompany"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="8dp"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#757575"
+            android:textSize="12sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/userAvatar"
+            app:layout_constraintTop_toBottomOf="@+id/userEmail"
+            tools:text="Empresa: Productiva S.L." />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
-</androidx.cardview.widget.CardView>
+
+</com.google.android.material.card.MaterialCardView>

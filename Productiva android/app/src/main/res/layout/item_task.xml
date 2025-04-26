@@ -1,98 +1,113 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/cardViewTask"
-    style="@style/TaskItemStyle"
-    android:clickable="true"
-    android:focusable="true"
-    android:foreground="?android:attr/selectableItemBackground">
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="4dp"
+    app:cardCornerRadius="8dp"
+    app:cardElevation="2dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="8dp">
-
-        <TextView
-            android:id="@+id/textViewTaskTitle"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:ellipsize="end"
-            android:maxLines="2"
-            android:textAppearance="@style/TextAppearance.App.Headline"
-            app:layout_constraintEnd_toStartOf="@+id/priorityIndicator"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            tools:text="Título de la tarea" />
+        android:padding="16dp">
 
         <View
             android:id="@+id/priorityIndicator"
-            android:layout_width="16dp"
-            android:layout_height="16dp"
-            android:background="@color/colorPriorityMedium"
-            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_width="8dp"
+            android:layout_height="0dp"
+            android:background="#F44336"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
-            android:id="@+id/textViewTaskDescription"
+            android:id="@+id/taskTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginStart="12dp"
+            android:layout_marginEnd="8dp"
             android:ellipsize="end"
             android:maxLines="2"
-            android:textAppearance="@style/TextAppearance.App.Body"
+            android:textColor="#212121"
+            android:textSize="18sp"
+            android:textStyle="bold"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textViewTaskTitle"
-            tools:text="Descripción de la tarea que puede ser bastante larga y ocupar varias líneas de texto." />
+            app:layout_constraintStart_toEndOf="@+id/priorityIndicator"
+            app:layout_constraintTop_toTopOf="parent"
+            tools:text="Revisar sistema de climatización" />
 
         <TextView
-            android:id="@+id/textViewDueDate"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:drawablePadding="4dp"
-            android:gravity="center_vertical"
-            android:textAppearance="@style/TextAppearance.App.Caption"
-            app:drawableStartCompat="@android:drawable/ic_menu_my_calendar"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textViewTaskDescription"
-            tools:text="20/02/2025" />
-
-        <TextView
-            android:id="@+id/textViewTaskStatus"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:background="@color/colorPrimaryLight"
-            android:paddingStart="8dp"
-            android:paddingTop="2dp"
-            android:paddingEnd="8dp"
-            android:paddingBottom="2dp"
-            android:textAppearance="@style/TextAppearance.App.Caption"
-            android:textColor="@color/colorWhite"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/textViewTaskDescription"
-            tools:text="Pendiente" />
-
-        <TextView
-            android:id="@+id/textViewAssignee"
+            android:id="@+id/taskDescription"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="8dp"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="4dp"
             android:layout_marginEnd="8dp"
-            android:drawablePadding="4dp"
             android:ellipsize="end"
-            android:gravity="center_vertical"
-            android:maxLines="1"
-            android:textAppearance="@style/TextAppearance.App.Caption"
+            android:maxLines="3"
+            android:textColor="#757575"
+            android:textSize="14sp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/priorityIndicator"
+            app:layout_constraintTop_toBottomOf="@+id/taskTitle"
+            tools:text="Revisar el sistema de climatización del local para asegurar su correcto funcionamiento y hacer las reparaciones necesarias." />
+
+        <TextView
+            android:id="@+id/taskDueDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="12dp"
+            android:drawablePadding="4dp"
+            android:textColor="#FF5722"
+            android:textSize="12sp"
+            app:drawableStartCompat="@android:drawable/ic_menu_my_calendar"
+            app:layout_constraintStart_toEndOf="@+id/priorityIndicator"
+            app:layout_constraintTop_toBottomOf="@+id/taskDescription"
+            tools:text="Vence: 25/04/2025" />
+
+        <TextView
+            android:id="@+id/taskAssignee"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="12dp"
+            android:drawablePadding="4dp"
+            android:textColor="#3F51B5"
+            android:textSize="12sp"
             app:drawableStartCompat="@android:drawable/ic_menu_myplaces"
-            app:layout_constraintEnd_toStartOf="@+id/textViewTaskStatus"
-            app:layout_constraintStart_toEndOf="@+id/textViewDueDate"
-            app:layout_constraintTop_toBottomOf="@+id/textViewTaskDescription"
-            tools:text="Asignado a: Juan Pérez" />
+            app:layout_constraintStart_toEndOf="@+id/taskDueDate"
+            app:layout_constraintTop_toBottomOf="@+id/taskDescription"
+            tools:text="Para: Juan Pérez" />
+
+        <TextView
+            android:id="@+id/taskLocation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="4dp"
+            android:drawablePadding="4dp"
+            android:textColor="#4CAF50"
+            android:textSize="12sp"
+            app:drawableStartCompat="@android:drawable/ic_menu_mylocation"
+            app:layout_constraintStart_toEndOf="@+id/priorityIndicator"
+            app:layout_constraintTop_toBottomOf="@+id/taskDueDate"
+            tools:text="Ubicación: Sede Principal" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/taskStatusChip"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:textSize="12sp"
+            app:chipBackgroundColor="#FFC107"
+            app:layout_constraintBottom_toBottomOf="@+id/taskLocation"
+            app:layout_constraintEnd_toEndOf="parent"
+            tools:text="Pendiente" />
 
     </androidx.constraintlayout.widget.ConstraintLayout>
+
 </com.google.android.material.card.MaterialCardView>

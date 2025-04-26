@@ -5,14 +5,14 @@ import com.productiva.android.model.Task
 import com.productiva.android.model.TaskCompletion
 import com.productiva.android.model.User
 import okhttp3.MultipartBody
-import okhttp3.ResponseBody
-import retrofit2.Call
+import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.Field
 import retrofit2.http.FormUrlEncoded
 import retrofit2.http.GET
+import retrofit2.http.Header
 import retrofit2.http.Multipart
 import retrofit2.http.POST
 import retrofit2.http.PUT
@@ -21,11 +21,12 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 /**
- * Interfaz Retrofit para definir los endpoints de la API
+ * Interfaz para las llamadas API con Retrofit
  */
 interface ApiService {
     
-    // Autenticación
+    // ===== Autenticación =====
+    
     @FormUrlEncoded
     @POST("auth/login")
     suspend fun login(
@@ -33,103 +34,132 @@ interface ApiService {
         @Field("password") password: String
     ): Response<ApiResponse<User>>
     
-    // Usuarios
-    @GET("users")
-    suspend fun getUsers(): Response<ApiResponse<List<User>>>
+    @POST("auth/logout")
+    suspend fun logout(): Response<ApiResponse<Any>>
     
-    @GET("users/{id}")
-    suspend fun getUser(@Path("id") userId: Int): Response<ApiResponse<User>>
-    
-    @GET("users/me")
+    @GET("auth/user")
     suspend fun getCurrentUser(): Response<ApiResponse<User>>
     
-    @GET("users/by-company/{companyId}")
-    suspend fun getUsersByCompany(@Path("companyId") companyId: Int): Response<ApiResponse<List<User>>>
+    // ===== Usuarios =====
     
-    // Tareas
+    @GET("users")
+    suspend fun getUsers(
+        @Query("company_id") companyId: Int? = null
+    ): Response<ApiResponse<List<User>>>
+    
+    @GET("users/{id}")
+    suspend fun getUserById(
+        @Path("id") userId: Int
+    ): Response<ApiResponse<User>>
+    
+    // ===== Tareas =====
+    
     @GET("tasks")
-    suspend fun getTasks(): Response<ApiResponse<List<Task>>>
+    suspend fun getTasks(
+        @Query("user_id") userId: Int? = null,
+        @Query("status") status: String? = null,
+        @Query("company_id") companyId: Int? = null,
+        @Query("location_id") locationId: Int? = null,
+        @Query("page") page: Int? = null,
+        @Query("per_page") perPage: Int? = null
+    ): Response<ApiResponse<List<Task>>>
     
     @GET("tasks/{id}")
-    suspend fun getTask(@Path("id") taskId: Int): Response<ApiResponse<Task>>
-    
-    @GET("tasks/user/{userId}")
-    suspend fun getTasksByUser(@Path("userId") userId: Int): Response<ApiResponse<List<Task>>>
-    
-    @GET("tasks/company/{companyId}")
-    suspend fun getTasksByCompany(@Path("companyId") companyId: Int): Response<ApiResponse<List<Task>>>
-    
-    @GET("tasks/location/{locationId}")
-    suspend fun getTasksByLocation(@Path("locationId") locationId: Int): Response<ApiResponse<List<Task>>>
+    suspend fun getTaskById(
+        @Path("id") taskId: Int
+    ): Response<ApiResponse<Task>>
     
     @POST("tasks")
-    suspend fun createTask(@Body task: Task): Response<ApiResponse<Task>>
+    suspend fun createTask(
+        @Body task: Task
+    ): Response<ApiResponse<Task>>
     
     @PUT("tasks/{id}")
-    suspend fun updateTask(@Path("id") taskId: Int, @Body task: Task): Response<ApiResponse<Task>>
+    suspend fun updateTask(
+        @Path("id") taskId: Int,
+        @Body task: Task
+    ): Response<ApiResponse<Task>>
     
-    @DELETE("tasks/{id}")
-    suspend fun deleteTask(@Path("id") taskId: Int): Response<ApiResponse<Boolean>>
+    @PUT("tasks/{id}/status")
+    suspend fun updateTaskStatus(
+        @Path("id") taskId: Int,
+        @Body statusData: Map<String, String>
+    ): Response<ApiResponse<Task>>
     
-    // Completaciones de tareas
-    @GET("task-completions")
-    suspend fun getTaskCompletions(): Response<ApiResponse<List<TaskCompletion>>>
+    // ===== Completaciones de tareas =====
     
-    @GET("task-completions/task/{taskId}")
-    suspend fun getTaskCompletionsByTask(@Path("taskId") taskId: Int): Response<ApiResponse<List<TaskCompletion>>>
+    @GET("tasks/{taskId}/completions")
+    suspend fun getTaskCompletions(
+        @Path("taskId") taskId: Int
+    ): Response<ApiResponse<List<TaskCompletion>>>
     
-    @GET("task-completions/user/{userId}")
-    suspend fun getTaskCompletionsByUser(@Path("userId") userId: Int): Response<ApiResponse<List<TaskCompletion>>>
-    
-    @POST("task-completions")
-    suspend fun createTaskCompletion(@Body completion: TaskCompletion): Response<ApiResponse<TaskCompletion>>
+    @POST("tasks/{taskId}/completions")
+    suspend fun createTaskCompletion(
+        @Path("taskId") taskId: Int,
+        @Body completion: TaskCompletion
+    ): Response<ApiResponse<TaskCompletion>>
     
     @Multipart
-    @POST("task-completions/with-signature")
+    @POST("tasks/{taskId}/completions/with-signature")
     suspend fun createTaskCompletionWithSignature(
-        @Part("completion") completion: TaskCompletion,
+        @Path("taskId") taskId: Int,
+        @Part("completion") completionData: RequestBody,
         @Part signature: MultipartBody.Part
     ): Response<ApiResponse<TaskCompletion>>
     
     @Multipart
-    @POST("task-completions/with-photo")
+    @POST("tasks/{taskId}/completions/with-photo")
     suspend fun createTaskCompletionWithPhoto(
-        @Part("completion") completion: TaskCompletion,
+        @Path("taskId") taskId: Int,
+        @Part("completion") completionData: RequestBody,
         @Part photo: MultipartBody.Part
     ): Response<ApiResponse<TaskCompletion>>
     
-    // Plantillas de etiquetas
+    // ===== Plantillas de etiquetas =====
+    
     @GET("label-templates")
-    suspend fun getLabelTemplates(): Response<ApiResponse<List<LabelTemplate>>>
+    suspend fun getLabelTemplates(
+        @Query("user_id") userId: Int? = null,
+        @Query("company_id") companyId: Int? = null
+    ): Response<ApiResponse<List<LabelTemplate>>>
     
     @GET("label-templates/{id}")
-    suspend fun getLabelTemplate(@Path("id") templateId: Int): Response<ApiResponse<LabelTemplate>>
-    
-    @GET("label-templates/user/{userId}")
-    suspend fun getLabelTemplatesByUser(@Path("userId") userId: Int): Response<ApiResponse<List<LabelTemplate>>>
-    
-    @GET("label-templates/company/{companyId}")
-    suspend fun getLabelTemplatesByCompany(@Path("companyId") companyId: Int): Response<ApiResponse<List<LabelTemplate>>>
+    suspend fun getLabelTemplateById(
+        @Path("id") templateId: Int
+    ): Response<ApiResponse<LabelTemplate>>
     
     @POST("label-templates")
-    suspend fun createLabelTemplate(@Body template: LabelTemplate): Response<ApiResponse<LabelTemplate>>
+    suspend fun createLabelTemplate(
+        @Body template: LabelTemplate
+    ): Response<ApiResponse<LabelTemplate>>
     
     @PUT("label-templates/{id}")
-    suspend fun updateLabelTemplate(@Path("id") templateId: Int, @Body template: LabelTemplate): Response<ApiResponse<LabelTemplate>>
+    suspend fun updateLabelTemplate(
+        @Path("id") templateId: Int,
+        @Body template: LabelTemplate
+    ): Response<ApiResponse<LabelTemplate>>
     
     @DELETE("label-templates/{id}")
-    suspend fun deleteLabelTemplate(@Path("id") templateId: Int): Response<ApiResponse<Boolean>>
+    suspend fun deleteLabelTemplate(
+        @Path("id") templateId: Int
+    ): Response<ApiResponse<Any>>
     
-    // Sincronización
+    // ===== Sincronización =====
+    
     @GET("sync/tasks")
-    suspend fun syncTasks(@Query("timestamp") timestamp: Long): Response<ApiResponse<List<Task>>>
+    suspend fun syncTasks(
+        @Query("since") since: String? = null,
+        @Query("user_id") userId: Int? = null
+    ): Response<ApiResponse<List<Task>>>
     
     @GET("sync/users")
-    suspend fun syncUsers(@Query("timestamp") timestamp: Long): Response<ApiResponse<List<User>>>
+    suspend fun syncUsers(
+        @Query("since") since: String? = null,
+        @Query("company_id") companyId: Int? = null
+    ): Response<ApiResponse<List<User>>>
     
-    @POST("sync/task-completions")
-    suspend fun syncTaskCompletions(@Body completions: List<TaskCompletion>): Response<ApiResponse<List<TaskCompletion>>>
-    
-    @GET("sync/label-templates")
-    suspend fun syncLabelTemplates(@Query("timestamp") timestamp: Long): Response<ApiResponse<List<LabelTemplate>>>
+    @GET("sync/templates")
+    suspend fun syncTemplates(
+        @Query("since") since: String? = null
+    ): Response<ApiResponse<List<LabelTemplate>>>
 }

@@ -3,7 +3,9 @@ package com.productiva.android.api
 import com.google.gson.annotations.SerializedName
 
 /**
- * Clase para encapsular las respuestas de la API con un formato consistente
+ * Clase para encapsular las respuestas de la API
+ * 
+ * @param T Tipo de datos en el campo "data" de la respuesta
  */
 data class ApiResponse<T>(
     @SerializedName("success")
@@ -15,9 +17,29 @@ data class ApiResponse<T>(
     @SerializedName("data")
     val data: T? = null,
     
-    @SerializedName("error")
-    val error: String? = null,
+    @SerializedName("errors")
+    val errors: List<String>? = null,
     
-    @SerializedName("timestamp")
-    val timestamp: Long = System.currentTimeMillis()
+    @SerializedName("count")
+    val count: Int? = null,
+    
+    @SerializedName("pagination")
+    val pagination: PaginationInfo? = null
+)
+
+/**
+ * Clase para la información de paginación en respuestas
+ */
+data class PaginationInfo(
+    @SerializedName("current_page")
+    val currentPage: Int,
+    
+    @SerializedName("last_page")
+    val lastPage: Int,
+    
+    @SerializedName("per_page")
+    val perPage: Int,
+    
+    @SerializedName("total")
+    val total: Int
 )

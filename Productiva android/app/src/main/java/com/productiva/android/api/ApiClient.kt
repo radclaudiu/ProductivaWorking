@@ -2,91 +2,26 @@ package com.productiva.android.api
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.google.gson.Gson
+import com.google.gson.GsonBuilder
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
-import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.text.DateFormat
 import java.util.concurrent.TimeUnit
 
 /**
- * Cliente API para comunicación con el servidor
+ * Cliente para las llamadas a la API
  */
-class ApiClient(private val context: Context) {
-    private val preferences: SharedPreferences = context.getSharedPreferences("productiva_prefs", Context.MODE_PRIVATE)
-    private val serverUrl: String
-        get() = preferences.getString("server_url", DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
-    
-    // Crear el interceptor para añadir el token a las peticiones
-    private val authInterceptor = object : Interceptor {
-        override fun intercept(chain: Interceptor.Chain): Response {
-            val token = preferences.getString("auth_token", "")
-            val request = chain.request().newBuilder()
-            
-            // Añadir token de autenticación si existe
-            if (!token.isNullOrEmpty()) {
-                request.addHeader("Authorization", "Bearer $token")
-            }
-            
-            // Añadir cabeceras adicionales
-            request.addHeader("Content-Type", "application/json")
-            request.addHeader("Accept", "application/json")
-            request.addHeader("User-Agent", "Productiva-Android")
-            
-            return chain.proceed(request.build())
-        }
-    }
-    
-    // Crear el cliente OkHttp con los interceptores
-    private val okHttpClient = OkHttpClient.Builder()
-        .connectTimeout(CONNECTION_TIMEOUT, TimeUnit.SECONDS)
-        .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
-        .writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
-        .addInterceptor(authInterceptor)
-        .addInterceptor(HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
-        })
-        .build()
-    
-    // Crear la instancia de Retrofit
-    private val retrofit = Retrofit.Builder()
-        .baseUrl(serverUrl)
-        .client(okHttpClient)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-    
-    // Crear el servicio API
-    val apiService: ApiService = retrofit.create(ApiService::class.java)
-    
-    // Métodos para gestionar el token de autenticación
-    fun saveAuthToken(token: String) {
-        preferences.edit().putString("auth_token", token).apply()
-    }
-    
-    fun getAuthToken(): String? {
-        return preferences.getString("auth_token", null)
-    }
-    
-    fun clearAuthToken() {
-        preferences.edit().remove("auth_token").apply()
-    }
-    
-    // Método para actualizar la URL del servidor
-    fun updateServerUrl(url: String) {
-        preferences.edit().putString("server_url", url).apply()
-    }
-    
-    // Método para comprobar si hay un token guardado
-    fun hasAuthToken(): Boolean {
-        return !preferences.getString("auth_token", "").isNullOrEmpty()
-    }
+class ApiClient private constructor(context: Context) {
     
     companion object {
-        private const val CONNECTION_TIMEOUT = 30L
-        private const val READ_TIMEOUT = 30L
-        private const val WRITE_TIMEOUT = 30L
         private const val DEFAULT_SERVER_URL = "https://productiva.example.com/api/"
+        private const val AUTH_TOKEN_PREF = "auth_token"
+        private const val SERVER_URL_PREF = "server_url"
+        private const val PREFS_NAME = "productiva_api"
         
         @Volatile
         private var instance: ApiClient? = null
@@ -96,5 +31,104 @@ class ApiClient(private val context: Context) {
                 instance ?: ApiClient(context.applicationContext).also { instance = it }
             }
         }
+    }
+    
+    private val sharedPreferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    
+    // OkHttp client con interceptores
+    private val httpClient: OkHttpClient by lazy {
+        val loggingInterceptor = HttpLoggingInterceptor().apply {
+            level = HttpLoggingInterceptor.Level.BODY
+        }
+        
+        val authInterceptor = Interceptor { chain ->
+            val originalRequest = chain.request()
+            
+            // Añadir token de autorización si existe
+            val token = sharedPreferences.getString(AUTH_TOKEN_PREF, null)
+            val request = if (token != null) {
+                originalRequest.newBuilder()
+                    .header("Authorization", "Bearer $token")
+                    .build()
+            } else {
+                originalRequest
+            }
+            
+            chain.proceed(request)
+        }
+        
+        OkHttpClient.Builder()
+            .addInterceptor(authInterceptor)
+            .addInterceptor(loggingInterceptor)
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .build()
+    }
+    
+    // Gson para serialización/deserialización con soporte de fechas
+    private val gson: Gson by lazy {
+        GsonBuilder()
+            .setDateFormat(DateFormat.LONG)
+            .create()
+    }
+    
+    // URL del servidor
+    private var serverUrl: String = sharedPreferences.getString(SERVER_URL_PREF, DEFAULT_SERVER_URL) ?: DEFAULT_SERVER_URL
+    
+    // Retrofit con configuración
+    private var retrofit: Retrofit = buildRetrofit()
+    
+    // Servicio API
+    val apiService: ApiService by lazy {
+        retrofit.create(ApiService::class.java)
+    }
+    
+    /**
+     * Construye el cliente Retrofit
+     */
+    private fun buildRetrofit(): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(serverUrl)
+            .client(httpClient)
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
+    }
+    
+    /**
+     * Actualiza la URL del servidor y reconstruye Retrofit
+     */
+    fun updateServerUrl(newServerUrl: String) {
+        serverUrl = newServerUrl
+        sharedPreferences.edit().putString(SERVER_URL_PREF, newServerUrl).apply()
+        retrofit = buildRetrofit()
+    }
+    
+    /**
+     * Guarda el token de autorización
+     */
+    fun saveAuthToken(token: String) {
+        sharedPreferences.edit().putString(AUTH_TOKEN_PREF, token).apply()
+    }
+    
+    /**
+     * Obtiene el token de autorización
+     */
+    fun getAuthToken(): String? {
+        return sharedPreferences.getString(AUTH_TOKEN_PREF, null)
+    }
+    
+    /**
+     * Verifica si hay un token de autorización guardado
+     */
+    fun hasAuthToken(): Boolean {
+        return !sharedPreferences.getString(AUTH_TOKEN_PREF, null).isNullOrEmpty()
+    }
+    
+    /**
+     * Elimina el token de autorización
+     */
+    fun clearAuthToken() {
+        sharedPreferences.edit().remove(AUTH_TOKEN_PREF).apply()
     }
 }

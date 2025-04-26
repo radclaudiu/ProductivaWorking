@@ -26,14 +26,32 @@ android {
         vectorDrawables.useSupportLibrary = true
     }
     
-    // Configuración AAPT para ignorar duplicados
+    // Configuración AAPT para manejo de recursos
     aaptOptions {
-        ignoreAssetsPattern '!.webp:!.png'
-        // Ignorar advertencias de nombres duplicados en recursos
-        ignoreWarnings true
-        cruncherEnabled false
-        // Especificar uso preferente de WebP sobre PNG
+        // Evitar la compresión de archivos WebP
         noCompress "webp"
+        // Deshabilitar el procesamiento de imágenes para acelerar la compilación
+        cruncherEnabled false
+    }
+    
+    // Especificar patrones para eliminar archivos conflictivos
+    android.applicationVariants.all { variant ->
+        variant.mergeResourcesProvider.configure {
+            doLast {
+                // Eliminar archivos PNG duplicados después de la fusión de recursos
+                delete(fileTree(dir: outputDir, includes: [
+                    "**/mipmap-mdpi/ic_launcher.png",
+                    "**/mipmap-mdpi/ic_launcher_round.png",
+                    "**/mipmap-xhdpi/ic_launcher.png",
+                    "**/mipmap-xhdpi/ic_launcher_round.png", 
+                    "**/mipmap-xxhdpi/ic_launcher.png",
+                    "**/mipmap-xxhdpi/ic_launcher_round.png",
+                    "**/mipmap-xxxhdpi/ic_launcher.png",
+                    "**/mipmap-xxxhdpi/ic_launcher_round.png"
+                ]).files)
+                println("Archivos PNG duplicados eliminados durante la compilación")
+            }
+        }
     }
 
     buildTypes {

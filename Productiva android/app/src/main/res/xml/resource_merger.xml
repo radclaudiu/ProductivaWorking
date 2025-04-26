@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merger>
+    <!-- Preferencia de formato WebP sobre PNG para los iconos -->
+    <preference name="mipmap-mdpi/ic_launcher.webp" over="mipmap-mdpi/ic_launcher.png" />
+    <preference name="mipmap-mdpi/ic_launcher_round.webp" over="mipmap-mdpi/ic_launcher_round.png" />
+    <preference name="mipmap-xhdpi/ic_launcher.webp" over="mipmap-xhdpi/ic_launcher.png" />
+    <preference name="mipmap-xhdpi/ic_launcher_round.webp" over="mipmap-xhdpi/ic_launcher_round.png" />
+    <preference name="mipmap-xxhdpi/ic_launcher.webp" over="mipmap-xxhdpi/ic_launcher.png" />
+    <preference name="mipmap-xxhdpi/ic_launcher_round.webp" over="mipmap-xxhdpi/ic_launcher_round.png" />
+    <preference name="mipmap-xxxhdpi/ic_launcher.webp" over="mipmap-xxxhdpi/ic_launcher.png" />
+    <preference name="mipmap-xxxhdpi/ic_launcher_round.webp" over="mipmap-xxxhdpi/ic_launcher_round.png" />
+</merger>

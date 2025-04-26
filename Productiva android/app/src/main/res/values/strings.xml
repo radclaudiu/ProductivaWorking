@@ -147,6 +147,10 @@
     <string name="clear_button">Borrar</string>
     <string name="save_button">Guardar</string>
     <string name="logo_description">Logo de Productiva</string>
+    <string name="add_task">Añadir tarea</string>
+    <string name="default_username">Nombre de Usuario</string>
+    <string name="default_email">usuario@productiva.com</string>
+    <string name="default_company">Empresa: Productiva S.L.</string>
     
     <!-- Strings para tasks -->
     <string name="task_completion">Completar tarea</string>

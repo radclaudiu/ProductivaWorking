@@ -13,7 +13,7 @@
         android:id="@+id/userAvatar"
         android:layout_width="64dp"
         android:layout_height="64dp"
-        android:contentDescription="User avatar"
+        android:contentDescription="@string/user_avatar"
         android:src="@drawable/ic_user" />
 
     <TextView
@@ -21,7 +21,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Nombre de Usuario"
+        android:text="@string/default_username"
         android:textAppearance="@style/TextAppearance.AppCompat.Body1"
         android:textColor="@android:color/white"
         android:textSize="16sp"
@@ -31,7 +31,7 @@
         android:id="@+id/userEmail"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="usuario@productiva.com"
+        android:text="@string/default_email"
         android:textColor="@android:color/white"
         android:textSize="14sp" />
 
@@ -39,7 +39,7 @@
         android:id="@+id/userCompany"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Empresa: Productiva S.L."
+        android:text="@string/default_company"
         android:textColor="@android:color/white"
         android:textSize="12sp" />
 

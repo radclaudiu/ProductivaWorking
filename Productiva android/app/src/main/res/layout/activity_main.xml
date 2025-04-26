@@ -110,7 +110,7 @@
             android:layout_height="wrap_content"
             android:layout_gravity="bottom|end"
             android:layout_margin="16dp"
-            android:contentDescription="Add task"
+            android:contentDescription="@string/add_task"
             android:src="@android:drawable/ic_input_add"
             app:backgroundTint="?attr/colorPrimary"
             app:tint="@android:color/white" />

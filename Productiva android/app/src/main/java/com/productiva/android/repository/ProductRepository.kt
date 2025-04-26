@@ -1,16 +1,18 @@
 package com.productiva.android.repository
 
 import android.util.Log
-import com.productiva.android.database.dao.ProductDao
+import com.productiva.android.dao.ProductDao
 import com.productiva.android.model.Product
 import com.productiva.android.network.ApiService
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import retrofit2.Response
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.withContext
 import java.io.IOException
 
 /**
- * Repositorio para gestionar productos, sincronizados con el servidor.
+ * Repositorio para gestionar productos.
  */
 class ProductRepository(
     private val productDao: ProductDao,
@@ -19,9 +21,7 @@ class ProductRepository(
     private val TAG = "ProductRepository"
     
     /**
-     * Obtiene todos los productos almacenados localmente.
-     * 
-     * @return Flow con la lista de productos.
+     * Obtiene todos los productos.
      */
     fun getAllProducts(): Flow<List<Product>> {
         return productDao.getAllProducts()
@@ -29,146 +29,214 @@ class ProductRepository(
     
     /**
      * Obtiene un producto por su ID.
-     * 
-     * @param productId ID del producto.
-     * @return Flow con el producto o null si no existe.
      */
     fun getProductById(productId: Int): Flow<Product?> {
         return productDao.getProductById(productId)
     }
     
     /**
-     * Busca productos por nombre.
-     * 
-     * @param query Cadena de búsqueda.
-     * @return Flow con la lista de productos que coinciden con la búsqueda.
+     * Obtiene productos por categoría.
+     */
+    fun getProductsByCategory(category: String): Flow<List<Product>> {
+        return productDao.getProductsByCategory(category)
+    }
+    
+    /**
+     * Obtiene productos por empresa.
+     */
+    fun getProductsByCompany(companyId: Int): Flow<List<Product>> {
+        return productDao.getProductsByCompany(companyId)
+    }
+    
+    /**
+     * Obtiene productos por ubicación.
+     */
+    fun getProductsByLocation(locationId: Int): Flow<List<Product>> {
+        return productDao.getProductsByLocation(locationId)
+    }
+    
+    /**
+     * Busca productos por nombre, código o código de barras.
      */
     fun searchProducts(query: String): Flow<List<Product>> {
-        return productDao.searchProducts("%$query%")
+        return productDao.searchProducts(query)
     }
     
     /**
-     * Sincroniza los productos con el servidor.
-     * 
-     * @return Flow con el estado de la operación.
+     * Sincroniza productos con el servidor.
      */
-    fun syncProducts(): Flow<ResourceState<List<Product>>> = flow {
+    suspend fun syncProducts(locationId: Int? = null, companyId: Int? = null): Flow<ResourceState<List<Product>>> = flow {
         emit(ResourceState.Loading)
         
         try {
-            // Obtener productos del servidor
-            val response = apiService.getProducts()
+            // Sincronizar productos del servidor según los filtros
+            val response = when {
+                locationId != null -> apiService.getProductsByLocation(locationId)
+                companyId != null -> apiService.getProductsByCompany(companyId)
+                else -> apiService.getAllProducts()
+            }
             
             if (response.isSuccessful) {
-                val products = response.body()
+                val serverProducts = response.body() ?: emptyList()
                 
-                if (products != null) {
-                    // Guardar productos en la base de datos local
-                    productDao.deleteAllProducts() // Limpiar productos antiguos
-                    productDao.insertProducts(products)
+                // Obtener productos locales que necesitan sincronización
+                val localProducts = productDao.getProductsNeedingSyncSync()
+                
+                // Actualizar productos locales con datos del servidor, preservando cambios locales pendientes
+                withContext(Dispatchers.IO) {
+                    // Filtrar solo productos que no están pendientes de sincronización
+                    val productsToUpdate = serverProducts.filter { serverProduct ->
+                        localProducts.none { it.id == serverProduct.id && it.needsSync }
+                    }
                     
-                    Log.d(TAG, "Productos sincronizados correctamente: ${products.size}")
-                    emit(ResourceState.Success(products))
-                } else {
-                    emit(ResourceState.Error("Respuesta vacía del servidor"))
+                    // Insertar o actualizar productos
+                    productDao.upsertProducts(productsToUpdate)
+                    
+                    // También incluir los productos locales que necesitan sincronización
+                    // en la lista de productos resultante
+                    val resultProducts = ArrayList<Product>(productsToUpdate)
+                    resultProducts.addAll(localProducts)
+                    
+                    emit(ResourceState.Success(resultProducts))
                 }
             } else {
-                emit(ResourceState.Error("Error al obtener productos: ${response.code()}"))
+                val errorMessage = when (response.code()) {
+                    401 -> "Sesión expirada"
+                    403 -> "Sin permiso para acceder a los productos"
+                    404 -> "No se encontraron productos"
+                    else -> "Error del servidor: ${response.code()}"
+                }
+                
+                emit(ResourceState.Error(errorMessage))
             }
         } catch (e: IOException) {
-            Log.e(TAG, "Error de red al sincronizar productos", e)
-            emit(ResourceState.Error("Error de red: ${e.message}"))
+            Log.e(TAG, "Error de conexión al sincronizar productos", e)
+            
+            // En caso de error de conexión, devolver los productos locales
+            val localProducts = productDao.getAllProductsSync()
+            emit(ResourceState.Success(localProducts, "Usando datos locales"))
         } catch (e: Exception) {
             Log.e(TAG, "Error al sincronizar productos", e)
-            emit(ResourceState.Error("Error: ${e.message}"))
+            emit(ResourceState.Error("Error al sincronizar productos: ${e.message}"))
         }
-    }
+    }.flowOn(Dispatchers.IO)
     
     /**
-     * Obtiene los productos por categoría.
-     * 
-     * @param categoryId ID de la categoría.
-     * @return Flow con la lista de productos de esa categoría.
+     * Actualiza un producto.
      */
-    fun getProductsByCategory(categoryId: Int): Flow<List<Product>> {
-        return productDao.getProductsByCategory(categoryId)
-    }
-    
-    /**
-     * Actualiza el stock de un producto localmente.
-     * 
-     * @param productId ID del producto.
-     * @param newStock Nueva cantidad de stock.
-     * @return Flow con el estado de la operación.
-     */
-    fun updateProductStock(productId: Int, newStock: Int): Flow<ResourceState<Product>> = flow {
+    suspend fun updateProduct(product: Product): Flow<ResourceState<Product>> = flow {
         emit(ResourceState.Loading)
         
         try {
-            // Obtener el producto actual
-            val currentProduct = productDao.getProductByIdSync(productId)
+            // Marcar producto para sincronización
+            val productToUpdate = product.markForSync()
+            productDao.updateProduct(productToUpdate)
             
-            if (currentProduct != null) {
-                // Actualizar el stock
-                val updatedProduct = currentProduct.copy(stock = newStock)
-                productDao.updateProduct(updatedProduct)
+            // Intentar sincronizar con el servidor inmediatamente
+            try {
+                // Convertir a mapa para la API
+                val productData = mapOf(
+                    "name" to product.name,
+                    "description" to (product.description ?: ""),
+                    "code" to (product.code ?: ""),
+                    "barcode" to (product.barcode ?: ""),
+                    "sku" to (product.sku ?: ""),
+                    "price" to product.price,
+                    "cost" to (product.cost ?: 0.0),
+                    "stock" to (product.stock ?: 0),
+                    "reorder_level" to (product.reorderLevel ?: 0),
+                    "category" to (product.category ?: ""),
+                    "brand" to (product.brand ?: ""),
+                    "supplier" to (product.supplier ?: ""),
+                    "tax_rate" to (product.taxRate ?: 0.0),
+                    "weight" to (product.weight ?: 0.0),
+                    "dimensions" to (product.dimensions ?: ""),
+                    "is_active" to product.isActive
+                )
                 
-                // Marcar para sincronización posterior
-                productDao.markForSync(productId, true)
-                
-                emit(ResourceState.Success(updatedProduct))
-            } else {
-                emit(ResourceState.Error("Producto no encontrado"))
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error al actualizar stock del producto", e)
-            emit(ResourceState.Error("Error: ${e.message}"))
-        }
-    }
-    
-    /**
-     * Sincroniza los cambios pendientes de productos con el servidor.
-     * 
-     * @return Flow con el estado de la operación.
-     */
-    fun syncPendingProductChanges(): Flow<ResourceState<Int>> = flow {
-        emit(ResourceState.Loading)
-        
-        try {
-            // Obtener productos pendientes de sincronización
-            val pendingProducts = productDao.getProductsForSync()
-            
-            if (pendingProducts.isEmpty()) {
-                emit(ResourceState.Success(0))
-                return@flow
-            }
-            
-            var syncedCount = 0
-            
-            for (product in pendingProducts) {
-                // Enviar actualización al servidor
-                val response = apiService.updateProduct(product.id, product)
+                val response = apiService.updateProduct(product.id, productData)
                 
                 if (response.isSuccessful) {
-                    // Marcar como sincronizado
-                    productDao.markForSync(product.id, false)
-                    syncedCount++
+                    response.body()?.let { serverProduct ->
+                        // Crear producto actualizado sin flag de sincronización
+                        val syncedProduct = serverProduct.copy(needsSync = false)
+                        productDao.updateProduct(syncedProduct)
+                        emit(ResourceState.Success(syncedProduct))
+                    } ?: emit(ResourceState.Success(productToUpdate, "Actualizado localmente"))
                 } else {
-                    Log.e(TAG, "Error al sincronizar producto ${product.id}: ${response.code()}")
+                    // Error de servidor, mantener cambios locales
+                    emit(ResourceState.Success(productToUpdate, "Actualizado localmente, pendiente de sincronizar"))
                 }
+            } catch (e: IOException) {
+                // Error de conexión, mantener cambios locales
+                Log.d(TAG, "No se pudo sincronizar producto, guardado localmente", e)
+                emit(ResourceState.Success(productToUpdate, "Actualizado localmente, pendiente de sincronizar"))
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al actualizar producto", e)
+            emit(ResourceState.Error("Error al actualizar producto: ${e.message}"))
+        }
+    }.flowOn(Dispatchers.IO)
+    
+    /**
+     * Sincroniza un producto específico con el servidor.
+     */
+    suspend fun syncProduct(productId: Int): Flow<ResourceState<Product>> = flow {
+        emit(ResourceState.Loading)
+        
+        try {
+            val response = apiService.getProductById(productId)
             
-            if (syncedCount == pendingProducts.size) {
-                emit(ResourceState.Success(syncedCount))
+            if (response.isSuccessful) {
+                val serverProduct = response.body()
+                
+                if (serverProduct != null) {
+                    // Obtener producto local
+                    val localProduct = productDao.getProductByIdSync(productId)
+                    
+                    if (localProduct != null && localProduct.needsSync) {
+                        // Si el producto local necesita sincronización, mantener cambios locales
+                        val updatedProduct = localProduct.updateFromServer(serverProduct)
+                        productDao.updateProduct(updatedProduct)
+                        emit(ResourceState.Success(updatedProduct, "Actualizado con datos del servidor, manteniendo cambios locales"))
+                    } else {
+                        // Si no hay producto local o no necesita sincronización, usar datos del servidor
+                        productDao.upsertProducts(listOf(serverProduct))
+                        emit(ResourceState.Success(serverProduct))
+                    }
+                } else {
+                    emit(ResourceState.Error("Producto no encontrado en el servidor"))
+                }
             } else {
-                emit(ResourceState.Error("Algunos productos no se pudieron sincronizar", null, Exception("Sync partially failed")))
+                val errorMessage = when (response.code()) {
+                    401 -> "Sesión expirada"
+                    403 -> "Sin permiso para acceder al producto"
+                    404 -> "Producto no encontrado"
+                    else -> "Error del servidor: ${response.code()}"
+                }
+                
+                emit(ResourceState.Error(errorMessage))
             }
         } catch (e: IOException) {
-            Log.e(TAG, "Error de red al sincronizar cambios de productos", e)
-            emit(ResourceState.Error("Error de red: ${e.message}"))
+            Log.e(TAG, "Error de conexión al sincronizar producto", e)
+            
+            // En caso de error de conexión, devolver el producto local
+            val localProduct = productDao.getProductByIdSync(productId)
+            if (localProduct != null) {
+                emit(ResourceState.Success(localProduct, "Usando datos locales"))
+            } else {
+                emit(ResourceState.Error("Producto no encontrado localmente"))
+            }
         } catch (e: Exception) {
-            Log.e(TAG, "Error al sincronizar cambios de productos", e)
-            emit(ResourceState.Error("Error: ${e.message}"))
+            Log.e(TAG, "Error al sincronizar producto", e)
+            emit(ResourceState.Error("Error al sincronizar producto: ${e.message}"))
         }
+    }.flowOn(Dispatchers.IO)
+    
+    /**
+     * Obtiene productos con stock bajo.
+     */
+    fun getLowStockProducts(): Flow<List<Product>> {
+        return productDao.getLowStockProducts()
     }
 }

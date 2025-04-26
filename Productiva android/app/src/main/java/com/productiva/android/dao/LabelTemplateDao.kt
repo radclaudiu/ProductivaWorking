@@ -1,58 +1,116 @@
 package com.productiva.android.dao
 
-import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.productiva.android.model.LabelTemplate
+import kotlinx.coroutines.flow.Flow
 
 /**
- * DAO para interactuar con la tabla de plantillas de etiquetas
+ * DAO para acceder y manipular plantillas de etiquetas en la base de datos.
  */
 @Dao
 interface LabelTemplateDao {
-    
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(template: LabelTemplate): Long
-    
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(templates: List<LabelTemplate>)
-    
-    @Update
-    suspend fun update(template: LabelTemplate)
-    
-    @Query("SELECT * FROM label_templates WHERE id = :templateId")
-    suspend fun getTemplateById(templateId: Int): LabelTemplate?
-    
+    /**
+     * Obtiene todas las plantillas de etiquetas.
+     */
     @Query("SELECT * FROM label_templates ORDER BY name ASC")
-    fun getAllTemplates(): LiveData<List<LabelTemplate>>
+    fun getAllLabelTemplates(): Flow<List<LabelTemplate>>
     
-    @Query("SELECT * FROM label_templates WHERE user_id = :userId ORDER BY name ASC")
-    fun getTemplatesByUser(userId: Int): LiveData<List<LabelTemplate>>
+    /**
+     * Obtiene todas las plantillas de etiquetas (versión sincrónica).
+     */
+    @Query("SELECT * FROM label_templates ORDER BY name ASC")
+    suspend fun getAllLabelTemplatesSync(): List<LabelTemplate>
     
-    @Query("SELECT * FROM label_templates WHERE company_id = :companyId ORDER BY name ASC")
-    fun getTemplatesByCompany(companyId: Int): LiveData<List<LabelTemplate>>
+    /**
+     * Obtiene una plantilla de etiqueta por su ID.
+     */
+    @Query("SELECT * FROM label_templates WHERE id = :templateId")
+    fun getLabelTemplateById(templateId: Int): Flow<LabelTemplate?>
     
+    /**
+     * Obtiene una plantilla de etiqueta por su ID (versión sincrónica).
+     */
+    @Query("SELECT * FROM label_templates WHERE id = :templateId")
+    suspend fun getLabelTemplateByIdSync(templateId: Int): LabelTemplate?
+    
+    /**
+     * Obtiene la plantilla por defecto.
+     */
     @Query("SELECT * FROM label_templates WHERE is_default = 1 LIMIT 1")
-    suspend fun getDefaultTemplate(): LabelTemplate?
+    fun getDefaultLabelTemplate(): Flow<LabelTemplate?>
     
-    @Query("UPDATE label_templates SET is_default = 0")
-    suspend fun clearDefaultTemplates()
+    /**
+     * Obtiene la plantilla por defecto (versión sincrónica).
+     */
+    @Query("SELECT * FROM label_templates WHERE is_default = 1 LIMIT 1")
+    suspend fun getDefaultLabelTemplateSync(): LabelTemplate?
     
-    @Query("UPDATE label_templates SET is_default = 1 WHERE id = :templateId")
-    suspend fun setDefaultTemplate(templateId: Int)
+    /**
+     * Obtiene plantillas de etiquetas por tipo.
+     */
+    @Query("SELECT * FROM label_templates WHERE template_type = :templateType ORDER BY name ASC")
+    fun getLabelTemplatesByType(templateType: String): Flow<List<LabelTemplate>>
     
+    /**
+     * Obtiene plantillas de etiquetas que necesitan sincronización.
+     */
+    @Query("SELECT * FROM label_templates WHERE needs_sync = 1")
+    fun getLabelTemplatesNeedingSync(): Flow<List<LabelTemplate>>
+    
+    /**
+     * Obtiene plantillas de etiquetas que necesitan sincronización (versión sincrónica).
+     */
+    @Query("SELECT * FROM label_templates WHERE needs_sync = 1")
+    suspend fun getLabelTemplatesNeedingSyncSync(): List<LabelTemplate>
+    
+    /**
+     * Inserta una nueva plantilla de etiqueta.
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertLabelTemplate(template: LabelTemplate)
+    
+    /**
+     * Inserta múltiples plantillas de etiquetas.
+     */
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertLabelTemplates(templates: List<LabelTemplate>)
+    
+    /**
+     * Actualiza una plantilla de etiqueta existente.
+     */
+    @Update
+    suspend fun updateLabelTemplate(template: LabelTemplate)
+    
+    /**
+     * Actualiza múltiples plantillas de etiquetas.
+     */
+    @Update
+    suspend fun updateLabelTemplates(templates: List<LabelTemplate>)
+    
+    /**
+     * Inserta o actualiza plantillas de etiquetas (upsert).
+     */
+    @Transaction
+    suspend fun upsertLabelTemplates(templates: List<LabelTemplate>) {
+        for (template in templates) {
+            val existingTemplate = getLabelTemplateByIdSync(template.id)
+            if (existingTemplate == null) {
+                insertLabelTemplate(template)
+            } else if (!existingTemplate.needsSync) {
+                // Solo actualizar si la plantilla local no necesita sincronización
+                updateLabelTemplate(template)
+            }
+        }
+    }
+    
+    /**
+     * Elimina todas las plantillas de etiquetas (solo para migraciones o resets).
+     */
     @Query("DELETE FROM label_templates")
-    suspend fun deleteAll()
-    
-    @Query("DELETE FROM label_templates WHERE id = :templateId")
-    suspend fun deleteTemplateById(templateId: Int)
-    
-    @Query("SELECT COUNT(*) FROM label_templates")
-    suspend fun getTemplateCount(): Int
-    
-    @Query("SELECT * FROM label_templates WHERE last_sync < :timestamp")
-    suspend fun getTemplatesToSync(timestamp: Long): List<LabelTemplate>
+    suspend fun deleteAllLabelTemplates()
 }

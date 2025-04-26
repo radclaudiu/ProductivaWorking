@@ -31,6 +31,11 @@
         width: 100%;
         left: 0;
         transform: translateY(-50%);
+        z-index: 200;
+        background-color: transparent;
+        display: block !important;
+        overflow: visible;
+        color: black;
     }
     
     .label-input-group {
@@ -112,7 +117,7 @@
                     </div>
                 </div>
                 
-                <div class="preview-label" id="label-preview">
+                <div class="preview-label" id="label-preview" style="position: relative; display: block; z-index: 100; background-color: white; color: black; overflow: visible; border: 2px solid #333;">
                     <!-- Los elementos de la etiqueta se añadirán con JavaScript -->
                 </div>
                 
@@ -390,9 +395,11 @@
         
         // Crear elementos en la vista previa
         function createPreviewElements() {
+            console.log('Creando elementos de vista previa...');
             preview.innerHTML = '';
             
             if (toggleGrid.checked) {
+                console.log('Añadiendo cuadrícula...');
                 // Añadir cuadrícula de guía (líneas cada 10%)
                 const gridOverlay = document.createElement('div');
                 gridOverlay.style.position = 'absolute';
@@ -430,12 +437,18 @@
             }
             
             // Crear elementos de la etiqueta
-            createLabelElement('titulo', 'NOMBRE DEL PRODUCTO');
-            createLabelElement('conservacion', 'REFRIGERACIÓN');
-            createLabelElement('preparador', 'Preparado por: Juan Pérez');
-            createLabelElement('fecha', 'Fecha: 23/03/2025');
-            createLabelElement('caducidad', 'CONSUMIR ANTES DE: 26/03/2025');
-            createLabelElement('caducidad2', 'Cad. secundaria: 04/04/2025');
+            console.log('Creando elementos de la etiqueta...');
+            try {
+                createLabelElement('titulo', 'NOMBRE DEL PRODUCTO');
+                createLabelElement('conservacion', 'REFRIGERACIÓN');
+                createLabelElement('preparador', 'Preparado por: Juan Pérez');
+                createLabelElement('fecha', 'Fecha: 23/03/2025');
+                createLabelElement('caducidad', 'CONSUMIR ANTES DE: 26/03/2025');
+                createLabelElement('caducidad2', 'Cad. secundaria: 04/04/2025');
+                console.log('Elementos creados correctamente');
+            } catch (error) {
+                console.error('Error al crear elementos de la etiqueta:', error);
+            }
         }
         
         // Crear un elemento para la etiqueta
@@ -450,11 +463,33 @@
         
         // Actualizar el estilo de un elemento
         function updateElementStyle(element, id) {
-            const data = fields[id];
-            element.style.left = '0';
-            element.style.top = data.y.value + '%';
-            element.style.fontSize = data.size.value + 'pt';
-            element.style.fontWeight = data.bold.checked ? 'bold' : 'normal';
+            try {
+                const data = fields[id];
+                console.log('Actualizando elemento:', id, 'con datos:', data);
+                
+                if (!data || !data.y || !data.y.value || !data.size || !data.size.value) {
+                    console.error('Datos incompletos para el elemento', id);
+                    // Valores por defecto para evitar errores
+                    element.style.left = '0';
+                    element.style.top = '50%';
+                    element.style.fontSize = '10pt';
+                    element.style.fontWeight = 'normal';
+                    return;
+                }
+                
+                element.style.left = '0';
+                element.style.top = data.y.value + '%';
+                element.style.fontSize = data.size.value + 'pt';
+                element.style.fontWeight = data.bold && data.bold.checked ? 'bold' : 'normal';
+                
+                // Asegurarnos de que el elemento sea visible
+                element.style.display = 'block';
+                element.style.color = 'black';
+                
+                console.log('Elemento actualizado:', element);
+            } catch (error) {
+                console.error('Error al actualizar el elemento', id, ':', error);
+            }
         }
         
         // Actualizar la vista previa cuando cambian los valores
@@ -479,8 +514,11 @@
         }
         
         // Inicializar
+        console.log('Inicializando editor de etiquetas...');
         createPreviewElements();
+        console.log('Elementos de vista previa creados');
         setupListeners();
+        console.log('Listeners configurados');
     });
 </script>
 {% endblock %}

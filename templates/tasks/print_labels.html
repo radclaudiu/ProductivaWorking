@@ -169,7 +169,8 @@
         <h4>Impresión de Etiqueta</h4>
         <div class="row g-3 justify-content-center">
             <div class="col-auto">
-                <button id="bluetooth-print-btn" class="btn btn-lg btn-primary">Imprimir Etiqueta</button>
+                <button id="browser-print-btn" class="btn btn-lg btn-secondary">Imprimir con Navegador</button>
+                <button id="bluetooth-print-btn" class="btn btn-lg btn-primary">Imprimir con Bluetooth</button>
             </div>
         </div>
         <div id="print-message" class="alert alert-info mt-3" style="display: none;"></div>
@@ -222,45 +223,96 @@
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             console.log("¿Es dispositivo móvil?", isMobile, "User Agent:", navigator.userAgent);
             
-            // Mostrar un estado de inicialización
-            const messageArea = document.getElementById('print-message');
-            if (messageArea) {
-                messageArea.style.display = "block";
-                messageArea.textContent = isMobile ? 
-                    "Inicializando sistema de impresión Bluetooth..." : 
-                    "Listo para imprimir con el navegador";
-                messageArea.className = "alert alert-info mt-3";
+            // Función para mostrar mensajes
+            const showMessage = (message, isError = false) => {
+                const messageArea = document.getElementById('print-message');
+                if (messageArea) {
+                    messageArea.style.display = "block";
+                    messageArea.textContent = message;
+                    messageArea.className = isError ? "alert alert-danger mt-3" : "alert alert-info mt-3";
+                }
+            };
+            
+            // Inicializar Web Bluetooth API
+            const initBluetoothPrinting = async (e) => {
+                e.preventDefault();
                 
-                // Ocultar el mensaje después de 3 segundos
-                setTimeout(() => {
-                    messageArea.style.display = "none";
-                }, 3000);
+                if (!navigator.bluetooth) {
+                    showMessage("Tu navegador no soporta Bluetooth. Intenta con Chrome en Android", true);
+                    return;
+                }
+                
+                try {
+                    showMessage("Buscando dispositivos Bluetooth... Selecciona tu impresora.");
+                    
+                    // Solicitar cualquier dispositivo Bluetooth
+                    const device = await navigator.bluetooth.requestDevice({
+                        acceptAllDevices: true,
+                        optionalServices: [
+                            'generic_access',
+                            'battery_service', 
+                            '000018f0-0000-1000-8000-00805f9b34fb',
+                            '1222e5db-36e1-4a53-bfef-bf7da833c5a5',
+                            '00001101-0000-1000-8000-00805f9b34fb',
+                            '00001800-0000-1000-8000-00805f9b34fb',
+                            '00001801-0000-1000-8000-00805f9b34fb',
+                            '0000180a-0000-1000-8000-00805f9b34fb',
+                            '0000180f-0000-1000-8000-00805f9b34fb'
+                        ]
+                    });
+                    
+                    showMessage(`Impresora seleccionada: ${device.name}. Conectando...`);
+                    console.log("Dispositivo seleccionado:", device);
+                    
+                    // Conectar al GATT server
+                    const server = await device.gatt.connect();
+                    console.log("Conectado a GATT server:", server);
+                    
+                    // ... continuar con la lógica de impresión
+                    // (Esta parte se manejará con el código existente en brother-bluetooth.js)
+                    
+                } catch (error) {
+                    console.error("Error al inicializar Bluetooth:", error);
+                    
+                    if (error.name === 'NotFoundError') {
+                        showMessage("No se encontró ningún dispositivo Bluetooth", true);
+                    } else if (error.name === 'SecurityError') {
+                        showMessage("No se concedieron permisos para Bluetooth", true);
+                    } else if (error.message.includes("User cancelled")) {
+                        showMessage("Operación cancelada por el usuario", true);
+                    } else {
+                        showMessage("Error: " + error.message, true);
+                    }
+                }
+            };
+            
+            // Configurar botón de impresión del navegador
+            const browserPrintBtn = document.getElementById('browser-print-btn');
+            if (browserPrintBtn) {
+                console.log("Configurando botón de impresión del navegador");
+                browserPrintBtn.addEventListener('click', function() {
+                    console.log("Iniciando impresión del navegador...");
+                    showMessage("Iniciando impresión con el navegador...");
+                    setTimeout(() => window.print(), 500);
+                });
             }
             
-            // En dispositivos de escritorio, usar impresión del navegador normal
-            if (!isMobile && document.getElementById('bluetooth-print-btn')) {
-                console.log("Configurando impresión para navegador de escritorio");
-                // Modificar el botón para usar impresión nativa
-                const printBtn = document.getElementById('bluetooth-print-btn');
-                printBtn.innerHTML = "Imprimir Etiqueta (Navegador)";
+            // Mostrar mensaje inicial
+            showMessage(isMobile ? 
+                "Selecciona método de impresión (Bluetooth recomendado para dispositivos móviles)" : 
+                "Selecciona método de impresión"
+            );
+            
+            // Configurar el botón de Bluetooth manualmente
+            const bluetoothPrintBtn = document.getElementById('bluetooth-print-btn');
+            if (bluetoothPrintBtn) {
+                console.log("Configurando botón de impresión Bluetooth manual");
+                // Eliminar cualquier event listener existente
+                const newBluetoothBtn = bluetoothPrintBtn.cloneNode(true);
+                bluetoothPrintBtn.parentNode.replaceChild(newBluetoothBtn, bluetoothPrintBtn);
                 
-                // Remover cualquier evento previo
-                printBtn.replaceWith(printBtn.cloneNode(true));
-                
-                // Obtener referencia al botón de nuevo y añadir evento
-                const newPrintBtn = document.getElementById('bluetooth-print-btn');
-                newPrintBtn.addEventListener('click', function() {
-                    console.log("Iniciando impresión del navegador...");
-                    window.print();
-                });
-            } else if (isMobile) {
-                // Asegurar que el texto del botón sea apropiado
-                const bluetoothBtn = document.getElementById('bluetooth-print-btn');
-                if (bluetoothBtn) {
-                    console.log("Configurando botón para impresión Bluetooth");
-                    bluetoothBtn.innerHTML = "Imprimir con Bluetooth";
-                }
-                // El manejo de eventos de Bluetooth está en brother-bluetooth.js
+                // Añadir el nuevo event listener
+                newBluetoothBtn.addEventListener('click', initBluetoothPrinting);
             }
             
             // Mostrar el estado de navegación

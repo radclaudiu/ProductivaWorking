@@ -2,19 +2,19 @@
 
 ## Correcciones Realizadas
 
-Se han unificado las URLs de conexión que estaban inconsistentes en diferentes partes del código:
+Se han unificado las URLs de conexión que estaban inconsistentes en diferentes partes del código para que la aplicación se conecte a la web de Productiva:
 
 1. **ApiClient.kt**:
    - Anterior: `DEFAULT_SERVER_URL = "https://productiva.example.com/api/"`
-   - Nuevo: `DEFAULT_SERVER_URL = "http://localhost:5000/api/"`
+   - Nuevo: `DEFAULT_SERVER_URL = "https://workspace.replit.app/api/"`
 
 2. **ApiConfig.kt**:
    - Anterior: `BASE_URL = "https://productiva.replit.app/api/"`
-   - Nuevo: `BASE_URL = "http://localhost:5000/api/"`
+   - Nuevo: `BASE_URL = "https://workspace.replit.app/api/"`
 
 3. **PreferenceManager.kt**:
    - Anterior: `DEFAULT_SERVER_URL = "http://192.168.1.1:5000"`
-   - Nuevo: `DEFAULT_SERVER_URL = "http://localhost:5000"`
+   - Nuevo: `DEFAULT_SERVER_URL = "https://workspace.replit.app"`
 
 ## Conexión al Servidor
 

@@ -133,7 +133,7 @@ class PreferenceManager(private val context: Context) {
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_DEFAULT_PRINTER_ID = "default_printer_id"
         
-        // Valores predeterminados
-        private const val DEFAULT_SERVER_URL = "http://localhost:5000"
+        // Valores predeterminados - conecta con la web de Productiva
+        private const val DEFAULT_SERVER_URL = "https://workspace.replit.app"
     }
 }

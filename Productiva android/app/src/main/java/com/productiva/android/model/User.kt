@@ -1,71 +1,50 @@
 package com.productiva.android.model
 
-import androidx.room.ColumnInfo
 import androidx.room.Entity
-import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.annotations.SerializedName
+import java.util.Date
 
 /**
- * Clase de entidad para representar un usuario en la base de datos
+ * Modelo de datos para usuarios
  */
-@Entity(
-    tableName = "users",
-    indices = [
-        Index("email", unique = true),
-        Index("username", unique = true)
-    ]
-)
+@Entity(tableName = "users")
 data class User(
     @PrimaryKey
-    @ColumnInfo(name = "id")
     @SerializedName("id")
-    val id: Int = 0,
+    val id: Int,
     
-    @ColumnInfo(name = "name")
-    @SerializedName("name")
-    val name: String,
-    
-    @ColumnInfo(name = "email")
-    @SerializedName("email")
-    val email: String,
-    
-    @ColumnInfo(name = "username")
     @SerializedName("username")
     val username: String,
     
-    @ColumnInfo(name = "role")
-    @SerializedName("role")
-    val role: String,
+    @SerializedName("email")
+    val email: String,
     
-    @ColumnInfo(name = "company_id")
+    @SerializedName("name")
+    val name: String,
+    
     @SerializedName("company_id")
     val companyId: Int,
     
-    @ColumnInfo(name = "company_name")
     @SerializedName("company_name")
-    val companyName: String = "",
+    val companyName: String,
     
-    @ColumnInfo(name = "location_id")
-    @SerializedName("location_id")
-    val locationId: Int? = null,
+    @SerializedName("role")
+    val role: String? = null,
     
-    @ColumnInfo(name = "location_name")
-    @SerializedName("location_name")
-    val locationName: String = "",
+    @SerializedName("is_admin")
+    val isAdmin: Boolean = false,
     
-    @ColumnInfo(name = "is_active")
     @SerializedName("is_active")
     val isActive: Boolean = true,
     
-    @ColumnInfo(name = "profile_image")
-    @SerializedName("profile_image")
-    val profileImage: String? = null,
+    @SerializedName("created_at")
+    val createdAt: Date? = null,
     
-    @ColumnInfo(name = "phone")
-    @SerializedName("phone")
-    val phone: String? = null,
+    @SerializedName("updated_at")
+    val updatedAt: Date? = null,
     
-    @ColumnInfo(name = "last_sync")
-    val lastSync: Long = System.currentTimeMillis()
+    // Campos para sincronización local
+    val lastSyncedAt: Date? = null,
+    val locallyModified: Boolean = false
 )

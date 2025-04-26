@@ -4,126 +4,117 @@ import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.productiva.android.R
-import com.productiva.android.models.Task
+import com.productiva.android.model.Task
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 /**
- * Adaptador para la lista de tareas
+ * Adaptador para mostrar tareas en un RecyclerView
  */
-class TaskAdapter(private val onTaskClick: (Task) -> Unit) :
-    ListAdapter<Task, TaskAdapter.TaskViewHolder>(TaskDiffCallback()) {
+class TaskAdapter(private val listener: OnTaskClickListener) : ListAdapter<Task, TaskAdapter.TaskViewHolder>(TaskDiffCallback()) {
     
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TaskViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_task, parent, false)
-        return TaskViewHolder(view, onTaskClick)
+        return TaskViewHolder(view)
     }
     
     override fun onBindViewHolder(holder: TaskViewHolder, position: Int) {
-        holder.bind(getItem(position))
+        val task = getItem(position)
+        holder.bind(task)
     }
     
-    class TaskViewHolder(
-        itemView: View,
-        private val onTaskClick: (Task) -> Unit
-    ) : RecyclerView.ViewHolder(itemView) {
+    /**
+     * ViewHolder para las tareas
+     */
+    inner class TaskViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val titleTextView: TextView = itemView.findViewById(R.id.task_title)
+        private val descriptionTextView: TextView = itemView.findViewById(R.id.task_description)
+        private val statusTextView: TextView = itemView.findViewById(R.id.task_status)
+        private val dueDateTextView: TextView = itemView.findViewById(R.id.task_due_date)
+        private val locationTextView: TextView = itemView.findViewById(R.id.task_location)
+        private val priorityIndicator: View = itemView.findViewById(R.id.priority_indicator)
+        private val cardView: CardView = itemView.findViewById(R.id.task_card)
         
-        private val titleTextView: TextView = itemView.findViewById(R.id.textViewTaskTitle)
-        private val descriptionTextView: TextView = itemView.findViewById(R.id.textViewTaskDescription)
-        private val frequencyTextView: TextView = itemView.findViewById(R.id.textViewTaskFrequency)
-        private val cardView: CardView = itemView.findViewById(R.id.cardViewTask)
-        private val priorityIndicator: View = itemView.findViewById(R.id.viewPriorityIndicator)
-        private val labelIcon: ImageView = itemView.findViewById(R.id.imageViewLabelIcon)
-        private val photoIcon: ImageView = itemView.findViewById(R.id.imageViewPhotoIcon)
-        private val signatureIcon: ImageView = itemView.findViewById(R.id.imageViewSignatureIcon)
-        
-        private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-        
-        fun bind(task: Task) {
-            titleTextView.text = task.title
-            
-            // Descripción o fecha si está disponible
-            if (!task.description.isNullOrEmpty()) {
-                descriptionTextView.text = task.description
-                descriptionTextView.visibility = View.VISIBLE
-            } else if (!task.dueDate.isNullOrEmpty()) {
-                try {
-                    val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                    val date = inputFormat.parse(task.dueDate)
-                    if (date != null) {
-                        descriptionTextView.text = "Vence: ${dateFormat.format(date)}"
-                        descriptionTextView.visibility = View.VISIBLE
-                    } else {
-                        descriptionTextView.visibility = View.GONE
-                    }
-                } catch (e: Exception) {
-                    descriptionTextView.visibility = View.GONE
-                }
-            } else {
-                descriptionTextView.visibility = View.GONE
-            }
-            
-            // Frecuencia
-            frequencyTextView.text = formatFrequency(task.frequency)
-            
-            // Indicador de prioridad
-            when (task.priority) {
-                2 -> { // Alta
-                    priorityIndicator.setBackgroundColor(Color.RED)
-                    priorityIndicator.visibility = View.VISIBLE
-                }
-                1 -> { // Media
-                    priorityIndicator.setBackgroundColor(Color.YELLOW)
-                    priorityIndicator.visibility = View.VISIBLE
-                }
-                else -> { // Baja o normal
-                    priorityIndicator.visibility = View.GONE
-                }
-            }
-            
-            // Mostrar íconos relevantes
-            labelIcon.visibility = if (task.printLabel) View.VISIBLE else View.GONE
-            photoIcon.visibility = if (task.needsPhoto) View.VISIBLE else View.GONE
-            signatureIcon.visibility = if (task.needsSignature) View.VISIBLE else View.GONE
-            
-            // Color de fondo según estado
-            when (task.status.lowercase()) {
-                "pending" -> cardView.setCardBackgroundColor(Color.WHITE)
-                "in_progress" -> cardView.setCardBackgroundColor(Color.parseColor("#E3F2FD")) // Azul claro
-                "overdue" -> cardView.setCardBackgroundColor(Color.parseColor("#FFEBEE")) // Rojo claro
-                else -> cardView.setCardBackgroundColor(Color.WHITE)
-            }
-            
-            // Configurar clic para ver detalle de la tarea
+        init {
             itemView.setOnClickListener {
-                onTaskClick(task)
+                val position = bindingAdapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    listener.onTaskClick(getItem(position))
+                }
             }
         }
         
         /**
-         * Formatea la frecuencia de la tarea para mostrarla
+         * Vincula los datos de la tarea con la vista
          */
-        private fun formatFrequency(frequency: String): String {
-            return when (frequency.lowercase()) {
-                "daily" -> "Diaria"
-                "weekly" -> "Semanal"
-                "monthly" -> "Mensual"
-                "work_days" -> "Días laborables"
-                "weekends" -> "Fines de semana"
-                else -> frequency.replaceFirstChar { it.uppercase() }
+        fun bind(task: Task) {
+            // Título y descripción
+            titleTextView.text = task.title
+            descriptionTextView.text = task.description ?: itemView.context.getString(R.string.no_description)
+            
+            // Estado
+            statusTextView.text = when (task.status) {
+                "pending" -> itemView.context.getString(R.string.status_pending)
+                "in_progress" -> itemView.context.getString(R.string.status_in_progress)
+                "completed" -> itemView.context.getString(R.string.status_completed)
+                else -> task.status
             }
+            
+            // Color según estado
+            val statusColor = when (task.status) {
+                "pending" -> Color.parseColor("#FFA000") // Ámbar
+                "in_progress" -> Color.parseColor("#1976D2") // Azul
+                "completed" -> Color.parseColor("#388E3C") // Verde
+                else -> Color.GRAY
+            }
+            statusTextView.setTextColor(statusColor)
+            
+            // Fecha de vencimiento
+            dueDateTextView.text = task.dueDate?.let { formatDate(it) } ?: 
+                                   itemView.context.getString(R.string.no_due_date)
+            
+            // Ubicación
+            locationTextView.text = task.locationName ?: 
+                                   itemView.context.getString(R.string.no_location)
+            
+            // Indicador de prioridad
+            val priorityColor = when (task.priority) {
+                1 -> Color.parseColor("#4CAF50") // Verde - Baja
+                2 -> Color.parseColor("#FFC107") // Amarillo - Media
+                3 -> Color.parseColor("#F44336") // Rojo - Alta
+                else -> Color.GRAY // Desconocida
+            }
+            priorityIndicator.setBackgroundColor(priorityColor)
+            
+            // Destacar tareas vencidas
+            val isOverdue = task.dueDate?.before(Date()) == true && task.status != "completed"
+            if (isOverdue) {
+                cardView.setCardBackgroundColor(Color.parseColor("#FFEBEE")) // Rojo muy claro
+                dueDateTextView.setTextColor(Color.RED)
+            } else {
+                cardView.setCardBackgroundColor(Color.WHITE)
+                dueDateTextView.setTextColor(Color.DKGRAY)
+            }
+        }
+        
+        /**
+         * Formatea una fecha para mostrarla
+         */
+        private fun formatDate(date: Date): String {
+            val format = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            return format.format(date)
         }
     }
     
     /**
-     * DiffUtil para optimizar actualizaciones en RecyclerView
+     * DiffUtil para comparar tareas eficientemente
      */
     class TaskDiffCallback : DiffUtil.ItemCallback<Task>() {
         override fun areItemsTheSame(oldItem: Task, newItem: Task): Boolean {
@@ -133,5 +124,12 @@ class TaskAdapter(private val onTaskClick: (Task) -> Unit) :
         override fun areContentsTheSame(oldItem: Task, newItem: Task): Boolean {
             return oldItem == newItem
         }
+    }
+    
+    /**
+     * Interfaz para manejar los clics en las tareas
+     */
+    interface OnTaskClickListener {
+        fun onTaskClick(task: Task)
     }
 }

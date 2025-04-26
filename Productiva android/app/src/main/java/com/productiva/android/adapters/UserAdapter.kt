@@ -3,71 +3,59 @@ package com.productiva.android.adapters
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.productiva.android.R
-import com.productiva.android.models.User
+import com.productiva.android.model.User
 
 /**
- * Adaptador para la lista de usuarios
+ * Adaptador para mostrar usuarios en un RecyclerView
  */
-class UserAdapter(private val onUserClick: (User) -> Unit) : 
-    ListAdapter<User, UserAdapter.UserViewHolder>(UserDiffCallback()) {
+class UserAdapter(private val listener: OnUserClickListener) : ListAdapter<User, UserAdapter.UserViewHolder>(UserDiffCallback()) {
     
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): UserViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_user, parent, false)
-        return UserViewHolder(view, onUserClick)
+        return UserViewHolder(view)
     }
     
     override fun onBindViewHolder(holder: UserViewHolder, position: Int) {
-        holder.bind(getItem(position))
+        val user = getItem(position)
+        holder.bind(user)
     }
     
-    class UserViewHolder(
-        itemView: View,
-        private val onUserClick: (User) -> Unit
-    ) : RecyclerView.ViewHolder(itemView) {
+    /**
+     * ViewHolder para los usuarios
+     */
+    inner class UserViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val nameTextView: TextView = itemView.findViewById(R.id.user_name)
+        private val emailTextView: TextView = itemView.findViewById(R.id.user_email)
+        private val usernameTextView: TextView = itemView.findViewById(R.id.user_username)
+        private val companyTextView: TextView = itemView.findViewById(R.id.user_company)
         
-        private val nameTextView: TextView = itemView.findViewById(R.id.textViewUserName)
-        private val roleTextView: TextView = itemView.findViewById(R.id.textViewUserRole)
-        private val userIconImageView: ImageView = itemView.findViewById(R.id.imageViewUserIcon)
-        
-        fun bind(user: User) {
-            nameTextView.text = user.name ?: user.username
-            roleTextView.text = formatRole(user.role)
-            
-            // Ajustar ícono según el rol
-            when (user.role.lowercase()) {
-                "admin" -> userIconImageView.setImageResource(R.drawable.ic_admin)
-                "manager" -> userIconImageView.setImageResource(R.drawable.ic_manager)
-                else -> userIconImageView.setImageResource(R.drawable.ic_user)
-            }
-            
-            // Configurar clic para seleccionar el usuario
+        init {
             itemView.setOnClickListener {
-                onUserClick(user)
+                val position = bindingAdapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    listener.onUserClick(getItem(position))
+                }
             }
         }
         
         /**
-         * Formatea el rol del usuario para mostrarlo
+         * Vincula los datos del usuario con la vista
          */
-        private fun formatRole(role: String): String {
-            return when (role.lowercase()) {
-                "admin" -> "Administrador"
-                "manager" -> "Gerente"
-                "user" -> "Usuario"
-                "local_user" -> "Usuario Local"
-                else -> role.replaceFirstChar { it.uppercase() }
-            }
+        fun bind(user: User) {
+            nameTextView.text = user.name
+            emailTextView.text = user.email
+            usernameTextView.text = "@${user.username}"
+            companyTextView.text = user.companyName
         }
     }
     
     /**
-     * DiffUtil para optimizar actualizaciones en RecyclerView
+     * DiffUtil para comparar usuarios eficientemente
      */
     class UserDiffCallback : DiffUtil.ItemCallback<User>() {
         override fun areItemsTheSame(oldItem: User, newItem: User): Boolean {
@@ -77,5 +65,12 @@ class UserAdapter(private val onUserClick: (User) -> Unit) :
         override fun areContentsTheSame(oldItem: User, newItem: User): Boolean {
             return oldItem == newItem
         }
+    }
+    
+    /**
+     * Interfaz para manejar los clics en los usuarios
+     */
+    interface OnUserClickListener {
+        fun onUserClick(user: User)
     }
 }

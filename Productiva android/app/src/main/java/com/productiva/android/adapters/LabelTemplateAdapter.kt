@@ -3,8 +3,9 @@ package com.productiva.android.adapters
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageButton
 import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.productiva.android.R
 import com.productiva.android.model.LabelTemplate
@@ -12,76 +13,92 @@ import com.productiva.android.model.LabelTemplate
 /**
  * Adaptador para mostrar plantillas de etiquetas en un RecyclerView
  */
-class LabelTemplateAdapter(
-    private val onTemplateClickListener: (LabelTemplate) -> Unit,
-    private val onDeleteClickListener: (LabelTemplate) -> Unit
-) : RecyclerView.Adapter<LabelTemplateAdapter.TemplateViewHolder>() {
-    
-    private val templateList = mutableListOf<LabelTemplate>()
+class LabelTemplateAdapter(private val listener: OnTemplateClickListener) : ListAdapter<LabelTemplate, LabelTemplateAdapter.TemplateViewHolder>(TemplateDiffCallback()) {
     
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TemplateViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_label_template, parent, false)
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_label_template, parent, false)
         return TemplateViewHolder(view)
     }
     
     override fun onBindViewHolder(holder: TemplateViewHolder, position: Int) {
-        val template = templateList[position]
+        val template = getItem(position)
         holder.bind(template)
     }
     
-    override fun getItemCount(): Int = templateList.size
-    
     /**
-     * Actualiza la lista de plantillas
+     * ViewHolder para las plantillas
      */
-    fun updateTemplates(templates: List<LabelTemplate>) {
-        templateList.clear()
-        templateList.addAll(templates)
-        notifyDataSetChanged()
-    }
-    
     inner class TemplateViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val textViewTemplateName: TextView = itemView.findViewById(R.id.textViewTemplateName)
-        private val textViewTemplateSize: TextView = itemView.findViewById(R.id.textViewTemplateSize)
-        private val textViewTemplateContent: TextView = itemView.findViewById(R.id.textViewTemplateContent)
-        private val textViewDefaultTag: TextView = itemView.findViewById(R.id.textViewDefaultTag)
-        private val buttonDelete: ImageButton = itemView.findViewById(R.id.buttonDelete)
+        private val nameTextView: TextView = itemView.findViewById(R.id.template_name)
+        private val descriptionTextView: TextView = itemView.findViewById(R.id.template_description)
+        private val previewTextView: TextView = itemView.findViewById(R.id.template_preview)
+        private val editButton: View = itemView.findViewById(R.id.edit_button)
+        private val deleteButton: View = itemView.findViewById(R.id.delete_button)
         
         init {
             itemView.setOnClickListener {
-                val position = adapterPosition
+                val position = bindingAdapterPosition
                 if (position != RecyclerView.NO_POSITION) {
-                    onTemplateClickListener(templateList[position])
+                    listener.onTemplateClick(getItem(position))
                 }
             }
             
-            buttonDelete.setOnClickListener {
-                val position = adapterPosition
+            editButton.setOnClickListener {
+                val position = bindingAdapterPosition
                 if (position != RecyclerView.NO_POSITION) {
-                    onDeleteClickListener(templateList[position])
+                    listener.onEditTemplate(getItem(position))
+                }
+            }
+            
+            deleteButton.setOnClickListener {
+                val position = bindingAdapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    listener.onDeleteTemplate(getItem(position))
                 }
             }
         }
         
+        /**
+         * Vincula los datos de la plantilla con la vista
+         */
         fun bind(template: LabelTemplate) {
-            textViewTemplateName.text = template.name
+            nameTextView.text = template.name
             
-            // Mostrar tamaño
-            textViewTemplateSize.text = "${template.widthMm}x${template.heightMm}mm"
+            // Descripción
+            if (template.description.isNullOrEmpty()) {
+                descriptionTextView.visibility = View.GONE
+            } else {
+                descriptionTextView.text = template.description
+                descriptionTextView.visibility = View.VISIBLE
+            }
             
-            // Mostrar contenido habilitado
-            val contentElements = mutableListOf<String>()
-            if (template.showTitle) contentElements.add("Título")
-            if (template.showExtraText) contentElements.add("Texto")
-            if (template.showDate) contentElements.add("Fecha")
-            if (template.showQrCode) contentElements.add("QR")
-            if (template.showBarcode) contentElements.add("Código")
-            
-            textViewTemplateContent.text = contentElements.joinToString(", ")
-            
-            // Mostrar etiqueta de predeterminado si corresponde
-            textViewDefaultTag.visibility = if (template.isDefault) View.VISIBLE else View.GONE
+            // Vista previa truncada del contenido
+            val previewContent = template.content.take(100).let {
+                if (template.content.length > 100) "$it..." else it
+            }
+            previewTextView.text = previewContent
         }
+    }
+    
+    /**
+     * DiffUtil para comparar plantillas eficientemente
+     */
+    class TemplateDiffCallback : DiffUtil.ItemCallback<LabelTemplate>() {
+        override fun areItemsTheSame(oldItem: LabelTemplate, newItem: LabelTemplate): Boolean {
+            return oldItem.id == newItem.id
+        }
+        
+        override fun areContentsTheSame(oldItem: LabelTemplate, newItem: LabelTemplate): Boolean {
+            return oldItem == newItem
+        }
+    }
+    
+    /**
+     * Interfaz para manejar los clics en las plantillas
+     */
+    interface OnTemplateClickListener {
+        fun onTemplateClick(template: LabelTemplate)
+        fun onEditTemplate(template: LabelTemplate)
+        fun onDeleteTemplate(template: LabelTemplate)
     }
 }

@@ -9,139 +9,149 @@ import android.graphics.Path
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
-import java.io.ByteArrayOutputStream
 
 /**
- * Vista personalizada para capturar firmas dibujadas con el dedo.
- * Permite al usuario dibujar una firma en la pantalla y exportarla como una imagen.
+ * Vista personalizada para captura de firmas.
  */
 class SignatureView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
-
+    
+    // Path para dibujar la firma
+    private val path = Path()
+    
+    // Paint para la firma
     private val paint = Paint().apply {
         color = Color.BLACK
-        strokeWidth = 5f
-        isAntiAlias = true
         style = Paint.Style.STROKE
         strokeJoin = Paint.Join.ROUND
         strokeCap = Paint.Cap.ROUND
+        strokeWidth = 5f
+        isAntiAlias = true
     }
-
-    private val path = Path()
+    
+    // Coordenadas del último punto tocado
     private var lastX = 0f
     private var lastY = 0f
-    private var hasSignature = false
-
-    // Bitmap donde se dibujará la firma
+    
+    // Bitmap para guardar la firma
     private var signatureBitmap: Bitmap? = null
-    private var signatureCanvas: Canvas? = null
-
-    // Este método se llama cuando cambia el tamaño de la vista
+    private var canvas: Canvas? = null
+    
+    // Flag para saber si hay firma
+    private var hasSignature = false
+    
+    /**
+     * Cambia el color de la firma.
+     */
+    fun setSignatureColor(color: Int) {
+        paint.color = color
+    }
+    
+    /**
+     * Cambia el grosor de la línea de la firma.
+     */
+    fun setStrokeWidth(width: Float) {
+        paint.strokeWidth = width
+    }
+    
+    /**
+     * Limpia la firma.
+     */
+    fun clear() {
+        path.reset()
+        hasSignature = false
+        
+        // Recrear el bitmap si es necesario
+        if (width > 0 && height > 0) {
+            createBitmap()
+        }
+        
+        invalidate()
+    }
+    
+    /**
+     * Verifica si hay una firma.
+     */
+    fun hasSignature(): Boolean {
+        return hasSignature
+    }
+    
+    /**
+     * Obtiene la firma como bitmap.
+     */
+    fun getSignatureBitmap(): Bitmap? {
+        if (!hasSignature) {
+            return null
+        }
+        return signatureBitmap
+    }
+    
+    /**
+     * Crea el bitmap para dibujar.
+     */
+    private fun createBitmap() {
+        signatureBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        canvas = Canvas(signatureBitmap!!)
+        canvas?.drawColor(Color.WHITE)
+    }
+    
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
         super.onSizeChanged(w, h, oldw, oldh)
         
-        // Crear un nuevo bitmap con el tamaño actual de la vista
-        signatureBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        signatureCanvas = Canvas(signatureBitmap!!)
+        // Crear bitmap cuando la vista cambia de tamaño
+        createBitmap()
     }
-
-    // Este método dibuja el contenido de la vista
+    
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         
-        // Dibujar el bitmap de la firma
-        signatureBitmap?.let { canvas.drawBitmap(it, 0f, 0f, null) }
+        // Dibujar el fondo
+        canvas.drawColor(Color.WHITE)
         
-        // Dibujar el trazo actual
+        // Dibujar la firma
         canvas.drawPath(path, paint)
+        
+        // Guardar en el bitmap
+        this.canvas?.drawPath(path, paint)
     }
-
-    // Este método maneja los eventos táctiles
+    
     override fun onTouchEvent(event: MotionEvent): Boolean {
         val x = event.x
         val y = event.y
-
+        
         when (event.action) {
             MotionEvent.ACTION_DOWN -> {
-                // Comenzar un nuevo trazo
                 path.moveTo(x, y)
                 lastX = x
                 lastY = y
                 hasSignature = true
                 return true
             }
-            MotionEvent.ACTION_MOVE, MotionEvent.ACTION_UP -> {
-                // Dibujar una línea desde el último punto al punto actual
-                path.quadTo(lastX, lastY, (x + lastX) / 2, (y + lastY) / 2)
-                lastX = x
-                lastY = y
+            MotionEvent.ACTION_MOVE -> {
+                // Calcular la distancia entre puntos
+                val dx = Math.abs(x - lastX)
+                val dy = Math.abs(y - lastY)
                 
-                // Dibujar el trazo en el canvas del bitmap
-                signatureCanvas?.drawPath(path, paint)
-                
-                // Si es ACTION_UP, reiniciar el path
-                if (event.action == MotionEvent.ACTION_UP) {
-                    path.reset()
+                // Si la distancia es significativa, dibujar una línea
+                if (dx >= 3 || dy >= 3) {
+                    path.quadTo(lastX, lastY, (x + lastX) / 2, (y + lastY) / 2)
+                    lastX = x
+                    lastY = y
                 }
                 
-                // Volver a dibujar la vista
+                invalidate()
+                return true
+            }
+            MotionEvent.ACTION_UP -> {
+                // Finalizar la línea actual
+                path.lineTo(x, y)
                 invalidate()
                 return true
             }
             else -> return false
         }
-    }
-
-    /**
-     * Limpia la firma actual.
-     */
-    fun clear() {
-        hasSignature = false
-        path.reset()
-        signatureBitmap?.eraseColor(Color.TRANSPARENT)
-        invalidate()
-    }
-
-    /**
-     * Verifica si hay una firma dibujada.
-     */
-    fun hasSignature(): Boolean {
-        return hasSignature
-    }
-
-    /**
-     * Obtiene la firma como un bitmap.
-     */
-    fun getSignatureBitmap(): Bitmap? {
-        return signatureBitmap
-    }
-
-    /**
-     * Obtiene la firma como un array de bytes en formato PNG.
-     */
-    fun getSignatureBytes(): ByteArray? {
-        val bitmap = signatureBitmap ?: return null
-        
-        val outputStream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-        
-        return outputStream.toByteArray()
-    }
-
-    /**
-     * Establece el color del trazo.
-     */
-    fun setStrokeColor(color: Int) {
-        paint.color = color
-    }
-
-    /**
-     * Establece el grosor del trazo.
-     */
-    fun setStrokeWidth(width: Float) {
-        paint.strokeWidth = width
     }
 }

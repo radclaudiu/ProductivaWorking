@@ -1,137 +1,136 @@
 package com.productiva.android.viewmodel
 
 import android.app.Application
-import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.Canvas
-import android.graphics.Color
-import android.os.Environment
+import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.viewModelScope
+import com.productiva.android.utils.FileUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileOutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 /**
- * ViewModel para la captura de firmas
+ * ViewModel para la captura y gestión de firmas.
  */
 class SignatureViewModel(application: Application) : AndroidViewModel(application) {
     
-    // Ruta donde se guardará la firma
-    private val _signatureFilePath = MutableLiveData<String>()
-    val signatureFilePath: LiveData<String> get() = _signatureFilePath
+    private val TAG = "SignatureViewModel"
     
-    // Estado de guardado
-    private val _isSaved = MutableLiveData<Boolean>()
-    val isSaved: LiveData<Boolean> get() = _isSaved
+    // Estado de la operación con la firma
+    private val _signatureState = MutableLiveData<SignatureState>()
+    val signatureState: LiveData<SignatureState> = _signatureState
     
-    // Mensaje de error
-    private val _errorMessage = MutableLiveData<String>()
-    val errorMessage: LiveData<String> get() = _errorMessage
+    // URI de la firma guardada
+    private val _signatureUri = MutableLiveData<Uri?>()
+    val signatureUri: LiveData<Uri?> = _signatureUri
+    
+    // Bitmap de la firma actual
+    private val _currentSignature = MutableLiveData<Bitmap?>()
+    val currentSignature: LiveData<Bitmap?> = _currentSignature
+    
+    /**
+     * Estados posibles de las operaciones con firmas.
+     */
+    sealed class SignatureState {
+        object Idle : SignatureState()
+        object Loading : SignatureState()
+        data class Success(val uri: Uri) : SignatureState()
+        data class Error(val message: String) : SignatureState()
+    }
     
     init {
-        _isSaved.value = false
+        // Iniciar en estado Idle
+        _signatureState.value = SignatureState.Idle
     }
     
     /**
-     * Guarda la firma como imagen PNG
+     * Establece la firma actual.
      */
-    fun saveSignature(bitmap: Bitmap, taskId: Int): File? {
-        try {
-            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-            val fileName = "SIGN_${taskId}_$timeStamp.png"
-            
-            // Crear directorio si no existe
-            val storageDir = getApplication<Application>().getExternalFilesDir(Environment.DIRECTORY_PICTURES)
-            storageDir?.mkdirs()
-            
-            val file = File(storageDir, fileName)
-            val outputStream = FileOutputStream(file)
-            
-            // Crear copia del bitmap con fondo blanco para mejor visibilidad
-            val signatureBitmap = createWhiteBackgroundBitmap(bitmap)
-            
-            // Guardar como PNG
-            signatureBitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-            outputStream.flush()
-            outputStream.close()
-            
-            _signatureFilePath.value = file.absolutePath
-            _isSaved.value = true
-            
-            return file
-        } catch (e: Exception) {
-            _errorMessage.value = e.message ?: "Error al guardar firma"
-            return null
-        }
+    fun setCurrentSignature(bitmap: Bitmap?) {
+        _currentSignature.value = bitmap
     }
     
     /**
-     * Crea un bitmap con fondo blanco y la firma encima
+     * Guarda la firma actual como imagen.
      */
-    private fun createWhiteBackgroundBitmap(originalBitmap: Bitmap): Bitmap {
-        val resultBitmap = Bitmap.createBitmap(
-            originalBitmap.width,
-            originalBitmap.height,
-            Bitmap.Config.ARGB_8888
-        )
+    fun saveSignature(taskId: Int, userId: Int) {
+        val bitmap = _currentSignature.value
         
-        val canvas = Canvas(resultBitmap)
-        canvas.drawColor(Color.WHITE)
-        canvas.drawBitmap(originalBitmap, 0f, 0f, null)
+        if (bitmap == null) {
+            _signatureState.value = SignatureState.Error("No hay firma para guardar")
+            return
+        }
         
-        return resultBitmap
-    }
-    
-    /**
-     * Obtiene un archivo de firma guardado
-     */
-    fun getSignatureFile(): File? {
-        val path = _signatureFilePath.value ?: return null
-        val file = File(path)
-        return if (file.exists()) file else null
-    }
-    
-    /**
-     * Carga una firma guardada
-     */
-    fun loadSignature(path: String): Bitmap? {
-        try {
-            val file = File(path)
-            if (file.exists()) {
-                return BitmapFactory.decodeFile(file.absolutePath)
+        _signatureState.value = SignatureState.Loading
+        
+        viewModelScope.launch {
+            try {
+                // Generar nombre de archivo con timestamp
+                val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+                val fileName = "signature_${taskId}_${userId}_${timestamp}.png"
+                
+                // Guardar bitmap en archivo
+                val file = withContext(Dispatchers.IO) {
+                    val outputFile = File(getApplication<Application>().cacheDir, fileName)
+                    FileUtils.createFileFromBitmap(getApplication(), bitmap, "signature_${taskId}_${userId}_")
+                }
+                
+                if (file != null) {
+                    val uri = Uri.fromFile(file)
+                    _signatureUri.value = uri
+                    _signatureState.value = SignatureState.Success(uri)
+                    Log.d(TAG, "Firma guardada: ${uri.path}")
+                } else {
+                    _signatureState.value = SignatureState.Error("Error al guardar la firma")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al guardar firma", e)
+                _signatureState.value = SignatureState.Error("Error: ${e.message}")
             }
-        } catch (e: Exception) {
-            _errorMessage.value = e.message ?: "Error al cargar firma"
-        }
-        return null
-    }
-    
-    /**
-     * Elimina una firma guardada
-     */
-    fun deleteSignature() {
-        try {
-            val path = _signatureFilePath.value ?: return
-            val file = File(path)
-            if (file.exists()) {
-                file.delete()
-            }
-            _signatureFilePath.value = null
-            _isSaved.value = false
-        } catch (e: Exception) {
-            _errorMessage.value = e.message ?: "Error al eliminar firma"
         }
     }
     
     /**
-     * Resetea el estado de guardado
+     * Borra la firma actual.
      */
-    fun resetSaveState() {
-        _isSaved.value = false
+    fun clearSignature() {
+        _currentSignature.value = null
+        _signatureUri.value = null
+        _signatureState.value = SignatureState.Idle
+    }
+    
+    /**
+     * Carga una firma desde URI.
+     */
+    fun loadSignatureFromUri(uri: Uri) {
+        _signatureState.value = SignatureState.Loading
+        
+        viewModelScope.launch {
+            try {
+                val bitmap = withContext(Dispatchers.IO) {
+                    val inputStream = getApplication<Application>().contentResolver.openInputStream(uri)
+                    android.graphics.BitmapFactory.decodeStream(inputStream)
+                }
+                
+                if (bitmap != null) {
+                    _currentSignature.value = bitmap
+                    _signatureUri.value = uri
+                    _signatureState.value = SignatureState.Success(uri)
+                } else {
+                    _signatureState.value = SignatureState.Error("No se pudo cargar la imagen de firma")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al cargar firma desde URI", e)
+                _signatureState.value = SignatureState.Error("Error: ${e.message}")
+            }
+        }
     }
 }

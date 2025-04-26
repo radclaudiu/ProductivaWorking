@@ -129,7 +129,8 @@ dependencies {
     // Biblioteca para firmas digitales
     implementation 'com.github.gcacace:signature-pad:1.3.1'
     
-    // Brother Print SDK Library (comentado hasta que se proporcione el archivo real)
+    // IMPORTANTE: NO DESCOMENTAR hasta tener el archivo real de la SDK
+    // La implementación simulada BrotherPrintService.kt debe usarse mientras tanto
     // implementation files('libs/brotherprintsdk.jar')
     
     // Unit y UI Testing

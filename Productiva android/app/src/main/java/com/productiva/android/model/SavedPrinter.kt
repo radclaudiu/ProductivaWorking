@@ -3,6 +3,7 @@ package com.productiva.android.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.ColumnInfo
+import com.google.gson.annotations.SerializedName
 
 /**
  * Entidad que representa una impresora guardada en la aplicación.
@@ -14,93 +15,95 @@ data class SavedPrinter(
     val id: Int = 0,
     
     @ColumnInfo(name = "name")
+    @SerializedName("name") 
     val name: String,
     
     @ColumnInfo(name = "model")
+    @SerializedName("model") 
     val model: String,
     
-    @ColumnInfo(name = "address")
-    val address: String,
+    @ColumnInfo(name = "mac_address")
+    @SerializedName("mac_address") 
+    val macAddress: String,
+    
+    @ColumnInfo(name = "ip_address")
+    @SerializedName("ip_address") 
+    val ipAddress: String? = null,
     
     @ColumnInfo(name = "connection_type")
-    val connectionType: String,
-    
-    @ColumnInfo(name = "paper_width")
-    val paperWidth: Int = 62,  // Ancho en mm
-    
-    @ColumnInfo(name = "paper_height")
-    val paperHeight: Int = 29, // Alto en mm
-    
-    @ColumnInfo(name = "orientation")
-    val orientation: Int = ORIENTATION_PORTRAIT,
-    
-    @ColumnInfo(name = "print_quality")
-    val printQuality: Int = QUALITY_NORMAL,
+    @SerializedName("connection_type") 
+    val connectionType: String, // "bluetooth", "wifi", "usb"
     
     @ColumnInfo(name = "is_default")
+    @SerializedName("is_default") 
     val isDefault: Boolean = false,
     
+    @ColumnInfo(name = "paper_width")
+    @SerializedName("paper_width") 
+    val paperWidth: Int, // Ancho del papel en mm
+    
+    @ColumnInfo(name = "paper_height")
+    @SerializedName("paper_height") 
+    val paperHeight: Int, // Alto del papel en mm
+    
+    @ColumnInfo(name = "dpi")
+    @SerializedName("dpi") 
+    val dpi: Int = 203, // Resolución de la impresora en DPI
+    
     @ColumnInfo(name = "last_used")
-    val lastUsed: Long = 0
+    val lastUsed: Long = System.currentTimeMillis(),
+    
+    @ColumnInfo(name = "use_count")
+    val useCount: Int = 0,
+    
+    @ColumnInfo(name = "company_id")
+    @SerializedName("company_id") 
+    val companyId: Int? = null,
+    
+    @ColumnInfo(name = "location_id")
+    @SerializedName("location_id") 
+    val locationId: Int? = null,
+    
+    @ColumnInfo(name = "print_settings")
+    @SerializedName("print_settings") 
+    val printSettings: String? = null // JSON de configuraciones adicionales
 ) {
-    companion object {
-        // Tipos de conexión
-        const val TYPE_WIFI = "wifi"
-        const val TYPE_BLUETOOTH = "bluetooth"
-        const val TYPE_USB = "usb"
-        
-        // Orientaciones
-        const val ORIENTATION_PORTRAIT = 0
-        const val ORIENTATION_LANDSCAPE = 1
-        
-        // Calidades de impresión
-        const val QUALITY_NORMAL = 0
-        const val QUALITY_HIGH = 1
-        
-        // Tamaños de papel comunes para Brother
-        val PAPER_SIZE_62_29 = PaperSize(62, 29, "Address Label 62x29mm")
-        val PAPER_SIZE_29_90 = PaperSize(29, 90, "Shipping Label 29x90mm")
-        val PAPER_SIZE_17_54 = PaperSize(17, 54, "Name Badge 17x54mm")
-        val PAPER_SIZE_62_100 = PaperSize(62, 100, "Shipping Label 62x100mm")
-        
-        // Lista de tamaños disponibles
-        val AVAILABLE_SIZES = listOf(
-            PAPER_SIZE_62_29,
-            PAPER_SIZE_29_90,
-            PAPER_SIZE_17_54,
-            PAPER_SIZE_62_100
-        )
+    /**
+     * Obtiene la descripción del tamaño del papel.
+     */
+    fun getPaperSizeDescription(): String {
+        return "${paperWidth}mm x ${paperHeight}mm"
     }
     
     /**
-     * Clase para representar un tamaño de papel.
+     * Obtiene un icono basado en el tipo de conexión.
      */
-    data class PaperSize(
-        val width: Int,
-        val height: Int,
-        val description: String
-    )
-    
-    /**
-     * Obtiene la descripción del tipo de conexión.
-     */
-    fun getConnectionTypeString(): String {
-        return when (connectionType) {
-            TYPE_WIFI -> "WiFi"
-            TYPE_BLUETOOTH -> "Bluetooth"
-            TYPE_USB -> "USB"
-            else -> "Desconocido"
+    fun getConnectionIcon(): Int {
+        return when (connectionType.lowercase()) {
+            "bluetooth" -> android.R.drawable.stat_sys_data_bluetooth
+            "wifi" -> android.R.drawable.stat_sys_data_wifi
+            "usb" -> android.R.drawable.stat_sys_data_usb
+            else -> android.R.drawable.stat_sys_download
         }
     }
     
     /**
-     * Obtiene la descripción de la orientación.
+     * Obtiene la descripción localizada del tipo de conexión.
      */
-    fun getOrientationString(): String {
-        return when (orientation) {
-            ORIENTATION_PORTRAIT -> "Vertical"
-            ORIENTATION_LANDSCAPE -> "Horizontal"
-            else -> "Desconocido"
+    fun getConnectionTypeName(): String {
+        return when (connectionType.lowercase()) {
+            "bluetooth" -> "Bluetooth"
+            "wifi" -> "Wi-Fi"
+            "usb" -> "USB"
+            else -> connectionType
         }
+    }
+    
+    /**
+     * Comprueba si esta impresora puede imprimir una plantilla del tamaño especificado.
+     */
+    fun canPrintSize(width: Int, height: Int): Boolean {
+        // Comprueba si el tamaño de la impresora es suficiente para la plantilla
+        return width <= paperWidth && height <= paperHeight
     }
 }

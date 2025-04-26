@@ -1,22 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="256dp"
-    android:height="256dp"
-    android:viewportWidth="256"
-    android:viewportHeight="256">
-    
-    <!-- Fondo del logo -->
+    android:width="200dp"
+    android:height="120dp"
+    android:viewportWidth="200"
+    android:viewportHeight="120">
     <path
-        android:fillColor="@color/colorPrimary"
-        android:pathData="M32,0L224,0A32,32 0,0 1,256 32L256,224A32,32 0,0 1,224 256L32,256A32,32 0,0 1,0 224L0,32A32,32 0,0 1,32 0z" />
-    
-    <!-- Letra P estilizada -->
+        android:fillColor="#1E88E5"
+        android:pathData="M40,30L160,30A10,10 0,0 1,170 40L170,80A10,10 0,0 1,160 90L40,90A10,10 0,0 1,30 80L30,40A10,10 0,0 1,40 30z"/>
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M70,60L70,196L98,196L98,146L136,146C162.5,146 184,124.5 184,103C184,81.5 162.5,60 136,60L70,60zM98,88L136,88C147,88 156,95 156,103C156,111 147,118 136,118L98,118L98,88z" />
-    
-    <!-- Línea bajo la P, simbolizando productividad -->
+        android:pathData="M55,50L55,70L65,70L65,50L55,50ZM75,50L75,70L85,70L85,50L75,50ZM95,50L95,70L105,70L105,50L95,50ZM115,50L115,70L125,70L125,50L115,50ZM135,50L135,70L145,70L145,50L135,50Z"/>
     <path
-        android:fillColor="@color/colorAccent"
-        android:pathData="M60,176L196,176L196,196L60,196L60,176z" />
+        android:fillColor="#FFFFFF"
+        android:pathData="M50,40L150,40L150,80L50,80ZM52,42L52,78L148,78L148,42L52,42Z"/>
 </vector>

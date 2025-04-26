@@ -3,7 +3,9 @@ package com.productiva.android.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import com.google.gson.annotations.SerializedName
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 
 /**
  * Modelo de datos que representa una tarea en la aplicación.
@@ -22,19 +24,25 @@ data class Task(
     val description: String?,
     
     @SerializedName("status")
-    val status: String,  // "PENDING", "COMPLETED", "CANCELLED", "IN_PROGRESS"
+    val status: String, // PENDING, COMPLETED, CANCELLED
     
-    @SerializedName("priority")
-    val priority: Int,  // 1-5, donde 5 es la más alta
+    @SerializedName("created_at")
+    val createdAt: String?,
     
     @SerializedName("due_date")
     val dueDate: String?,
     
+    @SerializedName("priority")
+    val priority: Int, // 1-5 (1: baja, 5: alta)
+    
+    @SerializedName("recurring")
+    val recurring: Boolean,
+    
     @SerializedName("assigned_to")
     val assignedTo: Int?,
     
-    @SerializedName("assigned_to_name")
-    val assignedToName: String?,
+    @SerializedName("assigned_name")
+    val assignedName: String?,
     
     @SerializedName("created_by")
     val createdBy: Int?,
@@ -42,26 +50,11 @@ data class Task(
     @SerializedName("created_by_name")
     val createdByName: String?,
     
-    @SerializedName("created_at")
-    val createdAt: String?,
-    
-    @SerializedName("updated_at")
-    val updatedAt: String?,
-    
-    @SerializedName("completed_at")
-    val completedAt: String?,
-    
     @SerializedName("location_id")
     val locationId: Int?,
     
     @SerializedName("location_name")
     val locationName: String?,
-    
-    @SerializedName("company_id")
-    val companyId: Int?,
-    
-    @SerializedName("company_name")
-    val companyName: String?,
     
     @SerializedName("requires_signature")
     val requiresSignature: Boolean,
@@ -69,91 +62,230 @@ data class Task(
     @SerializedName("requires_photo")
     val requiresPhoto: Boolean,
     
-    @SerializedName("signature_path")
-    val signaturePath: String?,
+    @SerializedName("completed_at")
+    val completedAt: String?,
     
-    @SerializedName("photo_path")
-    val photoPath: String?,
+    @SerializedName("completed_by")
+    val completedBy: Int?,
+    
+    @SerializedName("completed_by_name")
+    val completedByName: String?,
     
     @SerializedName("completion_notes")
     val completionNotes: String?,
     
-    @SerializedName("tags")
-    val tags: List<String>?,
+    @SerializedName("has_signature")
+    val hasSignature: Boolean,
     
-    @SerializedName("attachments")
-    val attachments: List<Attachment>?,
+    @SerializedName("has_photo")
+    val hasPhoto: Boolean,
     
-    // Campos locales (no se envían al servidor)
-    val localSignaturePath: String? = null,
-    val localPhotoPath: String? = null,
-    val needsSync: Boolean = false,
-    val syncError: String? = null,
-    val lastSyncTimestamp: Long = 0
+    @SerializedName("signature_url")
+    val signatureUrl: String?,
+    
+    @SerializedName("photo_url")
+    val photoUrl: String?,
+    
+    @SerializedName("local_signature_path")
+    val localSignaturePath: String?,
+    
+    @SerializedName("local_photo_path")
+    val localPhotoPath: String?,
+    
+    // Campo para indicar si la tarea necesita sincronizarse con el servidor
+    val needsSync: Boolean = false
 ) {
     /**
-     * Obtiene el estado de la tarea para mostrar en UI.
+     * Determina si la tarea está vencida.
+     */
+    fun isOverdue(): Boolean {
+        if (status != "PENDING" || dueDate.isNullOrEmpty()) {
+            return false
+        }
+        
+        try {
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+            val dueDateParsed = inputFormat.parse(dueDate)
+            val currentDate = Date()
+            
+            return dueDateParsed != null && dueDateParsed.before(currentDate)
+        } catch (e: Exception) {
+            // En caso de error al parsear la fecha, asumir que no está vencida
+            return false
+        }
+    }
+    
+    /**
+     * Obtiene el texto de visualización del estado.
      */
     fun getStatusDisplay(): String {
         return when (status) {
-            "PENDING" -> "Pendiente"
+            "PENDING" -> if (isOverdue()) "Vencida" else "Pendiente"
             "COMPLETED" -> "Completada"
             "CANCELLED" -> "Cancelada"
-            "IN_PROGRESS" -> "En progreso"
             else -> status
         }
     }
     
     /**
-     * Determina si la tarea está vencida.
-     */
-    fun isOverdue(): Boolean {
-        if (dueDate == null || status == "COMPLETED" || status == "CANCELLED") {
-            return false
-        }
-        
-        // Formato de fecha esperado: "yyyy-MM-dd'T'HH:mm:ss"
-        try {
-            val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
-            val dueDateObj = dateFormat.parse(dueDate)
-            
-            return dueDateObj?.before(Date()) ?: false
-        } catch (e: Exception) {
-            return false
-        }
-    }
-    
-    /**
-     * Obtiene el nombre formateado del asignado.
+     * Obtiene el texto de visualización del asignado.
      */
     fun getAssignedDisplay(): String {
-        return assignedToName ?: "Sin asignar"
+        return assignedName ?: "Sin asignar"
     }
     
     /**
-     * Verifica si la tarea está lista para sincronización.
+     * Obtiene el texto de visualización de la fecha de vencimiento.
      */
-    fun isReadyForSync(): Boolean {
-        return needsSync && (status == "COMPLETED" || status == "CANCELLED")
+    fun getDueDateDisplay(): String {
+        if (dueDate.isNullOrEmpty()) {
+            return "Sin fecha"
+        }
+        
+        try {
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+            val outputFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            val date = inputFormat.parse(dueDate)
+            
+            return date?.let { outputFormat.format(it) } ?: "Formato incorrecto"
+        } catch (e: Exception) {
+            return "Error en fecha"
+        }
     }
     
     /**
-     * Clase para representar un adjunto de tarea.
+     * Obtiene el texto de visualización de la fecha de completado.
      */
-    data class Attachment(
-        @SerializedName("id")
-        val id: Int,
+    fun getCompletedAtDisplay(): String {
+        if (completedAt.isNullOrEmpty()) {
+            return "No completada"
+        }
         
-        @SerializedName("name")
-        val name: String,
+        try {
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+            val outputFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            val date = inputFormat.parse(completedAt)
+            
+            return date?.let { outputFormat.format(it) } ?: "Formato incorrecto"
+        } catch (e: Exception) {
+            return "Error en fecha"
+        }
+    }
+    
+    /**
+     * Crea un duplicado de esta tarea con estado modificado para indicar que necesita sincronización.
+     */
+    fun markForSync(): Task {
+        return this.copy(needsSync = true)
+    }
+    
+    /**
+     * Crea un duplicado de esta tarea con estado completado.
+     */
+    fun markAsCompleted(
+        userId: Int,
+        userName: String,
+        notes: String?,
+        hasSignature: Boolean,
+        hasPhoto: Boolean,
+        localSignaturePath: String?,
+        localPhotoPath: String?
+    ): Task {
+        val now = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(Date())
         
-        @SerializedName("file_path")
-        val filePath: String,
+        return this.copy(
+            status = "COMPLETED",
+            completedAt = now,
+            completedBy = userId,
+            completedByName = userName,
+            completionNotes = notes,
+            hasSignature = hasSignature,
+            hasPhoto = hasPhoto,
+            localSignaturePath = localSignaturePath,
+            localPhotoPath = localPhotoPath,
+            needsSync = true
+        )
+    }
+    
+    /**
+     * Crea un duplicado de esta tarea con estado cancelado.
+     */
+    fun markAsCancelled(userId: Int, userName: String, notes: String?): Task {
+        val now = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(Date())
         
-        @SerializedName("file_type")
-        val fileType: String,
-        
-        @SerializedName("upload_date")
-        val uploadDate: String?
-    )
+        return this.copy(
+            status = "CANCELLED",
+            completedAt = now,
+            completedBy = userId,
+            completedByName = userName,
+            completionNotes = notes,
+            needsSync = true
+        )
+    }
+    
+    /**
+     * Actualiza esta tarea con información del servidor.
+     */
+    fun updateFromServer(serverTask: Task): Task {
+        return this.copy(
+            title = serverTask.title,
+            description = serverTask.description,
+            status = serverTask.status,
+            dueDate = serverTask.dueDate,
+            priority = serverTask.priority,
+            recurring = serverTask.recurring,
+            assignedTo = serverTask.assignedTo,
+            assignedName = serverTask.assignedName,
+            locationId = serverTask.locationId,
+            locationName = serverTask.locationName,
+            requiresSignature = serverTask.requiresSignature,
+            requiresPhoto = serverTask.requiresPhoto,
+            completedAt = serverTask.completedAt,
+            completedBy = serverTask.completedBy,
+            completedByName = serverTask.completedByName,
+            completionNotes = serverTask.completionNotes,
+            hasSignature = serverTask.hasSignature,
+            hasPhoto = serverTask.hasPhoto,
+            signatureUrl = serverTask.signatureUrl,
+            photoUrl = serverTask.photoUrl,
+            needsSync = false
+        )
+    }
+    
+    companion object {
+        /**
+         * Crea una tarea vacía para usar como comodín.
+         */
+        fun createEmpty(): Task {
+            return Task(
+                id = 0,
+                title = "",
+                description = null,
+                status = "PENDING",
+                createdAt = null,
+                dueDate = null,
+                priority = 3,
+                recurring = false,
+                assignedTo = null,
+                assignedName = null,
+                createdBy = null,
+                createdByName = null,
+                locationId = null,
+                locationName = null,
+                requiresSignature = false,
+                requiresPhoto = false,
+                completedAt = null,
+                completedBy = null,
+                completedByName = null,
+                completionNotes = null,
+                hasSignature = false,
+                hasPhoto = false,
+                signatureUrl = null,
+                photoUrl = null,
+                localSignaturePath = null,
+                localPhotoPath = null,
+                needsSync = false
+            )
+        }
+    }
 }

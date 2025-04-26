@@ -8,61 +8,61 @@ import java.util.Date
 import java.util.Locale
 
 /**
- * Modelo de datos que representa la información de completado de una tarea.
+ * Modelo de datos que representa un registro de completado de tarea.
  * Se almacena en la base de datos local y se sincroniza con el servidor.
+ * Se utiliza para registrar los completados de tareas offline que luego serán sincronizados.
  */
 @Entity(tableName = "task_completions")
 data class TaskCompletion(
-    @PrimaryKey
+    @PrimaryKey(autoGenerate = true)
+    val id: Int = 0,
+    
     @SerializedName("task_id")
     val taskId: Int,
     
     @SerializedName("status")
-    val status: String,  // "COMPLETED", "CANCELLED"
+    val status: String, // COMPLETED, CANCELLED
     
-    @SerializedName("completed_by")
-    val completedBy: Int,
-    
-    @SerializedName("completed_at")
-    val completedAt: String = getCurrentTimestamp(),
+    @SerializedName("user_id")
+    val userId: Int,
     
     @SerializedName("notes")
     val notes: String?,
     
+    @SerializedName("completion_date")
+    val completionDate: String,
+    
+    @SerializedName("has_signature")
+    val hasSignature: Boolean,
+    
+    @SerializedName("has_photo")
+    val hasPhoto: Boolean,
+    
     @SerializedName("signature_data")
-    val signatureData: String?,  // Base64 de la firma
+    val signatureData: String?,
     
     @SerializedName("photo_data")
-    val photoData: String?,  // Base64 de la foto
+    val photoData: String?,
     
-    @SerializedName("location_latitude")
-    val locationLatitude: Double?,
+    @SerializedName("local_signature_path")
+    val localSignaturePath: String?,
     
-    @SerializedName("location_longitude")
-    val locationLongitude: Double?,
+    @SerializedName("local_photo_path")
+    val localPhotoPath: String?,
     
-    @SerializedName("device_info")
-    val deviceInfo: String?,
-    
-    // Campos locales (no se envían al servidor)
-    val needsSync: Boolean = true,
-    val syncError: String? = null,
-    val localSignaturePath: String? = null,
-    val localPhotoPath: String? = null,
-    val lastSyncAttempt: Long = 0,
-    val syncAttempts: Int = 0
+    @SerializedName("synced")
+    val synced: Boolean = false
 ) {
+    /**
+     * Marca este completado como sincronizado.
+     */
+    fun markAsSynced(): TaskCompletion {
+        return this.copy(synced = true)
+    }
+    
     companion object {
         /**
-         * Genera una marca de tiempo en formato ISO 8601.
-         */
-        fun getCurrentTimestamp(): String {
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-            return dateFormat.format(Date())
-        }
-        
-        /**
-         * Crea una instancia de completado de tarea.
+         * Crea un nuevo objeto de completado de tarea.
          */
         fun create(
             taskId: Int,
@@ -71,50 +71,25 @@ data class TaskCompletion(
             notes: String? = null,
             signatureData: String? = null,
             photoData: String? = null,
-            latitude: Double? = null,
-            longitude: Double? = null,
-            deviceInfo: String? = null,
             localSignaturePath: String? = null,
             localPhotoPath: String? = null
         ): TaskCompletion {
+            val now = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault()).format(Date())
+            
             return TaskCompletion(
                 taskId = taskId,
                 status = status,
-                completedBy = userId,
+                userId = userId,
                 notes = notes,
+                completionDate = now,
+                hasSignature = !localSignaturePath.isNullOrEmpty() || !signatureData.isNullOrEmpty(),
+                hasPhoto = !localPhotoPath.isNullOrEmpty() || !photoData.isNullOrEmpty(),
                 signatureData = signatureData,
                 photoData = photoData,
-                locationLatitude = latitude,
-                locationLongitude = longitude,
-                deviceInfo = deviceInfo,
                 localSignaturePath = localSignaturePath,
-                localPhotoPath = localPhotoPath
+                localPhotoPath = localPhotoPath,
+                synced = false
             )
         }
-    }
-    
-    /**
-     * Verifica si el completado tiene información de geolocalización.
-     */
-    fun hasLocationInfo(): Boolean {
-        return locationLatitude != null && locationLongitude != null
-    }
-    
-    /**
-     * Formatea la información de geolocalización para mostrar en UI.
-     */
-    fun getLocationDisplay(): String {
-        return if (hasLocationInfo()) {
-            String.format("%.6f, %.6f", locationLatitude, locationLongitude)
-        } else {
-            "No disponible"
-        }
-    }
-    
-    /**
-     * Verifica si el completado está listo para sincronización.
-     */
-    fun isReadyForSync(): Boolean {
-        return needsSync && syncAttempts < 5
     }
 }

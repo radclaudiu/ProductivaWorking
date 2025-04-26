@@ -4,20 +4,24 @@ import android.app.Application
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MediatorLiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
 import com.productiva.android.ProductivaApplication
 import com.productiva.android.model.Task
 import com.productiva.android.model.TaskCompletion
-import com.productiva.android.model.User
 import com.productiva.android.network.RetrofitClient
 import com.productiva.android.repository.ResourceState
 import com.productiva.android.repository.TaskRepository
-import com.productiva.android.sync.SyncManager
-import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.io.File
+import java.io.FileOutputStream
 
 /**
  * ViewModel para la gestión de tareas.
@@ -26,299 +30,297 @@ class TaskViewModel(application: Application) : AndroidViewModel(application) {
     
     private val TAG = "TaskViewModel"
     
-    // Repositorios
+    // Repositorio de tareas
     private val taskRepository: TaskRepository
-    private val syncManager: SyncManager
     
-    // Estado de la operación con tareas
-    private val _taskOperationState = MutableLiveData<TaskOperationState>()
-    val taskOperationState: LiveData<TaskOperationState> = _taskOperationState
+    // Estado de tareas
+    private val _taskState = MutableStateFlow<TaskState>(TaskState.Idle)
+    val taskState: StateFlow<TaskState> = _taskState
     
-    // Lista de tareas filtrada por usuario actual
-    private val _userTasks = MediatorLiveData<List<Task>>()
-    val userTasks: LiveData<List<Task>> = _userTasks
+    // Filtro actual
+    private val _filter = MutableStateFlow<String?>(null)
     
-    // Tarea seleccionada actualmente
-    private val _selectedTask = MutableLiveData<Task?>()
-    val selectedTask: LiveData<Task?> = _selectedTask
+    // Usuario actual
+    private val _currentUserId = MutableStateFlow<Int?>(null)
     
-    // Finalizaciones de la tarea seleccionada
-    private val _taskCompletions = MutableLiveData<List<TaskCompletion>>()
-    val taskCompletions: LiveData<List<TaskCompletion>> = _taskCompletions
+    // Tarea seleccionada
+    private val _selectedTask = MutableStateFlow<Task?>(null)
+    val selectedTask: StateFlow<Task?> = _selectedTask
     
-    // Estado de la sincronización
-    private val _syncState = MutableLiveData<String>("No sincronizado")
-    val syncState: LiveData<String> = _syncState
-    
-    // Filtros activos
-    private var currentUserId: Int? = null
-    private var statusFilter: String? = null
-    
-    /**
-     * Estados posibles de las operaciones con tareas.
-     */
-    sealed class TaskOperationState {
-        object Idle : TaskOperationState()
-        object Loading : TaskOperationState()
-        object Success : TaskOperationState()
-        data class Error(val message: String) : TaskOperationState()
-        data class CompletionSuccess(val completion: TaskCompletion) : TaskOperationState()
-        data class OfflineSuccess(val message: String) : TaskOperationState()
-    }
+    // Lista de tareas filtradas
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val tasks: Flow<List<Task>> = combine(_currentUserId, _filter) { userId, filter ->
+        Pair(userId, filter)
+    }.flatMapLatest { (userId, filter) ->
+        when {
+            userId != null && filter != null -> taskRepository.getTasksByStatusForUser(userId, filter)
+            userId != null -> taskRepository.getTasksAssignedToUser(userId)
+            filter != null -> taskRepository.getTasksByStatus(filter)
+            else -> taskRepository.getAllTasks()
+        }
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
     
     init {
-        // Obtener instancias de la aplicación
         val app = getApplication<ProductivaApplication>()
         val apiService = RetrofitClient.getApiService(app)
-        val database = app.database
         
-        // Inicializar repositorios
-        taskRepository = TaskRepository(app, database.taskDao(), database.taskCompletionDao(), apiService)
-        
-        // Inicializar gestor de sincronización
-        val labelTemplateRepository = LabelTemplateRepository(database.labelTemplateDao(), apiService)
-        val userRepository = UserRepository(database.userDao(), apiService)
-        syncManager = SyncManager(app, userRepository, taskRepository, labelTemplateRepository)
-        
-        // Configurar la sincronización periódica
-        syncManager.setupPeriodicSync()
-        
-        // Iniciar en estado Idle
-        _taskOperationState.value = TaskOperationState.Idle
-        
-        // Actualizar estado de sincronización
-        updateSyncState()
+        // Inicializar el repositorio
+        taskRepository = TaskRepository(app.database.taskDao(), apiService)
     }
     
     /**
-     * Establece el usuario actual y carga sus tareas.
+     * Carga tareas asignadas a un usuario específico.
      */
-    fun setCurrentUser(user: User) {
-        currentUserId = user.id
-        refreshTasks()
+    fun loadTasksForUser(userId: Int) {
+        _currentUserId.value = userId
+        
+        // Si hay un filtro activo, aplicarlo para este usuario
+        if (_filter.value != null) {
+            _filter.value?.let { filter ->
+                loadTasksByStatusForUser(userId, filter)
+            }
+        } else {
+            // Carga por defecto tareas pendientes
+            loadTasksByStatusForUser(userId, "PENDING")
+        }
     }
     
     /**
-     * Actualiza el estado de sincronización.
+     * Carga tareas por estado para un usuario específico.
      */
-    private fun updateSyncState() {
-        _syncState.value = syncManager.getFormattedLastSyncTime()
-    }
-    
-    /**
-     * Recarga las tareas según los filtros actuales.
-     */
-    fun refreshTasks() {
-        currentUserId?.let { userId ->
-            if (statusFilter != null) {
-                // Aplicar ambos filtros: usuario y estado
-                _userTasks.addSource(
-                    taskRepository.getTasksAssignedToUserByStatus(userId, statusFilter!!)
-                ) { tasks ->
-                    _userTasks.value = tasks
-                }
-            } else {
-                // Solo filtrar por usuario
-                _userTasks.addSource(
-                    taskRepository.getTasksAssignedToUser(userId)
-                ) { tasks ->
-                    _userTasks.value = tasks
-                }
+    private fun loadTasksByStatusForUser(userId: Int, status: String) {
+        _taskState.value = TaskState.Loading
+        
+        viewModelScope.launch {
+            try {
+                _currentUserId.value = userId
+                _filter.value = status
+                _taskState.value = TaskState.Idle
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al cargar tareas por estado para usuario", e)
+                _taskState.value = TaskState.Error("Error al cargar tareas: ${e.message}")
             }
         }
     }
     
     /**
-     * Filtra las tareas por estado.
+     * Filtra tareas por estado.
      */
-    fun filterByStatus(status: String?) {
-        // Remover fuentes anteriores
-        _userTasks.value = emptyList()
-        for (source in _userTasks.sources) {
-            _userTasks.removeSource(source)
-        }
-        
-        statusFilter = status
-        refreshTasks()
+    fun filterTasks(status: String) {
+        _filter.value = status
     }
     
     /**
-     * Selecciona una tarea y carga sus finalizaciones.
+     * Elimina el filtro de tareas.
      */
-    fun selectTask(task: Task) {
-        _selectedTask.value = task
-        
-        // Cargar finalizaciones de la tarea
-        viewModelScope.launch {
-            _taskCompletions.value = taskRepository.getCompletionsForTask(task.id).value ?: emptyList()
-        }
+    fun clearFilter() {
+        _filter.value = null
     }
     
     /**
-     * Limpia la tarea seleccionada.
+     * Sincroniza tareas con el servidor.
      */
-    fun clearSelectedTask() {
-        _selectedTask.value = null
-        _taskCompletions.value = emptyList()
-    }
-    
-    /**
-     * Actualiza el estado de una tarea.
-     */
-    fun updateTaskStatus(taskId: Int, newStatus: String) {
-        _taskOperationState.value = TaskOperationState.Loading
+    fun syncTasks() {
+        _taskState.value = TaskState.Loading
         
         viewModelScope.launch {
             try {
-                taskRepository.updateTaskStatus(taskId, newStatus).collect { state ->
+                // Primero sincronizar completados pendientes
+                taskRepository.syncPendingTaskCompletions()
+                
+                // Luego obtener tareas actualizadas del servidor
+                taskRepository.syncTasks(_currentUserId.value).collect { state ->
                     when (state) {
                         is ResourceState.Success -> {
-                            refreshTasks()
-                            if (state.isFromCache) {
-                                _taskOperationState.value = TaskOperationState.OfflineSuccess(
-                                    "Tarea actualizada localmente. Se sincronizará cuando haya conexión."
-                                )
-                            } else {
-                                _taskOperationState.value = TaskOperationState.Success
-                            }
+                            _taskState.value = TaskState.Synced(state.data ?: emptyList())
                         }
                         is ResourceState.Error -> {
-                            _taskOperationState.value = TaskOperationState.Error(
-                                state.message ?: "Error desconocido al actualizar la tarea"
-                            )
+                            _taskState.value = TaskState.Error(state.message ?: "Error desconocido")
                         }
                         is ResourceState.Loading -> {
-                            _taskOperationState.value = TaskOperationState.Loading
+                            _taskState.value = TaskState.Loading
                         }
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error al actualizar estado de tarea", e)
-                _taskOperationState.value = TaskOperationState.Error("Error: ${e.message}")
+                Log.e(TAG, "Error al sincronizar tareas", e)
+                _taskState.value = TaskState.Error("Error al sincronizar tareas: ${e.message}")
             }
         }
     }
     
     /**
-     * Completa una tarea con firma opcional y foto opcional.
+     * Selecciona una tarea para ver detalles.
      */
-    fun completeTask(
-        taskId: Int,
-        userId: Int,
-        comments: String?,
-        signatureUri: Uri?,
-        photoUri: Uri?,
-        status: String = "ok",
-        latitude: Double? = null,
-        longitude: Double? = null
-    ) {
-        _taskOperationState.value = TaskOperationState.Loading
+    fun selectTask(task: Task) {
+        _selectedTask.value = task
+    }
+    
+    /**
+     * Completa una tarea.
+     */
+    fun completeTask(taskId: Int, notes: String?, signature: Uri?, photo: Uri?) {
+        _taskState.value = TaskState.Loading
         
         viewModelScope.launch {
             try {
-                taskRepository.completeTask(
-                    taskId, userId, comments, signatureUri, photoUri, status, latitude, longitude
-                ).collect { state ->
+                // Obtener la tarea
+                val task = taskRepository.getTaskByIdSync(taskId)
+                
+                if (task == null) {
+                    _taskState.value = TaskState.Error("Tarea no encontrada")
+                    return@launch
+                }
+                
+                // Procesar firma si existe
+                var signaturePath: String? = null
+                var signatureData: String? = null
+                if (signature != null) {
+                    signaturePath = saveSignatureToFile(signature, taskId)
+                }
+                
+                // Procesar foto si existe
+                var photoPath: String? = null
+                var photoData: String? = null
+                if (photo != null) {
+                    photoPath = savePhotoToFile(photo, taskId)
+                }
+                
+                // Crear objeto de completado
+                val userId = _currentUserId.value ?: 0
+                val completion = TaskCompletion.create(
+                    taskId = taskId,
+                    status = "COMPLETED",
+                    userId = userId,
+                    notes = notes,
+                    signatureData = signatureData,
+                    photoData = photoData,
+                    localSignaturePath = signaturePath,
+                    localPhotoPath = photoPath
+                )
+                
+                // Completar tarea localmente
+                taskRepository.completeTaskLocally(completion).collect { state ->
                     when (state) {
                         is ResourceState.Success -> {
-                            val completion = state.data!!
-                            _taskCompletions.value = (_taskCompletions.value ?: emptyList()) + completion
-                            refreshTasks()
-                            
-                            if (state.isFromCache) {
-                                _taskOperationState.value = TaskOperationState.OfflineSuccess(
-                                    "Tarea completada localmente. Se sincronizará cuando haya conexión."
-                                )
-                            } else {
-                                _taskOperationState.value = TaskOperationState.CompletionSuccess(completion)
-                            }
+                            _taskState.value = TaskState.Completed(taskId)
                         }
                         is ResourceState.Error -> {
-                            _taskOperationState.value = TaskOperationState.Error(
-                                state.message ?: "Error desconocido al completar la tarea"
-                            )
+                            _taskState.value = TaskState.Error(state.message ?: "Error desconocido")
                         }
                         is ResourceState.Loading -> {
-                            _taskOperationState.value = TaskOperationState.Loading
+                            _taskState.value = TaskState.Loading
                         }
                     }
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error al completar tarea", e)
-                _taskOperationState.value = TaskOperationState.Error("Error: ${e.message}")
+                _taskState.value = TaskState.Error("Error al completar tarea: ${e.message}")
             }
         }
     }
     
     /**
-     * Inicia una sincronización manual con el servidor.
+     * Cancela una tarea.
      */
-    fun syncNow() {
-        syncManager.syncNow()
-        
-        // Actualizar estado de sincronización después de un breve retraso
-        viewModelScope.launch {
-            kotlinx.coroutines.delay(2000) // Esperar 2 segundos
-            updateSyncState()
-            refreshTasks()
-        }
-    }
-    
-    /**
-     * Sincroniza las finalizaciones pendientes.
-     */
-    fun syncPendingCompletions() {
-        _taskOperationState.value = TaskOperationState.Loading
+    fun cancelTask(taskId: Int, notes: String?) {
+        _taskState.value = TaskState.Loading
         
         viewModelScope.launch {
             try {
-                taskRepository.syncPendingCompletions().collect { state ->
+                // Obtener la tarea
+                val task = taskRepository.getTaskByIdSync(taskId)
+                
+                if (task == null) {
+                    _taskState.value = TaskState.Error("Tarea no encontrada")
+                    return@launch
+                }
+                
+                // Crear objeto de completado
+                val userId = _currentUserId.value ?: 0
+                val completion = TaskCompletion.create(
+                    taskId = taskId,
+                    status = "CANCELLED",
+                    userId = userId,
+                    notes = notes
+                )
+                
+                // Cancelar tarea localmente
+                taskRepository.completeTaskLocally(completion).collect { state ->
                     when (state) {
                         is ResourceState.Success -> {
-                            val count = state.data ?: 0
-                            refreshTasks()
-                            
-                            _taskOperationState.value = TaskOperationState.Success
-                            if (count > 0) {
-                                Log.d(TAG, "Se sincronizaron $count finalizaciones pendientes")
-                            }
+                            _taskState.value = TaskState.Cancelled(taskId)
                         }
                         is ResourceState.Error -> {
-                            _taskOperationState.value = TaskOperationState.Error(
-                                state.message ?: "Error desconocido al sincronizar"
-                            )
+                            _taskState.value = TaskState.Error(state.message ?: "Error desconocido")
                         }
                         is ResourceState.Loading -> {
-                            _taskOperationState.value = TaskOperationState.Loading
+                            _taskState.value = TaskState.Loading
                         }
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error al sincronizar finalizaciones pendientes", e)
-                _taskOperationState.value = TaskOperationState.Error("Error: ${e.message}")
+                Log.e(TAG, "Error al cancelar tarea", e)
+                _taskState.value = TaskState.Error("Error al cancelar tarea: ${e.message}")
             }
         }
     }
     
     /**
-     * Obtiene todos los estados de tareas disponibles.
+     * Guarda una firma en un archivo local.
      */
-    fun getAvailableStatuses(): List<Pair<String, String>> {
-        return listOf(
-            Pair("pending", "Pendiente"),
-            Pair("in_progress", "En progreso"),
-            Pair("completed", "Completada"),
-            Pair("cancelled", "Cancelada")
-        )
+    private fun saveSignatureToFile(signatureUri: Uri, taskId: Int): String? {
+        return try {
+            val context = getApplication<ProductivaApplication>()
+            val inputStream = context.contentResolver.openInputStream(signatureUri)
+            val fileName = "signature_${taskId}_${System.currentTimeMillis()}.png"
+            val file = File(context.filesDir, fileName)
+            
+            inputStream?.use { input ->
+                FileOutputStream(file).use { output ->
+                    input.copyTo(output)
+                }
+            }
+            
+            file.absolutePath
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al guardar firma", e)
+            null
+        }
     }
     
     /**
-     * Formatea la fecha de una tarea para mostrar.
+     * Guarda una foto en un archivo local.
      */
-    fun formatTaskDate(dueDate: java.util.Date?): String {
-        if (dueDate == null) return "Sin fecha"
-        
-        return java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
-            .format(dueDate)
+    private fun savePhotoToFile(photoUri: Uri, taskId: Int): String? {
+        return try {
+            val context = getApplication<ProductivaApplication>()
+            val inputStream = context.contentResolver.openInputStream(photoUri)
+            val fileName = "photo_${taskId}_${System.currentTimeMillis()}.jpg"
+            val file = File(context.filesDir, fileName)
+            
+            inputStream?.use { input ->
+                FileOutputStream(file).use { output ->
+                    input.copyTo(output)
+                }
+            }
+            
+            file.absolutePath
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al guardar foto", e)
+            null
+        }
     }
+}
+
+/**
+ * Estados posibles de tareas.
+ */
+sealed class TaskState {
+    object Idle : TaskState()
+    object Loading : TaskState()
+    data class Synced(val tasks: List<Task>) : TaskState()
+    data class Completed(val taskId: Int) : TaskState()
+    data class Cancelled(val taskId: Int) : TaskState()
+    data class Error(val message: String) : TaskState()
 }

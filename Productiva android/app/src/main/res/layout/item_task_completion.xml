@@ -18,7 +18,7 @@
             android:id="@+id/completionAvatar"
             android:layout_width="40dp"
             android:layout_height="40dp"
-            android:contentDescription="User avatar"
+            android:contentDescription="@string/user_avatar"
             android:src="@drawable/ic_user"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
@@ -74,7 +74,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Firma:"
+                android:text="@string/signature_label"
                 android:textColor="#757575"
                 android:textSize="12sp" />
 
@@ -84,7 +84,7 @@
                 android:layout_height="100dp"
                 android:layout_marginTop="4dp"
                 android:background="#F5F5F5"
-                android:contentDescription="Signature image"
+                android:contentDescription="@string/signature_image"
                 android:scaleType="fitCenter" />
 
         </LinearLayout>
@@ -104,7 +104,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Foto:"
+                android:text="@string/photo_label"
                 android:textColor="#757575"
                 android:textSize="12sp" />
 
@@ -114,7 +114,7 @@
                 android:layout_height="150dp"
                 android:layout_marginTop="4dp"
                 android:background="#F5F5F5"
-                android:contentDescription="Photo image"
+                android:contentDescription="@string/photo_image"
                 android:scaleType="centerCrop" />
 
         </LinearLayout>

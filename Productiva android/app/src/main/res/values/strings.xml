@@ -76,6 +76,13 @@
     <string name="task_photo">Foto de completado</string>
     <string name="task_notes">Notas</string>
     
+    <!-- Etiquetas de imágenes -->
+    <string name="user_avatar">Avatar de usuario</string>
+    <string name="signature_image">Imagen de firma</string>
+    <string name="photo_image">Imagen de foto</string>
+    <string name="signature_label">Firma:</string>
+    <string name="photo_label">Foto:</string>
+    
     <!-- Productos -->
     <string name="product_details">Detalles del producto</string>
     <string name="product_name">Nombre del producto</string>

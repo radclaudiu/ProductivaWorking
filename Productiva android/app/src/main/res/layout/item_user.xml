@@ -18,7 +18,7 @@
             android:id="@+id/userAvatar"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:contentDescription="User avatar"
+            android:contentDescription="@string/user_avatar"
             android:src="@drawable/ic_user"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintStart_toStartOf="parent"

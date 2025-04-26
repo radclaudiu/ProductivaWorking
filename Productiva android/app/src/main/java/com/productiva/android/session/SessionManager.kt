@@ -3,191 +3,197 @@ package com.productiva.android.session
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
-import com.productiva.android.network.RetrofitClient
-import com.productiva.android.network.model.CompanyData
-import com.productiva.android.network.model.UserData
-import com.productiva.android.utils.Constants
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 
 /**
  * Gestor de sesión del usuario.
- * Maneja el almacenamiento y recuperación de información de sesión como token,
- * usuario actual y empresa seleccionada.
+ * Almacena y recupera información de sesión de forma segura.
  */
-class SessionManager private constructor() {
-    
-    private lateinit var prefs: SharedPreferences
-    private var isInitialized = false
+class SessionManager(context: Context) {
     
     companion object {
         private const val TAG = "SessionManager"
-        
-        @Volatile
-        private var instance: SessionManager? = null
-        
-        /**
-         * Obtiene la instancia única del gestor de sesión.
-         *
-         * @return Instancia del gestor de sesión.
-         */
-        fun getInstance(): SessionManager {
-            return instance ?: synchronized(this) {
-                instance ?: SessionManager().also { instance = it }
-            }
-        }
+        private const val PREFERENCE_NAME = "productiva_secure_prefs"
+        private const val KEY_AUTH_TOKEN = "auth_token"
+        private const val KEY_USER_ID = "user_id"
+        private const val KEY_USERNAME = "username"
+        private const val KEY_EMAIL = "email"
+        private const val KEY_IS_ADMIN = "is_admin"
+        private const val KEY_COMPANY_ID = "company_id"
+        private const val KEY_COMPANY_NAME = "company_name"
+        private const val KEY_EMPLOYEE_ID = "employee_id"
+        private const val KEY_LAST_SYNC_PREFIX = "last_sync_"
+    }
+    
+    private val masterKey = MasterKey.Builder(context)
+        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        .build()
+    
+    private val sharedPreferences: SharedPreferences = try {
+        EncryptedSharedPreferences.create(
+            context,
+            PREFERENCE_NAME,
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    } catch (e: Exception) {
+        Log.e(TAG, "Error al crear EncryptedSharedPreferences", e)
+        // Fallback a SharedPreferences normales (no encriptadas)
+        context.getSharedPreferences(PREFERENCE_NAME, Context.MODE_PRIVATE)
     }
     
     /**
-     * Inicializa el gestor de sesión.
-     * Debe llamarse antes de usar cualquier otro método.
+     * Guarda la información de sesión del usuario.
      *
-     * @param context Contexto de la aplicación.
+     * @param token Token de autenticación JWT.
+     * @param userId ID del usuario.
+     * @param username Nombre de usuario.
+     * @param email Correo electrónico del usuario.
+     * @param isAdmin Indica si el usuario es administrador.
+     * @param companyId ID de la empresa.
+     * @param companyName Nombre de la empresa.
+     * @param employeeId ID del empleado (puede ser nulo).
      */
-    fun init(context: Context) {
-        if (!isInitialized) {
-            prefs = context.getSharedPreferences(Constants.PREFS_NAME, Context.MODE_PRIVATE)
-            isInitialized = true
-            Log.d(TAG, "SessionManager inicializado")
-        }
+    fun saveUserInfo(
+        token: String,
+        userId: Int,
+        username: String,
+        email: String?,
+        isAdmin: Boolean,
+        companyId: Int,
+        companyName: String,
+        employeeId: Int?
+    ) {
+        val editor = sharedPreferences.edit()
+        editor.putString(KEY_AUTH_TOKEN, token)
+        editor.putInt(KEY_USER_ID, userId)
+        editor.putString(KEY_USERNAME, username)
+        editor.putString(KEY_EMAIL, email)
+        editor.putBoolean(KEY_IS_ADMIN, isAdmin)
+        editor.putInt(KEY_COMPANY_ID, companyId)
+        editor.putString(KEY_COMPANY_NAME, companyName)
+        employeeId?.let { editor.putInt(KEY_EMPLOYEE_ID, it) } ?: editor.remove(KEY_EMPLOYEE_ID)
+        editor.apply()
+        
+        Log.d(TAG, "Información de usuario guardada: $username (ID: $userId)")
     }
     
     /**
-     * Verifica si el usuario ha iniciado sesión.
+     * Obtiene el token de autenticación.
      *
-     * @return true si hay un token de autenticación válido, false en caso contrario.
+     * @return Token de autenticación o null si no hay ninguno guardado.
+     */
+    fun getToken(): String? {
+        return sharedPreferences.getString(KEY_AUTH_TOKEN, null)
+    }
+    
+    /**
+     * Obtiene el ID del usuario.
+     *
+     * @return ID del usuario o -1 si no hay ninguno guardado.
+     */
+    fun getUserId(): Int {
+        return sharedPreferences.getInt(KEY_USER_ID, -1)
+    }
+    
+    /**
+     * Obtiene el nombre de usuario.
+     *
+     * @return Nombre de usuario o null si no hay ninguno guardado.
+     */
+    fun getUsername(): String? {
+        return sharedPreferences.getString(KEY_USERNAME, null)
+    }
+    
+    /**
+     * Obtiene el correo electrónico del usuario.
+     *
+     * @return Correo electrónico o null si no hay ninguno guardado.
+     */
+    fun getEmail(): String? {
+        return sharedPreferences.getString(KEY_EMAIL, null)
+    }
+    
+    /**
+     * Verifica si el usuario es administrador.
+     *
+     * @return true si el usuario es administrador, false en caso contrario.
+     */
+    fun isAdmin(): Boolean {
+        return sharedPreferences.getBoolean(KEY_IS_ADMIN, false)
+    }
+    
+    /**
+     * Obtiene el ID de la empresa.
+     *
+     * @return ID de la empresa o -1 si no hay ninguno guardado.
+     */
+    fun getCompanyId(): Int {
+        return sharedPreferences.getInt(KEY_COMPANY_ID, -1)
+    }
+    
+    /**
+     * Obtiene el nombre de la empresa.
+     *
+     * @return Nombre de la empresa o null si no hay ninguno guardado.
+     */
+    fun getCompanyName(): String? {
+        return sharedPreferences.getString(KEY_COMPANY_NAME, null)
+    }
+    
+    /**
+     * Obtiene el ID del empleado asociado al usuario.
+     *
+     * @return ID del empleado o -1 si no hay ninguno guardado.
+     */
+    fun getEmployeeId(): Int {
+        return sharedPreferences.getInt(KEY_EMPLOYEE_ID, -1)
+    }
+    
+    /**
+     * Verifica si el usuario tiene una sesión iniciada.
+     *
+     * @return true si hay una sesión activa, false en caso contrario.
      */
     fun isLoggedIn(): Boolean {
-        validateInitialization()
-        return getAuthToken().isNotEmpty()
+        return getToken() != null
     }
     
     /**
-     * Obtiene el token de autenticación actual.
-     *
-     * @return Token de autenticación o cadena vacía si no hay sesión.
-     */
-    fun getAuthToken(): String {
-        validateInitialization()
-        return prefs.getString(Constants.PREF_AUTH_TOKEN, "") ?: ""
-    }
-    
-    /**
-     * Obtiene el ID del usuario actual.
-     *
-     * @return ID del usuario o 0 si no hay sesión.
-     */
-    fun getCurrentUserId(): Int {
-        validateInitialization()
-        return prefs.getInt(Constants.PREF_USER_ID, 0)
-    }
-    
-    /**
-     * Obtiene el nombre de usuario actual.
-     *
-     * @return Nombre de usuario o cadena vacía si no hay sesión.
-     */
-    fun getCurrentUsername(): String {
-        validateInitialization()
-        return prefs.getString(Constants.PREF_USERNAME, "") ?: ""
-    }
-    
-    /**
-     * Obtiene el rol del usuario actual.
-     *
-     * @return Rol del usuario o cadena vacía si no hay sesión.
-     */
-    fun getCurrentUserRole(): String {
-        validateInitialization()
-        return prefs.getString(Constants.PREF_USER_ROLE, "") ?: ""
-    }
-    
-    /**
-     * Obtiene el ID de la empresa seleccionada.
-     *
-     * @return ID de la empresa o 0 si no hay empresa seleccionada.
-     */
-    fun getCurrentCompanyId(): Int {
-        validateInitialization()
-        return prefs.getInt(Constants.PREF_COMPANY_ID, 0)
-    }
-    
-    /**
-     * Obtiene el nombre de la empresa seleccionada.
-     *
-     * @return Nombre de la empresa o cadena vacía si no hay empresa seleccionada.
-     */
-    fun getCurrentCompanyName(): String {
-        validateInitialization()
-        return prefs.getString(Constants.PREF_COMPANY_NAME, "") ?: ""
-    }
-    
-    /**
-     * Guarda los datos de sesión después de un inicio de sesión exitoso.
-     *
-     * @param token Token de autenticación.
-     * @param user Datos del usuario.
-     * @param company Empresa seleccionada por defecto (opcional).
-     */
-    fun saveUserSession(
-        token: String,
-        user: UserData,
-        company: CompanyData? = null
-    ) {
-        validateInitialization()
-        
-        prefs.edit().apply {
-            putString(Constants.PREF_AUTH_TOKEN, token)
-            putInt(Constants.PREF_USER_ID, user.id)
-            putString(Constants.PREF_USERNAME, user.username)
-            putString(Constants.PREF_USER_ROLE, user.role)
-            
-            // Si se proporciona una empresa, guardarla como seleccionada
-            if (company != null) {
-                putInt(Constants.PREF_COMPANY_ID, company.id)
-                putString(Constants.PREF_COMPANY_NAME, company.name)
-            }
-            
-            apply()
-        }
-        
-        Log.d(TAG, "Sesión guardada para usuario: ${user.username}")
-    }
-    
-    /**
-     * Selecciona una empresa como actual.
-     *
-     * @param company Datos de la empresa.
-     */
-    fun selectCompany(company: CompanyData) {
-        validateInitialization()
-        
-        prefs.edit().apply {
-            putInt(Constants.PREF_COMPANY_ID, company.id)
-            putString(Constants.PREF_COMPANY_NAME, company.name)
-            apply()
-        }
-        
-        Log.d(TAG, "Empresa seleccionada: ${company.name}")
-    }
-    
-    /**
-     * Cierra la sesión actual y limpia todos los datos guardados.
+     * Cierra la sesión del usuario.
+     * Elimina toda la información de sesión.
      */
     fun logout() {
-        validateInitialization()
-        
-        prefs.edit().clear().apply()
-        RetrofitClient.clearApiService()
+        val editor = sharedPreferences.edit()
+        editor.clear()
+        editor.apply()
         
         Log.d(TAG, "Sesión cerrada")
     }
     
     /**
-     * Verifica si el gestor ha sido inicializado.
-     * Lanza una excepción si no lo está.
+     * Guarda la marca de tiempo de la última sincronización.
+     *
+     * @param entityType Tipo de entidad sincronizada.
+     * @param timestamp Marca de tiempo de la sincronización.
      */
-    private fun validateInitialization() {
-        if (!isInitialized) {
-            throw IllegalStateException("SessionManager no ha sido inicializado. Llame a init() primero.")
-        }
+    fun saveLastSyncTimestamp(entityType: String, timestamp: Long) {
+        val editor = sharedPreferences.edit()
+        editor.putLong("$KEY_LAST_SYNC_PREFIX$entityType", timestamp)
+        editor.apply()
+        
+        Log.d(TAG, "Marca de tiempo de sincronización guardada para $entityType: $timestamp")
+    }
+    
+    /**
+     * Obtiene la marca de tiempo de la última sincronización.
+     *
+     * @param entityType Tipo de entidad sincronizada.
+     * @return Marca de tiempo de la última sincronización o 0 si no hay ninguna guardada.
+     */
+    fun getLastSyncTimestamp(entityType: String): Long {
+        return sharedPreferences.getLong("$KEY_LAST_SYNC_PREFIX$entityType", 0)
     }
 }

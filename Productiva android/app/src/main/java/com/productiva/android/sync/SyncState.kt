@@ -1,34 +1,75 @@
 package com.productiva.android.sync
 
 /**
- * Clase sellada que representa el estado de una operación de sincronización.
- * Se utiliza para actualizar la UI según el estado actual del proceso.
+ * Clase que representa el estado de sincronización actual.
+ * Almacena información sobre las sincronizaciones realizadas y pendientes.
+ *
+ * @property isRunning Indica si la sincronización está en curso.
+ * @property lastSyncAttemptTime Última vez que se intentó sincronizar (timestamp).
+ * @property lastSuccessfulSyncTime Última vez que se sincronizó correctamente (timestamp).
+ * @property lastError Último error ocurrido durante la sincronización.
+ * @property pendingChangesCount Número de cambios pendientes de sincronización.
  */
-sealed class SyncState {
+data class SyncState(
+    var isRunning: Boolean = false,
+    var lastSyncAttemptTime: Long = 0,
+    var lastSuccessfulSyncTime: Long = 0,
+    var lastError: String? = null,
+    var pendingChangesCount: Int = 0
+) {
     /**
-     * Estado inicial o en reposo.
+     * Indica si hay una sincronización en curso.
+     *
+     * @return true si hay una sincronización en curso, false en caso contrario.
      */
-    object Idle : SyncState()
+    fun isSyncing(): Boolean = isRunning
     
     /**
-     * Sincronización en progreso.
+     * Indica si nunca se ha sincronizado.
      *
-     * @property progress Porcentaje de progreso (0-100).
+     * @return true si nunca se ha sincronizado, false en caso contrario.
      */
-    data class Syncing(val progress: Int = 0) : SyncState()
+    fun neverSynced(): Boolean = lastSuccessfulSyncTime == 0L
     
     /**
-     * Sincronización completada con éxito.
+     * Indica si hay cambios pendientes de sincronización.
      *
-     * @property result Resultado detallado de la sincronización.
+     * @return true si hay cambios pendientes, false en caso contrario.
      */
-    data class Completed(val result: SyncResult.Success) : SyncState()
+    fun hasPendingChanges(): Boolean = pendingChangesCount > 0
     
     /**
-     * Error durante la sincronización.
+     * Indica si la última sincronización falló.
      *
-     * @property message Mensaje de error.
-     * @property exception Excepción que causó el error (opcional).
+     * @return true si la última sincronización falló, false en caso contrario.
      */
-    data class Error(val message: String, val exception: Throwable? = null) : SyncState()
+    fun lastSyncFailed(): Boolean = lastError != null
+    
+    /**
+     * Obtiene el último error de sincronización.
+     *
+     * @return Mensaje de error o null si no hay error.
+     */
+    fun getLastErrorMessage(): String? = lastError
+    
+    /**
+     * Formatea el estado de sincronización como un texto legible.
+     *
+     * @return Texto descriptivo del estado de sincronización.
+     */
+    fun getStatusText(): String {
+        return when {
+            isRunning -> "Sincronizando..."
+            neverSynced() -> "Nunca sincronizado"
+            lastSyncFailed() -> "Error: $lastError"
+            else -> {
+                val syncTime = android.text.format.DateUtils.getRelativeTimeSpanString(
+                    lastSuccessfulSyncTime,
+                    System.currentTimeMillis(),
+                    android.text.format.DateUtils.MINUTE_IN_MILLIS
+                )
+                "Última sincronización: $syncTime"
+            }
+        }
+    }
 }

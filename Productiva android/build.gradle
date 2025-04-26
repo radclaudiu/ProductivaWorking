@@ -1,39 +1,22 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
 buildscript {
-    ext {
-        kotlin_version = '1.7.20'
-        nav_version = '2.5.3'
-        room_version = '2.5.0'
-        retrofit_version = '2.9.0'
-        lifecycle_version = '2.5.1'
-        coroutines_version = '1.6.4'
-    }
-    
-    repositories {
-        google()
-        mavenCentral()
-        maven { url 'https://jitpack.io' }
-        // Repositorio Brother para el SDK de impresión
-        maven { url 'https://raw.githubusercontent.com/brother-industries/BrotherPrintLibrary/master/implementations' }
-    }
-    
+    // Estas dependencias son para el script de compilación mismo, no para tu proyecto
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.3.1'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath "androidx.navigation:navigation-safe-args-gradle-plugin:$nav_version"
+        classpath 'com.android.tools.build:gradle:8.2.0'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.9.0"
+        classpath "androidx.navigation:navigation-safe-args-gradle-plugin:2.7.5"
+        classpath "org.jetbrains.kotlin:kotlin-serialization:1.9.0"
     }
 }
 
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-        maven { url 'https://jitpack.io' }
-        // Repositorio Brother para el SDK de impresión
-        maven { url 'https://raw.githubusercontent.com/brother-industries/BrotherPrintLibrary/master/implementations' }
-    }
+// Configuración para todos los proyectos
+plugins {
+    // NO añadas repositorios aquí - deben ir en settings.gradle
+    id 'com.android.application' version '8.2.0' apply false
+    id 'com.android.library' version '8.2.0' apply false
+    id 'org.jetbrains.kotlin.android' version '1.9.0' apply false
 }
 
-task clean(type: Delete) {
-    delete rootProject.buildDir
+// Limpiar tareas para todos los proyectos
+tasks.register('clean', Delete) {
+    delete rootProject.layout.buildDirectory
 }

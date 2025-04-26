@@ -8,267 +8,250 @@ import android.view.View
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SearchView
 import androidx.appcompat.widget.Toolbar
+import androidx.core.view.GravityCompat
+import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import com.productiva.android.ProductivaApplication
+import com.google.android.material.navigation.NavigationView
 import com.productiva.android.R
-import com.productiva.android.adapters.TaskListAdapter
+import com.productiva.android.adapters.TaskAdapter
 import com.productiva.android.model.Task
 import com.productiva.android.model.User
-import com.productiva.android.repository.TaskRepository
-import com.productiva.android.repository.UserRepository
+import com.productiva.android.viewmodel.MainViewModel
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 /**
- * Actividad principal que muestra la lista de tareas del usuario
+ * Activity principal que muestra la lista de tareas
  */
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), TaskAdapter.OnTaskClickListener, NavigationView.OnNavigationItemSelectedListener {
     
+    private lateinit var viewModel: MainViewModel
+    
+    // Componentes de UI
+    private lateinit var drawerLayout: DrawerLayout
+    private lateinit var navigationView: NavigationView
     private lateinit var toolbar: Toolbar
-    private lateinit var textViewUserInfo: TextView
-    private lateinit var recyclerViewTasks: RecyclerView
-    private lateinit var swipeRefreshLayout: SwipeRefreshLayout
+    private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
-    private lateinit var textViewEmpty: TextView
-    private lateinit var fabSync: FloatingActionButton
-    private lateinit var taskListAdapter: TaskListAdapter
+    private lateinit var swipeRefreshLayout: SwipeRefreshLayout
+    private lateinit var emptyView: TextView
+    private lateinit var fab: FloatingActionButton
+    private lateinit var searchView: SearchView
     
-    private lateinit var taskRepository: TaskRepository
-    private lateinit var userRepository: UserRepository
-    private lateinit var app: ProductivaApplication
+    // Adaptador para la lista de tareas
+    private lateinit var taskAdapter: TaskAdapter
     
+    // Usuario actual
     private var currentUser: User? = null
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         
-        // Obtener instancia de la aplicación
-        app = application as ProductivaApplication
+        // Inicializar ViewModel
+        viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         
-        // Inicializar repositorios
-        taskRepository = app.taskRepository
-        userRepository = UserRepository(
-            apiService = app.apiService,
-            userDao = app.database.userDao(),
-            context = this
-        )
+        // Configurar componentes de UI
+        setupUI()
         
-        // Inicializar vistas
+        // Configurar observadores
+        setupObservers()
+    }
+    
+    /**
+     * Configura las referencias y eventos de UI
+     */
+    private fun setupUI() {
         toolbar = findViewById(R.id.toolbar)
-        textViewUserInfo = findViewById(R.id.textViewUserInfo)
-        recyclerViewTasks = findViewById(R.id.recyclerViewTasks)
-        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
-        progressBar = findViewById(R.id.progressBar)
-        textViewEmpty = findViewById(R.id.textViewEmpty)
-        fabSync = findViewById(R.id.fabSync)
-        
-        // Configurar toolbar
         setSupportActionBar(toolbar)
-        supportActionBar?.title = "Mis Tareas"
+        
+        drawerLayout = findViewById(R.id.drawer_layout)
+        navigationView = findViewById(R.id.nav_view)
+        recyclerView = findViewById(R.id.tasksRecyclerView)
+        progressBar = findViewById(R.id.progressBar)
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
+        emptyView = findViewById(R.id.emptyView)
+        fab = findViewById(R.id.fab)
+        
+        // Configurar drawer
+        val toggle = ActionBarDrawerToggle(
+            this,
+            drawerLayout,
+            toolbar,
+            R.string.navigation_drawer_open,
+            R.string.navigation_drawer_close
+        )
+        drawerLayout.addDrawerListener(toggle)
+        toggle.syncState()
+        
+        navigationView.setNavigationItemSelectedListener(this)
         
         // Configurar RecyclerView
-        recyclerViewTasks.layoutManager = LinearLayoutManager(this)
-        taskListAdapter = TaskListAdapter { task ->
-            onTaskSelected(task)
-        }
-        recyclerViewTasks.adapter = taskListAdapter
+        recyclerView.layoutManager = LinearLayoutManager(this)
+        taskAdapter = TaskAdapter(this)
+        recyclerView.adapter = taskAdapter
         
         // Configurar SwipeRefreshLayout
         swipeRefreshLayout.setOnRefreshListener {
-            loadTasks()
+            viewModel.syncTasks()
         }
         
-        // Configurar FAB de sincronización
-        fabSync.setOnClickListener {
-            synchronizeTasks()
-        }
-        
-        // Verificar sesión
-        checkActiveSession()
-        
-        // Cargar información del usuario y tareas
-        loadUserInfo()
-        loadTasks()
-    }
-    
-    /**
-     * Verifica si hay una sesión activa
-     */
-    private fun checkActiveSession() {
-        if (!app.sessionManager.isLoggedIn() || !app.sessionManager.isUserSelected()) {
-            // No hay sesión activa o no hay usuario seleccionado, volver a login
-            goToLogin()
-            return
+        // Configurar FAB
+        fab.setOnClickListener {
+            goToScannerOrCamera()
         }
     }
     
     /**
-     * Carga la información del usuario seleccionado
+     * Configura los observadores de LiveData
      */
-    private fun loadUserInfo() {
-        val userId = app.sessionManager.getSelectedUserId()
-        if (userId == -1) {
-            goToLogin()
-            return
-        }
-        
-        val userDao = app.database.userDao()
-        userDao.getUserById(userId).observe(this) { user ->
-            if (user != null) {
-                currentUser = user
-                textViewUserInfo.text = "Usuario: ${user.name ?: user.username}"
-            } else {
-                goToLogin()
-            }
-        }
-    }
-    
-    /**
-     * Carga las tareas del usuario
-     */
-    private fun loadTasks() {
-        val token = app.sessionManager.getAuthToken()
-        val locationId = app.sessionManager.getLocationId()
-        
-        if (token == null) {
-            goToLogin()
-            return
-        }
-        
-        setLoading(true)
-        
-        lifecycleScope.launch {
-            try {
-                val result = taskRepository.refreshTasks(token, locationId)
-                
-                if (result.isSuccess) {
-                    val tasks = result.getOrNull() ?: emptyList()
-                    
-                    if (tasks.isEmpty()) {
-                        showEmptyState("No hay tareas disponibles")
-                    } else {
-                        hideEmptyState()
-                        taskListAdapter.updateTaskList(tasks)
-                    }
-                } else {
-                    val error = result.exceptionOrNull()?.message ?: "Error desconocido"
-                    showEmptyState(error)
-                }
-            } catch (e: Exception) {
-                showEmptyState("Error de conexión: ${e.message}")
-            } finally {
-                setLoading(false)
+    private fun setupObservers() {
+        // Observar estado de carga
+        viewModel.isLoading.observe(this) { isLoading ->
+            progressBar.visibility = if (isLoading && !swipeRefreshLayout.isRefreshing) View.VISIBLE else View.GONE
+            if (!isLoading) {
                 swipeRefreshLayout.isRefreshing = false
             }
         }
-    }
-    
-    /**
-     * Sincroniza los completados de tareas pendientes
-     */
-    private fun synchronizeTasks() {
-        val token = app.sessionManager.getAuthToken()
         
-        if (token == null) {
-            goToLogin()
-            return
+        // Observar mensajes de error
+        viewModel.errorMessage.observe(this) { errorMessage ->
+            if (errorMessage.isNotEmpty()) {
+                Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show()
+            }
         }
         
-        setLoading(true)
+        // Observar tareas filtradas
+        viewModel.filteredTasks.observe(this) { tasks ->
+            updateTaskList(tasks)
+        }
         
+        // Observar usuario actual
         lifecycleScope.launch {
-            try {
-                val result = taskRepository.syncPendingTaskCompletions(token)
-                
-                if (result.isSuccess) {
-                    val count = result.getOrNull() ?: 0
-                    Toast.makeText(
-                        this@MainActivity,
-                        "Sincronización completada: $count tareas actualizadas",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    
-                    // Recargar tareas
-                    loadTasks()
-                } else {
-                    val error = result.exceptionOrNull()?.message ?: "Error desconocido"
-                    Toast.makeText(this@MainActivity, error, Toast.LENGTH_LONG).show()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(
-                    this@MainActivity,
-                    "Error de sincronización: ${e.message}",
-                    Toast.LENGTH_LONG
-                ).show()
-            } finally {
-                setLoading(false)
+            viewModel.currentUser.collect { user ->
+                currentUser = user
+                updateUserInformation(user)
             }
         }
     }
     
     /**
-     * Maneja la selección de una tarea
+     * Actualiza la lista de tareas en el adaptador
      */
-    private fun onTaskSelected(task: Task) {
+    private fun updateTaskList(tasks: List<Task>) {
+        taskAdapter.submitList(tasks)
+        
+        // Mostrar vista vacía si no hay tareas
+        if (tasks.isEmpty()) {
+            emptyView.visibility = View.VISIBLE
+            recyclerView.visibility = View.GONE
+        } else {
+            emptyView.visibility = View.GONE
+            recyclerView.visibility = View.VISIBLE
+        }
+    }
+    
+    /**
+     * Actualiza la información del usuario en el drawer
+     */
+    private fun updateUserInformation(user: User?) {
+        val headerView = navigationView.getHeaderView(0)
+        val nameTextView = headerView.findViewById<TextView>(R.id.user_name)
+        val emailTextView = headerView.findViewById<TextView>(R.id.user_email)
+        val companyTextView = headerView.findViewById<TextView>(R.id.user_company)
+        
+        user?.let {
+            nameTextView.text = user.name
+            emailTextView.text = user.email
+            companyTextView.text = user.companyName
+            
+            // Actualizar título de la toolbar
+            title = getString(R.string.app_name)
+        }
+    }
+    
+    /**
+     * Navega a la actividad de escaneo o cámara
+     */
+    private fun goToScannerOrCamera() {
+        // Implementación pendiente - podría ser para escanear códigos QR/barcode o tomar fotos
+        Toast.makeText(this, "Funcionalidad de escáner pendiente", Toast.LENGTH_SHORT).show()
+    }
+    
+    /**
+     * Maneja el clic en una tarea
+     */
+    override fun onTaskClick(task: Task) {
         val intent = Intent(this, TaskDetailActivity::class.java)
         intent.putExtra("task_id", task.id)
         startActivity(intent)
     }
     
     /**
-     * Muestra el estado vacío con un mensaje
+     * Infla el menú de opciones
      */
-    private fun showEmptyState(message: String) {
-        textViewEmpty.text = message
-        textViewEmpty.visibility = View.VISIBLE
-        recyclerViewTasks.visibility = View.GONE
-    }
-    
-    /**
-     * Oculta el estado vacío
-     */
-    private fun hideEmptyState() {
-        textViewEmpty.visibility = View.GONE
-        recyclerViewTasks.visibility = View.VISIBLE
-    }
-    
-    /**
-     * Actualiza la UI para mostrar/ocultar indicadores de carga
-     */
-    private fun setLoading(loading: Boolean) {
-        progressBar.visibility = if (loading) View.VISIBLE else View.GONE
-        fabSync.isEnabled = !loading
-    }
-    
-    /**
-     * Redirige a la pantalla de login
-     */
-    private fun goToLogin() {
-        val intent = Intent(this, LoginActivity::class.java)
-        startActivity(intent)
-        finish()
-    }
-    
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.menu_main, menu)
+        menuInflater.inflate(R.menu.main_menu, menu)
+        
+        // Configurar SearchView
+        val searchItem = menu.findItem(R.id.action_search)
+        searchView = searchItem.actionView as SearchView
+        
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                viewModel.setSearchQuery(query ?: "")
+                return true
+            }
+            
+            override fun onQueryTextChange(newText: String?): Boolean {
+                viewModel.setSearchQuery(newText ?: "")
+                return true
+            }
+        })
+        
         return true
     }
     
+    /**
+     * Maneja las selecciones en el menú de opciones
+     */
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         return when (item.itemId) {
-            R.id.action_logout -> {
-                confirmLogout()
+            R.id.action_sync -> {
+                viewModel.syncTasks()
                 true
             }
-            R.id.action_change_user -> {
-                changeUser()
+            R.id.action_filter_all -> {
+                viewModel.setTaskFilter(MainViewModel.TaskFilter.ALL)
+                true
+            }
+            R.id.action_filter_pending -> {
+                viewModel.setTaskFilter(MainViewModel.TaskFilter.PENDING)
+                true
+            }
+            R.id.action_filter_in_progress -> {
+                viewModel.setTaskFilter(MainViewModel.TaskFilter.IN_PROGRESS)
+                true
+            }
+            R.id.action_filter_completed -> {
+                viewModel.setTaskFilter(MainViewModel.TaskFilter.COMPLETED)
+                true
+            }
+            R.id.action_filter_today -> {
+                viewModel.setTaskFilter(MainViewModel.TaskFilter.TODAY)
+                true
+            }
+            R.id.action_filter_overdue -> {
+                viewModel.setTaskFilter(MainViewModel.TaskFilter.OVERDUE)
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -276,36 +259,56 @@ class MainActivity : AppCompatActivity() {
     }
     
     /**
-     * Muestra un diálogo de confirmación para cerrar sesión
+     * Maneja las selecciones en el drawer
      */
-    private fun confirmLogout() {
-        AlertDialog.Builder(this)
-            .setTitle("Cerrar sesión")
-            .setMessage("¿Está seguro que desea cerrar sesión?")
-            .setPositiveButton("Cerrar sesión") { _, _ ->
-                userRepository.logout()
-                goToLogin()
+    override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.nav_tasks -> {
+                // Ya estamos en la pantalla de tareas
             }
-            .setNegativeButton("Cancelar", null)
-            .show()
+            R.id.nav_print_label -> {
+                // Ir a la pantalla de impresión de etiquetas
+                val intent = Intent(this, PrintLabelActivity::class.java)
+                startActivity(intent)
+            }
+            R.id.nav_printers -> {
+                // Ir a la pantalla de gestión de impresoras
+                val intent = Intent(this, PrinterSettingsActivity::class.java)
+                startActivity(intent)
+            }
+            R.id.nav_templates -> {
+                // Ir a la pantalla de gestión de plantillas
+                val intent = Intent(this, LabelTemplatesActivity::class.java)
+                startActivity(intent)
+            }
+            R.id.nav_change_user -> {
+                // Volver a la pantalla de selección de usuario
+                val intent = Intent(this, UserSelectionActivity::class.java)
+                startActivity(intent)
+                finish()
+            }
+            R.id.nav_logout -> {
+                // Cerrar sesión y volver a login
+                viewModel.logout()
+                val intent = Intent(this, LoginActivity::class.java)
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
+                startActivity(intent)
+                finish()
+            }
+        }
+        
+        drawerLayout.closeDrawer(GravityCompat.START)
+        return true
     }
     
     /**
-     * Cambia de usuario sin cerrar la sesión
+     * Comportamiento al pulsar el botón Atrás
      */
-    private fun changeUser() {
-        // Solo limpia la selección de usuario pero mantiene la sesión
-        app.sessionManager.saveSelectedUserId(-1)
-        app.sessionManager.saveLocationId(-1)
-        
-        val intent = Intent(this, UserSelectionActivity::class.java)
-        startActivity(intent)
-        finish()
-    }
-    
-    override fun onResume() {
-        super.onResume()
-        // Recargar tareas al volver a la actividad
-        loadTasks()
+    override fun onBackPressed() {
+        if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
+            drawerLayout.closeDrawer(GravityCompat.START)
+        } else {
+            super.onBackPressed()
+        }
     }
 }

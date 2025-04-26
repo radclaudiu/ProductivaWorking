@@ -99,15 +99,17 @@ document.addEventListener('DOMContentLoaded', function() {
         return new Uint8Array(command);
     };
     
-    // Iniciar la impresión Bluetooth
-    bluetoothPrintBtn.addEventListener("click", async function(e) {
-        e.preventDefault();
+    // Iniciar la impresión Bluetooth solo en dispositivos móviles
+    if (isMobileDevice()) {
+        // Asegurarnos que no hay otros listeners
+        bluetoothPrintBtn.replaceWith(bluetoothPrintBtn.cloneNode(true));
         
-        // Verificar si estamos en un dispositivo móvil
-        if (!isMobileDevice()) {
-            showBluetoothMessage("La impresión Bluetooth solo está disponible en dispositivos móviles", true);
-            return;
-        }
+        // Obtener la referencia al botón nuevamente
+        const newBluetoothBtn = document.getElementById("bluetooth-print-btn");
+        
+        // Aplicar la lógica de impresión Bluetooth
+        newBluetoothBtn.addEventListener("click", async function(e) {
+            e.preventDefault();
         
         try {
             // Verificar si el navegador soporta Web Bluetooth API
@@ -232,7 +234,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Desconectar
             device.gatt.disconnect();
-            
+        
         } catch (error) {
             console.error("Error de impresión Bluetooth:", error);
             
@@ -252,5 +254,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error("Detalles completos del error:", error);
             }
         }
-    });
+        });
+    }
 });

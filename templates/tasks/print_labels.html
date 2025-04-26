@@ -164,21 +164,12 @@
     </style>
 </head>
 <body>
-    <!-- Controles de impresión - solo visibles en pantalla -->
+    <!-- Controles de impresión simplificados - solo visibles en pantalla -->
     <div class="print-controls">
-        <h4>Opciones de Impresión</h4>
+        <h4>Impresión de Etiqueta</h4>
         <div class="row g-3 justify-content-center">
             <div class="col-auto">
-                <button id="browser-print-btn" class="btn btn-primary">Imprimir con Navegador</button>
-            </div>
-            <div class="col-auto">
-                <button id="brother-print-btn" class="btn btn-success">Imprimir con Brother TD-40</button>
-            </div>
-            <div class="col-auto">
-                <button id="bluetooth-print-btn" class="btn btn-info">Imprimir con Bluetooth</button>
-            </div>
-            <div class="col-auto">
-                <button id="config-printer-btn" class="btn btn-outline-secondary">⚙️ Configurar Impresora</button>
+                <button id="bluetooth-print-btn" class="btn btn-lg btn-primary">Imprimir Etiqueta</button>
             </div>
         </div>
         <div id="print-message" class="alert alert-info mt-3" style="display: none;"></div>
@@ -225,29 +216,21 @@
     <script>
         // Inicializar controles
         document.addEventListener('DOMContentLoaded', function() {
-            // Configurar botón de impresión del navegador
-            const browserPrintBtn = document.getElementById('browser-print-btn');
-            if (browserPrintBtn) {
-                browserPrintBtn.addEventListener('click', function() {
+            // Detectar si estamos en móvil para mostrar/ocultar opciones
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            // En dispositivos de escritorio, usar impresión del navegador normal
+            if (!isMobile && document.getElementById('bluetooth-print-btn')) {
+                // Modificar el botón para usar impresión nativa
+                const printBtn = document.getElementById('bluetooth-print-btn');
+                printBtn.innerHTML = "Imprimir Etiqueta";
+                printBtn.addEventListener('click', function() {
                     window.print();
                 });
             }
             
-            // El script brother-printer.js ya maneja los botones Brother
-            // El script brother-bluetooth.js maneja la impresión Bluetooth
-            
-            // Detectar si estamos en móvil para mostrar/ocultar opciones
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            
-            // En dispositivos de escritorio, ocultar la opción de Bluetooth
-            if (!isMobile && document.getElementById('bluetooth-print-btn')) {
-                document.getElementById('bluetooth-print-btn').style.display = 'none';
-            }
-            
-            // En dispositivos móviles, destacar la opción de Bluetooth
-            if (isMobile && document.getElementById('bluetooth-print-btn')) {
-                document.getElementById('bluetooth-print-btn').classList.add('btn-lg');
-            }
+            // En dispositivos móviles, siempre usar la impresión Bluetooth
+            // El script brother-bluetooth.js ya maneja la impresión automáticamente
         });
     </script>
 </body>

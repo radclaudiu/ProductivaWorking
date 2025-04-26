@@ -5,171 +5,137 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
-import java.io.IOException
-import java.security.GeneralSecurityException
 
 /**
- * Gestor de sesión para manejar la autenticación y tokens de usuario.
+ * Administrador de sesión para la aplicación.
+ * Gestiona la autenticación y almacenamiento seguro de credenciales.
  */
-class SessionManager(private val context: Context) {
+class SessionManager(context: Context) {
     
     private val TAG = "SessionManager"
     
-    // Constantes para las claves de preferencias
-    companion object {
-        private const val PREF_NAME = "productiva_session"
-        private const val KEY_AUTH_TOKEN = "auth_token"
-        private const val KEY_USER_ID = "user_id"
-        private const val KEY_USERNAME = "username"
-        private const val KEY_EXPIRES_AT = "expires_at"
-        private const val KEY_REFRESH_TOKEN = "refresh_token"
-        private const val KEY_SELECTED_LOCATION_ID = "selected_location_id"
-        private const val KEY_SELECTED_COMPANY_ID = "selected_company_id"
-    }
+    // Preferencias encriptadas para datos sensibles
+    private val encryptedPreferences: SharedPreferences
     
-    // Preferencias cifradas para almacenamiento seguro
-    private val preferences: SharedPreferences by lazy {
-        try {
-            // Crear clave maestra para cifrado
-            val masterKey = MasterKey.Builder(context)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build()
+    // Preferencias normales para datos no sensibles
+    private val preferences: SharedPreferences
+    
+    init {
+        // Configurar preferencias encriptadas
+        val masterKey = MasterKey.Builder(context)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
             
-            // Crear preferencias cifradas
-            EncryptedSharedPreferences.create(
-                context,
-                PREF_NAME,
-                masterKey,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            )
-        } catch (e: GeneralSecurityException) {
-            Log.e(TAG, "Error al crear preferencias cifradas", e)
-            // Fallback a preferencias normales en caso de error
-            context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-        } catch (e: IOException) {
-            Log.e(TAG, "Error de IO al crear preferencias cifradas", e)
-            // Fallback a preferencias normales en caso de error
-            context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
-        }
-    }
-    
-    /**
-     * Guarda la información de sesión del usuario.
-     */
-    fun saveUserSession(
-        authToken: String,
-        userId: Int,
-        username: String,
-        expiresAt: Long,
-        refreshToken: String? = null
-    ) {
-        preferences.edit().apply {
-            putString(KEY_AUTH_TOKEN, authToken)
-            putInt(KEY_USER_ID, userId)
-            putString(KEY_USERNAME, username)
-            putLong(KEY_EXPIRES_AT, expiresAt)
-            refreshToken?.let { putString(KEY_REFRESH_TOKEN, it) }
-        }.apply()
+        encryptedPreferences = EncryptedSharedPreferences.create(
+            context,
+            ENCRYPTED_PREF_FILE,
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
         
-        Log.d(TAG, "Sesión de usuario guardada: $username (ID: $userId)")
+        // Configurar preferencias normales
+        preferences = context.getSharedPreferences(PREF_FILE, Context.MODE_PRIVATE)
+        
+        Log.d(TAG, "SessionManager inicializado")
     }
     
     /**
-     * Guarda solo el token de autenticación.
+     * Guarda los datos de la sesión después de un login exitoso
      */
-    fun saveAuthToken(token: String) {
-        preferences.edit().putString(KEY_AUTH_TOKEN, token).apply()
+    fun saveLoginSession(userId: Int, username: String, token: String) {
+        encryptedPreferences.edit().apply {
+            putString(KEY_AUTH_TOKEN, token)
+            putInt(KEY_USER_ID, userId)
+            apply()
+        }
+        
+        preferences.edit().apply {
+            putString(KEY_USERNAME, username)
+            putLong(KEY_LOGIN_TIME, System.currentTimeMillis())
+            putBoolean(KEY_IS_LOGGED_IN, true)
+            apply()
+        }
+        
+        Log.d(TAG, "Sesión guardada para el usuario: $username")
     }
     
     /**
-     * Obtiene el token de autenticación actual.
+     * Cierra la sesión y elimina los datos de autenticación
+     */
+    fun logout() {
+        encryptedPreferences.edit().apply {
+            remove(KEY_AUTH_TOKEN)
+            remove(KEY_USER_ID)
+            apply()
+        }
+        
+        preferences.edit().apply {
+            putBoolean(KEY_IS_LOGGED_IN, false)
+            apply()
+        }
+        
+        Log.d(TAG, "Sesión cerrada")
+    }
+    
+    /**
+     * Verifica si hay una sesión activa
+     */
+    fun isLoggedIn(): Boolean {
+        return preferences.getBoolean(KEY_IS_LOGGED_IN, false)
+    }
+    
+    /**
+     * Obtiene el token de autenticación
      */
     fun getAuthToken(): String? {
-        return preferences.getString(KEY_AUTH_TOKEN, null)
+        return encryptedPreferences.getString(KEY_AUTH_TOKEN, null)
     }
     
     /**
-     * Obtiene el ID del usuario actual.
+     * Obtiene el ID del usuario actual
      */
-    fun getUserId(): Int {
-        return preferences.getInt(KEY_USER_ID, -1)
+    fun getUserId(): Int? {
+        val userId = encryptedPreferences.getInt(KEY_USER_ID, -1)
+        return if (userId != -1) userId else null
     }
     
     /**
-     * Obtiene el nombre de usuario actual.
+     * Obtiene el nombre de usuario
      */
     fun getUsername(): String? {
         return preferences.getString(KEY_USERNAME, null)
     }
     
     /**
-     * Obtiene la fecha de expiración del token.
+     * Guarda el timestamp de la última sincronización exitosa
      */
-    fun getExpiresAt(): Long {
-        return preferences.getLong(KEY_EXPIRES_AT, 0)
+    fun saveLastSyncTimestamp(timestamp: Long) {
+        preferences.edit().apply {
+            putLong(KEY_LAST_SYNC, timestamp)
+            apply()
+        }
     }
     
     /**
-     * Obtiene el token de actualización, si existe.
+     * Obtiene el timestamp de la última sincronización
      */
-    fun getRefreshToken(): String? {
-        return preferences.getString(KEY_REFRESH_TOKEN, null)
+    fun getLastSyncTimestamp(): Long {
+        return preferences.getLong(KEY_LAST_SYNC, 0)
     }
     
-    /**
-     * Comprueba si el usuario está autenticado.
-     */
-    fun isLoggedIn(): Boolean {
-        val token = getAuthToken()
-        val expiresAt = getExpiresAt()
-        val currentTime = System.currentTimeMillis()
+    companion object {
+        private const val PREF_FILE = "productiva_preferences"
+        private const val ENCRYPTED_PREF_FILE = "productiva_secure_preferences"
         
-        // Verificar si hay token y no ha expirado
-        return !token.isNullOrEmpty() && (expiresAt == 0L || expiresAt > currentTime)
-    }
-    
-    /**
-     * Cierra la sesión del usuario.
-     */
-    fun logout() {
-        preferences.edit().clear().apply()
-        Log.d(TAG, "Sesión de usuario cerrada")
-    }
-    
-    /**
-     * Guarda la ubicación seleccionada por el usuario.
-     */
-    fun saveSelectedLocationId(locationId: Int) {
-        preferences.edit().putInt(KEY_SELECTED_LOCATION_ID, locationId).apply()
-    }
-    
-    /**
-     * Obtiene la ubicación seleccionada por el usuario.
-     */
-    fun getSelectedLocationId(): Int {
-        return preferences.getInt(KEY_SELECTED_LOCATION_ID, -1)
-    }
-    
-    /**
-     * Guarda la empresa seleccionada por el usuario.
-     */
-    fun saveSelectedCompanyId(companyId: Int) {
-        preferences.edit().putInt(KEY_SELECTED_COMPANY_ID, companyId).apply()
-    }
-    
-    /**
-     * Obtiene la empresa seleccionada por el usuario.
-     */
-    fun getSelectedCompanyId(): Int {
-        return preferences.getInt(KEY_SELECTED_COMPANY_ID, -1)
-    }
-    
-    /**
-     * Verifica si el token actual ha expirado.
-     */
-    fun isTokenExpired(): Boolean {
-        val expiresAt = getExpiresAt()
-        return expiresAt > 0 && System.currentTimeMillis() >= expiresAt
+        // Claves para datos de sesión
+        private const val KEY_AUTH_TOKEN = "auth_token"
+        private const val KEY_USER_ID = "user_id"
+        private const val KEY_USERNAME = "username"
+        private const val KEY_LOGIN_TIME = "login_time"
+        private const val KEY_IS_LOGGED_IN = "is_logged_in"
+        
+        // Claves para sincronización
+        private const val KEY_LAST_SYNC = "last_sync_timestamp"
     }
 }

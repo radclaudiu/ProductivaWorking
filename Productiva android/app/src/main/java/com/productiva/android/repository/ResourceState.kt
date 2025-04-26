@@ -1,44 +1,61 @@
 package com.productiva.android.repository
 
 /**
- * Clase sellada que representa el estado actual de un recurso que se está cargando.
- * Utilizada para comunicar el estado de carga, éxito o error a la UI.
- *
- * @param T Tipo de datos del recurso.
- * @property data Datos del recurso (pueden ser nulos).
+ * Clase genérica que representa el estado de un recurso durante operaciones asíncronas.
+ * Utilizada para transmitir el estado de carga, éxito, error o inactividad.
+ * 
+ * @param T el tipo de datos que se maneja en este estado
+ * @property data los datos opcionales asociados con este estado
+ * @property message mensaje opcional para estados de error o información
  */
 sealed class ResourceState<T>(
-    open val data: T? = null
+    open val data: T? = null,
+    open val message: String? = null
 ) {
     /**
-     * Estado de carga.
-     * Los datos pueden contener el último valor conocido mientras se carga nueva información.
-     *
-     * @property data Datos actuales (pueden ser nulos).
+     * Estado inactivo: no se está realizando ninguna operación.
      */
-    class Loading<T>(override val data: T? = null) : ResourceState<T>(data)
+    class Idle<T> : ResourceState<T>()
     
     /**
-     * Estado de éxito con datos.
-     *
-     * @property data Datos cargados exitosamente.
-     * @property isFromCache Indica si los datos provienen de caché local (sin verificación reciente del servidor).
+     * Estado de carga: se está realizando una operación asíncrona.
+     * 
+     * @param data datos opcionales que pueden estar disponibles durante la carga
      */
-    class Success<T>(
-        override val data: T,
-        val isFromCache: Boolean = false
-    ) : ResourceState<T>(data)
+    class Loading<T>(override val data: T? = null) : ResourceState<T>()
     
     /**
-     * Estado de error.
-     *
-     * @property message Mensaje de error.
-     * @property errorCode Código de error (opcional).
-     * @property data Datos actuales que podrían estar disponibles a pesar del error.
+     * Estado de éxito: la operación se completó correctamente.
+     * 
+     * @param data los datos resultantes de la operación
      */
-    class Error<T>(
-        val message: String,
-        val errorCode: Int? = null,
-        override val data: T? = null
-    ) : ResourceState<T>(data)
+    class Success<T>(override val data: T) : ResourceState<T>()
+    
+    /**
+     * Estado de error: la operación falló.
+     * 
+     * @param message descripción del error
+     * @param data datos opcionales que pueden estar disponibles a pesar del error
+     */
+    class Error<T>(override val message: String, override val data: T? = null) : ResourceState<T>()
+    
+    /**
+     * Determina si el estado actual es de tipo Loading.
+     */
+    fun isLoading(): Boolean = this is Loading
+    
+    /**
+     * Determina si el estado actual es de tipo Success.
+     */
+    fun isSuccess(): Boolean = this is Success
+    
+    /**
+     * Determina si el estado actual es de tipo Error.
+     */
+    fun isError(): Boolean = this is Error
+    
+    /**
+     * Determina si el estado actual es de tipo Idle.
+     */
+    fun isIdle(): Boolean = this is Idle
 }

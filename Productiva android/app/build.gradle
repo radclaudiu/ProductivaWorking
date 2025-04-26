@@ -129,8 +129,8 @@ dependencies {
     // Biblioteca para firmas digitales
     implementation 'com.github.gcacace:signature-pad:1.3.1'
     
-    // Brother Print SDK Library (hipotético - agregar la real)
-    implementation files('libs/brotherprintsdk.jar')
+    // Brother Print SDK Library (comentado hasta que se proporcione el archivo real)
+    // implementation files('libs/brotherprintsdk.jar')
     
     // Unit y UI Testing
     testImplementation 'junit:junit:4.13.2'
@@ -146,5 +146,6 @@ dependencies {
 
 // Configuración para Kotlin Serialization
 kotlin {
-    jvmToolchain(8)
+    // Usando compatibilidad con Java 8 a través de compileOptions en lugar de jvmToolchain
+    // Esto evita el error de toolchain en máquinas sin JDK 8 específico
 }

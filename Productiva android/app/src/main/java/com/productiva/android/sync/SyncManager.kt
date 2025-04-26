@@ -1,187 +1,427 @@
 package com.productiva.android.sync
 
-import android.app.job.JobInfo
-import android.app.job.JobScheduler
-import android.content.ComponentName
 import android.content.Context
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
-import android.os.PersistableBundle
 import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import java.util.concurrent.TimeUnit
+import com.productiva.android.database.AppDatabase
+import com.productiva.android.network.ApiService
+import com.productiva.android.network.RetrofitClient
+import com.productiva.android.repository.LabelTemplateRepository
+import com.productiva.android.repository.ProductRepository
+import com.productiva.android.repository.ResourceState
+import com.productiva.android.repository.TaskRepository
+import com.productiva.android.utils.ConnectivityMonitor
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
- * Administrador de sincronización que coordina las operaciones de sincronización.
+ * Gestor de sincronización para mantener los datos locales actualizados con el servidor.
+ * Maneja la lógica de sincronización de tareas, productos y plantillas de etiquetas.
  */
 class SyncManager(private val context: Context) {
-    
     private val TAG = "SyncManager"
     
-    // Estado actual de la sincronización
-    private val _syncState = MutableLiveData<SyncState>()
-    val syncState: LiveData<SyncState> = _syncState
+    // Dependencias
+    private val database = AppDatabase.getDatabase(context)
+    private val apiService = RetrofitClient.getApiService(context)
+    private val connectivityMonitor = ConnectivityMonitor(context)
     
-    // Preferencias de sincronización
-    private val syncPrefs = context.getSharedPreferences(SYNC_PREFERENCES, Context.MODE_PRIVATE)
+    // Repositorios
+    private val taskRepository = TaskRepository(database.taskDao(), apiService)
+    private val productRepository = ProductRepository(database.productDao(), apiService)
+    private val labelTemplateRepository = LabelTemplateRepository(database.labelTemplateDao(), apiService)
     
-    companion object {
-        private const val SYNC_PREFERENCES = "sync_preferences"
-        private const val LAST_SYNC_TIME = "last_sync_time"
-        private const val SYNC_INTERVAL = "sync_interval_hours"
-        private const val SYNC_JOB_ID = 1000
-        
-        private const val DEFAULT_SYNC_INTERVAL_HOURS = 2
-        private const val MIN_SYNC_INTERVAL_HOURS = 1
-        private const val MAX_SYNC_INTERVAL_HOURS = 24
-    }
+    // Ámbito de corrutina para operaciones de sincronización
+    private val syncScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    
+    // Estado de sincronización
+    private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
+    val syncState: StateFlow<SyncState> = _syncState
+    
+    // Banderas para evitar sincronizaciones simultáneas
+    private val isSyncing = AtomicBoolean(false)
+    private val hasPendingSync = AtomicBoolean(false)
+    
+    // Último tiempo de sincronización
+    private var lastSyncTimestamp: Long = 0
     
     init {
-        _syncState.value = SyncState.Idle
-    }
-    
-    /**
-     * Estados posibles de sincronización.
-     */
-    sealed class SyncState {
-        object Idle : SyncState()
-        object Syncing : SyncState()
-        data class Success(val timestamp: Long) : SyncState()
-        data class Error(val message: String) : SyncState()
-    }
-    
-    /**
-     * Verifica si hay conexión a Internet disponible.
-     */
-    fun isNetworkAvailable(): Boolean {
-        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-        val network = connectivityManager.activeNetwork
-        val capabilities = connectivityManager.getNetworkCapabilities(network)
-        
-        return capabilities != null && (
-                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
-                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET))
-    }
-    
-    /**
-     * Programa sincronizaciones periódicas.
-     */
-    fun schedulePeriodicalSync() {
-        val jobScheduler = context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
-        
-        // Obtener intervalo de sincronización
-        val intervalHours = getSyncInterval()
-        val intervalMillis = TimeUnit.HOURS.toMillis(intervalHours.toLong())
-        
-        // Configurar trabajo
-        val componentName = ComponentName(context, SyncJobService::class.java)
-        val jobInfo = JobInfo.Builder(SYNC_JOB_ID, componentName)
-            .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-            .setPersisted(true)
-            .setPeriodic(intervalMillis)
-            .build()
-        
-        // Programar trabajo
-        val result = jobScheduler.schedule(jobInfo)
-        if (result == JobScheduler.RESULT_SUCCESS) {
-            Log.d(TAG, "Sincronización periódica programada cada $intervalHours horas")
-        } else {
-            Log.e(TAG, "Error al programar sincronización periódica")
-        }
-    }
-    
-    /**
-     * Cancela las sincronizaciones programadas.
-     */
-    fun cancelScheduledSync() {
-        val jobScheduler = context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
-        jobScheduler.cancel(SYNC_JOB_ID)
-        Log.d(TAG, "Sincronización periódica cancelada")
-    }
-    
-    /**
-     * Ejecuta una sincronización inmediata.
-     */
-    fun syncNow(): Flow<SyncState> = flow {
-        if (!isNetworkAvailable()) {
-            emit(SyncState.Error("No hay conexión a Internet disponible"))
-            return@flow
-        }
-        
-        emit(SyncState.Syncing)
-        _syncState.postValue(SyncState.Syncing)
-        
-        try {
-            // Crear trabajo de sincronización inmediata
-            val jobScheduler = context.getSystemService(Context.JOB_SCHEDULER_SERVICE) as JobScheduler
-            val componentName = ComponentName(context, SyncJobService::class.java)
-            
-            val extras = PersistableBundle()
-            extras.putBoolean("immediate", true)
-            
-            val jobInfo = JobInfo.Builder(SYNC_JOB_ID + 1, componentName)
-                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_ANY)
-                .setExtras(extras)
-                .setOverrideDeadline(0) // Ejecutar inmediatamente
-                .build()
-            
-            val result = jobScheduler.schedule(jobInfo)
-            
-            if (result == JobScheduler.RESULT_SUCCESS) {
-                // Actualizar tiempo de última sincronización
-                val timestamp = System.currentTimeMillis()
-                updateLastSyncTime(timestamp)
-                
-                val state = SyncState.Success(timestamp)
-                emit(state)
-                _syncState.postValue(state)
-            } else {
-                val state = SyncState.Error("No se pudo iniciar la sincronización")
-                emit(state)
-                _syncState.postValue(state)
+        // Monitorizar conectividad para iniciar sincronización cuando hay conexión
+        connectivityMonitor.observe { isConnected ->
+            if (isConnected && hasPendingSync.get()) {
+                syncAll()
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error durante la sincronización", e)
-            val state = SyncState.Error("Error: ${e.message}")
-            emit(state)
-            _syncState.postValue(state)
         }
     }
     
     /**
-     * Obtiene la última fecha de sincronización.
+     * Sincroniza todos los datos con el servidor.
+     * 
+     * @param userId ID del usuario actual para filtrar tareas asignadas.
+     * @return true si la sincronización fue iniciada, false si ya hay una sincronización en curso.
      */
-    fun getLastSyncTime(): Long {
-        return syncPrefs.getLong(LAST_SYNC_TIME, 0)
-    }
-    
-    /**
-     * Actualiza la fecha de última sincronización.
-     */
-    fun updateLastSyncTime(timestamp: Long) {
-        syncPrefs.edit().putLong(LAST_SYNC_TIME, timestamp).apply()
-    }
-    
-    /**
-     * Obtiene el intervalo de sincronización en horas.
-     */
-    fun getSyncInterval(): Int {
-        return syncPrefs.getInt(SYNC_INTERVAL, DEFAULT_SYNC_INTERVAL_HOURS)
-    }
-    
-    /**
-     * Establece el intervalo de sincronización en horas.
-     */
-    fun setSyncInterval(hours: Int) {
-        val validHours = hours.coerceIn(MIN_SYNC_INTERVAL_HOURS, MAX_SYNC_INTERVAL_HOURS)
-        syncPrefs.edit().putInt(SYNC_INTERVAL, validHours).apply()
+    fun syncAll(userId: Int? = null): Boolean {
+        if (isSyncing.getAndSet(true)) {
+            // Ya hay una sincronización en curso
+            hasPendingSync.set(true)
+            return false
+        }
         
-        // Reprogramar con el nuevo intervalo
-        cancelScheduledSync()
-        schedulePeriodicalSync()
+        if (!connectivityMonitor.isConnected()) {
+            _syncState.value = SyncState.Error("No hay conexión a Internet")
+            isSyncing.set(false)
+            hasPendingSync.set(true)
+            return false
+        }
+        
+        _syncState.value = SyncState.Syncing(SyncStep.STARTED)
+        
+        syncScope.launch {
+            try {
+                // Sincronizar datos en orden: primero se envían cambios locales, luego se obtienen datos del servidor
+                
+                // 1. Sincronizar cambios locales pendientes
+                _syncState.value = SyncState.Syncing(SyncStep.UPLOADING_CHANGES)
+                val completionsResult = syncPendingTaskCompletions()
+                val productsResult = syncPendingProductChanges()
+                val templatesResult = syncPendingTemplateUsages()
+                
+                // 2. Descargar datos actualizados del servidor
+                _syncState.value = SyncState.Syncing(SyncStep.DOWNLOADING_TASKS)
+                val tasksResult = syncTasks(userId)
+                
+                _syncState.value = SyncState.Syncing(SyncStep.DOWNLOADING_PRODUCTS)
+                val productsDownloadResult = syncProducts()
+                
+                _syncState.value = SyncState.Syncing(SyncStep.DOWNLOADING_TEMPLATES)
+                val templatesDownloadResult = syncLabelTemplates()
+                
+                // 3. Actualizar timestamp y estado
+                lastSyncTimestamp = System.currentTimeMillis()
+                
+                // 4. Verificar si hubo errores
+                if (tasksResult && productsDownloadResult && templatesDownloadResult) {
+                    _syncState.value = SyncState.Success(lastSyncTimestamp)
+                } else {
+                    // Hubo errores en alguna sincronización
+                    val errorMessage = buildErrorMessage(tasksResult, productsDownloadResult, templatesDownloadResult)
+                    _syncState.value = SyncState.PartialSuccess(lastSyncTimestamp, errorMessage)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error en sincronización", e)
+                _syncState.value = SyncState.Error(e.message ?: "Error desconocido")
+            } finally {
+                isSyncing.set(false)
+                
+                // Si hay sincronización pendiente y hay conexión, iniciar otra sincronización
+                if (hasPendingSync.getAndSet(false) && connectivityMonitor.isConnected()) {
+                    syncAll(userId)
+                }
+            }
+        }
+        
+        return true
     }
+    
+    /**
+     * Sincroniza solo las tareas con el servidor.
+     * 
+     * @param userId ID del usuario actual para filtrar tareas asignadas.
+     * @return true si la sincronización fue exitosa, false en caso contrario.
+     */
+    private suspend fun syncTasks(userId: Int? = null): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                var success = true
+                
+                // Sincronizar tareas
+                taskRepository.syncTasks(userId).collect { state ->
+                    when (state) {
+                        is ResourceState.Success -> {
+                            Log.d(TAG, "Tareas sincronizadas correctamente: ${state.data?.size ?: 0}")
+                        }
+                        is ResourceState.Error -> {
+                            Log.e(TAG, "Error al sincronizar tareas: ${state.message}")
+                            success = false
+                        }
+                        else -> {}
+                    }
+                }
+                
+                return@withContext success
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al sincronizar tareas", e)
+                return@withContext false
+            }
+        }
+    }
+    
+    /**
+     * Sincroniza solo los productos con el servidor.
+     * 
+     * @return true si la sincronización fue exitosa, false en caso contrario.
+     */
+    private suspend fun syncProducts(): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                var success = true
+                
+                // Sincronizar productos
+                productRepository.syncProducts().collect { state ->
+                    when (state) {
+                        is ResourceState.Success -> {
+                            Log.d(TAG, "Productos sincronizados correctamente: ${state.data?.size ?: 0}")
+                        }
+                        is ResourceState.Error -> {
+                            Log.e(TAG, "Error al sincronizar productos: ${state.message}")
+                            success = false
+                        }
+                        else -> {}
+                    }
+                }
+                
+                return@withContext success
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al sincronizar productos", e)
+                return@withContext false
+            }
+        }
+    }
+    
+    /**
+     * Sincroniza solo las plantillas de etiquetas con el servidor.
+     * 
+     * @return true si la sincronización fue exitosa, false en caso contrario.
+     */
+    private suspend fun syncLabelTemplates(): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                var success = true
+                
+                // Sincronizar plantillas
+                labelTemplateRepository.syncLabelTemplates().collect { state ->
+                    when (state) {
+                        is ResourceState.Success -> {
+                            Log.d(TAG, "Plantillas sincronizadas correctamente: ${state.data?.size ?: 0}")
+                        }
+                        is ResourceState.Error -> {
+                            Log.e(TAG, "Error al sincronizar plantillas: ${state.message}")
+                            success = false
+                        }
+                        else -> {}
+                    }
+                }
+                
+                return@withContext success
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al sincronizar plantillas", e)
+                return@withContext false
+            }
+        }
+    }
+    
+    /**
+     * Sincroniza los completados de tareas pendientes con el servidor.
+     * 
+     * @return true si la sincronización fue exitosa, false en caso contrario.
+     */
+    private suspend fun syncPendingTaskCompletions(): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                var success = true
+                
+                // Sincronizar completados pendientes
+                taskRepository.syncPendingTaskCompletions().collect { state ->
+                    when (state) {
+                        is ResourceState.Success -> {
+                            Log.d(TAG, "Completados sincronizados correctamente: ${state.data ?: 0}")
+                        }
+                        is ResourceState.Error -> {
+                            Log.e(TAG, "Error al sincronizar completados: ${state.message}")
+                            success = false
+                        }
+                        else -> {}
+                    }
+                }
+                
+                return@withContext success
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al sincronizar completados", e)
+                return@withContext false
+            }
+        }
+    }
+    
+    /**
+     * Sincroniza los cambios de productos pendientes con el servidor.
+     * 
+     * @return true si la sincronización fue exitosa, false en caso contrario.
+     */
+    private suspend fun syncPendingProductChanges(): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                var success = true
+                
+                // Sincronizar cambios de productos pendientes
+                productRepository.syncPendingProductChanges().collect { state ->
+                    when (state) {
+                        is ResourceState.Success -> {
+                            Log.d(TAG, "Cambios de productos sincronizados correctamente: ${state.data ?: 0}")
+                        }
+                        is ResourceState.Error -> {
+                            Log.e(TAG, "Error al sincronizar cambios de productos: ${state.message}")
+                            success = false
+                        }
+                        else -> {}
+                    }
+                }
+                
+                return@withContext success
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al sincronizar cambios de productos", e)
+                return@withContext false
+            }
+        }
+    }
+    
+    /**
+     * Sincroniza los usos de plantillas pendientes con el servidor.
+     * 
+     * @return true si la sincronización fue exitosa, false en caso contrario.
+     */
+    private suspend fun syncPendingTemplateUsages(): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                var success = true
+                
+                // Sincronizar usos de plantillas pendientes
+                labelTemplateRepository.syncPendingUsageCounts().collect { state ->
+                    when (state) {
+                        is ResourceState.Success -> {
+                            Log.d(TAG, "Usos de plantillas sincronizados correctamente: ${state.data ?: 0}")
+                        }
+                        is ResourceState.Error -> {
+                            Log.e(TAG, "Error al sincronizar usos de plantillas: ${state.message}")
+                            success = false
+                        }
+                        else -> {}
+                    }
+                }
+                
+                return@withContext success
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al sincronizar usos de plantillas", e)
+                return@withContext false
+            }
+        }
+    }
+    
+    /**
+     * Construye un mensaje de error basado en los resultados de sincronización.
+     * 
+     * @param tasksResult Resultado de sincronización de tareas.
+     * @param productsResult Resultado de sincronización de productos.
+     * @param templatesResult Resultado de sincronización de plantillas.
+     * @return Mensaje de error.
+     */
+    private fun buildErrorMessage(
+        tasksResult: Boolean,
+        productsResult: Boolean,
+        templatesResult: Boolean
+    ): String {
+        val errors = mutableListOf<String>()
+        
+        if (!tasksResult) errors.add("tareas")
+        if (!productsResult) errors.add("productos")
+        if (!templatesResult) errors.add("plantillas")
+        
+        return if (errors.isNotEmpty()) {
+            "Error al sincronizar ${errors.joinToString(", ")}"
+        } else {
+            "Sincronización parcial"
+        }
+    }
+    
+    /**
+     * Obtiene el timestamp de la última sincronización exitosa.
+     * 
+     * @return Timestamp en milisegundos.
+     */
+    fun getLastSyncTimestamp(): Long {
+        return lastSyncTimestamp
+    }
+    
+    /**
+     * Verifica si hay datos pendientes de sincronización.
+     * 
+     * @return true si hay datos pendientes, false en caso contrario.
+     */
+    suspend fun hasPendingChanges(): Boolean {
+        return withContext(Dispatchers.IO) {
+            val pendingTasks = database.taskDao().countTasksForSync().value ?: 0
+            val pendingCompletions = database.taskDao().countTaskCompletionsForSync().value ?: 0
+            val pendingProducts = database.productDao().countProductsForSync().value ?: 0
+            val pendingTemplates = database.labelTemplateDao().countTemplatesForSync().value ?: 0
+            
+            return@withContext pendingTasks > 0 || pendingCompletions > 0 || 
+                    pendingProducts > 0 || pendingTemplates > 0
+        }
+    }
+}
+
+/**
+ * Estados posibles de sincronización.
+ */
+sealed class SyncState {
+    /**
+     * Sin actividad de sincronización.
+     */
+    object Idle : SyncState()
+    
+    /**
+     * Sincronización en curso.
+     * 
+     * @param step Paso actual de la sincronización.
+     */
+    data class Syncing(val step: SyncStep) : SyncState()
+    
+    /**
+     * Sincronización exitosa.
+     * 
+     * @param timestamp Timestamp de la sincronización.
+     */
+    data class Success(val timestamp: Long) : SyncState()
+    
+    /**
+     * Sincronización parcialmente exitosa.
+     * 
+     * @param timestamp Timestamp de la sincronización.
+     * @param errorMessage Mensaje de error.
+     */
+    data class PartialSuccess(val timestamp: Long, val errorMessage: String) : SyncState()
+    
+    /**
+     * Error en la sincronización.
+     * 
+     * @param message Mensaje de error.
+     */
+    data class Error(val message: String) : SyncState()
+}
+
+/**
+ * Pasos de la sincronización.
+ */
+enum class SyncStep {
+    STARTED,
+    UPLOADING_CHANGES,
+    DOWNLOADING_TASKS,
+    DOWNLOADING_PRODUCTS,
+    DOWNLOADING_TEMPLATES,
+    COMPLETED
 }

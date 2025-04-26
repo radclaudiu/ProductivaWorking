@@ -2,164 +2,158 @@ package com.productiva.android.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import androidx.room.ColumnInfo
 import com.google.gson.annotations.SerializedName
 import java.util.Date
 
 /**
- * Entidad que representa una tarea en la aplicación.
+ * Modelo de datos que representa una tarea en la aplicación.
+ * Se almacena en la base de datos local y se sincroniza con el servidor.
  */
 @Entity(tableName = "tasks")
 data class Task(
     @PrimaryKey
-    @ColumnInfo(name = "id")
-    @SerializedName("id") 
+    @SerializedName("id")
     val id: Int,
     
-    @ColumnInfo(name = "title")
-    @SerializedName("title") 
+    @SerializedName("title")
     val title: String,
     
-    @ColumnInfo(name = "description")
-    @SerializedName("description") 
+    @SerializedName("description")
     val description: String?,
     
-    @ColumnInfo(name = "status")
-    @SerializedName("status") 
-    val status: String, // "pending", "in_progress", "completed", "cancelled"
+    @SerializedName("status")
+    val status: String,  // "PENDING", "COMPLETED", "CANCELLED", "IN_PROGRESS"
     
-    @ColumnInfo(name = "priority")
-    @SerializedName("priority") 
-    val priority: Int, // 1-5, 5 es máxima prioridad
+    @SerializedName("priority")
+    val priority: Int,  // 1-5, donde 5 es la más alta
     
-    @ColumnInfo(name = "created_by")
-    @SerializedName("created_by") 
-    val createdBy: Int,
+    @SerializedName("due_date")
+    val dueDate: String?,
     
-    @ColumnInfo(name = "assigned_to")
-    @SerializedName("assigned_to") 
+    @SerializedName("assigned_to")
     val assignedTo: Int?,
     
-    @ColumnInfo(name = "company_id")
-    @SerializedName("company_id") 
-    val companyId: Int,
+    @SerializedName("assigned_to_name")
+    val assignedToName: String?,
     
-    @ColumnInfo(name = "location_id")
-    @SerializedName("location_id") 
-    val locationId: Int?,
+    @SerializedName("created_by")
+    val createdBy: Int?,
     
-    @ColumnInfo(name = "due_date")
-    @SerializedName("due_date") 
-    val dueDate: Date?,
+    @SerializedName("created_by_name")
+    val createdByName: String?,
     
-    @ColumnInfo(name = "created_at")
-    @SerializedName("created_at") 
-    val createdAt: String,
+    @SerializedName("created_at")
+    val createdAt: String?,
     
-    @ColumnInfo(name = "updated_at")
-    @SerializedName("updated_at") 
+    @SerializedName("updated_at")
     val updatedAt: String?,
     
-    @ColumnInfo(name = "category")
-    @SerializedName("category") 
-    val category: String?,
+    @SerializedName("completed_at")
+    val completedAt: String?,
     
-    @ColumnInfo(name = "requires_signature")
-    @SerializedName("requires_signature") 
-    val requiresSignature: Boolean = false,
+    @SerializedName("location_id")
+    val locationId: Int?,
     
-    @ColumnInfo(name = "requires_photo")
-    @SerializedName("requires_photo") 
-    val requiresPhoto: Boolean = false,
+    @SerializedName("location_name")
+    val locationName: String?,
     
-    @ColumnInfo(name = "is_recurrent")
-    @SerializedName("is_recurrent") 
-    val isRecurrent: Boolean = false,
+    @SerializedName("company_id")
+    val companyId: Int?,
     
-    @ColumnInfo(name = "recurrence_days")
-    @SerializedName("recurrence_days") 
-    val recurrenceDays: Int? = null, // Cada cuántos días se repite
+    @SerializedName("company_name")
+    val companyName: String?,
     
-    @ColumnInfo(name = "is_deleted")
-    @SerializedName("is_deleted") 
-    val isDeleted: Boolean = false,
+    @SerializedName("requires_signature")
+    val requiresSignature: Boolean,
     
-    @ColumnInfo(name = "last_completion_date")
-    @SerializedName("last_completion_date") 
-    val lastCompletionDate: Date? = null,
+    @SerializedName("requires_photo")
+    val requiresPhoto: Boolean,
     
-    @ColumnInfo(name = "completions_count")
-    @SerializedName("completions_count") 
-    val completionsCount: Int = 0,
+    @SerializedName("signature_path")
+    val signaturePath: String?,
     
-    @ColumnInfo(name = "notes")
-    @SerializedName("notes") 
-    val notes: String? = null,
+    @SerializedName("photo_path")
+    val photoPath: String?,
     
-    @ColumnInfo(name = "attached_files")
-    @SerializedName("attached_files") 
-    val attachedFiles: String? = null, // JSON array de rutas de archivos
+    @SerializedName("completion_notes")
+    val completionNotes: String?,
     
-    @ColumnInfo(name = "labels_to_print")
-    @SerializedName("labels_to_print") 
-    val labelsToPrint: String? = null, // JSON array de IDs de etiquetas a imprimir
+    @SerializedName("tags")
+    val tags: List<String>?,
     
-    @ColumnInfo(name = "last_sync")
-    val lastSync: Long = System.currentTimeMillis()
+    @SerializedName("attachments")
+    val attachments: List<Attachment>?,
+    
+    // Campos locales (no se envían al servidor)
+    val localSignaturePath: String? = null,
+    val localPhotoPath: String? = null,
+    val needsSync: Boolean = false,
+    val syncError: String? = null,
+    val lastSyncTimestamp: Long = 0
 ) {
     /**
-     * Determina si la tarea está vencida.
+     * Obtiene el estado de la tarea para mostrar en UI.
      */
-    fun isOverdue(): Boolean {
-        if (dueDate == null) return false
-        if (status == "completed" || status == "cancelled") return false
-        
-        return dueDate.before(Date())
-    }
-    
-    /**
-     * Obtiene un color para representar la prioridad de la tarea.
-     */
-    fun getPriorityColor(): Int {
-        return when (priority) {
-            5 -> 0xFFE53935.toInt() // Rojo para máxima prioridad
-            4 -> 0xFFF57C00.toInt() // Naranja para alta prioridad
-            3 -> 0xFFFFB300.toInt() // Ámbar para prioridad media
-            2 -> 0xFF43A047.toInt() // Verde para prioridad baja
-            else -> 0xFF78909C.toInt() // Gris para prioridad mínima
-        }
-    }
-    
-    /**
-     * Obtiene un color para representar el estado de la tarea.
-     */
-    fun getStatusColor(): Int {
+    fun getStatusDisplay(): String {
         return when (status) {
-            "pending" -> 0xFF90A4AE.toInt() // Gris-azul para pendiente
-            "in_progress" -> 0xFF2196F3.toInt() // Azul para en progreso
-            "completed" -> 0xFF4CAF50.toInt() // Verde para completada
-            "cancelled" -> 0xFFE57373.toInt() // Rojo claro para cancelada
-            else -> 0xFF78909C.toInt() // Gris por defecto
-        }
-    }
-    
-    /**
-     * Devuelve el estado localizado para su presentación.
-     */
-    fun getLocalizedStatus(): String {
-        return when (status) {
-            "pending" -> "Pendiente"
-            "in_progress" -> "En progreso"
-            "completed" -> "Completada"
-            "cancelled" -> "Cancelada"
+            "PENDING" -> "Pendiente"
+            "COMPLETED" -> "Completada"
+            "CANCELLED" -> "Cancelada"
+            "IN_PROGRESS" -> "En progreso"
             else -> status
         }
     }
     
     /**
-     * Determina si la tarea puede ser editada.
+     * Determina si la tarea está vencida.
      */
-    fun canBeEdited(): Boolean {
-        return status != "completed" && status != "cancelled" && !isDeleted
+    fun isOverdue(): Boolean {
+        if (dueDate == null || status == "COMPLETED" || status == "CANCELLED") {
+            return false
+        }
+        
+        // Formato de fecha esperado: "yyyy-MM-dd'T'HH:mm:ss"
+        try {
+            val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
+            val dueDateObj = dateFormat.parse(dueDate)
+            
+            return dueDateObj?.before(Date()) ?: false
+        } catch (e: Exception) {
+            return false
+        }
     }
+    
+    /**
+     * Obtiene el nombre formateado del asignado.
+     */
+    fun getAssignedDisplay(): String {
+        return assignedToName ?: "Sin asignar"
+    }
+    
+    /**
+     * Verifica si la tarea está lista para sincronización.
+     */
+    fun isReadyForSync(): Boolean {
+        return needsSync && (status == "COMPLETED" || status == "CANCELLED")
+    }
+    
+    /**
+     * Clase para representar un adjunto de tarea.
+     */
+    data class Attachment(
+        @SerializedName("id")
+        val id: Int,
+        
+        @SerializedName("name")
+        val name: String,
+        
+        @SerializedName("file_path")
+        val filePath: String,
+        
+        @SerializedName("file_type")
+        val fileType: String,
+        
+        @SerializedName("upload_date")
+        val uploadDate: String?
+    )
 }

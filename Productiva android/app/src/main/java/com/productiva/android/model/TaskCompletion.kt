@@ -2,114 +2,119 @@ package com.productiva.android.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import androidx.room.ColumnInfo
 import com.google.gson.annotations.SerializedName
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 
 /**
- * Entidad que representa la finalización de una tarea en la aplicación.
+ * Modelo de datos que representa la información de completado de una tarea.
+ * Se almacena en la base de datos local y se sincroniza con el servidor.
  */
 @Entity(tableName = "task_completions")
 data class TaskCompletion(
-    @PrimaryKey(autoGenerate = true)
-    @ColumnInfo(name = "id")
-    val id: Int = 0,
-    
-    @ColumnInfo(name = "server_id")
-    @SerializedName("id") 
-    val serverId: Int? = null, // ID del servidor después de sincronizar
-    
-    @ColumnInfo(name = "task_id")
-    @SerializedName("task_id") 
+    @PrimaryKey
+    @SerializedName("task_id")
     val taskId: Int,
     
-    @ColumnInfo(name = "completed_by")
-    @SerializedName("completed_by") 
+    @SerializedName("status")
+    val status: String,  // "COMPLETED", "CANCELLED"
+    
+    @SerializedName("completed_by")
     val completedBy: Int,
     
-    @ColumnInfo(name = "completion_date")
-    @SerializedName("completion_date") 
-    val completionDate: Date = Date(),
+    @SerializedName("completed_at")
+    val completedAt: String = getCurrentTimestamp(),
     
-    @ColumnInfo(name = "comments")
-    @SerializedName("comments") 
-    val comments: String? = null,
+    @SerializedName("notes")
+    val notes: String?,
     
-    @ColumnInfo(name = "signature_file")
-    @SerializedName("signature_file") 
-    val signatureFile: String? = null,
+    @SerializedName("signature_data")
+    val signatureData: String?,  // Base64 de la firma
     
-    @ColumnInfo(name = "photo_file")
-    @SerializedName("photo_file") 
-    val photoFile: String? = null,
+    @SerializedName("photo_data")
+    val photoData: String?,  // Base64 de la foto
     
-    @ColumnInfo(name = "location_latitude")
-    @SerializedName("location_latitude") 
-    val locationLatitude: Double? = null,
+    @SerializedName("location_latitude")
+    val locationLatitude: Double?,
     
-    @ColumnInfo(name = "location_longitude")
-    @SerializedName("location_longitude") 
-    val locationLongitude: Double? = null,
+    @SerializedName("location_longitude")
+    val locationLongitude: Double?,
     
-    @ColumnInfo(name = "is_synced")
-    val isSynced: Boolean = false,
+    @SerializedName("device_info")
+    val deviceInfo: String?,
     
-    @ColumnInfo(name = "sync_date")
-    val syncDate: Long? = null,
-    
-    @ColumnInfo(name = "local_files")
-    val localFiles: String? = null, // JSON array de rutas de archivos locales
-    
-    @ColumnInfo(name = "labels_printed")
-    @SerializedName("labels_printed") 
-    val labelsPrinted: String? = null, // JSON array de IDs de etiquetas impresas
-    
-    @ColumnInfo(name = "completion_status")
-    @SerializedName("completion_status") 
-    val completionStatus: String = "ok" // "ok", "partial", "issue"
+    // Campos locales (no se envían al servidor)
+    val needsSync: Boolean = true,
+    val syncError: String? = null,
+    val localSignaturePath: String? = null,
+    val localPhotoPath: String? = null,
+    val lastSyncAttempt: Long = 0,
+    val syncAttempts: Int = 0
 ) {
-    /**
-     * Determina si esta finalización de tarea tiene una firma adjunta.
-     */
-    fun hasSignature(): Boolean {
-        return !signatureFile.isNullOrEmpty()
+    companion object {
+        /**
+         * Genera una marca de tiempo en formato ISO 8601.
+         */
+        fun getCurrentTimestamp(): String {
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+            return dateFormat.format(Date())
+        }
+        
+        /**
+         * Crea una instancia de completado de tarea.
+         */
+        fun create(
+            taskId: Int,
+            status: String,
+            userId: Int,
+            notes: String? = null,
+            signatureData: String? = null,
+            photoData: String? = null,
+            latitude: Double? = null,
+            longitude: Double? = null,
+            deviceInfo: String? = null,
+            localSignaturePath: String? = null,
+            localPhotoPath: String? = null
+        ): TaskCompletion {
+            return TaskCompletion(
+                taskId = taskId,
+                status = status,
+                completedBy = userId,
+                notes = notes,
+                signatureData = signatureData,
+                photoData = photoData,
+                locationLatitude = latitude,
+                locationLongitude = longitude,
+                deviceInfo = deviceInfo,
+                localSignaturePath = localSignaturePath,
+                localPhotoPath = localPhotoPath
+            )
+        }
     }
     
     /**
-     * Determina si esta finalización de tarea tiene una foto adjunta.
+     * Verifica si el completado tiene información de geolocalización.
      */
-    fun hasPhoto(): Boolean {
-        return !photoFile.isNullOrEmpty()
-    }
-    
-    /**
-     * Determina si esta finalización de tarea tiene coordenadas de ubicación.
-     */
-    fun hasLocation(): Boolean {
+    fun hasLocationInfo(): Boolean {
         return locationLatitude != null && locationLongitude != null
     }
     
     /**
-     * Obtiene un color para representar el estado de finalización.
+     * Formatea la información de geolocalización para mostrar en UI.
      */
-    fun getCompletionStatusColor(): Int {
-        return when (completionStatus) {
-            "ok" -> 0xFF4CAF50.toInt() // Verde para OK
-            "partial" -> 0xFFFF9800.toInt() // Naranja para parcial
-            "issue" -> 0xFFF44336.toInt() // Rojo para problemas
-            else -> 0xFF9E9E9E.toInt() // Gris por defecto
+    fun getLocationDisplay(): String {
+        return if (hasLocationInfo()) {
+            String.format("%.6f, %.6f", locationLatitude, locationLongitude)
+        } else {
+            "No disponible"
         }
     }
     
     /**
-     * Devuelve un estado de finalización localizado para su presentación.
+     * Verifica si el completado está listo para sincronización.
      */
-    fun getLocalizedCompletionStatus(): String {
-        return when (completionStatus) {
-            "ok" -> "Completada"
-            "partial" -> "Parcial"
-            "issue" -> "Con problemas"
-            else -> completionStatus
-        }
+    fun isReadyForSync(): Boolean {
+        return needsSync && syncAttempts < 5
     }
 }

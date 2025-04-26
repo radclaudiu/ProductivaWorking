@@ -1,106 +1,99 @@
 package com.productiva.android.database.dao
 
-import androidx.lifecycle.LiveData
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.productiva.android.model.LabelTemplate
+import kotlinx.coroutines.flow.Flow
 
 /**
- * DAO para operaciones con plantillas de etiquetas en la base de datos local.
+ * DAO (Data Access Object) para operaciones con plantillas de etiquetas en la base de datos local.
  */
 @Dao
 interface LabelTemplateDao {
-    
     /**
-     * Inserta una plantilla de etiqueta en la base de datos.
+     * Obtiene todas las plantillas de etiquetas.
      */
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(template: LabelTemplate): Long
-    
-    /**
-     * Inserta varias plantillas de etiquetas en la base de datos.
-     */
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(templates: List<LabelTemplate>): List<Long>
-    
-    /**
-     * Actualiza la información de una plantilla de etiqueta existente.
-     */
-    @Update
-    suspend fun update(template: LabelTemplate)
+    @Query("SELECT * FROM label_templates ORDER BY name ASC")
+    fun getAllLabelTemplates(): Flow<List<LabelTemplate>>
     
     /**
      * Obtiene una plantilla de etiqueta por su ID.
      */
     @Query("SELECT * FROM label_templates WHERE id = :templateId")
-    suspend fun getTemplateById(templateId: Int): LabelTemplate?
+    fun getLabelTemplateById(templateId: Int): Flow<LabelTemplate?>
     
     /**
-     * Obtiene todas las plantillas de etiquetas.
+     * Obtiene una plantilla de etiqueta por su ID de forma síncrona.
      */
-    @Query("SELECT * FROM label_templates ORDER BY name")
-    fun getAllTemplates(): LiveData<List<LabelTemplate>>
+    @Query("SELECT * FROM label_templates WHERE id = :templateId")
+    suspend fun getLabelTemplateByIdSync(templateId: Int): LabelTemplate?
     
     /**
-     * Obtiene plantillas de etiquetas por compañía.
+     * Obtiene la plantilla de etiqueta predeterminada.
      */
-    @Query("SELECT * FROM label_templates WHERE company_id = :companyId OR company_id IS NULL ORDER BY name")
-    fun getTemplatesByCompany(companyId: Int): LiveData<List<LabelTemplate>>
+    @Query("SELECT * FROM label_templates WHERE isDefault = 1 LIMIT 1")
+    fun getDefaultLabelTemplate(): Flow<LabelTemplate?>
     
     /**
-     * Obtiene plantillas de etiquetas favoritas.
+     * Obtiene plantillas de etiquetas por tipo de impresora.
      */
-    @Query("SELECT * FROM label_templates WHERE is_favorite = 1 ORDER BY name")
-    fun getFavoriteTemplates(): LiveData<List<LabelTemplate>>
+    @Query("SELECT * FROM label_templates WHERE printerType = :printerType ORDER BY name ASC")
+    fun getLabelTemplatesByPrinterType(printerType: String): Flow<List<LabelTemplate>>
     
     /**
-     * Obtiene las plantillas de etiquetas recientemente usadas.
+     * Inserta una plantilla de etiqueta.
      */
-    @Query("SELECT * FROM label_templates ORDER BY last_used DESC LIMIT :limit")
-    fun getRecentlyUsedTemplates(limit: Int = 5): LiveData<List<LabelTemplate>>
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLabelTemplate(template: LabelTemplate)
     
     /**
-     * Busca plantillas de etiquetas por nombre o descripción.
+     * Inserta múltiples plantillas de etiquetas.
      */
-    @Query("SELECT * FROM label_templates WHERE name LIKE '%' || :query || '%' OR description LIKE '%' || :query || '%' ORDER BY name")
-    fun searchTemplates(query: String): LiveData<List<LabelTemplate>>
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertLabelTemplates(templates: List<LabelTemplate>)
     
     /**
-     * Marca una plantilla como favorita o no.
+     * Actualiza una plantilla de etiqueta.
      */
-    @Query("UPDATE label_templates SET is_favorite = :isFavorite WHERE id = :templateId")
-    suspend fun setFavorite(templateId: Int, isFavorite: Boolean): Int
-    
-    /**
-     * Actualiza el contador de uso y la fecha de último uso de una plantilla.
-     */
-    @Query("UPDATE label_templates SET times_used = times_used + 1, last_used = :timestamp WHERE id = :templateId")
-    suspend fun updateUsage(templateId: Int, timestamp: Long = System.currentTimeMillis()): Int
-    
-    /**
-     * Obtiene las plantillas que coinciden con un tamaño de papel específico.
-     */
-    @Query("SELECT * FROM label_templates WHERE width <= :paperWidth AND height <= :paperHeight ORDER BY name")
-    fun getTemplatesForPaperSize(paperWidth: Int, paperHeight: Int): LiveData<List<LabelTemplate>>
-    
-    /**
-     * Elimina una plantilla de etiqueta por su ID.
-     */
-    @Query("DELETE FROM label_templates WHERE id = :templateId")
-    suspend fun deleteTemplateById(templateId: Int): Int
+    @Update
+    suspend fun updateLabelTemplate(template: LabelTemplate)
     
     /**
      * Elimina todas las plantillas de etiquetas.
      */
     @Query("DELETE FROM label_templates")
-    suspend fun deleteAllTemplates()
+    suspend fun deleteAllLabelTemplates()
     
     /**
-     * Cuenta el número de plantillas de etiquetas.
+     * Elimina una plantilla de etiqueta por su ID.
      */
-    @Query("SELECT COUNT(*) FROM label_templates")
-    suspend fun getTemplatesCount(): Int
+    @Query("DELETE FROM label_templates WHERE id = :templateId")
+    suspend fun deleteLabelTemplate(templateId: Int)
+    
+    /**
+     * Incrementa el contador de uso de una plantilla de etiqueta.
+     */
+    @Query("UPDATE label_templates SET localUsageCount = localUsageCount + 1 WHERE id = :templateId")
+    suspend fun incrementUsageCount(templateId: Int)
+    
+    /**
+     * Marca una plantilla para sincronización.
+     */
+    @Query("UPDATE label_templates SET needsSync = :needsSync, lastSyncTimestamp = :timestamp WHERE id = :templateId")
+    suspend fun markForSync(templateId: Int, needsSync: Boolean, timestamp: Long = System.currentTimeMillis())
+    
+    /**
+     * Obtiene plantillas que necesitan sincronización.
+     */
+    @Query("SELECT * FROM label_templates WHERE needsSync = 1 ORDER BY lastSyncTimestamp ASC")
+    suspend fun getTemplatesForSync(): List<LabelTemplate>
+    
+    /**
+     * Cuenta plantillas que necesitan sincronización.
+     */
+    @Query("SELECT COUNT(*) FROM label_templates WHERE needsSync = 1")
+    fun countTemplatesForSync(): Flow<Int>
 }

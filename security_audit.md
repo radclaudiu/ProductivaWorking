@@ -128,3 +128,36 @@ Se ha realizado un examen de los archivos clave del proyecto y se han identifica
 - **Problema**: Verificaciones de acceso inconsistentes en varias rutas.
 - **Riesgo**: Posibles escalaciones de privilegios o acceso no autorizado a ciertas funcionalidades.
 - **Recomendación**: Revisar todas las rutas y aplicar consistentemente verificaciones de permisos.
+
+### 5. Gestión de Autenticación y Sesiones
+
+#### 5.1 `routes.py` - Funciones de autenticación
+
+**Severidad: Alta**
+- **Problema**: Contraseñas almacenadas usando hash sin sal (salt) específica.
+  - Línea 57 en `models.py`: `self.password_hash = generate_password_hash(password)`
+- **Riesgo**: Aunque se usa el método `generate_password_hash`, no se especifica un algoritmo de hashing fuerte ni un factor de costo adecuado.
+- **Recomendación**: Especificar método `pbkdf2:sha256` con un coste alto (mínimo 160000 iteraciones).
+
+**Severidad: Media**
+- **Problema**: Mensajes de error demasiado explícitos en login.
+  - Línea 67: `flash('Usuario o contraseña invalidos.', 'danger')`
+- **Riesgo**: Permite a atacantes diferenciar entre usuarios existentes y contraseñas incorrectas (timing attacks).
+- **Recomendación**: Usar mensajes de error genéricos como "Credenciales incorrectas".
+
+#### 5.2 `app.py` - Configuración de sesiones
+
+**Severidad: Alta**
+- **Problema**: Duración de sesión muy prolongada sin renovación.
+  - Línea 49 en `config.py`: `PERMANENT_SESSION_LIFETIME = timedelta(days=7)`
+- **Riesgo**: Exposición prolongada en caso de robo de cookies de sesión.
+- **Recomendación**: Reducir la duración de sesión e implementar renovación de tokens y cierre por inactividad.
+
+#### 5.3 Gestión de permisos
+
+**Severidad: Media**
+- **Problema**: Decoradores de protección de rutas definidos en múltiples lugares.
+  - Decoradores como `@admin_required` y `@manager_required` en `routes.py`.
+  - Función `check_company_access` en `routes_cash_register_additional.py`.
+- **Riesgo**: Inconsistencia en la aplicación de controles de acceso.
+- **Recomendación**: Centralizar las verificaciones de permisos en un único módulo.

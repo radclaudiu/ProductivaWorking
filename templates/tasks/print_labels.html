@@ -417,15 +417,33 @@
                     const device = await navigator.bluetooth.requestDevice({
                         acceptAllDevices: true,
                         optionalServices: [
+                            // Servicios genéricos
                             'generic_access',
-                            'battery_service', 
-                            '000018f0-0000-1000-8000-00805f9b34fb',
-                            '1222e5db-36e1-4a53-bfef-bf7da833c5a5',
-                            '00001101-0000-1000-8000-00805f9b34fb',
-                            '00001800-0000-1000-8000-00805f9b34fb',
-                            '00001801-0000-1000-8000-00805f9b34fb',
-                            '0000180a-0000-1000-8000-00805f9b34fb',
-                            '0000180f-0000-1000-8000-00805f9b34fb'
+                            'battery_service',
+                            
+                            // Servicios de impresora Brother conocidos
+                            '000018f0-0000-1000-8000-00805f9b34fb',  // Servicio de impresión estándar
+                            '1222e5db-36e1-4a53-bfef-bf7da833c5a5',  // Servicio de impresión alternativo
+                            '00001101-0000-1000-8000-00805f9b34fb',  // Serial Port Profile
+                            
+                            // Servicios genéricos Bluetooth
+                            '00001800-0000-1000-8000-00805f9b34fb',  // Servicio genérico
+                            '00001801-0000-1000-8000-00805f9b34fb',  // Servicio de atributos genéricos
+                            '0000180a-0000-1000-8000-00805f9b34fb',  // Información del dispositivo
+                            '0000180f-0000-1000-8000-00805f9b34fb',  // Servicio de batería
+                            
+                            // Servicios adicionales para impresoras térmicas
+                            'e7810a71-73ae-499d-8c15-faa9aef0c3f2',  // Servicio de impresión alternativo
+                            'af20fbac-2518-4998-9af7-af42540731b3',  // Servicio de impresión alternativo
+                            'bef8d6c9-9c21-4c9e-b632-bd58c1009f9f',  // Servicio de transferencia de datos
+                            
+                            // Rangos comunes para servicios Serial (SPP) en diferentes modelos
+                            '0000110a-0000-1000-8000-00805f9b34fb',
+                            '0000110b-0000-1000-8000-00805f9b34fb',
+                            '0000110c-0000-1000-8000-00805f9b34fb',
+                            '0000110d-0000-1000-8000-00805f9b34fb',
+                            '0000110e-0000-1000-8000-00805f9b34fb',
+                            '0000110f-0000-1000-8000-00805f9b34fb'
                         ]
                     });
                     

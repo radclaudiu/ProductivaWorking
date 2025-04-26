@@ -129,18 +129,35 @@ document.addEventListener('DOMContentLoaded', function() {
             const device = await navigator.bluetooth.requestDevice({
                 // Aceptar cualquier dispositivo Bluetooth
                 acceptAllDevices: true,
-                // Incluir servicios opcionales para ampliar compatibilidad
+                // Incluir servicios opcionales para ampliar compatibilidad - Lista ampliada para mayor compatibilidad
                 optionalServices: [
+                    // Servicios genéricos
                     'generic_access',
-                    'battery_service', 
+                    'battery_service',
+                    
+                    // Servicios de impresora Brother conocidos
                     '000018f0-0000-1000-8000-00805f9b34fb',  // Servicio de impresión estándar
                     '1222e5db-36e1-4a53-bfef-bf7da833c5a5',  // Servicio de impresión alternativo
-                    '00001101-0000-1000-8000-00805f9b34fb',   // Serial Port Profile
-                    // Servicios genéricos de impresión que podrían usar otras impresoras
+                    '00001101-0000-1000-8000-00805f9b34fb',  // Serial Port Profile
+                    
+                    // Servicios genéricos Bluetooth
                     '00001800-0000-1000-8000-00805f9b34fb',  // Servicio genérico
                     '00001801-0000-1000-8000-00805f9b34fb',  // Servicio de atributos genéricos
                     '0000180a-0000-1000-8000-00805f9b34fb',  // Información del dispositivo
-                    '0000180f-0000-1000-8000-00805f9b34fb'   // Servicio de batería
+                    '0000180f-0000-1000-8000-00805f9b34fb',  // Servicio de batería
+                    
+                    // Servicios adicionales para impresoras térmicas
+                    'e7810a71-73ae-499d-8c15-faa9aef0c3f2',  // Servicio de impresión alternativo
+                    'af20fbac-2518-4998-9af7-af42540731b3',  // Servicio de impresión alternativo
+                    'bef8d6c9-9c21-4c9e-b632-bd58c1009f9f',  // Servicio de transferencia de datos
+                    
+                    // Rangos comunes para servicios Serial (SPP) en diferentes modelos
+                    '0000110a-0000-1000-8000-00805f9b34fb',
+                    '0000110b-0000-1000-8000-00805f9b34fb',
+                    '0000110c-0000-1000-8000-00805f9b34fb',
+                    '0000110d-0000-1000-8000-00805f9b34fb',
+                    '0000110e-0000-1000-8000-00805f9b34fb',
+                    '0000110f-0000-1000-8000-00805f9b34fb'
                 ]
             });
             
@@ -161,24 +178,81 @@ document.addEventListener('DOMContentLoaded', function() {
             // Cantidad de etiquetas a imprimir
             const quantity = parseInt(document.getElementById("quantity").value || "1");
             
-            // Intentar obtener servicio de impresión (diferentes UUIDs para diferentes modelos)
-            let service;
+            // Intentar obtener servicio de impresión probando con todos los UUIDs disponibles
+            showBluetoothMessage(`Buscando servicios en la impresora ${device.name}...`);
+            console.log("Obteniendo todos los servicios disponibles en el dispositivo...");
+            
+            // Lista de servicios comunes de impresoras Bluetooth
+            const printerServiceIds = [
+                '000018f0-0000-1000-8000-00805f9b34fb',  // Brother/Generic printer service
+                '1222e5db-36e1-4a53-bfef-bf7da833c5a5',  // Printer service variant
+                '00001101-0000-1000-8000-00805f9b34fb',  // Serial Port Profile
+                'e7810a71-73ae-499d-8c15-faa9aef0c3f2',  // Thermal printer service
+                'af20fbac-2518-4998-9af7-af42540731b3',  // Printer data service
+                'bef8d6c9-9c21-4c9e-b632-bd58c1009f9f',  // Data transfer service
+                '0000110a-0000-1000-8000-00805f9b34fb',  // SPP variant
+                '0000110b-0000-1000-8000-00805f9b34fb',  // SPP variant
+                '0000110c-0000-1000-8000-00805f9b34fb',  // SPP variant
+                '0000110d-0000-1000-8000-00805f9b34fb',  // SPP variant
+                '0000110e-0000-1000-8000-00805f9b34fb',  // SPP variant
+                '0000110f-0000-1000-8000-00805f9b34fb'   // SPP variant
+            ];
+            
+            // Obtener todos los servicios disponibles primero
+            let allServices;
             try {
-                // Primero intentar con servicio estándar de impresión
-                service = await server.getPrimaryService('000018f0-0000-1000-8000-00805f9b34fb');
+                // Intentar obtener la lista de todos los servicios
+                allServices = await server.getPrimaryServices();
+                console.log("Servicios disponibles en el dispositivo:", allServices.map(s => s.uuid));
             } catch (e) {
-                try {
-                    // Luego intentar con servicio de impresión alternativo
-                    service = await server.getPrimaryService('1222e5db-36e1-4a53-bfef-bf7da833c5a5');
-                } catch (e2) {
+                console.log("No se pudo obtener lista de servicios:", e);
+                // Continuar con el enfoque manual
+            }
+            
+            // Si pudimos obtener todos los servicios, intentar encontrar uno con características de escritura
+            let service = null;
+            
+            if (allServices && allServices.length > 0) {
+                // Probar servicios disponibles primero
+                for (const svc of allServices) {
                     try {
-                        // Finalmente intentar con Serial Port Profile
-                        service = await server.getPrimaryService('00001101-0000-1000-8000-00805f9b34fb');
-                    } catch (e3) {
-                        throw new Error("No se pudo encontrar un servicio de impresión compatible. Asegúrate de que la impresora esté en modo de emparejamiento.");
+                        const chars = await svc.getCharacteristics();
+                        // Buscar una característica con propiedades de escritura
+                        for (const char of chars) {
+                            if (char.properties.write || char.properties.writeWithoutResponse) {
+                                service = svc;
+                                console.log(`Servicio con características de escritura encontrado: ${svc.uuid}`);
+                                break;
+                            }
+                        }
+                        if (service) break;
+                    } catch (e) {
+                        console.log(`Error al inspeccionar servicio ${svc.uuid}:`, e);
                     }
                 }
             }
+            
+            // Si no encontramos un servicio válido, intentar explícitamente con los IDs conocidos
+            if (!service) {
+                console.log("Intentando servicios conocidos de impresoras uno por uno");
+                for (const serviceId of printerServiceIds) {
+                    try {
+                        console.log(`Intentando servicio: ${serviceId}`);
+                        service = await server.getPrimaryService(serviceId);
+                        console.log(`Servicio encontrado: ${serviceId}`);
+                        break;
+                    } catch (e) {
+                        console.log(`Servicio ${serviceId} no encontrado`);
+                    }
+                }
+            }
+            
+            // Si aún no encontramos un servicio válido
+            if (!service) {
+                throw new Error("No se pudo encontrar un servicio de impresión compatible. Intenta con otra impresora Bluetooth o verifica que esté en modo descubrible.");
+            }
+            
+            showBluetoothMessage(`Servicio de impresión encontrado en ${device.name}. Preparando datos...`);
             
             // Buscar características de escritura
             let characteristic;
@@ -255,8 +329,66 @@ document.addEventListener('DOMContentLoaded', function() {
             } else if (error.message.includes("No se pudo encontrar un servicio")) {
                 showBluetoothMessage("El dispositivo seleccionado no parece ser una impresora compatible. Intenta con otro dispositivo o verifica que esté en modo de emparejamiento correcto.", true);
             } else {
-                showBluetoothMessage("Error al conectar: " + (error.message || "Error desconocido") + ". Intenta reiniciar el dispositivo y la aplicación, luego vuelve a intentarlo.", true);
+                // Mostrar información de diagnóstico más detallada
+                const errorMsg = error.message || "Error desconocido";
+                showBluetoothMessage("Error al conectar: " + errorMsg + ". Intenta reiniciar el dispositivo y la aplicación, luego vuelve a intentarlo.", true);
+                
+                // Crear información de diagnóstico
+                const diagnosticInfo = {
+                    userAgent: navigator.userAgent,
+                    platform: navigator.platform,
+                    errorName: error.name,
+                    errorMessage: error.message,
+                    errorStack: error.stack,
+                    date: new Date().toISOString()
+                };
+                
                 console.error("Detalles completos del error:", error);
+                console.error("Información de diagnóstico:", diagnosticInfo);
+                
+                // Mostrar diagnóstico más detallado en la página
+                const diagArea = document.getElementById('bluetooth-diagnostics') || 
+                    (() => {
+                        const div = document.createElement('div');
+                        div.id = 'bluetooth-diagnostics';
+                        div.className = 'alert alert-info mt-3 small';
+                        div.style.whiteSpace = 'pre-wrap';
+                        div.style.display = 'none';
+                        
+                        // Agregar botón de mostrar/ocultar
+                        const toggleBtn = document.createElement('button');
+                        toggleBtn.innerText = 'Mostrar información de diagnóstico';
+                        toggleBtn.className = 'btn btn-sm btn-secondary mt-2';
+                        toggleBtn.onclick = () => {
+                            if (div.style.display === 'none') {
+                                div.style.display = 'block';
+                                toggleBtn.innerText = 'Ocultar información de diagnóstico';
+                            } else {
+                                div.style.display = 'none';
+                                toggleBtn.innerText = 'Mostrar información de diagnóstico';
+                            }
+                        };
+                        
+                        // Insertar elementos en la página
+                        const parentElement = document.getElementById("bluetooth-print-btn").parentNode.parentNode;
+                        parentElement.appendChild(toggleBtn);
+                        parentElement.appendChild(div);
+                        return div;
+                    })();
+                
+                // Actualizar información de diagnóstico
+                diagArea.innerHTML = `
+                <h6>Información de diagnóstico Bluetooth:</h6>
+                <p><strong>Error:</strong> ${errorMsg}</p>
+                <p><strong>Tipo de error:</strong> ${error.name || 'No disponible'}</p>
+                <p><strong>Navegador:</strong> ${navigator.userAgent}</p>
+                <p><strong>Plataforma:</strong> ${navigator.platform}</p>
+                <p><strong>Fecha/hora:</strong> ${new Date().toLocaleString()}</p>
+                <p><strong>Bluetooth disponible:</strong> ${navigator.bluetooth ? 'Sí' : 'No'}</p>
+                <p><strong>Stack de error:</strong></p>
+                <pre>${error.stack || 'No disponible'}</pre>
+                
+                <p>Por favor, comparte esta información al reportar el problema.</p>`;
             }
         }
         });

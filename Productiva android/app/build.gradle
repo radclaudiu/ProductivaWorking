@@ -66,6 +66,22 @@ android {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
     }
+    
+    // Excluir archivos PNG de iconos para evitar conflictos con WebP
+    sourceSets {
+        main {
+            res.excludes += [
+                'mipmap-mdpi/ic_launcher.png',
+                'mipmap-mdpi/ic_launcher_round.png',
+                'mipmap-xhdpi/ic_launcher.png', 
+                'mipmap-xhdpi/ic_launcher_round.png',
+                'mipmap-xxhdpi/ic_launcher.png',
+                'mipmap-xxhdpi/ic_launcher_round.png',
+                'mipmap-xxxhdpi/ic_launcher.png',
+                'mipmap-xxxhdpi/ic_launcher_round.png'
+            ]
+        }
+    }
 }
 
 dependencies {

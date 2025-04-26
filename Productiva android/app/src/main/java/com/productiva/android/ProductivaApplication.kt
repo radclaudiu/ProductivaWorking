@@ -10,6 +10,7 @@ import com.productiva.android.sync.SyncWorker
 import com.productiva.android.utils.IconVersionProvider
 import com.productiva.android.utils.NotificationChannelHelper
 import com.productiva.android.utils.ResourceConflictResolver
+import com.productiva.android.utils.ResourceDebugHelper
 import com.productiva.android.utils.SessionManager
 import java.util.concurrent.TimeUnit
 
@@ -37,6 +38,12 @@ class ProductivaApplication : Application() {
         
         // Registrar información sobre compatibilidad de íconos
         IconVersionProvider.logIconCompatibilityInfo(this)
+        
+        // Analizar recursos para depuración
+        ResourceDebugHelper.analyzeResources(this)
+        
+        // Sugerir soluciones para problemas de compilación
+        ResourceDebugHelper.reportSolutionForBuildIssues()
 
         // Configurar la sincronización periódica en segundo plano
         setupPeriodicSync()

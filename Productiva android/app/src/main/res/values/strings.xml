@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Productiva</string>
+    <string name="app_version">Versión 1.0.0</string>
     
     <!-- Textos comunes -->
     <string name="accept">Aceptar</string>
@@ -118,4 +119,44 @@
     <string name="error_auth">Error de autenticación</string>
     <string name="error_validation">Error de validación</string>
     <string name="error_local_storage">Error de almacenamiento local</string>
+    
+    <!-- Strings adicionales necesarios -->
+    <string name="server_url">URL del servidor</string>
+    <string name="login_button">Iniciar sesión</string>
+    <string name="task_status_pending">Pendiente</string>
+    <string name="task_status_in_progress">En progreso</string>
+    <string name="task_status_completed">Completada</string>
+    <string name="no_tasks_found">No se encontraron tareas</string>
+    <string name="select_printer">Seleccionar impresora</string>
+    <string name="add_printer">Añadir impresora</string>
+    <string name="no_printers">No hay impresoras disponibles</string>
+    <string name="no_templates">No hay plantillas disponibles</string>
+    <string name="print">Imprimir</string>
+    <string name="signature">Firma</string>
+    <string name="sign_here">Firme aquí</string>
+    <string name="clear_signature">Borrar firma</string>
+    <string name="save_signature">Guardar firma</string>
+    <string name="signature_instructions">Firme con el dedo en el espacio a continuación</string>
+    <string name="clear_button">Borrar</string>
+    <string name="save_button">Guardar</string>
+    <string name="logo_description">Logo de Productiva</string>
+    
+    <!-- Strings para tasks -->
+    <string name="task_completion">Completar tarea</string>
+    <string name="notes">Notas</string>
+    <string name="add_signature">Añadir firma</string>
+    <string name="add_photo">Añadir foto</string>
+    <string name="submit">Enviar</string>
+    <string name="task_detail">Detalle de tarea</string>
+    <string name="no_completions">No hay registros de completado</string>
+    
+    <!-- Strings para usuarios -->
+    <string name="select_user">Seleccionar usuario</string>
+    <string name="search_hint">Buscar...</string>
+    <string name="no_users_found">No se encontraron usuarios</string>
+    <string name="change_user">Cambiar usuario</string>
+    
+    <!-- Strings para menús -->
+    <string name="filter">Filtrar</string>
+    <string name="settings_title">Configuración</string>
 </resources>

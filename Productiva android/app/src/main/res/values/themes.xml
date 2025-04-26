@@ -19,7 +19,8 @@
         <item name="colorOnSurface">@color/colorTextPrimary</item>
         <item name="android:textColorPrimary">@color/colorTextPrimary</item>
         <item name="android:textColorSecondary">@color/colorTextSecondary</item>
-        <item name="materialDividerColor">@color/colorDivider</item>
+        <!-- Reemplazado materialDividerColor por un atributo estándar -->
+        <item name="dividerColor">@color/colorDivider</item>
     </style>
 
     <style name="Theme.Productiva.NoActionBar">

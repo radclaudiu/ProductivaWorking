@@ -1,0 +1,21 @@
+Android resource linking failed
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_login.xml:21: error: resource drawable/logo (aka com.productiva.android.debug:drawable/logo) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_login.xml:86: error: resource string/server_url (aka com.productiva.android.debug:string/server_url) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_login.xml:109: error: resource string/login_button (aka com.productiva.android.debug:string/login_button) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_main.xml:49: error: resource string/task_status_pending (aka com.productiva.android.debug:string/task_status_pending) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_main.xml:54: error: resource string/task_status_in_progress (aka com.productiva.android.debug:string/task_status_in_progress) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_main.xml:59: error: resource string/task_status_completed (aka com.productiva.android.debug:string/task_status_completed) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_main.xml:92: error: resource string/no_tasks_found (aka com.productiva.android.debug:string/no_tasks_found) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_print_label.xml:51: error: resource string/select_printer (aka com.productiva.android.debug:string/select_printer) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_print_label.xml:61: error: resource string/add_printer (aka com.productiva.android.debug:string/add_printer) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_print_label.xml:87: error: resource string/no_printers (aka com.productiva.android.debug:string/no_printers) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_print_label.xml:125: error: resource string/no_templates (aka com.productiva.android.debug:string/no_templates) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_print_label.xml:201: error: resource string/print (aka com.productiva.android.debug:string/print) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_signature.xml:25: error: resource string/signature (aka com.productiva.android.debug:string/signature) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_signature.xml:38: error: resource string/sign_here (aka com.productiva.android.debug:string/sign_here) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_signature.xml:81: error: resource string/clear_signature (aka com.productiva.android.debug:string/clear_signature) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_signature.xml:90: error: resource string/save_signature (aka com.productiva.android.debug:string/save_signature) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_signature_capture.xml:33: error: resource string/signature_instructions (aka com.productiva.android.debug:string/signature_instructions) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_signature_capture.xml:74: error: resource string/clear_button (aka com.productiva.android.debug:string/clear_button) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_signature_capture.xml:88: error: resource string/save_button (aka com.productiva.android.debug:string/save_button) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_splash.xml:20: error: resource string/logo_description (aka com.productiva.android.debug:string/logo_description) not found.

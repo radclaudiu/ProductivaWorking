@@ -1,0 +1,21 @@
+Android resource linking failed
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_splash.xml:45: error: resource string/app_version (aka com.productiva.android.debug:string/app_version) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_task_completion.xml:22: error: resource string/task_completion (aka com.productiva.android.debug:string/task_completion) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_task_completion.xml:69: error: resource string/notes (aka com.productiva.android.debug:string/notes) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_task_completion.xml:93: error: resource string/add_signature (aka com.productiva.android.debug:string/add_signature) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_task_completion.xml:105: error: resource string/add_photo (aka com.productiva.android.debug:string/add_photo) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_task_completion.xml:179: error: resource string/submit (aka com.productiva.android.debug:string/submit) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_task_detail.xml:31: error: resource string/task_detail (aka com.productiva.android.debug:string/task_detail) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_task_detail.xml:198: error: resource string/no_completions (aka com.productiva.android.debug:string/no_completions) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_user_selection.xml:25: error: resource string/select_user (aka com.productiva.android.debug:string/select_user) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_user_selection.xml:40: error: resource string/search_hint (aka com.productiva.android.debug:string/search_hint) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/activity_user_selection.xml:64: error: resource string/no_users_found (aka com.productiva.android.debug:string/no_users_found) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/fragment_task_list.xml:39: error: resource style/TextAppearance.App.Subtitle (aka com.productiva.android.debug:style/TextAppearance.App.Subtitle) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/item_task_completion.xml:24: error: resource drawable/ic_user (aka com.productiva.android.debug:drawable/ic_user) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/item_user.xml:25: error: resource drawable/ic_user (aka com.productiva.android.debug:drawable/ic_user) not found.
+com.productiva.android.app-mergeDebugResources-81:/layout/nav_header.xml:17: error: resource drawable/ic_user (aka com.productiva.android.debug:drawable/ic_user) not found.
+com.productiva.android.app-main-84:/menu/main_menu.xml:18: error: resource string/filter (aka com.productiva.android.debug:string/filter) not found.
+com.productiva.android.app-main-84:/menu/main_menu.xml:23: error: resource string/settings_title (aka com.productiva.android.debug:string/settings_title) not found.
+com.productiva.android.app-main-84:/menu/menu_main.xml:8: error: resource string/change_user (aka com.productiva.android.debug:string/change_user) not found.
+com.productiva.android.app-main-84:/mipmap-anydpi/ic_launcher.xml: error: <adaptive-icon> elements require a sdk version of at least 26.
+com.productiva.android.app-main-84:/mipmap-anydpi/ic_launcher_round.xml: error: <adaptive-icon> elements require a sdk version of at least 26.

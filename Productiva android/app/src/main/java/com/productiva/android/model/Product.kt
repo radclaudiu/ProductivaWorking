@@ -7,8 +7,8 @@ import java.text.NumberFormat
 import java.util.Locale
 
 /**
- * Modelo de datos que representa un producto en la aplicación.
- * Se almacena en la base de datos local y se sincroniza con el servidor.
+ * Modelo de datos para productos.
+ * Incluye todos los campos necesarios para la sincronización con el portal web.
  */
 @Entity(tableName = "products")
 data class Product(
@@ -19,81 +19,58 @@ data class Product(
     @SerializedName("name")
     val name: String,
     
-    @SerializedName("description")
-    val description: String?,
-    
     @SerializedName("code")
-    val code: String?,
+    val code: String? = null,
     
     @SerializedName("barcode")
-    val barcode: String?,
+    val barcode: String? = null,
     
-    @SerializedName("sku")
-    val sku: String?,
+    @SerializedName("description")
+    val description: String? = null,
     
     @SerializedName("price")
-    val price: Double,
+    val price: Double = 0.0,
     
     @SerializedName("cost")
-    val cost: Double?,
+    val cost: Double? = null,
     
     @SerializedName("stock")
-    val stock: Int?,
+    val stock: Int? = null,
     
-    @SerializedName("reorder_level")
-    val reorderLevel: Int?,
+    @SerializedName("stock_min")
+    val stockMin: Int? = null,
     
     @SerializedName("category")
-    val category: String?,
-    
-    @SerializedName("category_id")
-    val categoryId: Int?,
-    
-    @SerializedName("brand")
-    val brand: String?,
-    
-    @SerializedName("brand_id")
-    val brandId: Int?,
+    val category: String? = null,
     
     @SerializedName("supplier")
-    val supplier: String?,
-    
-    @SerializedName("supplier_id")
-    val supplierId: Int?,
-    
-    @SerializedName("tax_rate")
-    val taxRate: Double?,
-    
-    @SerializedName("weight")
-    val weight: Double?,
-    
-    @SerializedName("dimensions")
-    val dimensions: String?,
-    
-    @SerializedName("image_url")
-    val imageUrl: String?,
-    
-    @SerializedName("is_active")
-    val isActive: Boolean,
-    
-    @SerializedName("created_at")
-    val createdAt: String?,
-    
-    @SerializedName("updated_at")
-    val updatedAt: String?,
+    val supplier: String? = null,
     
     @SerializedName("company_id")
-    val companyId: Int?,
+    val companyId: Int,
     
     @SerializedName("location_id")
-    val locationId: Int?,
+    val locationId: Int? = null,
     
-    // Campos locales
-    val needsSync: Boolean = false,
-    val localImagePath: String? = null
+    @SerializedName("image_url")
+    val imageUrl: String? = null,
+    
+    @SerializedName("is_active")
+    val isActive: Boolean = true,
+    
+    @SerializedName("created_at")
+    val createdAt: String? = null,
+    
+    @SerializedName("updated_at")
+    val updatedAt: String? = null,
+    
+    // Campos locales (no se envían al servidor)
+    var localImagePath: String? = null,
+    var needsSync: Boolean = false,
+    var lastSyncTime: Long = 0
 ) {
     /**
-     * Devuelve el precio formateado con símbolo de moneda.
+     * Formatea el precio con el formato de moneda local.
      */
     fun formattedPrice(): String {
         val format = NumberFormat.getCurrencyInstance(Locale.getDefault())
@@ -101,109 +78,73 @@ data class Product(
     }
     
     /**
-     * Devuelve el costo formateado con símbolo de moneda.
+     * Formatea el costo con el formato de moneda local.
      */
     fun formattedCost(): String {
-        if (cost == null) return ""
+        if (cost == null) return "N/A"
         val format = NumberFormat.getCurrencyInstance(Locale.getDefault())
         return format.format(cost)
+    }
+    
+    /**
+     * Calcula el margen de beneficio como porcentaje.
+     */
+    fun calculateMargin(): Double? {
+        if (cost == null || cost <= 0 || price <= 0) return null
+        return ((price - cost) / price) * 100.0
+    }
+    
+    /**
+     * Formatea el margen como porcentaje.
+     */
+    fun formattedMargin(): String {
+        val margin = calculateMargin()
+        return if (margin != null) {
+            String.format("%.2f%%", margin)
+        } else {
+            "N/A"
+        }
     }
     
     /**
      * Determina si el producto tiene stock bajo.
      */
     fun hasLowStock(): Boolean {
-        if (stock == null || reorderLevel == null) return false
-        return stock <= reorderLevel
+        if (stock == null || stockMin == null) return false
+        return stock <= stockMin
     }
     
     /**
-     * Calcula el margen de beneficio en porcentaje.
-     */
-    fun profitMargin(): Double? {
-        if (cost == null || cost <= 0) return null
-        return ((price - cost) / cost) * 100
-    }
-    
-    /**
-     * Formatea el margen de beneficio como texto.
-     */
-    fun formattedProfitMargin(): String {
-        val margin = profitMargin() ?: return ""
-        return String.format("%.2f%%", margin)
-    }
-    
-    /**
-     * Actualiza este producto con información del servidor.
+     * Actualiza el producto con datos del servidor preservando cambios locales.
      */
     fun updateFromServer(serverProduct: Product): Product {
         return this.copy(
             name = serverProduct.name,
-            description = serverProduct.description,
             code = serverProduct.code,
             barcode = serverProduct.barcode,
-            sku = serverProduct.sku,
+            description = serverProduct.description,
             price = serverProduct.price,
             cost = serverProduct.cost,
             stock = serverProduct.stock,
-            reorderLevel = serverProduct.reorderLevel,
+            stockMin = serverProduct.stockMin,
             category = serverProduct.category,
-            categoryId = serverProduct.categoryId,
-            brand = serverProduct.brand,
-            brandId = serverProduct.brandId,
             supplier = serverProduct.supplier,
-            supplierId = serverProduct.supplierId,
-            taxRate = serverProduct.taxRate,
-            weight = serverProduct.weight,
-            dimensions = serverProduct.dimensions,
+            locationId = serverProduct.locationId,
             imageUrl = serverProduct.imageUrl,
             isActive = serverProduct.isActive,
+            createdAt = serverProduct.createdAt,
             updatedAt = serverProduct.updatedAt,
-            needsSync = false
+            // Preservar datos locales
+            localImagePath = this.localImagePath,
+            needsSync = this.needsSync,
+            lastSyncTime = System.currentTimeMillis()
         )
     }
     
     /**
-     * Marca este producto para sincronización.
+     * Marca el producto como pendiente de sincronización.
      */
     fun markForSync(): Product {
         return this.copy(needsSync = true)
-    }
-    
-    companion object {
-        /**
-         * Crea un producto vacío para usar como comodín.
-         */
-        fun createEmpty(): Product {
-            return Product(
-                id = 0,
-                name = "",
-                description = null,
-                code = null,
-                barcode = null,
-                sku = null,
-                price = 0.0,
-                cost = null,
-                stock = null,
-                reorderLevel = null,
-                category = null,
-                categoryId = null,
-                brand = null,
-                brandId = null,
-                supplier = null,
-                supplierId = null,
-                taxRate = null,
-                weight = null,
-                dimensions = null,
-                imageUrl = null,
-                isActive = true,
-                createdAt = null,
-                updatedAt = null,
-                companyId = null,
-                locationId = null,
-                needsSync = false,
-                localImagePath = null
-            )
-        }
     }
 }

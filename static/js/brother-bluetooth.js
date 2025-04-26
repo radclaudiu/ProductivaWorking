@@ -8,8 +8,13 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Función para detectar si estamos en un dispositivo móvil
     const isMobileDevice = () => {
-        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        console.log("¿Es dispositivo móvil?", isMobile, "User Agent:", navigator.userAgent);
+        return isMobile;
     };
+    
+    // Llamar inmediatamente para verificar
+    console.log("Estado de detección móvil:", isMobileDevice());
     
     // Función para mostrar mensajes al usuario
     const showBluetoothMessage = (message, isError = false) => {

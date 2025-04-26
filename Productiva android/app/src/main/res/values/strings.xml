@@ -1,103 +1,121 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Nombres de aplicación -->
     <string name="app_name">Productiva</string>
     
-    <!-- Títulos de pantallas -->
-    <string name="login">Iniciar sesión</string>
-    <string name="select_user">Seleccionar usuario</string>
-    <string name="tasks">Tareas</string>
-    <string name="task_detail">Detalle de tarea</string>
-    <string name="task_completion">Completar tarea</string>
-    <string name="signature">Firma</string>
-    <string name="print_label">Imprimir etiqueta</string>
-    <string name="settings">Configuración</string>
-    
-    <!-- Navigation Drawer -->
-    <string name="navigation_drawer_open">Abrir menú de navegación</string>
-    <string name="navigation_drawer_close">Cerrar menú de navegación</string>
+    <!-- Textos comunes -->
+    <string name="accept">Aceptar</string>
+    <string name="cancel">Cancelar</string>
+    <string name="save">Guardar</string>
+    <string name="close">Cerrar</string>
+    <string name="delete">Eliminar</string>
+    <string name="edit">Editar</string>
+    <string name="yes">Sí</string>
+    <string name="no">No</string>
+    <string name="ok">OK</string>
+    <string name="search">Buscar</string>
+    <string name="add">Añadir</string>
+    <string name="create">Crear</string>
+    <string name="update">Actualizar</string>
+    <string name="back">Atrás</string>
+    <string name="next">Siguiente</string>
+    <string name="previous">Anterior</string>
+    <string name="loading">Cargando...</string>
+    <string name="error">Error</string>
+    <string name="retry">Reintentar</string>
+    <string name="empty_list">No hay elementos para mostrar</string>
     
     <!-- Autenticación -->
-    <string name="username">Usuario</string>
-    <string name="password">Contraseña</string>
-    <string name="login_button">Iniciar sesión</string>
+    <string name="login">Iniciar sesión</string>
     <string name="logout">Cerrar sesión</string>
-    <string name="server_url">URL del servidor</string>
-    <string name="save_url">Guardar URL</string>
+    <string name="login_prompt">Inicie sesión para continuar</string>
+    <string name="username">Nombre de usuario</string>
+    <string name="password">Contraseña</string>
+    <string name="remember_me">Recordarme</string>
+    <string name="login_error">Error de inicio de sesión</string>
+    <string name="invalid_credentials">Credenciales incorrectas</string>
+    <string name="logout_confirmation">¿Está seguro de que desea cerrar sesión?</string>
     
-    <!-- Selección de usuario -->
-    <string name="search_hint">Buscar usuario...</string>
-    <string name="no_users_found">No se encontraron usuarios</string>
+    <!-- Navegación -->
+    <string name="home">Inicio</string>
+    <string name="dashboard">Panel</string>
+    <string name="checkpoints">Puntos de fichaje</string>
+    <string name="employees">Empleados</string>
+    <string name="tasks">Tareas</string>
+    <string name="products">Productos</string>
+    <string name="settings">Configuración</string>
+    <string name="profile">Perfil</string>
+    <string name="companies">Empresas</string>
+    <string name="cash_register">Arqueo de caja</string>
+    <string name="expenses">Gastos</string>
+    <string name="sync">Sincronización</string>
+    
+    <!-- Fichajes -->
+    <string name="check_in">Entrada</string>
+    <string name="check_out">Salida</string>
+    <string name="check_in_time">Hora de entrada</string>
+    <string name="check_out_time">Hora de salida</string>
+    <string name="checkpoint_records">Registros de fichaje</string>
+    <string name="hours_worked">Horas trabajadas</string>
+    <string name="pending_check_out">Pendiente de salida</string>
+    <string name="auto_completed">Completado automáticamente</string>
+    <string name="scan_qr">Escanear QR</string>
+    <string name="scan_qr_prompt">Escanee el código QR del punto de fichaje</string>
     
     <!-- Tareas -->
-    <string name="task_status_pending">Pendiente</string>
-    <string name="task_status_in_progress">En progreso</string>
-    <string name="task_status_completed">Completada</string>
-    <string name="task_status_cancelled">Cancelada</string>
-    <string name="no_tasks_found">No se encontraron tareas</string>
-    <string name="refresh_tasks">Actualizar tareas</string>
-    <string name="change_status">Cambiar estado</string>
-    <string name="add_task">Añadir tarea</string>
-    <string name="due_date">Fecha de vencimiento: %s</string>
-    <string name="assigned_to">Asignada a: %s</string>
-    <string name="location">Ubicación: %s</string>
-    <string name="priority_high">Alta prioridad</string>
-    <string name="priority_medium">Prioridad media</string>
-    <string name="priority_low">Prioridad baja</string>
+    <string name="task_description">Descripción de la tarea</string>
+    <string name="task_status">Estado de la tarea</string>
+    <string name="task_priority">Prioridad</string>
+    <string name="task_due_date">Fecha límite</string>
+    <string name="task_assign">Asignar tarea</string>
+    <string name="task_complete">Completar tarea</string>
+    <string name="task_in_progress">En progreso</string>
+    <string name="task_completed">Completada</string>
+    <string name="task_cancelled">Cancelada</string>
+    <string name="task_signature">Firma de completado</string>
+    <string name="task_photo">Foto de completado</string>
+    <string name="task_notes">Notas</string>
     
-    <!-- Completar tarea -->
-    <string name="notes">Notas</string>
-    <string name="add_signature">Añadir firma</string>
-    <string name="add_photo">Añadir foto</string>
-    <string name="submit">Enviar</string>
-    <string name="task_completed_success">Tarea completada correctamente</string>
-    <string name="no_completions">No hay completaciones para esta tarea</string>
+    <!-- Productos -->
+    <string name="product_details">Detalles del producto</string>
+    <string name="product_name">Nombre del producto</string>
+    <string name="product_description">Descripción</string>
+    <string name="product_price">Precio</string>
+    <string name="product_cost">Coste</string>
+    <string name="product_sku">SKU</string>
+    <string name="product_barcode">Código de barras</string>
+    <string name="product_category">Categoría</string>
+    <string name="product_stock">Stock</string>
+    <string name="print_label">Imprimir etiqueta</string>
+    <string name="scan_barcode">Escanear código</string>
     
-    <!-- Firma -->
-    <string name="clear_signature">Limpiar</string>
-    <string name="save_signature">Guardar</string>
-    <string name="signature_empty">La firma no puede estar vacía</string>
-    <string name="signature_saved">Firma guardada</string>
-    <string name="signature_save_error">Error al guardar la firma</string>
-    <string name="sign_here">Firme aquí</string>
-    
-    <!-- Impresión de etiquetas -->
-    <string name="select_printer">Seleccionar impresora</string>
+    <!-- Impresión -->
+    <string name="printer_settings">Configuración de impresora</string>
+    <string name="printer_connect">Conectar impresora</string>
+    <string name="printer_disconnect">Desconectar impresora</string>
+    <string name="printer_status">Estado de la impresora</string>
+    <string name="printer_not_connected">No hay impresora conectada</string>
+    <string name="print_test">Imprimir prueba</string>
     <string name="select_template">Seleccionar plantilla</string>
-    <string name="print">Imprimir</string>
-    <string name="add_printer">Añadir impresora</string>
-    <string name="printer_name">Nombre de la impresora</string>
-    <string name="printer_address">Dirección (MAC o IP)</string>
-    <string name="printer_model">Modelo</string>
-    <string name="paper_width">Ancho del papel (mm)</string>
-    <string name="paper_height">Alto del papel (mm)</string>
-    <string name="default_printer">Impresora predeterminada</string>
-    <string name="save">Guardar</string>
-    <string name="cancel">Cancelar</string>
-    <string name="no_printers">No hay impresoras guardadas</string>
-    <string name="no_templates">No hay plantillas disponibles</string>
-    <string name="printing">Imprimiendo...</string>
-    <string name="printing_success">Impresión enviada correctamente</string>
-    <string name="printing_error">Error al imprimir: %s</string>
-    <string name="searching_printers">Buscando impresoras...</string>
-    <string name="no_printers_found">No se encontraron impresoras</string>
+    <string name="print_error">Error de impresión</string>
     
-    <!-- Mensajes de error -->
-    <string name="error_login">Error al iniciar sesión</string>
-    <string name="error_loading_users">Error al cargar usuarios</string>
-    <string name="error_loading_tasks">Error al cargar tareas</string>
-    <string name="error_connection">Error de conexión</string>
-    <string name="error_bluetooth">Error de Bluetooth</string>
-    <string name="error_camera">Error de cámara</string>
-    <string name="error_storage">Error de almacenamiento</string>
+    <!-- Sincronización -->
+    <string name="sync_status">Estado de sincronización</string>
+    <string name="last_sync">Última sincronización</string>
+    <string name="sync_now">Sincronizar ahora</string>
+    <string name="sync_in_progress">Sincronización en curso...</string>
+    <string name="sync_completed">Sincronización completada</string>
+    <string name="sync_failed">Error en la sincronización</string>
+    <string name="offline_mode">Modo sin conexión</string>
+    <string name="pending_uploads">Pendientes de subir</string>
+    <string name="pending_downloads">Pendientes de descargar</string>
+    <string name="network_unavailable">Red no disponible</string>
+    
+    <!-- Errores -->
     <string name="error_unknown">Error desconocido</string>
-    
-    <!-- Otros -->
-    <string name="ok">Aceptar</string>
-    <string name="retry">Reintentar</string>
-    <string name="loading">Cargando...</string>
-    <string name="success">Éxito</string>
-    <string name="error">Error</string>
-    <string name="warning">Advertencia</string>
-    <string name="info">Información</string>
+    <string name="error_connection">Error de conexión</string>
+    <string name="error_server">Error del servidor</string>
+    <string name="error_timeout">Tiempo de espera agotado</string>
+    <string name="error_auth">Error de autenticación</string>
+    <string name="error_validation">Error de validación</string>
+    <string name="error_local_storage">Error de almacenamiento local</string>
 </resources>

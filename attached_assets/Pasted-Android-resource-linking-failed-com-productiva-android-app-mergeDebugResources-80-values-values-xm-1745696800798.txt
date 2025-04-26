@@ -1,0 +1,21 @@
+Android resource linking failed
+com.productiva.android.app-mergeDebugResources-80:/values/values.xml:2374: error: resource color/colorPrimary (aka com.productiva.android.debug:color/colorPrimary) not found.
+com.productiva.android.app-mergeDebugResources-80:/values/values.xml:2375: error: resource color/colorPrimaryDark (aka com.productiva.android.debug:color/colorPrimaryDark) not found.
+com.productiva.android.app-mergeDebugResources-80:/values/values.xml:2376: error: resource color/colorAccent (aka com.productiva.android.debug:color/colorAccent) not found.
+com.productiva.android.app-mergeDebugResources-80:/values/values.xml:2377: error: resource color/colorBackground (aka com.productiva.android.debug:color/colorBackground) not found.
+com.productiva.android.app-mergeDebugResources-80:/values/values.xml:2378: error: resource color/colorTextPrimary (aka com.productiva.android.debug:color/colorTextPrimary) not found.
+com.productiva.android.app-mergeDebugResources-80:/values/values.xml:2379: error: resource color/colorTextSecondary (aka com.productiva.android.debug:color/colorTextSecondary) not found.
+com.productiva.android.app-mergeDebugResources-80:/values/values.xml:2380: error: resource color/colorTextPrimary (aka com.productiva.android.debug:color/colorTextPrimary) not found.
+com.productiva.android.app-mergeDebugResources-80:/values/values.xml:2381: error: resource color/colorPrimaryDark (aka com.productiva.android.debug:color/colorPrimaryDark) not found.
+com.productiva.android.app-mergeDebugResources-80:/values/values.xml:2382: error: resource color/colorPrimaryDark (aka com.productiva.android.debug:color/colorPrimaryDark) not found.
+com.productiva.android.app-mergeDebugResources-80:/values/values.xml:2374: error: resource color/colorPrimary (aka com.productiva.android.debug:color/colorPrimary) not found.
+com.productiva.android.app-mergeDebugResources-80:/values/values.xml:2375: error: resource color/colorPrimaryDark (aka com.productiva.android.debug:color/colorPrimaryDark) not found.
+com.productiva.android.app-mergeDebugResources-80:/values/values.xml:2376: error: resource color/colorAccent (aka com.productiva.android.debug:color/colorAccent) not found.
+com.productiva.android.app-mergeDebugResources-80:/values/values.xml:2377: error: resource color/colorBackground (aka com.productiva.android.debug:color/colorBackground) not found.
+com.productiva.android.app-mergeDebugResources-80:/values/values.xml:2378: error: resource color/colorTextPrimary (aka com.productiva.android.debug:color/colorTextPrimary) not found.
+com.productiva.android.app-mergeDebugResources-80:/values/values.xml:2379: error: resource color/colorTextSecondary (aka com.productiva.android.debug:color/colorTextSecondary) not found.
+com.productiva.android.app-mergeDebugResources-80:/values/values.xml:2380: error: resource color/colorTextPrimary (aka com.productiva.android.debug:color/colorTextPrimary) not found.
+com.productiva.android.app-mergeDebugResources-80:/values/values.xml:2381: error: resource color/colorPrimaryDark (aka com.productiva.android.debug:color/colorPrimaryDark) not found.
+com.productiva.android.app-mergeDebugResources-80:/values/values.xml:2382: error: resource color/colorPrimaryDark (aka com.productiva.android.debug:color/colorPrimaryDark) not found.
+com.productiva.android.app-mergeDebugResources-80:/values/values.xml:5761: error: resource color/colorError (aka com.productiva.android.debug:color/colorError) not found.
+com.productiva.android.app-mergeDebugResources-80:/values/values.xml:5761: error: resource color/colorError (aka com.productiva.android.debug:color/colorError) not found.

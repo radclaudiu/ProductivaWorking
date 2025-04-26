@@ -1,24 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#0062B2</color>
-    <color name="colorPrimaryDark">#004985</color>
-    <color name="colorPrimaryLight">#4D90CE</color>
-    <color name="colorAccent">#FF9800</color>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_700">#FF018786</color>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    
+    <!-- Colores antiguos (nombres) necesarios para compatibilidad -->
+    <color name="colorPrimary">#1E88E5</color>
+    <color name="colorPrimaryDark">#1565C0</color>
+    <color name="colorAccent">#FF5722</color>
     <color name="colorBackground">#F5F5F5</color>
+    <color name="colorError">#F44336</color>
     <color name="colorTextPrimary">#212121</color>
     <color name="colorTextSecondary">#757575</color>
-    <color name="colorError">#B00020</color>
-    <color name="colorSuccess">#4CAF50</color>
-    <color name="colorWarning">#FFC107</color>
-    <color name="colorWhite">#FFFFFF</color>
-    <color name="colorDivider">#BDBDBD</color>
-    <color name="colorCompletedTask">#E8F5E9</color>
-    <color name="colorPendingTask">#FFF8E1</color>
-    <color name="colorInProgressTask">#E3F2FD</color>
-    <color name="colorCanceledTask">#FFEBEE</color>
-    <color name="colorPriorityHigh">#F44336</color>
-    <color name="colorPriorityMedium">#FF9800</color>
-    <color name="colorPriorityLow">#4CAF50</color>
-    <color name="colorSignatureBackground">#FFFFFF</color>
-    <color name="colorSignaturePen">#000000</color>
+    
+    <!-- Colores personalizados para la aplicación Productiva -->
+    <color name="primary">#1E88E5</color>
+    <color name="primary_dark">#1565C0</color>
+    <color name="primary_light">#64B5F6</color>
+    <color name="accent">#FF5722</color>
+    <color name="accent_light">#FF8A65</color>
+    <color name="background">#F5F5F5</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="error">#F44336</color>
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="text_tertiary">#9E9E9E</color>
+    <color name="text_on_primary">#FFFFFF</color>
+    <color name="text_on_accent">#FFFFFF</color>
+    <color name="divider">#DEDEDE</color>
+    <color name="success">#4CAF50</color>
+    <color name="warning">#FFC107</color>
+    <color name="info">#2196F3</color>
 </resources>

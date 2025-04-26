@@ -1,0 +1,37 @@
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:processDebugResources'.
+> A failure occurred while executing com.android.build.gradle.internal.res.LinkApplicationAndroidResourcesTask$TaskAction
+   > Android resource linking failed
+     com.productiva.android.app-mergeDebugResources-80:/values/values.xml:6812: error: resource color/purple_500 (aka com.productiva.android.debug:color/purple_500) not found.
+     com.productiva.android.app-mergeDebugResources-80:/values/values.xml:6813: error: resource color/purple_700 (aka com.productiva.android.debug:color/purple_700) not found.
+     com.productiva.android.app-mergeDebugResources-80:/values/values.xml:6814: error: resource color/white (aka com.productiva.android.debug:color/white) not found.
+     com.productiva.android.app-mergeDebugResources-80:/values/values.xml:6816: error: resource color/teal_200 (aka com.productiva.android.debug:color/teal_200) not found.
+     com.productiva.android.app-mergeDebugResources-80:/values/values.xml:6817: error: resource color/teal_700 (aka com.productiva.android.debug:color/teal_700) not found.
+     com.productiva.android.app-mergeDebugResources-80:/values/values.xml:6818: error: resource color/black (aka com.productiva.android.debug:color/black) not found.
+     com.productiva.android.app-mergeDebugResources-80:/values/values.xml:6812: error: resource color/purple_500 (aka com.productiva.android.debug:color/purple_500) not found.
+     com.productiva.android.app-mergeDebugResources-80:/values/values.xml:6813: error: resource color/purple_700 (aka com.productiva.android.debug:color/purple_700) not found.
+     com.productiva.android.app-mergeDebugResources-80:/values/values.xml:6814: error: resource color/white (aka com.productiva.android.debug:color/white) not found.
+     com.productiva.android.app-mergeDebugResources-80:/values/values.xml:6816: error: resource color/teal_200 (aka com.productiva.android.debug:color/teal_200) not found.
+     com.productiva.android.app-mergeDebugResources-80:/values/values.xml:6817: error: resource color/teal_700 (aka com.productiva.android.debug:color/teal_700) not found.
+     com.productiva.android.app-mergeDebugResources-80:/values/values.xml:6818: error: resource color/black (aka com.productiva.android.debug:color/black) not found.
+     com.productiva.android.app-mergeDebugResources-80:/values-night-v8/values-night-v8.xml:37: error: resource color/purple_200 (aka com.productiva.android.debug:color/purple_200) not found.
+     com.productiva.android.app-mergeDebugResources-80:/values-night-v8/values-night-v8.xml:38: error: resource color/purple_700 (aka com.productiva.android.debug:color/purple_700) not found.
+     com.productiva.android.app-mergeDebugResources-80:/values-night-v8/values-night-v8.xml:39: error: resource color/black (aka com.productiva.android.debug:color/black) not found.
+     com.productiva.android.app-mergeDebugResources-80:/values-night-v8/values-night-v8.xml:41: error: resource color/teal_200 (aka com.productiva.android.debug:color/teal_200) not found.
+     com.productiva.android.app-mergeDebugResources-80:/values-night-v8/values-night-v8.xml:42: error: resource color/teal_200 (aka com.productiva.android.debug:color/teal_200) not found.
+     com.productiva.android.app-mergeDebugResources-80:/values-night-v8/values-night-v8.xml:43: error: resource color/black (aka com.productiva.android.debug:color/black) not found.
+     com.productiva.android.app-mergeDebugResources-80:/values-night-v8/values-night-v8.xml:37: error: resource color/purple_200 (aka com.productiva.android.debug:color/purple_200) not found.
+     com.productiva.android.app-mergeDebugResources-80:/values-night-v8/values-night-v8.xml:38: error: resource color/purple_700 (aka com.productiva.android.debug:color/purple_700) not found.
+
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 9s
+47 actionable tasks: 12 executed, 8 from cache, 27 up-to-date
+Configuration cache entry stored.

@@ -41,8 +41,6 @@ android {
         noCompress "webp"
         // Deshabilitar el procesamiento de imágenes para acelerar la compilación
         cruncherEnabled false
-        // Ignorar advertencias en recursos para evitar fallas por archivos duplicados
-        ignoreWarnings true
     }
     
     // Configuración para optimizar el manejo de recursos

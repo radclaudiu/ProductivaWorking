@@ -1,0 +1,39 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+buildscript {
+    ext {
+        kotlin_version = '1.7.20'
+        nav_version = '2.5.3'
+        room_version = '2.5.0'
+        retrofit_version = '2.9.0'
+        lifecycle_version = '2.5.1'
+        coroutines_version = '1.6.4'
+    }
+    
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+        // Repositorio Brother para el SDK de impresión
+        maven { url 'https://raw.githubusercontent.com/brother-industries/BrotherPrintLibrary/master/implementations' }
+    }
+    
+    dependencies {
+        classpath 'com.android.tools.build:gradle:7.3.1'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath "androidx.navigation:navigation-safe-args-gradle-plugin:$nav_version"
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+        maven { url 'https://jitpack.io' }
+        // Repositorio Brother para el SDK de impresión
+        maven { url 'https://raw.githubusercontent.com/brother-industries/BrotherPrintLibrary/master/implementations' }
+    }
+}
+
+task clean(type: Delete) {
+    delete rootProject.buildDir
+}

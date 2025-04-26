@@ -1,69 +1,74 @@
 package com.productiva.android
 
 import android.app.Application
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothManager
 import android.content.Context
-import com.productiva.android.api.ApiClient
-import com.productiva.android.api.ApiService
-import com.productiva.android.bluetooth.BluetoothPrinterManager
-import com.productiva.android.data.AppDatabase
-import com.productiva.android.repository.TaskRepository
-import com.productiva.android.utils.SessionManager
+import androidx.room.Room
+import com.brother.sdk.BrotherPrintLibrary
+import com.productiva.android.database.AppDatabase
+import com.productiva.android.utils.AppLogger
+import com.productiva.android.utils.PreferenceManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 
 /**
- * Clase de aplicación personalizada para la inicialización global
+ * Clase de aplicación principal para inicializar componentes esenciales
  */
 class ProductivaApplication : Application() {
     
-    // Base de datos
-    val database: AppDatabase by lazy {
-        AppDatabase.getDatabase(this)
-    }
+    // Ámbito de corrutina para la aplicación
+    private val applicationScope = CoroutineScope(SupervisorJob())
     
-    // API Service
-    val apiService: ApiService by lazy {
-        ApiClient.create(sessionManager.getServerUrl())
-    }
+    // Base de datos única en toda la aplicación
+    lateinit var database: AppDatabase
+        private set
     
-    // Session Manager
-    val sessionManager: SessionManager by lazy {
-        SessionManager(this)
-    }
-    
-    // Bluetooth Adapter
-    val bluetoothAdapter: BluetoothAdapter? by lazy {
-        val bluetoothManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        bluetoothManager.adapter
-    }
-    
-    // BluetoothPrinterManager
-    val bluetoothPrinterManager: BluetoothPrinterManager by lazy {
-        BluetoothPrinterManager(this)
-    }
-    
-    // Repositorio de tareas
-    val taskRepository: TaskRepository by lazy {
-        TaskRepository(
-            apiService = apiService,
-            taskDao = database.taskDao(),
-            taskCompletionDao = database.taskCompletionDao(),
-            context = this
-        )
-    }
+    // Gestor de preferencias
+    lateinit var preferenceManager: PreferenceManager
+        private set
     
     override fun onCreate() {
         super.onCreate()
         
-        // Inicializaciones adicionales si son necesarias
+        instance = this
+        
+        // Inicializar logger
+        AppLogger.init(this)
+        
+        // Inicializar base de datos
+        database = Room.databaseBuilder(
+            applicationContext,
+            AppDatabase::class.java,
+            "productiva_database"
+        )
+            .fallbackToDestructiveMigration() // En producción usar migrations adecuadas
+            .build()
+        
+        // Inicializar gestor de preferencias
+        preferenceManager = PreferenceManager(this)
+        
+        // Inicializar SDK de Brother
+        initializeBrotherSDK()
+        
+        AppLogger.d(TAG, "Aplicación inicializada correctamente")
     }
     
     /**
-     * Actualiza la URL del servidor y recrea el ApiService
+     * Inicializa el SDK de Brother para impresión
      */
-    fun updateServerUrl(newUrl: String) {
-        sessionManager.saveServerUrl(newUrl)
-        // Re-crear el servicio API con la nueva URL
-        ApiClient.resetInstance(newUrl)
+    private fun initializeBrotherSDK() {
+        try {
+            // Inicializar biblioteca de Brother
+            BrotherPrintLibrary.initialize(this)
+            AppLogger.d(TAG, "SDK de Brother inicializado correctamente")
+        } catch (e: Exception) {
+            AppLogger.e(TAG, "Error al inicializar SDK de Brother: ${e.message}")
+        }
+    }
+    
+    companion object {
+        private const val TAG = "ProductivaApplication"
+        
+        lateinit var instance: ProductivaApplication
+            private set
     }
 }

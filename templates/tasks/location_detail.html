@@ -379,7 +379,7 @@
                                     </thead>
                                     <tbody>
                                         {% for task in location.tasks %}
-                                        <tr>
+                                        <tr class="{{ 'table-success' if task.status.value == 'completada' else 'table-warning' if task.status.value == 'pendiente' else '' }}">
                                             <td>{{ task.title }}</td>
                                             <td>
                                                 {% if task.group %}

@@ -1545,6 +1545,9 @@ def complete_task(task_id):
             notes=form.notes.data
         )
         
+        # Actualizar el estado de la tarea a completada
+        task.status = TaskStatus.COMPLETADA
+        
         db.session.add(completion)
         db.session.commit()
         
@@ -1596,6 +1599,9 @@ def ajax_complete_task(task_id):
         local_user_id=user_id,
         notes=notes
     )
+    
+    # Actualizar el estado de la tarea a completada
+    task.status = TaskStatus.COMPLETADA
     
     db.session.add(completion)
     db.session.commit()

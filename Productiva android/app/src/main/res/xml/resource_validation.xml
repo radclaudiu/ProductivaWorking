@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Define reglas para la validación de recursos -->
+    <validation
+        resourceType="mipmap"
+        failOnMissingDefault="false">
+        <!-- Preferir archivos WebP sobre PNG para los íconos -->
+        <format>webp</format>
+        <!-- Alternativa: formatos PNG si WebP no está disponible -->
+        <format>png</format>
+    </validation>
+    
+    <!-- Reglas específicas para íconos adaptativos -->
+    <validation
+        resourceType="drawable"
+        failOnMissingDefault="false">
+        <!-- Especificar formatos de recursos vectoriales preferidos -->
+        <format>xml</format>
+    </validation>
+</resources>

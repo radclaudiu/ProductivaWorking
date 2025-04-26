@@ -7,6 +7,7 @@ import com.productiva.android.data.database.AppDatabase
 import com.productiva.android.network.NetworkStatusManager
 import com.productiva.android.sync.SyncManager
 import com.productiva.android.sync.SyncWorker
+import com.productiva.android.utils.IconVersionProvider
 import com.productiva.android.utils.NotificationChannelHelper
 import com.productiva.android.utils.ResourceConflictResolver
 import com.productiva.android.utils.SessionManager
@@ -33,6 +34,9 @@ class ProductivaApplication : Application() {
         
         // Inicializar el resolvedor de conflictos de recursos
         ResourceConflictResolver.initialize(this)
+        
+        // Registrar información sobre compatibilidad de íconos
+        IconVersionProvider.logIconCompatibilityInfo(this)
 
         // Configurar la sincronización periódica en segundo plano
         setupPeriodicSync()

@@ -1,9 +1,13 @@
 package com.productiva.android.network
 
 import android.content.Context
-import android.util.Log
+import com.google.gson.Gson
 import com.google.gson.GsonBuilder
-import com.productiva.android.BuildConfig
+import com.google.gson.JsonDeserializer
+import com.google.gson.reflect.TypeToken
+import com.productiva.android.session.SessionManager
+import com.productiva.android.utils.API_BASE_URL
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -11,91 +15,122 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 /**
- * Cliente Retrofit que proporciona la instancia para realizar peticiones a la API.
+ * Cliente Retrofit para la comunicación con la API.
+ * Configura y proporciona la instancia de Retrofit para realizar peticiones.
  */
 object RetrofitClient {
-    private const val TAG = "RetrofitClient"
+    private const val CONNECT_TIMEOUT = 30L
+    private const val READ_TIMEOUT = 30L
+    private const val WRITE_TIMEOUT = 30L
     
-    // Cache de la instancia de ApiService
+    private var retrofit: Retrofit? = null
     private var apiService: ApiService? = null
     
     /**
-     * Obtiene la URL base de la API.
-     */
-    fun getApiBaseUrl(context: Context): String {
-        // En producción, obtener la URL del BuildConfig
-        return BuildConfig.API_BASE_URL
-    }
-    
-    /**
-     * Obtiene una instancia de ApiService para realizar peticiones.
-     * 
-     * @param context Contexto de la aplicación.
-     * @return Instancia de ApiService.
+     * Obtiene la instancia del servicio de API.
+     * Si no existe, la crea con la configuración adecuada.
      */
     fun getApiService(context: Context): ApiService {
-        // Si ya existe una instancia, devolverla
-        apiService?.let { return it }
-        
-        // Crear cliente OkHttp con interceptores
-        val client = createOkHttpClient()
-        
-        // Crear convertidor Gson
-        val gson = GsonBuilder()
-            .setDateFormat("yyyy-MM-dd'T'HH:mm:ss")
-            .create()
-        
-        // Crear instancia de Retrofit
-        val retrofit = Retrofit.Builder()
-            .baseUrl(getApiBaseUrl(context))
-            .client(client)
-            .addConverterFactory(GsonConverterFactory.create(gson))
-            .build()
-        
-        // Crear instancia de ApiService
-        return retrofit.create(ApiService::class.java).also {
-            apiService = it
-            Log.d(TAG, "ApiService creado")
+        if (apiService == null) {
+            val client = createHttpClient(context)
+            val gson = createGsonConverter()
+            
+            retrofit = Retrofit.Builder()
+                .baseUrl(API_BASE_URL)
+                .client(client)
+                .addConverterFactory(GsonConverterFactory.create(gson))
+                .build()
+            
+            apiService = retrofit?.create(ApiService::class.java)
         }
+        
+        return apiService ?: throw IllegalStateException("API Service no pudo ser inicializado")
     }
     
     /**
-     * Crea una instancia configurada del cliente OkHttp.
-     * 
-     * @return Cliente OkHttp configurado.
+     * Crea el cliente HTTP con los interceptores necesarios.
      */
-    private fun createOkHttpClient(): OkHttpClient {
-        // Interceptor para logging
+    private fun createHttpClient(context: Context): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = if (BuildConfig.DEBUG) {
-                HttpLoggingInterceptor.Level.BODY
-            } else {
-                HttpLoggingInterceptor.Level.NONE
-            }
+            level = HttpLoggingInterceptor.Level.BODY
         }
         
-        // Interceptor para añadir headers comunes
-        val headerInterceptor = HeaderInterceptor()
+        val authInterceptor = Interceptor { chain ->
+            val original = chain.request()
+            
+            // Obtener token de autenticación del SessionManager
+            val token = SessionManager.getInstance().getAuthToken()
+            
+            // Si hay token, añadirlo a las cabeceras
+            val request = if (!token.isNullOrEmpty()) {
+                original.newBuilder()
+                    .header("Authorization", "Bearer $token")
+                    .header("Accept", "application/json")
+                    .method(original.method, original.body)
+                    .build()
+            } else {
+                original.newBuilder()
+                    .header("Accept", "application/json")
+                    .method(original.method, original.body)
+                    .build()
+            }
+            
+            chain.proceed(request)
+        }
         
-        // Interceptor para gestionar el token de autenticación
-        val authInterceptor = AuthInterceptor()
-        
-        // Construcción del cliente
         return OkHttpClient.Builder()
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(15, TimeUnit.SECONDS)
-            .writeTimeout(15, TimeUnit.SECONDS)
-            .addInterceptor(headerInterceptor)
+            .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
+            .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
+            .writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
             .addInterceptor(authInterceptor)
             .addInterceptor(loggingInterceptor)
             .build()
     }
     
     /**
-     * Invalida la caché del cliente para forzar la creación de una nueva instancia.
+     * Crea el convertidor Gson con los deserializadores necesarios.
      */
-    fun invalidateCache() {
+    private fun createGsonConverter(): Gson {
+        // Deserializador para listas de strings (para las etiquetas o tags)
+        val stringListType = object : TypeToken<List<String>>() {}.type
+        val stringListDeserializer = JsonDeserializer { json, _, _ ->
+            val list = mutableListOf<String>()
+            
+            if (json.isJsonArray) {
+                val jsonArray = json.asJsonArray
+                jsonArray.forEach {
+                    if (it.isJsonPrimitive) {
+                        list.add(it.asString)
+                    }
+                }
+            } else if (json.isJsonPrimitive) {
+                // Si es una cadena, intentar separar por comas o barras
+                val str = json.asString
+                if (str.contains(",")) {
+                    list.addAll(str.split(",").map { it.trim() })
+                } else if (str.contains("|")) {
+                    list.addAll(str.split("|").map { it.trim() })
+                } else {
+                    list.add(str)
+                }
+            }
+            
+            list
+        }
+        
+        return GsonBuilder()
+            .setLenient()
+            .registerTypeAdapter(stringListType, stringListDeserializer)
+            .create()
+    }
+    
+    /**
+     * Actualiza el token de autenticación.
+     * Útil cuando se inicia sesión o se renueva el token.
+     */
+    fun updateAuthToken(token: String?) {
+        // Forzar la recreación del cliente HTTP con el nuevo token
         apiService = null
-        Log.d(TAG, "Caché de ApiService invalidada")
+        retrofit = null
     }
 }

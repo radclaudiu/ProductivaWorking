@@ -1,101 +1,91 @@
 package com.productiva.android.data.model
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
-import androidx.room.TypeConverters
-import com.productiva.android.data.converter.DateConverter
-import java.util.Date
+import com.google.gson.annotations.SerializedName
 
 /**
- * Modelo que representa un producto en el sistema.
- *
- * @property id ID único del producto.
- * @property name Nombre del producto.
- * @property description Descripción del producto (opcional).
- * @property sku Código SKU del producto (opcional).
- * @property barcode Código de barras del producto (opcional).
- * @property price Precio del producto.
- * @property stock Cantidad en stock del producto.
- * @property minStock Stock mínimo antes de alertar (opcional).
- * @property imageUrl URL de la imagen del producto (opcional).
- * @property companyId ID de la empresa a la que pertenece el producto.
- * @property categoryId ID de la categoría del producto (opcional).
- * @property isActive Indica si el producto está activo.
- * @property createdAt Fecha de creación del producto.
- * @property updatedAt Fecha de última actualización del producto.
- * @property syncStatus Estado de sincronización del producto.
- * @property pendingChanges Indica si hay cambios pendientes de sincronización.
+ * Modelo de datos para productos.
+ * Representa la estructura de datos de un producto en el sistema.
+ * 
+ * @property id Identificador único del producto
+ * @property companyId ID de la empresa a la que pertenece
+ * @property name Nombre del producto
+ * @property description Descripción detallada del producto
+ * @property sku Código SKU (Stock Keeping Unit)
+ * @property barcode Código de barras (EAN/UPC)
+ * @property price Precio del producto
+ * @property cost Coste del producto
+ * @property category Categoría del producto
+ * @property imageUrl URL o ruta a la imagen del producto
+ * @property active Indica si el producto está activo
+ * @property stock Cantidad en stock
+ * @property createdAt Fecha de creación
+ * @property updatedAt Fecha de última actualización
+ * @property syncStatus Estado de sincronización con el servidor
  */
-@Entity(tableName = "products")
-@TypeConverters(DateConverter::class)
+@Entity(
+    tableName = "products",
+    foreignKeys = [
+        ForeignKey(
+            entity = Company::class,
+            parentColumns = ["id"],
+            childColumns = ["companyId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [
+        Index("companyId"),
+        Index("sku"),
+        Index("barcode")
+    ]
+)
 data class Product(
-    @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,
-    val name: String,
-    val description: String? = null,
-    val sku: String? = null,
-    val barcode: String? = null,
-    val price: Double = 0.0,
-    val stock: Int = 0,
-    val minStock: Int? = null,
-    val imageUrl: String? = null,
+    @PrimaryKey
+    @SerializedName("id")
+    val id: Int = 0,  // 0 para productos locales aún no sincronizados
+    
+    @SerializedName("company_id")
     val companyId: Int,
-    val categoryId: Int? = null,
-    val isActive: Boolean = true,
-    val createdAt: Date = Date(),
-    val updatedAt: Date = Date(),
-    val syncStatus: SyncStatus = SyncStatus.PENDING_UPLOAD,
-    val pendingChanges: Boolean = false
-) {
-    /**
-     * Estado de sincronización del producto.
-     */
-    enum class SyncStatus {
-        /** Sincronizado con el servidor. */
-        SYNCED,
-        /** Pendiente de subir al servidor. */
-        PENDING_UPLOAD,
-        /** Pendiente de actualizar en el servidor. */
-        PENDING_UPDATE,
-        /** Pendiente de eliminar en el servidor. */
-        PENDING_DELETE
-    }
     
-    /**
-     * Crea una copia del producto con un estado de sincronización específico.
-     *
-     * @param syncStatus Nuevo estado de sincronización.
-     * @return Copia del producto con el nuevo estado.
-     */
-    fun withSyncStatus(syncStatus: SyncStatus): Product {
-        return this.copy(syncStatus = syncStatus)
-    }
+    @SerializedName("name")
+    val name: String,
     
-    /**
-     * Marca el producto como eliminado.
-     *
-     * @return Copia del producto marcado para eliminación.
-     */
-    fun markAsDeleted(): Product {
-        return this.copy(
-            syncStatus = SyncStatus.PENDING_DELETE,
-            pendingChanges = true,
-            updatedAt = Date()
-        )
-    }
+    @SerializedName("description")
+    val description: String? = null,
     
-    /**
-     * Actualiza el stock del producto.
-     *
-     * @param newStock Nuevo nivel de stock.
-     * @return Copia del producto con el stock actualizado.
-     */
-    fun updateStock(newStock: Int): Product {
-        return this.copy(
-            stock = newStock,
-            syncStatus = SyncStatus.PENDING_UPDATE,
-            pendingChanges = true,
-            updatedAt = Date()
-        )
-    }
-}
+    @SerializedName("sku")
+    val sku: String? = null,
+    
+    @SerializedName("barcode")
+    val barcode: String? = null,
+    
+    @SerializedName("price")
+    val price: Double = 0.0,
+    
+    @SerializedName("cost")
+    val cost: Double? = null,
+    
+    @SerializedName("category")
+    val category: String? = null,
+    
+    @SerializedName("image_url")
+    val imageUrl: String? = null,
+    
+    @SerializedName("active")
+    val active: Boolean = true,
+    
+    @SerializedName("stock")
+    val stock: Int? = null,
+    
+    @SerializedName("created_at")
+    val createdAt: String? = null,
+    
+    @SerializedName("updated_at")
+    val updatedAt: String? = null,
+    
+    // Campos locales (no se envían al servidor)
+    val syncStatus: String = "SYNCED"  // SYNCED, PENDING_SYNC, SYNC_ERROR
+)

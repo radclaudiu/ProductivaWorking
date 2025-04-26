@@ -1,93 +1,116 @@
 package com.productiva.android.data.model
 
 import androidx.room.Entity
+import androidx.room.ForeignKey
+import androidx.room.Index
 import androidx.room.PrimaryKey
-import androidx.room.TypeConverters
-import com.productiva.android.data.converter.DateConverter
-import com.productiva.android.data.converter.MapConverter
-import java.util.Date
+import com.google.gson.annotations.SerializedName
 
 /**
- * Modelo que representa una plantilla de etiqueta para impresión.
- *
- * @property id ID único de la plantilla.
- * @property name Nombre de la plantilla.
- * @property description Descripción de la plantilla (opcional).
- * @property width Ancho de la etiqueta en milímetros.
- * @property height Alto de la etiqueta en milímetros (opcional para etiquetas continuas).
- * @property dpi Resolución de impresión en puntos por pulgada.
- * @property printerModel Modelo de impresora recomendado (opcional).
- * @property fields Mapa con la definición de campos y sus posiciones.
- * @property isDefault Indica si es la plantilla por defecto.
- * @property companyId ID de la empresa a la que pertenece la plantilla.
- * @property createdAt Fecha de creación de la plantilla.
- * @property updatedAt Fecha de última actualización de la plantilla.
- * @property syncStatus Estado de sincronización de la plantilla.
- * @property pendingChanges Indica si hay cambios pendientes de sincronización.
+ * Modelo de datos para plantillas de etiquetas.
+ * Representa una plantilla para impresión de etiquetas en impresoras Brother.
+ * 
+ * @property id Identificador único de la plantilla
+ * @property companyId ID de la empresa a la que pertenece
+ * @property name Nombre descriptivo de la plantilla
+ * @property width Ancho de la etiqueta en mm
+ * @property height Alto de la etiqueta en mm
+ * @property labelType Tipo de etiqueta (product, employee_badge, shipping, etc.)
+ * @property content Contenido de la plantilla en formato JSON
+ * @property templateFile Archivo de plantilla binario (solo para plantillas Brother P-touch)
+ * @property active Indica si la plantilla está activa
+ * @property createdAt Fecha de creación
+ * @property updatedAt Fecha de última actualización
+ * @property syncStatus Estado de sincronización con el servidor
  */
-@Entity(tableName = "label_templates")
-@TypeConverters(DateConverter::class, MapConverter::class)
+@Entity(
+    tableName = "label_templates",
+    foreignKeys = [
+        ForeignKey(
+            entity = Company::class,
+            parentColumns = ["id"],
+            childColumns = ["companyId"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [Index("companyId")]
+)
 data class LabelTemplate(
-    @PrimaryKey(autoGenerate = true)
-    val id: Int = 0,
-    val name: String,
-    val description: String? = null,
-    val width: Int,
-    val height: Int? = null,
-    val dpi: Int = 300,
-    val printerModel: String? = null,
-    val fields: Map<String, FieldPosition> = emptyMap(),
-    val isDefault: Boolean = false,
-    val companyId: Int,
-    val createdAt: Date = Date(),
-    val updatedAt: Date = Date(),
-    val syncStatus: SyncStatus = SyncStatus.PENDING_UPLOAD,
-    val pendingChanges: Boolean = false
-) {
-    /**
-     * Estado de sincronización de la plantilla.
-     */
-    enum class SyncStatus {
-        /** Sincronizada con el servidor. */
-        SYNCED,
-        /** Pendiente de subir al servidor. */
-        PENDING_UPLOAD,
-        /** Pendiente de actualizar en el servidor. */
-        PENDING_UPDATE,
-        /** Pendiente de eliminar en el servidor. */
-        PENDING_DELETE
-    }
+    @PrimaryKey
+    @SerializedName("id")
+    val id: Int = 0,  // 0 para plantillas locales aún no sincronizadas
     
-    /**
-     * Crea una copia de la plantilla con un estado de sincronización específico.
-     *
-     * @param syncStatus Nuevo estado de sincronización.
-     * @return Copia de la plantilla con el nuevo estado.
-     */
-    fun withSyncStatus(syncStatus: SyncStatus): LabelTemplate {
-        return this.copy(syncStatus = syncStatus)
+    @SerializedName("company_id")
+    val companyId: Int,
+    
+    @SerializedName("name")
+    val name: String,
+    
+    @SerializedName("width")
+    val width: Int,
+    
+    @SerializedName("height")
+    val height: Int,
+    
+    @SerializedName("label_type")
+    val labelType: String,
+    
+    @SerializedName("content")
+    val content: String,  // JSON con la definición de la plantilla
+    
+    @SerializedName("template_file")
+    val templateFile: ByteArray? = null,  // Binario para plantillas Brother P-touch
+    
+    @SerializedName("active")
+    val active: Boolean = true,
+    
+    @SerializedName("created_at")
+    val createdAt: String? = null,
+    
+    @SerializedName("updated_at")
+    val updatedAt: String? = null,
+    
+    // Campos locales (no se envían al servidor)
+    val syncStatus: String = "SYNCED"  // SYNCED, PENDING_SYNC, SYNC_ERROR
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as LabelTemplate
+
+        if (id != other.id) return false
+        if (companyId != other.companyId) return false
+        if (name != other.name) return false
+        if (width != other.width) return false
+        if (height != other.height) return false
+        if (labelType != other.labelType) return false
+        if (content != other.content) return false
+        if (templateFile != null) {
+            if (other.templateFile == null) return false
+            if (!templateFile.contentEquals(other.templateFile)) return false
+        } else if (other.templateFile != null) return false
+        if (active != other.active) return false
+        if (createdAt != other.createdAt) return false
+        if (updatedAt != other.updatedAt) return false
+        if (syncStatus != other.syncStatus) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = id
+        result = 31 * result + companyId
+        result = 31 * result + name.hashCode()
+        result = 31 * result + width
+        result = 31 * result + height
+        result = 31 * result + labelType.hashCode()
+        result = 31 * result + content.hashCode()
+        result = 31 * result + (templateFile?.contentHashCode() ?: 0)
+        result = 31 * result + active.hashCode()
+        result = 31 * result + (createdAt?.hashCode() ?: 0)
+        result = 31 * result + (updatedAt?.hashCode() ?: 0)
+        result = 31 * result + syncStatus.hashCode()
+        return result
     }
 }
-
-/**
- * Clase que define la posición y formato de un campo en una etiqueta.
- *
- * @property x Posición X en milímetros desde el borde izquierdo.
- * @property y Posición Y en milímetros desde el borde superior.
- * @property width Ancho máximo del campo en milímetros (opcional).
- * @property fontSize Tamaño de la fuente en puntos (opcional).
- * @property isBold Indica si el texto debe estar en negrita.
- * @property isItalic Indica si el texto debe estar en cursiva.
- * @property alignment Alineación del texto ('left', 'center', 'right').
- * @property rotation Rotación del texto en grados.
- */
-data class FieldPosition(
-    val x: Float,
-    val y: Float,
-    val width: Int? = null,
-    val fontSize: Int? = null,
-    val isBold: Boolean = false,
-    val isItalic: Boolean = false,
-    val alignment: String = "left",
-    val rotation: Int = 0
-)

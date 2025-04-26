@@ -1,39 +1,56 @@
 package com.productiva.android.network
 
-import android.util.Log
+import android.content.Context
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
+import okhttp3.Request
 import okhttp3.Response
 import java.io.IOException
 
 /**
- * Interceptor que verifica la conectividad antes de intentar realizar peticiones de red.
- * Si no hay conexión a Internet, interrumpe la petición con una excepción personalizada.
+ * Interceptor para verificar el estado de la conexión a Internet antes de
+ * realizar solicitudes HTTP.
+ *
+ * Esta clase comprueba si hay una conexión a Internet disponible antes de
+ * proceder con una solicitud. Si no hay conexión, lanza una NoConnectivityException.
+ *
+ * @property context Contexto de la aplicación
+ * @property networkStatusManager Administrador del estado de la red
  */
-class NetworkConnectionInterceptor : Interceptor {
-    private val TAG = "NetworkInterceptor"
-    
+class NetworkConnectionInterceptor(
+    private val context: Context,
+    private val networkStatusManager: NetworkStatusManager
+) : Interceptor {
+
+    /**
+     * Intercepta la solicitud HTTP y verifica la conectividad.
+     * Si no hay conexión, lanza una excepción. Si hay conexión, procede con la solicitud.
+     *
+     * @param chain Cadena de interceptores
+     * @return Respuesta HTTP si hay conexión
+     * @throws NoConnectivityException si no hay conexión a Internet
+     */
+    @Throws(IOException::class)
     override fun intercept(chain: Interceptor.Chain): Response {
-        // Obtener instancia singleton del administrador de conectividad
-        val networkStatusManager = NetworkStatusManager.getInstance()
-        
-        if (!networkStatusManager.isNetworkAvailable()) {
-            Log.e(TAG, "Sin conexión a Internet. Cancelando petición de red.")
-            throw NoConnectivityException()
+        if (!isNetworkAvailable()) {
+            throw NoConnectivityException("No hay conexión a Internet disponible")
         }
         
-        // Continuar con la cadena de interceptores si hay conexión
-        return try {
-            chain.proceed(chain.request())
-        } catch (e: IOException) {
-            // Marcar la red como problemática si hay error de IO
-            networkStatusManager.setNetworkProblem(true)
-            Log.e(TAG, "Error de red en la petición: ${e.message}")
-            throw e
-        }
+        // Si hay conexión, continuamos con la solicitud
+        val builder: Request.Builder = chain.request().newBuilder()
+        return chain.proceed(builder.build())
     }
     
     /**
-     * Excepción personalizada para los casos sin conectividad.
+     * Verifica si hay una conexión a Internet disponible usando el NetworkStatusManager.
      */
-    class NoConnectivityException : IOException("No hay conexión a Internet. Verifica tu conexión e intenta nuevamente.")
+    private fun isNetworkAvailable(): Boolean = runBlocking {
+        networkStatusManager.connectionStatus.first().isConnected
+    }
+    
+    /**
+     * Excepción lanzada cuando no hay conectividad a Internet.
+     */
+    class NoConnectivityException(message: String) : IOException(message)
 }

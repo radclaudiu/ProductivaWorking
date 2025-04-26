@@ -6,143 +6,117 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
-import android.util.Log
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * Administrador de estado de la red.
- * Monitorea la conectividad del dispositivo y notifica los cambios.
+ * Administrador del estado de conectividad de red.
+ * Esta clase proporciona información sobre el estado actual de la conexión
+ * a Internet y notifica a los observadores sobre cambios en la conectividad.
+ *
+ * @property context Contexto de la aplicación
  */
 class NetworkStatusManager(private val context: Context) {
-    private val TAG = "NetworkStatusManager"
-    
-    private val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-    
-    // Estado observable para la interfaz de usuario
-    private val _networkAvailable = MutableLiveData<Boolean>()
-    val networkAvailable: LiveData<Boolean> = _networkAvailable
-    
-    // Flow para la capa de datos
-    private val _networkState = MutableStateFlow(checkNetworkAvailability())
-    val networkState: StateFlow<Boolean> = _networkState
-    
-    // Estado para problemas de conexión (conexión inestable)
-    private var hasNetworkProblem = false
+
+    private val _connectionStatus = MutableStateFlow(ConnectionStatus())
+    val connectionStatus: StateFlow<ConnectionStatus> = _connectionStatus.asStateFlow()
+
+    private val connectivityManager = 
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     
     init {
-        // Inicializar estado
-        val initialState = checkNetworkAvailability()
-        _networkAvailable.value = initialState
-        _networkState.value = initialState
+        // Inicializamos el estado actual de la conexión
+        updateConnectionStatus()
         
-        // Registrar callback para monitorear cambios de conectividad
-        setupNetworkCallback()
-        
-        Log.d(TAG, "NetworkStatusManager inicializado, estado inicial: $initialState")
-    }
-    
-    private fun setupNetworkCallback() {
+        // Registramos un callback para monitorear cambios en la conectividad
         val networkRequest = NetworkRequest.Builder()
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .build()
             
-        val networkCallback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                super.onAvailable(network)
-                Log.d(TAG, "Red disponible")
-                updateNetworkStatus(true)
-            }
-            
-            override fun onLost(network: Network) {
-                super.onLost(network)
-                Log.d(TAG, "Red perdida")
-                updateNetworkStatus(false)
-            }
-            
-            override fun onUnavailable() {
-                super.onUnavailable()
-                Log.d(TAG, "Red no disponible")
-                updateNetworkStatus(false)
-            }
-        }
-        
         connectivityManager.registerNetworkCallback(networkRequest, networkCallback)
     }
     
-    /**
-     * Actualiza el estado de la red y notifica los cambios
-     */
-    private fun updateNetworkStatus(isAvailable: Boolean) {
-        if (isAvailable) {
-            // Al recuperar la conexión, resetear el flag de problema
-            hasNetworkProblem = false
+    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            // La conexión a Internet está disponible
+            _connectionStatus.value = ConnectionStatus(isConnected = true)
         }
         
-        _networkAvailable.postValue(isAvailable)
-        _networkState.value = isAvailable
-    }
-    
-    /**
-     * Verifica si hay conexión a Internet disponible
-     */
-    fun isNetworkAvailable(): Boolean {
-        return if (hasNetworkProblem) {
-            // Si se ha detectado un problema de red, forzar a false
-            false
-        } else {
-            // Verificar conectividad real
-            checkNetworkAvailability()
+        override fun onLost(network: Network) {
+            // La conexión a Internet se ha perdido
+            _connectionStatus.value = ConnectionStatus(isConnected = false)
         }
-    }
-    
-    /**
-     * Marca si hay problemas con la red (para casos donde hay conectividad
-     * pero no respuesta del servidor)
-     */
-    fun setNetworkProblem(hasProblem: Boolean) {
-        hasNetworkProblem = hasProblem
-        if (hasProblem) {
-            _networkAvailable.postValue(false)
-            _networkState.value = false
-        }
-    }
-    
-    /**
-     * Verifica la disponibilidad real de la red
-     */
-    private fun checkNetworkAvailability(): Boolean {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val networkCapabilities = connectivityManager.getNetworkCapabilities(
-                connectivityManager.activeNetwork
+        
+        override fun onCapabilitiesChanged(
+            network: Network, 
+            networkCapabilities: NetworkCapabilities
+        ) {
+            // Las capacidades de la red han cambiado
+            val isConnected = networkCapabilities.hasCapability(
+                NetworkCapabilities.NET_CAPABILITY_INTERNET
             )
-            return networkCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-        } else {
-            @Suppress("DEPRECATION")
-            val activeNetworkInfo = connectivityManager.activeNetworkInfo
-            @Suppress("DEPRECATION")
-            return activeNetworkInfo?.isConnected == true
-        }
-    }
-    
-    companion object {
-        @Volatile
-        private var INSTANCE: NetworkStatusManager? = null
-        
-        fun getInstance(): NetworkStatusManager {
-            return INSTANCE ?: throw IllegalStateException(
-                "NetworkStatusManager debe ser inicializado en la clase Application"
+            
+            val isMetered = !networkCapabilities.hasCapability(
+                NetworkCapabilities.NET_CAPABILITY_NOT_METERED
+            )
+            
+            _connectionStatus.value = ConnectionStatus(
+                isConnected = isConnected,
+                isMetered = isMetered
             )
         }
-        
-        fun initialize(context: Context): NetworkStatusManager {
-            return INSTANCE ?: synchronized(this) {
-                val instance = NetworkStatusManager(context.applicationContext)
-                INSTANCE = instance
-                instance
+    }
+    
+    /**
+     * Actualiza el estado de la conexión basado en las capacidades actuales.
+     * Este método se llama al inicializar el manager y puede ser llamado
+     * manualmente si se necesita forzar una actualización del estado.
+     */
+    fun updateConnectionStatus() {
+        val isConnected = isNetworkAvailable()
+        _connectionStatus.value = ConnectionStatus(isConnected = isConnected)
+    }
+    
+    /**
+     * Verifica si hay una red disponible con acceso a Internet.
+     */
+    private fun isNetworkAvailable(): Boolean {
+        return when {
+            // Para Android 6.0+ (API 23+)
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.M -> {
+                val network = connectivityManager.activeNetwork
+                val capabilities = connectivityManager.getNetworkCapabilities(network)
+                capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+            }
+            
+            // Para versiones anteriores
+            else -> {
+                @Suppress("DEPRECATION")
+                val networkInfo = connectivityManager.activeNetworkInfo
+                @Suppress("DEPRECATION")
+                networkInfo?.isConnected == true
             }
         }
     }
+    
+    /**
+     * Libera recursos al destruir la instancia.
+     * Debe llamarse al finalizar el ciclo de vida de la aplicación.
+     */
+    fun cleanup() {
+        try {
+            connectivityManager.unregisterNetworkCallback(networkCallback)
+        } catch (e: Exception) {
+            // Ignoramos errores al desregistrar el callback (podría no estar registrado)
+        }
+    }
+    
+    /**
+     * Clase que representa el estado actual de la conexión.
+     */
+    data class ConnectionStatus(
+        val isConnected: Boolean = false,
+        val isMetered: Boolean = true  // Por defecto asumimos red con medición
+    )
 }

@@ -1,7 +1,7 @@
 package com.productiva.android.network
 
-import com.productiva.android.BuildConfig
-import com.productiva.android.utils.SessionManager
+import android.content.Context
+import com.google.gson.GsonBuilder
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -9,62 +9,84 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 /**
- * Cliente Retrofit para la comunicación con el servidor.
- * Configurado con interceptores para autenticación, gestión de red y logging.
+ * Cliente Retrofit para comunicación con la API REST.
+ * 
+ * Esta clase singleton configura y proporciona instancias de Retrofit
+ * y sus servicios asociados para comunicarse con el backend.
  */
 object RetrofitClient {
-    // Base URL del servidor (en esta versión, utilizamos la URL de desarrollo)
-    private const val BASE_URL = "https://productiva.replit.app/api/"
+
+    private const val BASE_URL = "https://api.productiva.app/" // URL base de la API
+    private const val TIMEOUT = 30L // Timeout en segundos
+    
+    private var apiService: ApiService? = null
     
     /**
-     * Obtiene una instancia de ApiService configurada para la comunicación con el servidor.
-     * 
-     * @param sessionManager para obtener el token de autenticación
-     * @return ApiService configurado
+     * Configura y devuelve un cliente OkHttpClient con todos los interceptores necesarios.
+     *
+     * @param context Contexto de la aplicación
+     * @param networkStatusManager Administrador del estado de red
+     * @param authToken Token de autenticación (opcional)
+     * @return Cliente OkHttpClient configurado
      */
-    fun getApiService(sessionManager: SessionManager): ApiService {
-        val retrofit = getRetrofitInstance(sessionManager)
-        return retrofit.create(ApiService::class.java)
-    }
-    
-    /**
-     * Crea y configura una instancia de Retrofit con todos los interceptores necesarios.
-     * 
-     * @param sessionManager para la autenticación
-     * @return Instancia de Retrofit configurada
-     */
-    private fun getRetrofitInstance(sessionManager: SessionManager): Retrofit {
-        return Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .client(getOkHttpClient(sessionManager))
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-    }
-    
-    /**
-     * Configura el cliente OkHttp con todos los interceptores necesarios.
-     * 
-     * @param sessionManager para la autenticación
-     * @return Cliente OkHttp configurado
-     */
-    private fun getOkHttpClient(sessionManager: SessionManager): OkHttpClient {
-        // Crear interceptor de logging solo en modo debug
+    private fun createOkHttpClient(
+        context: Context,
+        networkStatusManager: NetworkStatusManager,
+        authToken: String? = null
+    ): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = if (BuildConfig.DEBUG) 
-                HttpLoggingInterceptor.Level.BODY 
-            else 
-                HttpLoggingInterceptor.Level.NONE
+            level = HttpLoggingInterceptor.Level.BODY
         }
         
-        // Construir cliente con todos los interceptores
-        return OkHttpClient.Builder()
-            .addInterceptor(AuthInterceptor(sessionManager))
-            .addInterceptor(NetworkConnectionInterceptor())
+        val builder = OkHttpClient.Builder()
+            .connectTimeout(TIMEOUT, TimeUnit.SECONDS)
+            .readTimeout(TIMEOUT, TimeUnit.SECONDS)
+            .writeTimeout(TIMEOUT, TimeUnit.SECONDS)
+            .addInterceptor(NetworkConnectionInterceptor(context, networkStatusManager))
             .addInterceptor(loggingInterceptor)
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
-            .retryOnConnectionFailure(true)
+        
+        // Añadir el interceptor de autenticación si hay token
+        if (!authToken.isNullOrEmpty()) {
+            builder.addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .addHeader("Authorization", "Bearer $authToken")
+                    .build()
+                chain.proceed(request)
+            }
+        }
+        
+        return builder.build()
+    }
+    
+    /**
+     * Obtiene el servicio de API configurado con Retrofit.
+     *
+     * @param context Contexto de la aplicación
+     * @param networkStatusManager Administrador del estado de red
+     * @param authToken Token de autenticación (opcional)
+     * @return Instancia del servicio ApiService
+     */
+    fun getApiService(
+        context: Context,
+        networkStatusManager: NetworkStatusManager,
+        authToken: String? = null
+    ): ApiService {
+        // Si ya existe una instancia y no hay token (o el token no ha cambiado), la reutilizamos
+        if (apiService != null && authToken == null) {
+            return apiService!!
+        }
+        
+        val gson = GsonBuilder()
+            .setDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+            .create()
+        
+        val retrofit = Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(createOkHttpClient(context, networkStatusManager, authToken))
+            .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
+        
+        apiService = retrofit.create(ApiService::class.java)
+        return apiService!!
     }
 }

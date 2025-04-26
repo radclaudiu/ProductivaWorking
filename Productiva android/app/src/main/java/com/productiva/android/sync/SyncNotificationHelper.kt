@@ -1,158 +1,158 @@
 package com.productiva.android.sync
 
-import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
+import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
+import com.productiva.android.R
 import com.productiva.android.ui.MainActivity
 import com.productiva.android.utils.SYNC_NOTIFICATION_CHANNEL_ID
 import com.productiva.android.utils.SYNC_NOTIFICATION_ID
 
 /**
- * Helper para gestionar las notificaciones relacionadas con la sincronización.
+ * Clase auxiliar para mostrar notificaciones relacionadas con la sincronización.
+ * Muestra notificaciones de progreso, finalización y errores durante el proceso.
  */
 class SyncNotificationHelper(private val context: Context) {
     
+    private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    
     companion object {
-        private const val TAG = "SyncNotificationHelper"
+        private const val TAG = "SyncNotifHelper"
     }
     
     /**
-     * Crea el canal de notificaciones necesario para Android 8.0 (API 26) y superior.
+     * Muestra una notificación de sincronización en progreso.
      */
-    init {
-        createNotificationChannel()
-    }
-    
-    /**
-     * Crea el canal de notificaciones para la sincronización.
-     */
-    private fun createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Sincronización"
-            val description = "Notificaciones de sincronización de datos"
-            val importance = NotificationManager.IMPORTANCE_LOW
+    fun showSyncInProgressNotification() {
+        try {
+            val notification = NotificationCompat.Builder(context, SYNC_NOTIFICATION_CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.stat_notify_sync)
+                .setContentTitle("Sincronizando datos")
+                .setContentText("Sincronizando con el servidor...")
+                .setProgress(100, 0, true)
+                .setOngoing(true)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setContentIntent(createMainActivityPendingIntent())
+                .build()
             
-            val channel = NotificationChannel(SYNC_NOTIFICATION_CHANNEL_ID, name, importance).apply {
-                this.description = description
-                enableVibration(false)
-                enableLights(false)
-            }
-            
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) 
-                    as NotificationManager
-            notificationManager.createNotificationChannel(channel)
+            notificationManager.notify(SYNC_NOTIFICATION_ID, notification)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al mostrar notificación de sincronización", e)
         }
     }
     
     /**
-     * Muestra una notificación de progreso durante la sincronización.
+     * Actualiza la notificación de progreso con un porcentaje específico.
      *
-     * @param message Mensaje a mostrar.
      * @param progress Porcentaje de progreso (0-100).
      */
-    fun showSyncProgressNotification(message: String, progress: Int) {
-        val pendingIntent = createPendingIntent()
-        
-        val builder = NotificationCompat.Builder(context, SYNC_NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_sys_upload_done)
-            .setContentTitle("Sincronizando Productiva")
-            .setContentText(message)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setOngoing(true)
-            .setOnlyAlertOnce(true)
-            .setContentIntent(pendingIntent)
-        
-        if (progress > 0) {
-            builder.setProgress(100, progress, false)
-        } else {
-            builder.setProgress(0, 0, true)
+    fun updateSyncProgressNotification(progress: Int) {
+        try {
+            val notification = NotificationCompat.Builder(context, SYNC_NOTIFICATION_CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.stat_notify_sync)
+                .setContentTitle("Sincronizando datos")
+                .setContentText("Progreso: $progress%")
+                .setProgress(100, progress, false)
+                .setOngoing(true)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setContentIntent(createMainActivityPendingIntent())
+                .build()
+            
+            notificationManager.notify(SYNC_NOTIFICATION_ID, notification)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al actualizar notificación de progreso", e)
         }
-        
-        NotificationManagerCompat.from(context).apply {
-            notify(SYNC_NOTIFICATION_ID, builder.build())
-        }
-    }
-    
-    /**
-     * Actualiza una notificación de progreso existente.
-     *
-     * @param message Mensaje a mostrar.
-     * @param progress Porcentaje de progreso (0-100).
-     */
-    fun updateSyncProgressNotification(message: String, progress: Int) {
-        showSyncProgressNotification(message, progress)
     }
     
     /**
      * Muestra una notificación de sincronización completada.
      *
-     * @param message Mensaje a mostrar.
+     * @param addedCount Número de elementos añadidos.
+     * @param updatedCount Número de elementos actualizados.
+     * @param deletedCount Número de elementos eliminados.
      */
-    fun showSyncCompletedNotification(message: String) {
-        val pendingIntent = createPendingIntent()
-        
-        val builder = NotificationCompat.Builder(context, SYNC_NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_sys_upload_done)
-            .setContentTitle("Sincronización completada")
-            .setContentText(message)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
-        
-        NotificationManagerCompat.from(context).apply {
-            notify(SYNC_NOTIFICATION_ID, builder.build())
+    fun showSyncCompletedNotification(
+        addedCount: Int,
+        updatedCount: Int,
+        deletedCount: Int
+    ) {
+        try {
+            val totalItems = addedCount + updatedCount + deletedCount
+            
+            val contentText = if (totalItems > 0) {
+                "Se sincronizaron $totalItems elementos"
+            } else {
+                "Todos los datos están al día"
+            }
+            
+            val notification = NotificationCompat.Builder(context, SYNC_NOTIFICATION_CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.stat_sys_download_done)
+                .setContentTitle("Sincronización completada")
+                .setContentText(contentText)
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setContentIntent(createMainActivityPendingIntent())
+                .build()
+            
+            notificationManager.notify(SYNC_NOTIFICATION_ID, notification)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al mostrar notificación de sincronización completada", e)
         }
     }
     
     /**
-     * Muestra una notificación de error durante la sincronización.
+     * Muestra una notificación de error de sincronización.
      *
-     * @param message Mensaje de error a mostrar.
+     * @param errorMessage Mensaje de error.
      */
-    fun showSyncErrorNotification(message: String) {
-        val pendingIntent = createPendingIntent()
-        
-        val builder = NotificationCompat.Builder(context, SYNC_NOTIFICATION_CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_notify_error)
-            .setContentTitle("Error de sincronización")
-            .setContentText(message)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .setAutoCancel(true)
-            .setContentIntent(pendingIntent)
-        
-        NotificationManagerCompat.from(context).apply {
-            notify(SYNC_NOTIFICATION_ID, builder.build())
+    fun showSyncErrorNotification(errorMessage: String) {
+        try {
+            val notification = NotificationCompat.Builder(context, SYNC_NOTIFICATION_CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.stat_notify_error)
+                .setContentTitle("Error de sincronización")
+                .setContentText(errorMessage)
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setContentIntent(createMainActivityPendingIntent())
+                .build()
+            
+            notificationManager.notify(SYNC_NOTIFICATION_ID, notification)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al mostrar notificación de error", e)
         }
     }
     
     /**
-     * Crea un PendingIntent para abrir la actividad principal al tocar la notificación.
+     * Cancela cualquier notificación de sincronización activa.
+     */
+    fun cancelSyncNotification() {
+        try {
+            notificationManager.cancel(SYNC_NOTIFICATION_ID)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al cancelar notificación", e)
+        }
+    }
+    
+    /**
+     * Crea un PendingIntent para abrir la actividad principal.
      *
      * @return PendingIntent configurado.
      */
-    private fun createPendingIntent(): PendingIntent {
+    private fun createMainActivityPendingIntent(): PendingIntent {
         val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
         
-        return PendingIntent.getActivity(
-            context,
-            0,
-            intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or 
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0
-        )
-    }
-    
-    /**
-     * Cancela todas las notificaciones de sincronización.
-     */
-    fun cancelAllNotifications() {
-        NotificationManagerCompat.from(context).cancel(SYNC_NOTIFICATION_ID)
+        val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        } else {
+            PendingIntent.FLAG_UPDATE_CURRENT
+        }
+        
+        return PendingIntent.getActivity(context, 0, intent, flags)
     }
 }

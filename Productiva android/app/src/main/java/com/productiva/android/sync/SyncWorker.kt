@@ -4,12 +4,14 @@ import android.content.Context
 import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.productiva.android.session.SessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
  * Worker para ejecutar sincronizaciones periódicas en segundo plano.
- * Utiliza WorkManager para programar y ejecutar las sincronizaciones.
+ * Se encarga de verificar si hay conectividad y si el usuario está autenticado
+ * antes de iniciar la sincronización.
  */
 class SyncWorker(
     appContext: Context,
@@ -20,46 +22,43 @@ class SyncWorker(
         private const val TAG = "SyncWorker"
     }
     
-    /**
-     * Ejecuta la tarea de sincronización en segundo plano.
-     * Este método es llamado por WorkManager cuando es momento de ejecutar la tarea.
-     *
-     * @return Resultado de la ejecución.
-     */
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         try {
-            Log.d(TAG, "Iniciando sincronización periódica en segundo plano...")
+            Log.d(TAG, "Iniciando trabajo de sincronización programada")
             
-            // Obtener la instancia del administrador de sincronización
+            // Verificar si hay sesión activa
+            val sessionManager = SessionManager.getInstance()
+            if (!sessionManager.isLoggedIn()) {
+                Log.d(TAG, "No hay sesión activa, omitiendo sincronización")
+                return@withContext Result.success()
+            }
+            
+            // Obtener SyncManager
             val syncManager = SyncManager.getInstance(applicationContext)
             
-            // Configurar el helper de notificaciones para el proceso de sincronización
-            val notificationHelper = SyncNotificationHelper(applicationContext)
-            notificationHelper.showSyncProgressNotification("Sincronizando datos...", 0)
-            
-            // Ejecutar la sincronización
-            // No forzamos una sincronización completa, solo sincronizamos los cambios desde la última vez
-            syncManager.syncAll(forceFullSync = false, showNotification = true)
-            
-            Log.d(TAG, "Sincronización periódica completada con éxito")
-            return@withContext Result.success()
+            // Verificar si hay datos pendientes de sincronización
+            if (syncManager.hasPendingSync()) {
+                Log.d(TAG, "Hay datos pendientes de sincronización, iniciando sincronización...")
+                
+                // Ejecutar sincronización
+                val result = syncManager.syncAll(forceRefresh = false)
+                
+                return@withContext if (result is SyncResult.Success) {
+                    Log.d(TAG, "Sincronización completada con éxito: ${result.addedCount} añadidos, ${result.updatedCount} actualizados, ${result.deletedCount} eliminados")
+                    Result.success()
+                } else {
+                    val errorMsg = (result as SyncResult.Error).message
+                    Log.e(TAG, "Error en sincronización: $errorMsg")
+                    Result.retry()
+                }
+            } else {
+                Log.d(TAG, "No hay datos pendientes de sincronización")
+                return@withContext Result.success()
+            }
             
         } catch (e: Exception) {
-            Log.e(TAG, "Error durante la sincronización periódica", e)
-            
-            // Si hay un error mostrar notificación
-            val notificationHelper = SyncNotificationHelper(applicationContext)
-            notificationHelper.showSyncErrorNotification("Error: ${e.message}")
-            
-            // Si es un error de red o temporal, solicitar reintentar más tarde
-            return@withContext if (e is java.net.UnknownHostException ||
-                                   e is java.net.SocketTimeoutException ||
-                                   e is java.io.IOException) {
-                Result.retry()
-            } else {
-                // Para otros errores, reportar fallo
-                Result.failure()
-            }
+            Log.e(TAG, "Error en trabajo de sincronización", e)
+            Result.retry()
         }
     }
 }

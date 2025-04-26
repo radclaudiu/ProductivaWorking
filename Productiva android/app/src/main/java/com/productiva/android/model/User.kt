@@ -2,102 +2,106 @@ package com.productiva.android.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import androidx.room.ColumnInfo
 import com.google.gson.annotations.SerializedName
-import java.util.Date
 
 /**
- * Entidad que representa un usuario en la aplicación.
+ * Modelo de datos que representa un usuario en la aplicación.
+ * Se almacena en la base de datos local y se sincroniza con el servidor.
  */
 @Entity(tableName = "users")
 data class User(
     @PrimaryKey
-    @ColumnInfo(name = "id")
-    @SerializedName("id") 
+    @SerializedName("id")
     val id: Int,
     
-    @ColumnInfo(name = "username")
-    @SerializedName("username") 
+    @SerializedName("username")
     val username: String,
     
-    @ColumnInfo(name = "email")
-    @SerializedName("email") 
+    @SerializedName("email")
     val email: String,
     
-    @ColumnInfo(name = "name")
-    @SerializedName("name") 
-    val name: String,
+    @SerializedName("first_name")
+    val firstName: String?,
     
-    @ColumnInfo(name = "role")
-    @SerializedName("role") 
-    val role: String,
+    @SerializedName("last_name")
+    val lastName: String?,
     
-    @ColumnInfo(name = "company_id")
-    @SerializedName("company_id") 
+    @SerializedName("role")
+    val role: String, // ADMIN, MANAGER, EMPLOYEE
+    
+    @SerializedName("company_id")
     val companyId: Int?,
     
-    @ColumnInfo(name = "location_id")
-    @SerializedName("location_id") 
-    val locationId: Int?,
+    @SerializedName("company_name")
+    val companyName: String?,
     
-    @ColumnInfo(name = "is_active")
-    @SerializedName("is_active") 
-    val isActive: Boolean = true,
+    @SerializedName("is_active")
+    val isActive: Boolean,
     
-    @ColumnInfo(name = "is_admin")
-    @SerializedName("is_admin") 
-    val isAdmin: Boolean = false,
+    @SerializedName("last_login")
+    val lastLogin: String?,
     
-    @ColumnInfo(name = "last_login")
-    @SerializedName("last_login") 
-    val lastLogin: Date? = null,
+    @SerializedName("created_at")
+    val createdAt: String?,
     
-    @ColumnInfo(name = "profile_image")
-    @SerializedName("profile_image") 
-    val profileImage: String? = null,
+    @SerializedName("profile_image")
+    val profileImage: String?,
     
-    @ColumnInfo(name = "phone")
-    @SerializedName("phone") 
-    val phone: String? = null,
+    @SerializedName("phone")
+    val phone: String?,
     
-    @ColumnInfo(name = "task_target")
-    @SerializedName("task_target") 
-    val taskTarget: Int? = null,
+    @SerializedName("locations")
+    val locations: List<UserLocation>?,
     
-    @ColumnInfo(name = "last_sync")
-    val lastSync: Long = System.currentTimeMillis()
+    @SerializedName("permissions")
+    val permissions: List<String>?
 ) {
     /**
-     * Devuelve las iniciales del nombre para mostrar un avatar de texto.
+     * Obtiene el nombre completo del usuario.
      */
-    fun getInitials(): String {
-        if (name.isBlank()) return "??"
-        
-        val parts = name.split(" ")
-        
-        return if (parts.size > 1) {
-            (parts[0].firstOrNull()?.toString() ?: "") + 
-            (parts.last().firstOrNull()?.toString() ?: "")
+    fun getFullName(): String {
+        return if (firstName != null && lastName != null) {
+            "$firstName $lastName"
         } else {
-            parts[0].take(2)
-        }.uppercase()
+            username
+        }
     }
     
     /**
-     * Devuelve un color basado en el ID para identificar visualmente al usuario.
+     * Verifica si el usuario tiene un permiso específico.
      */
-    fun getAvatarColor(): Int {
-        // Genera un color material basado en el ID del usuario
-        val colors = arrayOf(
-            0xFF4CAF50, // Verde
-            0xFF2196F3, // Azul
-            0xFFFF9800, // Naranja
-            0xFFE91E63, // Rosa
-            0xFF9C27B0, // Púrpura
-            0xFF795548, // Marrón
-            0xFF607D8B  // Azul grisáceo
-        )
-        
-        return colors[id % colors.size].toInt()
+    fun hasPermission(permission: String): Boolean {
+        return permissions?.contains(permission) == true || role == "ADMIN"
     }
+    
+    /**
+     * Verifica si el usuario está asignado a una ubicación específica.
+     */
+    fun isAssignedToLocation(locationId: Int): Boolean {
+        return locations?.any { it.id == locationId } == true
+    }
+    
+    /**
+     * Obtiene una lista con los IDs de las ubicaciones asignadas.
+     */
+    fun getAssignedLocationIds(): List<Int> {
+        return locations?.map { it.id } ?: emptyList()
+    }
+    
+    /**
+     * Clase que representa una ubicación asignada a un usuario.
+     */
+    data class UserLocation(
+        @SerializedName("id")
+        val id: Int,
+        
+        @SerializedName("name")
+        val name: String,
+        
+        @SerializedName("address")
+        val address: String?,
+        
+        @SerializedName("is_primary")
+        val isPrimary: Boolean
+    )
 }

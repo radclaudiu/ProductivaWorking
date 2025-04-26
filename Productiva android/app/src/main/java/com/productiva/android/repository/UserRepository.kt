@@ -1,137 +1,153 @@
 package com.productiva.android.repository
 
 import android.util.Log
-import androidx.lifecycle.LiveData
-import com.productiva.android.database.dao.UserDao
 import com.productiva.android.model.User
 import com.productiva.android.network.ApiService
-import kotlinx.coroutines.Dispatchers
+import com.productiva.android.network.RetrofitClient
+import com.productiva.android.session.SessionManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.withContext
+import java.io.IOException
 
 /**
- * Repositorio para gestionar usuarios tanto en la base de datos local como en el servidor.
+ * Repositorio para gestionar usuarios y autenticación.
  */
 class UserRepository(
-    private val userDao: UserDao,
     private val apiService: ApiService
 ) {
     private val TAG = "UserRepository"
     
     /**
-     * Obtiene todos los usuarios desde la base de datos local.
+     * Inicia sesión con las credenciales proporcionadas.
+     * 
+     * @param username Nombre de usuario.
+     * @param password Contraseña.
+     * @return Flow con el resultado del inicio de sesión.
      */
-    fun getAllUsers(): LiveData<List<User>> {
-        return userDao.getAllUsers()
-    }
-    
-    /**
-     * Obtiene usuarios activos de una compañía específica.
-     */
-    fun getActiveUsersByCompany(companyId: Int): LiveData<List<User>> {
-        return userDao.getActiveUsersByCompany(companyId)
-    }
-    
-    /**
-     * Busca usuarios por nombre o email.
-     */
-    fun searchUsers(query: String): LiveData<List<User>> {
-        return userDao.searchUsers(query)
-    }
-    
-    /**
-     * Obtiene un usuario por su ID.
-     */
-    suspend fun getUserById(userId: Int): User? {
-        return withContext(Dispatchers.IO) {
-            userDao.getUserById(userId)
-        }
-    }
-    
-    /**
-     * Obtiene un usuario por su nombre de usuario.
-     */
-    suspend fun getUserByUsername(username: String): User? {
-        return withContext(Dispatchers.IO) {
-            userDao.getUserByUsername(username)
-        }
-    }
-    
-    /**
-     * Actualiza un usuario en la base de datos local.
-     */
-    suspend fun updateUser(user: User) {
-        withContext(Dispatchers.IO) {
-            userDao.update(user)
-        }
-    }
-    
-    /**
-     * Sincroniza los usuarios desde el servidor con la base de datos local.
-     */
-    suspend fun syncUsers(): Flow<ResourceState<List<User>>> = flow {
-        emit(ResourceState.Loading())
+    fun login(username: String, password: String): Flow<ResourceState<User>> = flow {
+        emit(ResourceState.Loading)
         
         try {
-            // Obtener usuarios del servidor
-            val response = apiService.getUsers()
+            // Preparar datos para la petición
+            val credentials = mapOf(
+                "username" to username,
+                "password" to password
+            )
+            
+            // Realizar petición de login
+            val response = apiService.login(credentials)
             
             if (response.isSuccessful) {
-                val users = response.body() ?: emptyList()
+                val loginResponse = response.body()
                 
-                // Guardar en base de datos local
-                withContext(Dispatchers.IO) {
-                    userDao.insertAll(users)
+                if (loginResponse != null) {
+                    // Guardar información de sesión
+                    SessionManager.getInstance().saveAuthToken(
+                        loginResponse.token,
+                        loginResponse.expiresAt
+                    )
+                    SessionManager.getInstance().saveUser(loginResponse.user)
+                    
+                    Log.d(TAG, "Inicio de sesión exitoso: ${loginResponse.user.username}")
+                    emit(ResourceState.Success(loginResponse.user))
+                } else {
+                    emit(ResourceState.Error("Respuesta vacía del servidor"))
+                }
+            } else {
+                val errorCode = response.code()
+                val errorMessage = when (errorCode) {
+                    401 -> "Credenciales incorrectas"
+                    403 -> "Cuenta desactivada o sin permisos"
+                    else -> "Error del servidor: $errorCode"
                 }
                 
-                emit(ResourceState.Success(users))
-            } else {
-                emit(ResourceState.Error("Error ${response.code()}: ${response.message()}"))
+                Log.e(TAG, "Error en inicio de sesión: $errorCode")
+                emit(ResourceState.Error(errorMessage))
             }
+        } catch (e: IOException) {
+            Log.e(TAG, "Error de red en inicio de sesión", e)
+            emit(ResourceState.Error("Error de conexión: comprueba tu conexión a Internet"))
         } catch (e: Exception) {
-            Log.e(TAG, "Error al sincronizar usuarios", e)
-            emit(ResourceState.Error("Error de red: ${e.message}"))
+            Log.e(TAG, "Error en inicio de sesión", e)
+            emit(ResourceState.Error("Error: ${e.message}"))
         }
     }
     
     /**
-     * Autentica un usuario con sus credenciales.
+     * Cierra la sesión actual.
      */
-    suspend fun login(username: String, password: String): Flow<ResourceState<User>> = flow {
-        emit(ResourceState.Loading())
+    fun logout() {
+        SessionManager.getInstance().clearSession()
+        RetrofitClient.invalidateCache()
+        Log.d(TAG, "Sesión cerrada correctamente")
+    }
+    
+    /**
+     * Obtiene el usuario actual.
+     * 
+     * @return Flow con el resultado de la obtención del usuario.
+     */
+    fun getCurrentUser(): Flow<ResourceState<User>> = flow {
+        emit(ResourceState.Loading)
+        
+        // Primero intentar obtener usuario de sesión local
+        val localUser = SessionManager.getInstance().getCurrentUser()
+        
+        if (localUser != null) {
+            emit(ResourceState.Success(localUser))
+        } else {
+            // Si no hay usuario local, limpiar sesión
+            logout()
+            emit(ResourceState.Error("No hay sesión activa"))
+        }
+    }
+    
+    /**
+     * Actualiza la información del usuario actual desde el servidor.
+     * 
+     * @return Flow con el resultado de la actualización.
+     */
+    fun refreshUserInfo(): Flow<ResourceState<User>> = flow {
+        emit(ResourceState.Loading)
         
         try {
-            // Intentar login con el servidor
-            val response = apiService.login(username, password)
+            // Realizar petición para obtener usuario actual
+            val response = apiService.getCurrentUser()
             
             if (response.isSuccessful) {
                 val user = response.body()
                 
                 if (user != null) {
-                    // Guardar usuario en local
-                    withContext(Dispatchers.IO) {
-                        userDao.insert(user)
-                    }
+                    // Actualizar información de usuario en sesión
+                    SessionManager.getInstance().saveUser(user)
                     
+                    Log.d(TAG, "Información de usuario actualizada: ${user.username}")
                     emit(ResourceState.Success(user))
                 } else {
-                    emit(ResourceState.Error("Datos de usuario inválidos"))
+                    emit(ResourceState.Error("Respuesta vacía del servidor"))
                 }
             } else {
-                emit(ResourceState.Error("Error de autenticación: ${response.message()}"))
+                val errorCode = response.code()
+                val errorMessage = when (errorCode) {
+                    401 -> "Sesión expirada"
+                    403 -> "Sin permisos para acceder a esta información"
+                    else -> "Error del servidor: $errorCode"
+                }
+                
+                if (errorCode == 401) {
+                    // Sesión expirada, limpiar sesión
+                    logout()
+                }
+                
+                Log.e(TAG, "Error al actualizar información de usuario: $errorCode")
+                emit(ResourceState.Error(errorMessage))
             }
+        } catch (e: IOException) {
+            Log.e(TAG, "Error de red al actualizar información de usuario", e)
+            emit(ResourceState.Error("Error de conexión: comprueba tu conexión a Internet"))
         } catch (e: Exception) {
-            Log.e(TAG, "Error en login", e)
-            
-            // Intentar recuperar usuario de la base de datos local
-            val localUser = userDao.getUserByUsername(username)
-            
-            if (localUser != null) {
-                emit(ResourceState.Success(localUser, isFromCache = true))
-            } else {
-                emit(ResourceState.Error("Error de red: ${e.message}"))
-            }
+            Log.e(TAG, "Error al actualizar información de usuario", e)
+            emit(ResourceState.Error("Error: ${e.message}"))
         }
     }
 }

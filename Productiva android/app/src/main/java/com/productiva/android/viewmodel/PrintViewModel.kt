@@ -1,21 +1,21 @@
 package com.productiva.android.viewmodel
 
 import android.app.Application
-import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.productiva.android.ProductivaApplication
 import com.productiva.android.model.LabelTemplate
-import com.productiva.android.model.SavedPrinter
-import com.productiva.android.network.RetrofitClient
+import com.productiva.android.model.Product
 import com.productiva.android.repository.LabelTemplateRepository
-import com.productiva.android.repository.PrinterRepository
+import com.productiva.android.repository.ProductRepository
 import com.productiva.android.repository.ResourceState
 import com.productiva.android.services.BrotherPrintService
-import com.brother.sdk.Printer
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
@@ -27,248 +27,128 @@ class PrintViewModel(application: Application) : AndroidViewModel(application) {
     private val TAG = "PrintViewModel"
     
     // Repositorios
-    private val printerRepository: PrinterRepository
     private val labelTemplateRepository: LabelTemplateRepository
-    private val printService: BrotherPrintService
+    private val productRepository: ProductRepository
     
-    // Estado de la operación de impresión
-    private val _printState = MutableLiveData<PrintState>()
-    val printState: LiveData<PrintState> = _printState
+    // Servicio de impresión
+    private val printerService = BrotherPrintService(application)
     
-    // Impresora seleccionada actualmente
-    private val _selectedPrinter = MutableLiveData<SavedPrinter?>()
-    val selectedPrinter: LiveData<SavedPrinter?> = _selectedPrinter
+    // Estado de impresión
+    private val _printState = MutableStateFlow<PrintState>(PrintState.Idle)
+    val printState: StateFlow<PrintState> = _printState
     
-    // Plantilla seleccionada actualmente
-    private val _selectedTemplate = MutableLiveData<LabelTemplate?>()
+    // Impresoras encontradas
+    private val _printers = MutableLiveData<List<BrotherPrintService.PrinterDevice>>(emptyList())
+    val printers: LiveData<List<BrotherPrintService.PrinterDevice>> = _printers
+    
+    // Impresora seleccionada
+    private val _selectedPrinter = MutableLiveData<BrotherPrintService.PrinterDevice?>(null)
+    val selectedPrinter: LiveData<BrotherPrintService.PrinterDevice?> = _selectedPrinter
+    
+    // Plantillas disponibles
+    val labelTemplates: LiveData<List<LabelTemplate>>
+    
+    // Plantilla seleccionada
+    private val _selectedTemplate = MutableLiveData<LabelTemplate?>(null)
     val selectedTemplate: LiveData<LabelTemplate?> = _selectedTemplate
     
-    // Lista de impresoras disponibles
-    private val _availablePrinters = MutableLiveData<List<SavedPrinter>>()
-    val availablePrinters: LiveData<List<SavedPrinter>> = _availablePrinters
-    
-    // Lista de plantillas disponibles
-    private val _availableTemplates = MutableLiveData<List<LabelTemplate>>()
-    val availableTemplates: LiveData<List<LabelTemplate>> = _availableTemplates
-    
-    // Lista de impresoras descubiertas (no guardadas)
-    private val _discoveredPrinters = MutableLiveData<List<Printer>>()
-    val discoveredPrinters: LiveData<List<Printer>> = _discoveredPrinters
-    
-    // Evento de guardado de impresora
-    private val _printerSavedEvent = MutableLiveData<Event<SavedPrinter>>()
-    val printerSavedEvent: LiveData<Event<SavedPrinter>> = _printerSavedEvent
-    
-    /**
-     * Estados posibles de las operaciones de impresión.
-     */
-    sealed class PrintState {
-        object Idle : PrintState()
-        object Loading : PrintState()
-        object Success : PrintState()
-        data class Error(val message: String) : PrintState()
-        data class PrinterNotReady(val message: String) : PrintState()
-        object DiscoveryStarted : PrintState()
-        data class DiscoveryComplete(val count: Int) : PrintState()
-        data class PrinterSaved(val printer: SavedPrinter) : PrintState()
-    }
-    
-    /**
-     * Clase para eventos de un solo uso.
-     */
-    class Event<out T>(private val content: T) {
-        var hasBeenHandled = false
-            private set
-        
-        fun getContentIfNotHandled(): T? {
-            return if (hasBeenHandled) {
-                null
-            } else {
-                hasBeenHandled = true
-                content
-            }
-        }
-        
-        fun peekContent(): T = content
-    }
-    
     init {
-        // Obtener instancias de la aplicación
         val app = getApplication<ProductivaApplication>()
-        val apiService = RetrofitClient.getApiService(app)
         val database = app.database
+        val apiService = app.apiService
         
         // Inicializar repositorios
-        printerRepository = PrinterRepository(database.printerDao())
         labelTemplateRepository = LabelTemplateRepository(database.labelTemplateDao(), apiService)
-        printService = BrotherPrintService(app)
+        productRepository = ProductRepository(database.productDao(), apiService)
         
-        // Iniciar en estado Idle
-        _printState.value = PrintState.Idle
-        
-        // Cargar impresoras guardadas
-        loadSavedPrinters()
-        
-        // Cargar plantillas
-        loadTemplates()
+        // Inicializar observadores
+        labelTemplates = labelTemplateRepository.getAllLabelTemplates().asLiveData()
     }
     
     /**
-     * Carga las impresoras guardadas.
+     * Busca impresoras Brother disponibles en la red.
      */
-    private fun loadSavedPrinters() {
+    fun searchPrinters() {
+        _printState.value = PrintState.Searching
+        
         viewModelScope.launch {
             try {
-                // Verificar primero si hay una impresora predeterminada
-                val defaultPrinter = printerRepository.getDefaultPrinter()
-                if (defaultPrinter != null) {
-                    _selectedPrinter.value = defaultPrinter
-                }
+                val foundPrinters = printerService.searchNetworkPrinters()
+                _printers.value = foundPrinters
                 
-                // Observar la lista de impresoras guardadas
-                printerRepository.getAllPrinters().observeForever { printers ->
-                    _availablePrinters.value = printers
-                    
-                    // Si no hay impresora seleccionada, seleccionar la primera
-                    if (_selectedPrinter.value == null && printers.isNotEmpty()) {
-                        _selectedPrinter.value = printers.first()
-                    }
+                if (foundPrinters.isNotEmpty()) {
+                    _printState.value = PrintState.PrintersFound(foundPrinters.size)
+                } else {
+                    _printState.value = PrintState.Error("No se encontraron impresoras Brother")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error al cargar impresoras guardadas", e)
-            }
-        }
-    }
-    
-    /**
-     * Carga las plantillas de etiquetas.
-     */
-    private fun loadTemplates() {
-        viewModelScope.launch {
-            try {
-                // Observar la lista de plantillas
-                labelTemplateRepository.getAllTemplates().observeForever { templates ->
-                    _availableTemplates.value = templates
-                    
-                    // Si no hay plantilla seleccionada, seleccionar la primera
-                    if (_selectedTemplate.value == null && templates.isNotEmpty()) {
-                        _selectedTemplate.value = templates.first()
-                    }
-                }
-                
-                // Intentar sincronizar plantillas desde el servidor
-                labelTemplateRepository.syncLabelTemplates().collect { state ->
-                    when (state) {
-                        is ResourceState.Success -> {
-                            Log.d(TAG, "Sincronización de plantillas completada: ${state.data?.size ?: 0} plantillas")
-                        }
-                        is ResourceState.Error -> {
-                            Log.e(TAG, "Error en sincronización de plantillas: ${state.message}")
-                        }
-                        else -> {} // Estado de carga, no hacer nada
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error al cargar plantillas", e)
-            }
-        }
-    }
-    
-    /**
-     * Busca impresoras Brother cercanas.
-     */
-    fun discoverPrinters() {
-        _printState.value = PrintState.DiscoveryStarted
-        _discoveredPrinters.value = emptyList()
-        
-        viewModelScope.launch {
-            try {
-                val printers = printService.discoverPrinters()
-                _discoveredPrinters.value = printers
-                _printState.value = PrintState.DiscoveryComplete(printers.size)
-            } catch (e: Exception) {
-                Log.e(TAG, "Error al descubrir impresoras", e)
+                Log.e(TAG, "Error al buscar impresoras", e)
                 _printState.value = PrintState.Error("Error al buscar impresoras: ${e.message}")
             }
         }
     }
     
     /**
-     * Guarda una impresora descubierta.
+     * Selecciona una impresora para usar.
      */
-    fun savePrinter(brotherPrinter: Printer) {
-        val savedPrinter = printService.convertToSavedPrinter(brotherPrinter)
-        
-        viewModelScope.launch {
-            try {
-                printerRepository.saveOrUpdatePrinter(savedPrinter).collect { state ->
-                    when (state) {
-                        is ResourceState.Success -> {
-                            val printer = state.data!!
-                            _printerSavedEvent.value = Event(printer)
-                            _printState.value = PrintState.PrinterSaved(printer)
-                        }
-                        is ResourceState.Error -> {
-                            _printState.value = PrintState.Error(
-                                state.message ?: "Error desconocido al guardar impresora"
-                            )
-                        }
-                        is ResourceState.Loading -> {
-                            _printState.value = PrintState.Loading
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error al guardar impresora", e)
-                _printState.value = PrintState.Error("Error: ${e.message}")
-            }
-        }
-    }
-    
-    /**
-     * Establece una impresora como predeterminada.
-     */
-    fun setDefaultPrinter(printerId: Int) {
-        viewModelScope.launch {
-            try {
-                printerRepository.setDefaultPrinter(printerId).collect { state ->
-                    when (state) {
-                        is ResourceState.Success -> {
-                            loadSavedPrinters() // Recargar impresoras
-                        }
-                        is ResourceState.Error -> {
-                            _printState.value = PrintState.Error(
-                                state.message ?: "Error desconocido al establecer impresora predeterminada"
-                            )
-                        }
-                        else -> {} // Estado de carga, no hacer nada
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error al establecer impresora predeterminada", e)
-                _printState.value = PrintState.Error("Error: ${e.message}")
-            }
-        }
-    }
-    
-    /**
-     * Selecciona una impresora.
-     */
-    fun selectPrinter(printer: SavedPrinter) {
+    fun selectPrinter(printer: BrotherPrintService.PrinterDevice) {
         _selectedPrinter.value = printer
+        Log.d(TAG, "Impresora seleccionada: ${printer.name} (${printer.ipAddress})")
     }
     
     /**
-     * Selecciona una plantilla.
+     * Selecciona una plantilla para usar.
      */
     fun selectTemplate(template: LabelTemplate) {
         _selectedTemplate.value = template
+        Log.d(TAG, "Plantilla seleccionada: ${template.name}")
+        
+        // Incrementar contador de uso
+        viewModelScope.launch {
+            try {
+                labelTemplateRepository.updateLabelTemplateUsage(template.id).collect { state ->
+                    if (state is ResourceState.Error) {
+                        Log.e(TAG, "Error al actualizar contador de uso: ${state.message}")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al actualizar contador de uso", e)
+            }
+        }
     }
     
     /**
-     * Imprime una plantilla con los datos proporcionados.
+     * Sincroniza plantillas de etiquetas con el servidor.
      */
-    fun printTemplate(data: Map<String, String>) {
+    fun syncTemplates() {
+        _printState.value = PrintState.Syncing
+        
+        viewModelScope.launch {
+            try {
+                labelTemplateRepository.syncLabelTemplates().collect { state ->
+                    when (state) {
+                        is ResourceState.Success -> {
+                            Log.d(TAG, "Plantillas sincronizadas: ${state.data?.size}")
+                            _printState.value = PrintState.Idle
+                        }
+                        is ResourceState.Error -> {
+                            Log.e(TAG, "Error al sincronizar plantillas: ${state.message}")
+                            _printState.value = PrintState.Error(state.message ?: "Error al sincronizar plantillas")
+                        }
+                        else -> {}
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al sincronizar plantillas", e)
+                _printState.value = PrintState.Error("Error al sincronizar plantillas: ${e.message}")
+            }
+        }
+    }
+    
+    /**
+     * Imprime una etiqueta para un producto.
+     */
+    fun printLabel(product: Product) {
         val printer = _selectedPrinter.value
         val template = _selectedTemplate.value
         
@@ -282,125 +162,62 @@ class PrintViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         
-        _printState.value = PrintState.Loading
+        _printState.value = PrintState.Printing
         
         viewModelScope.launch {
             try {
-                // Actualizar contador de uso de la plantilla
-                labelTemplateRepository.updateUsage(template.id)
-                
-                // Actualizar último uso de la impresora
-                printerRepository.updateLastUsed(printer.id)
-                
-                // Imprimir plantilla
-                val result = printService.printTemplate(printer, template, data)
-                
-                when (result) {
-                    is BrotherPrintService.PrintResult.Success -> {
-                        _printState.value = PrintState.Success
-                    }
-                    is BrotherPrintService.PrintResult.Error -> {
-                        _printState.value = PrintState.Error(result.message)
-                    }
-                    is BrotherPrintService.PrintResult.PrinterNotReady -> {
-                        _printState.value = PrintState.PrinterNotReady(result.message)
-                    }
-                    is BrotherPrintService.PrintResult.RenderError -> {
-                        _printState.value = PrintState.Error("Error al renderizar la etiqueta: ${result.message}")
+                printerService.printLabel(
+                    template = template,
+                    product = product,
+                    printerIP = printer.ipAddress
+                ) { success, message ->
+                    if (success) {
+                        _printState.value = PrintState.Success(message)
+                    } else {
+                        _printState.value = PrintState.Error(message)
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error al imprimir plantilla", e)
-                _printState.value = PrintState.Error("Error: ${e.message}")
+                Log.e(TAG, "Error al imprimir etiqueta", e)
+                _printState.value = PrintState.Error("Error al imprimir etiqueta: ${e.message}")
             }
         }
     }
     
     /**
-     * Imprime una imagen desde URI.
+     * Obtiene el estado de la impresora.
      */
-    fun printImage(imageUri: Uri) {
-        val printer = _selectedPrinter.value
-        
-        if (printer == null) {
-            _printState.value = PrintState.Error("No hay impresora seleccionada")
-            return
-        }
-        
-        _printState.value = PrintState.Loading
+    fun checkPrinterStatus() {
+        val printer = _selectedPrinter.value ?: return
         
         viewModelScope.launch {
             try {
-                // Actualizar último uso de la impresora
-                printerRepository.updateLastUsed(printer.id)
+                val status = printerService.getPrinterStatus(printer.ipAddress)
+                Log.d(TAG, "Estado de impresora: ${status.errorCode}")
                 
-                // Imprimir imagen
-                val result = printService.printImageFromUri(printer, imageUri)
-                
-                when (result) {
-                    is BrotherPrintService.PrintResult.Success -> {
-                        _printState.value = PrintState.Success
-                    }
-                    is BrotherPrintService.PrintResult.Error -> {
-                        _printState.value = PrintState.Error(result.message)
-                    }
-                    is BrotherPrintService.PrintResult.PrinterNotReady -> {
-                        _printState.value = PrintState.PrinterNotReady(result.message)
-                    }
-                    is BrotherPrintService.PrintResult.RenderError -> {
-                        _printState.value = PrintState.Error("Error al procesar la imagen: ${result.message}")
-                    }
+                if (status.errorCode == 0) {
+                    _printState.value = PrintState.Ready
+                } else {
+                    _printState.value = PrintState.Error("Error en impresora: ${status.errorCode}")
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error al imprimir imagen", e)
-                _printState.value = PrintState.Error("Error: ${e.message}")
+                Log.e(TAG, "Error al obtener estado de impresora", e)
+                _printState.value = PrintState.Error("Error al comprobar impresora: ${e.message}")
             }
         }
     }
-    
-    /**
-     * Elimina una impresora guardada.
-     */
-    fun deletePrinter(printerId: Int) {
-        viewModelScope.launch {
-            try {
-                printerRepository.deletePrinter(printerId).collect { state ->
-                    when (state) {
-                        is ResourceState.Success -> {
-                            // Si era la impresora seleccionada, deseleccionar
-                            if (_selectedPrinter.value?.id == printerId) {
-                                _selectedPrinter.value = null
-                            }
-                            
-                            _printState.value = PrintState.Success
-                        }
-                        is ResourceState.Error -> {
-                            _printState.value = PrintState.Error(
-                                state.message ?: "Error desconocido al eliminar impresora"
-                            )
-                        }
-                        is ResourceState.Loading -> {
-                            _printState.value = PrintState.Loading
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Error al eliminar impresora", e)
-                _printState.value = PrintState.Error("Error: ${e.message}")
-            }
-        }
-    }
-    
-    /**
-     * Marca una plantilla como favorita o no.
-     */
-    fun setTemplateFavorite(templateId: Int, isFavorite: Boolean) {
-        viewModelScope.launch {
-            try {
-                labelTemplateRepository.setFavorite(templateId, isFavorite)
-            } catch (e: Exception) {
-                Log.e(TAG, "Error al marcar plantilla como favorita", e)
-            }
-        }
-    }
+}
+
+/**
+ * Estados posibles de impresión.
+ */
+sealed class PrintState {
+    object Idle : PrintState()
+    object Searching : PrintState()
+    data class PrintersFound(val count: Int) : PrintState()
+    object Syncing : PrintState()
+    object Printing : PrintState()
+    object Ready : PrintState()
+    data class Success(val message: String) : PrintState()
+    data class Error(val message: String) : PrintState()
 }

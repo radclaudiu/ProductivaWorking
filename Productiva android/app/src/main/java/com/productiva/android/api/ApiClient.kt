@@ -1,51 +1,73 @@
 package com.productiva.android.api
 
-import com.google.gson.GsonBuilder
+import com.productiva.android.ProductivaApplication
+import com.productiva.android.utils.SessionManager
 import okhttp3.OkHttpClient
+import okhttp3.Interceptor
+import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 /**
- * Cliente para la API de Productiva
- * Configura Retrofit para hacer llamadas a la API
+ * Cliente API para la comunicación con el servidor
  */
-object ApiClient {
-    private const val DEFAULT_TIMEOUT = 30L
+class ApiClient(private val app: ProductivaApplication) {
     
+    private val sessionManager: SessionManager = app.sessionManager
+    
+    /**
+     * Crea una instancia de Retrofit configurada
+     */
+    fun createRetrofit(): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(sessionManager.getServerUrl())
+            .client(createOkHttpClient())
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+    
+    /**
+     * Crea un cliente OkHttp con interceptores para autenticación y logging
+     */
     private fun createOkHttpClient(): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
         
         return OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .writeTimeout(30, TimeUnit.SECONDS)
+            .addInterceptor(AuthInterceptor(sessionManager))
             .addInterceptor(loggingInterceptor)
-            .connectTimeout(DEFAULT_TIMEOUT, TimeUnit.SECONDS)
-            .readTimeout(DEFAULT_TIMEOUT, TimeUnit.SECONDS)
-            .writeTimeout(DEFAULT_TIMEOUT, TimeUnit.SECONDS)
             .build()
     }
     
     /**
-     * Crea una instancia de Retrofit configurada para la API
+     * Crea una instancia del servicio API
      */
-    fun createRetrofit(baseUrl: String): Retrofit {
-        val gson = GsonBuilder()
-            .setDateFormat("yyyy-MM-dd'T'HH:mm:ss")
-            .create()
+    fun createApiService(): ApiService {
+        return createRetrofit().create(ApiService::class.java)
+    }
+    
+    /**
+     * Interceptor para añadir token de autenticación a las peticiones
+     */
+    private class AuthInterceptor(private val sessionManager: SessionManager) : Interceptor {
+        override fun intercept(chain: Interceptor.Chain): Response {
+            val originalRequest = chain.request()
             
-        return Retrofit.Builder()
-            .baseUrl(baseUrl)
-            .client(createOkHttpClient())
-            .addConverterFactory(GsonConverterFactory.create(gson))
-            .build()
-    }
-    
-    /**
-     * Crea una instancia del servicio de API
-     */
-    fun createApiService(baseUrl: String): ApiService {
-        return createRetrofit(baseUrl).create(ApiService::class.java)
+            // Si no hay token, devuelve la petición original
+            val token = sessionManager.getAuthToken() ?: return chain.proceed(originalRequest)
+            
+            // Añadir token a la cabecera
+            val requestWithToken = originalRequest.newBuilder()
+                .header("Authorization", "Bearer $token")
+                .build()
+            
+            return chain.proceed(requestWithToken)
+        }
     }
 }

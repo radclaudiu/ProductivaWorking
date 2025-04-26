@@ -1,136 +1,145 @@
 package com.productiva.android.repository
 
-import android.content.Context
+import androidx.lifecycle.LiveData
+import com.productiva.android.ProductivaApplication
 import com.productiva.android.api.ApiService
-import com.productiva.android.data.dao.UserDao
+import com.productiva.android.dao.UserDao
 import com.productiva.android.model.User
 import com.productiva.android.utils.SessionManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import retrofit2.Response
+import java.util.Date
 
 /**
- * Repositorio para operaciones relacionadas con usuarios
- * Centraliza el acceso a los datos de usuarios, ya sea de la API o de la base de datos local
+ * Repositorio para la gestión de usuarios
  */
-class UserRepository(
-    private val apiService: ApiService,
-    private val userDao: UserDao,
-    private val context: Context
-) {
-    private val sessionManager = SessionManager(context)
+class UserRepository(private val app: ProductivaApplication) {
+    
+    private val userDao: UserDao = app.database.userDao()
+    private val apiService: ApiService = app.apiService
+    private val sessionManager: SessionManager = app.sessionManager
     
     /**
-     * Realiza el proceso de login con el servidor
+     * Intenta autenticar a un usuario con sus credenciales
+     * @param username Nombre de usuario
+     * @param password Contraseña
+     * @return Respuesta de la API con el token y datos de usuario
      */
-    suspend fun login(username: String, password: String): Result<Boolean> {
+    suspend fun login(username: String, password: String): Response<Map<String, Any>> {
+        return withContext(Dispatchers.IO) {
+            apiService.login(username, password)
+        }
+    }
+    
+    /**
+     * Obtiene todos los usuarios de la base de datos local
+     * @return LiveData con la lista de usuarios
+     */
+    fun getAllUsers(): LiveData<List<User>> {
+        return userDao.getAllUsers()
+    }
+    
+    /**
+     * Obtiene todos los usuarios activos de la base de datos local
+     * @return LiveData con la lista de usuarios activos
+     */
+    fun getActiveUsers(): LiveData<List<User>> {
+        return userDao.getActiveUsers()
+    }
+    
+    /**
+     * Obtiene un usuario por su ID
+     * @param userId ID del usuario
+     * @return Usuario encontrado o null
+     */
+    suspend fun getUserById(userId: Int): User? {
+        return withContext(Dispatchers.IO) {
+            userDao.getUserById(userId)
+        }
+    }
+    
+    /**
+     * Obtiene usuarios por compañía
+     * @param companyId ID de la compañía
+     * @return LiveData con la lista de usuarios de la compañía
+     */
+    fun getUsersByCompany(companyId: Int): LiveData<List<User>> {
+        return userDao.getUsersByCompany(companyId)
+    }
+    
+    /**
+     * Obtiene usuarios por ubicación
+     * @param locationId ID de la ubicación
+     * @return LiveData con la lista de usuarios de la ubicación
+     */
+    fun getUsersByLocation(locationId: Int): LiveData<List<User>> {
+        return userDao.getUsersByLocation(locationId)
+    }
+    
+    /**
+     * Sincroniza usuarios desde el servidor
+     * @return True si la sincronización fue exitosa
+     */
+    suspend fun syncUsers(): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                val response = apiService.login(username, password)
-                
+                val response = apiService.getUsers()
                 if (response.isSuccessful) {
-                    val authResponse = response.body()
-                    
-                    if (authResponse != null) {
-                        // Guardar datos de sesión
-                        sessionManager.saveAuthToken(authResponse.token)
-                        sessionManager.saveUserId(authResponse.user.id)
-                        
-                        // Guardar usuario en la base de datos local
-                        userDao.insertUser(authResponse.user)
-                        
-                        Result.success(true)
-                    } else {
-                        Result.failure(Exception("Respuesta vacía del servidor"))
+                    response.body()?.let { users ->
+                        userDao.deleteAllUsers()
+                        userDao.insertUsers(users)
+                        return@withContext true
                     }
-                } else {
-                    val errorMessage = when (response.code()) {
-                        401 -> "Credenciales incorrectas"
-                        403 -> "Acceso denegado"
-                        404 -> "Usuario no encontrado"
-                        500 -> "Error en el servidor"
-                        else -> "Error: ${response.code()} - ${response.message()}"
-                    }
-                    Result.failure(Exception(errorMessage))
                 }
+                false
             } catch (e: Exception) {
-                Result.failure(Exception("Error de conexión: ${e.message}"))
+                false
             }
         }
     }
     
     /**
-     * Obtiene los usuarios disponibles para el usuario autenticado
-     * Estos usuarios son los perfiles a los que tiene acceso
+     * Sincroniza usuarios de una ubicación específica desde el servidor
+     * @param locationId ID de la ubicación
+     * @return True si la sincronización fue exitosa
      */
-    suspend fun getAvailableUsers(token: String): Result<List<User>> {
+    suspend fun syncUsersByLocation(locationId: Int): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                val response = apiService.getUsers(
-                    token = "Bearer $token"
-                )
-                
+                val response = apiService.getUsersByLocation(locationId)
                 if (response.isSuccessful) {
-                    val users = response.body() ?: emptyList()
-                    
-                    // Guardar usuarios en la base de datos local
-                    if (users.isNotEmpty()) {
-                        userDao.insertAllUsers(users)
+                    response.body()?.let { users ->
+                        userDao.insertUsers(users)
+                        return@withContext true
                     }
-                    
-                    Result.success(users)
-                } else {
-                    val errorMessage = when (response.code()) {
-                        401 -> "Token expirado o inválido"
-                        403 -> "Acceso denegado"
-                        404 -> "No se encontraron usuarios"
-                        500 -> "Error en el servidor"
-                        else -> "Error: ${response.code()} - ${response.message()}"
-                    }
-                    Result.failure(Exception(errorMessage))
                 }
+                false
             } catch (e: Exception) {
-                // Intentar obtener usuarios de la base de datos local
-                val localUsers = userDao.getAllUsers().value ?: emptyList()
-                if (localUsers.isNotEmpty()) {
-                    return@withContext Result.success(localUsers)
-                }
-                
-                Result.failure(Exception("Error de conexión: ${e.message}"))
+                false
             }
         }
     }
     
     /**
-     * Selecciona un usuario (perfil) para la sesión actual
+     * Sincroniza usuarios de una compañía específica desde el servidor
+     * @param companyId ID de la compañía
+     * @return True si la sincronización fue exitosa
      */
-    suspend fun selectUser(userId: Int): Result<Boolean> {
+    suspend fun syncUsersByCompany(companyId: Int): Boolean {
         return withContext(Dispatchers.IO) {
             try {
-                val user = userDao.getUserByIdSync(userId)
-                
-                if (user != null) {
-                    // Guardar datos de usuario seleccionado
-                    sessionManager.saveSelectedUserId(userId)
-                    
-                    // Si el usuario tiene ubicación, guardarla también
-                    user.locationId?.let { locationId ->
-                        sessionManager.saveLocationId(locationId)
+                val response = apiService.getUsersByCompany(companyId)
+                if (response.isSuccessful) {
+                    response.body()?.let { users ->
+                        userDao.insertUsers(users)
+                        return@withContext true
                     }
-                    
-                    Result.success(true)
-                } else {
-                    Result.failure(Exception("Usuario no encontrado en la base de datos local"))
                 }
+                false
             } catch (e: Exception) {
-                Result.failure(Exception("Error al seleccionar usuario: ${e.message}"))
+                false
             }
         }
-    }
-    
-    /**
-     * Cierra la sesión del usuario
-     */
-    fun logout() {
-        sessionManager.clearSession()
     }
 }

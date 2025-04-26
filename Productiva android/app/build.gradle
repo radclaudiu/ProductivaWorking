@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId "com.productiva.android"
-        minSdk 24
+        minSdk 26  // Incrementado a 26 para soportar íconos adaptativos correctamente
         targetSdk 34
         versionCode 1
         versionName "1.0"

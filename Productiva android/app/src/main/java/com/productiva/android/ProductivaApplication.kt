@@ -30,6 +30,9 @@ class ProductivaApplication : Application() {
 
         // Inicializar canales de notificación para Android 8.0+
         NotificationChannelHelper.createNotificationChannels(this)
+        
+        // Inicializar el resolvedor de conflictos de recursos
+        ResourceConflictResolver.initialize(this)
 
         // Configurar la sincronización periódica en segundo plano
         setupPeriodicSync()

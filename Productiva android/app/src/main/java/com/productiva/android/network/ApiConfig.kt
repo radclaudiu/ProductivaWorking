@@ -9,7 +9,7 @@ object ApiConfig {
      * URL base de la API.
      * La URL base es la misma que la de la aplicación web, añadiendo "/api".
      */
-    const val BASE_URL = "https://productiva.replit.app/api/"
+    const val BASE_URL = "http://localhost:5000/api/"
     
     /**
      * Versión de la API.

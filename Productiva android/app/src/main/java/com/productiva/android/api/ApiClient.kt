@@ -18,7 +18,8 @@ import java.util.concurrent.TimeUnit
 class ApiClient private constructor(context: Context) {
     
     companion object {
-        private const val DEFAULT_SERVER_URL = "https://productiva.example.com/api/"
+        // URL unificada para todos los clientes
+        private const val DEFAULT_SERVER_URL = "http://localhost:5000/api/"
         private const val AUTH_TOKEN_PREF = "auth_token"
         private const val SERVER_URL_PREF = "server_url"
         private const val PREFS_NAME = "productiva_api"

@@ -134,6 +134,6 @@ class PreferenceManager(private val context: Context) {
         private const val KEY_DEFAULT_PRINTER_ID = "default_printer_id"
         
         // Valores predeterminados
-        private const val DEFAULT_SERVER_URL = "http://192.168.1.1:5000"
+        private const val DEFAULT_SERVER_URL = "http://localhost:5000"
     }
 }

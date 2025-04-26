@@ -3,26 +3,33 @@ package com.productiva.android.database
 import androidx.room.TypeConverter
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
-import com.productiva.android.model.User
+import com.productiva.android.model.LabelElement
+import java.util.Date
 
 /**
- * Clase de conversores para Room.
- * Proporciona métodos para convertir tipos complejos a tipos primitivos y viceversa.
+ * Conversores para tipos de datos complejos utilizados en la base de datos Room.
+ * Permiten almacenar y recuperar tipos de datos que Room no maneja nativamente.
  */
 class Converters {
     private val gson = Gson()
     
-    /**
-     * Convierte una lista de strings a un string JSON.
-     */
+    // Conversiones para Date
     @TypeConverter
-    fun fromStringList(value: List<String>): String {
-        return gson.toJson(value)
+    fun fromTimestamp(value: Long?): Date? {
+        return value?.let { Date(it) }
     }
     
-    /**
-     * Convierte un string JSON a una lista de strings.
-     */
+    @TypeConverter
+    fun dateToTimestamp(date: Date?): Long? {
+        return date?.time
+    }
+    
+    // Conversiones para List<String>
+    @TypeConverter
+    fun fromStringList(value: List<String>?): String {
+        return gson.toJson(value ?: emptyList<String>())
+    }
+    
     @TypeConverter
     fun toStringList(value: String): List<String> {
         val listType = object : TypeToken<List<String>>() {}.type
@@ -33,17 +40,28 @@ class Converters {
         }
     }
     
-    /**
-     * Convierte un mapa de string a string a un string JSON.
-     */
+    // Conversiones para List<Int>
     @TypeConverter
-    fun fromStringMap(value: Map<String, String>): String {
-        return gson.toJson(value)
+    fun fromIntList(value: List<Int>?): String {
+        return gson.toJson(value ?: emptyList<Int>())
     }
     
-    /**
-     * Convierte un string JSON a un mapa de string a string.
-     */
+    @TypeConverter
+    fun toIntList(value: String): List<Int> {
+        val listType = object : TypeToken<List<Int>>() {}.type
+        return try {
+            gson.fromJson(value, listType) ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+    
+    // Conversiones para Map<String, String>
+    @TypeConverter
+    fun fromStringMap(value: Map<String, String>?): String {
+        return gson.toJson(value ?: emptyMap<String, String>())
+    }
+    
     @TypeConverter
     fun toStringMap(value: String): Map<String, String> {
         val mapType = object : TypeToken<Map<String, String>>() {}.type
@@ -54,54 +72,18 @@ class Converters {
         }
     }
     
-    /**
-     * Convierte una lista de ubicaciones de usuario a un string JSON.
-     */
+    // Conversiones para List<LabelElement>
     @TypeConverter
-    fun fromUserLocationList(value: List<User.UserLocation>): String {
-        return gson.toJson(value)
+    fun fromLabelElementList(value: List<LabelElement>?): String {
+        return gson.toJson(value ?: emptyList<LabelElement>())
     }
     
-    /**
-     * Convierte un string JSON a una lista de ubicaciones de usuario.
-     */
     @TypeConverter
-    fun toUserLocationList(value: String): List<User.UserLocation> {
-        val listType = object : TypeToken<List<User.UserLocation>>() {}.type
+    fun toLabelElementList(value: String): List<LabelElement> {
+        val listType = object : TypeToken<List<LabelElement>>() {}.type
         return try {
             gson.fromJson(value, listType) ?: emptyList()
         } catch (e: Exception) {
-            emptyList()
-        }
-    }
-    
-    /**
-     * Convierte una lista de strings (tags) a un string JSON.
-     */
-    @TypeConverter
-    fun fromTags(value: List<String>): String {
-        return gson.toJson(value)
-    }
-    
-    /**
-     * Convierte un string JSON a una lista de strings (tags).
-     */
-    @TypeConverter
-    fun toTags(value: String): List<String> {
-        val listType = object : TypeToken<List<String>>() {}.type
-        return try {
-            gson.fromJson(value, listType) ?: emptyList()
-        } catch (e: Exception) {
-            // Si el valor es una cadena simple, intentar dividirla
-            if (value.contains(",")) {
-                return value.split(",").map { it.trim() }
-            }
-            if (value.contains("|")) {
-                return value.split("|").map { it.trim() }
-            }
-            if (value.isNotBlank()) {
-                return listOf(value)
-            }
             emptyList()
         }
     }

@@ -3,150 +3,111 @@ package com.productiva.android.model
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
-import com.google.gson.annotations.SerializedName
 import com.productiva.android.database.Converters
 
 /**
- * Modelo para plantillas de etiquetas.
- * Representa una plantilla para imprimir etiquetas de productos.
+ * Modelo de datos para una plantilla de etiqueta.
+ * Define la estructura y el diseño de las etiquetas para impresión.
  */
 @Entity(tableName = "label_templates")
 @TypeConverters(Converters::class)
 data class LabelTemplate(
     @PrimaryKey
-    @SerializedName("id")
     val id: Int,
     
-    @SerializedName("name")
+    // Información básica de la plantilla
     val name: String,
+    val description: String?,
     
-    @SerializedName("description")
-    val description: String? = null,
-    
-    @SerializedName("company_id")
-    val companyId: Int? = null,
-    
-    @SerializedName("creator_id")
-    val creatorId: Int? = null,
-    
-    @SerializedName("width")
+    // Configuración física de la etiqueta
     val width: Int, // Ancho en mm
-    
-    @SerializedName("height")
     val height: Int, // Alto en mm
+    val orientation: String, // "portrait" o "landscape"
+    val dpi: Int, // Resolución en puntos por pulgada
     
-    @SerializedName("dpi")
-    val dpi: Int = 203, // Resolución en DPI
+    // Configuración de impresora
+    val printerModel: String?, // Modelo de impresora compatible
+    val paperType: String?, // Tipo de papel/etiqueta
     
-    @SerializedName("orientation")
-    val orientation: String = "landscape", // landscape o portrait
+    // Elementos de la plantilla
+    val elements: List<LabelElement>,
     
-    @SerializedName("elements")
-    val elements: List<LabelElement> = emptyList(),
+    // Datos adicionales
+    val isDefault: Boolean, // Indica si es la plantilla predeterminada
+    val createdBy: Int, // ID del usuario que creó la plantilla
+    val companyId: Int, // ID de la empresa a la que pertenece
     
-    @SerializedName("is_active")
-    val isActive: Boolean = true,
-    
-    @SerializedName("is_default")
-    val isDefault: Boolean = false,
-    
-    @SerializedName("created_at")
-    val createdAt: String? = null,
-    
-    @SerializedName("updated_at")
-    val updatedAt: String? = null,
-    
-    // Campos locales
-    var lastSyncTime: Long = 0
-) {
-    /**
-     * Verifica si la plantilla es compatible con una impresora específica.
-     */
-    fun isCompatibleWithPrinter(printerModel: String, printerDpi: Int): Boolean {
-        // Lógica de compatibilidad
-        return true
-    }
-    
-    /**
-     * Obtiene el tamaño de etiqueta como texto.
-     */
-    fun getSizeText(): String {
-        return "${width}mm x ${height}mm"
-    }
-}
+    // Datos para sincronización
+    val lastSyncTime: Long
+)
 
 /**
- * Modelo para elementos de una etiqueta.
- * Representa un elemento visual dentro de una plantilla de etiqueta.
+ * Modelo de datos para un elemento dentro de una plantilla de etiqueta.
  */
 data class LabelElement(
-    @SerializedName("id")
-    val id: Int = 0,
+    val id: Int,
     
-    @SerializedName("type")
-    val type: String, // text, barcode, qrcode, image, line, rectangle
+    // Tipo y posicionamiento
+    val type: String, // "text", "barcode", "qrcode", "image", "line", "rectangle"
+    val x: Int, // Posición X en mm desde la esquina superior izquierda
+    val y: Int, // Posición Y en mm desde la esquina superior izquierda
+    val width: Int?, // Ancho en mm (opcional según el tipo)
+    val height: Int?, // Alto en mm (opcional según el tipo)
+    val rotation: Int?, // Rotación en grados (0, 90, 180, 270)
     
-    @SerializedName("x")
-    val x: Int, // Posición X en píxeles
+    // Configuración específica para elementos de texto
+    val text: String?, // Texto estático o plantilla con marcadores ({product_name}, {product_price}, etc.)
+    val fontSize: Float?, // Tamaño de fuente en puntos
+    val fontName: String?, // Nombre de la fuente
+    val fontStyle: String?, // "normal", "bold", "italic", "bold_italic"
+    val alignment: String?, // "left", "center", "right"
     
-    @SerializedName("y")
-    val y: Int, // Posición Y en píxeles
+    // Configuración específica para códigos de barras y QR
+    val barcodeType: String?, // "CODE_128", "EAN_13", "EAN_8", "UPC_A", "QR_CODE", etc.
+    val barcodeContent: String?, // Contenido estático o marcador ({product_barcode}, {product_sku}, etc.)
+    val showText: Boolean?, // Mostrar texto debajo del código de barras
     
-    @SerializedName("width")
-    val width: Int? = null, // Ancho en píxeles
+    // Configuración específica para líneas y rectángulos
+    val borderWidth: Float?, // Ancho del borde en puntos
+    val fillColor: String?, // Color de relleno en formato hexadecimal (#RRGGBB)
+    val borderColor: String?, // Color del borde en formato hexadecimal (#RRGGBB)
     
-    @SerializedName("height")
-    val height: Int? = null, // Alto en píxeles
-    
-    @SerializedName("content")
-    val content: String? = null, // Contenido estático o variable (ej: {product.name})
-    
-    @SerializedName("font_family")
-    val fontFamily: String? = null, // Solo para texto
-    
-    @SerializedName("font_size")
-    val fontSize: Int? = null, // Solo para texto
-    
-    @SerializedName("font_style")
-    val fontStyle: String? = null, // normal, bold, italic - Solo para texto
-    
-    @SerializedName("alignment")
-    val alignment: String? = null, // left, center, right - Solo para texto
-    
-    @SerializedName("rotation")
-    val rotation: Int = 0, // Rotación en grados
-    
-    @SerializedName("barcode_type")
-    val barcodeType: String? = null, // code128, ean13, etc. - Solo para códigos de barras
-    
-    @SerializedName("qrcode_version")
-    val qrcodeVersion: Int? = null, // Solo para QR
-    
-    @SerializedName("border_width")
-    val borderWidth: Int? = null, // Solo para líneas y rectángulos
-    
-    @SerializedName("is_variable")
-    val isVariable: Boolean = false, // Si el contenido es una variable o texto estático
-    
-    @SerializedName("variable_binding")
-    val variableBinding: String? = null // Nombre de la variable (product.name, product.price, etc.)
+    // Configuración específica para imágenes
+    val imageUrl: String?, // URL o ruta a la imagen
+    val preserveAspectRatio: Boolean? // Mantener proporción original de la imagen
 ) {
     /**
-     * Evalúa el contenido del elemento con un producto específico.
+     * Evalúa el contenido del elemento reemplazando marcadores con datos del producto.
+     *
+     * @param product Producto cuyos datos se usarán para reemplazar marcadores.
+     * @return Contenido evaluado con los datos del producto.
      */
     fun evaluateContent(product: Product): String {
-        if (!isVariable || variableBinding.isNullOrEmpty()) {
-            return content ?: ""
-        }
-        
-        // Procesar la variable según el binding
-        return when (variableBinding) {
-            "product.name" -> product.name
-            "product.sku" -> product.sku
-            "product.barcode" -> product.barcode ?: ""
-            "product.price" -> product.price?.toString() ?: ""
-            "product.category" -> product.category ?: ""
+        // Determinar qué contenido evaluar según el tipo de elemento
+        val templateContent = when (type.lowercase()) {
+            "text" -> text ?: ""
+            "barcode", "qrcode" -> barcodeContent ?: ""
             else -> ""
         }
+        
+        // Si no hay contenido o no contiene marcadores, devolverlo tal cual
+        if (templateContent.isBlank() || !templateContent.contains("{")) {
+            return templateContent
+        }
+        
+        // Reemplazar marcadores con datos del producto
+        return templateContent
+            .replace("{product_name}", product.name)
+            .replace("{product_id}", product.id.toString())
+            .replace("{product_sku}", product.sku ?: "")
+            .replace("{product_barcode}", product.barcode ?: "")
+            .replace("{product_price}", product.price?.toString() ?: "")
+            .replace("{product_category}", product.category ?: "")
+            .replace("{product_brand}", product.brand ?: "")
+            .replace("{product_stock}", product.stock.toString())
+            .replace("{current_date}", java.text.SimpleDateFormat("dd/MM/yyyy").format(java.util.Date()))
+            .replace("{expiry_date}", product.expiryDate?.let { 
+                java.text.SimpleDateFormat("dd/MM/yyyy").format(it) 
+            } ?: "")
     }
 }

@@ -5,53 +5,14 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
-import androidx.room.Update
 import com.productiva.android.model.TaskCompletion
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Data Access Object para las completaciones de tareas.
- * Proporciona métodos para acceder y manipular la tabla de completaciones de tareas.
+ * DAO para acceder y manipular completaciones de tareas en la base de datos.
  */
 @Dao
 interface TaskCompletionDao {
-    /**
-     * Inserta una completación de tarea en la base de datos.
-     * Si ya existe una completación con el mismo ID, la reemplaza.
-     *
-     * @param taskCompletion Completación de tarea a insertar.
-     * @return ID de la completación insertada.
-     */
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTaskCompletion(taskCompletion: TaskCompletion): Long
-    
-    /**
-     * Inserta múltiples completaciones de tareas en la base de datos.
-     * Si ya existe alguna completación con el mismo ID, la reemplaza.
-     *
-     * @param taskCompletions Lista de completaciones de tareas a insertar.
-     * @return Lista de IDs de las completaciones insertadas.
-     */
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTaskCompletions(taskCompletions: List<TaskCompletion>): List<Long>
-    
-    /**
-     * Actualiza una completación de tarea existente.
-     *
-     * @param taskCompletion Completación de tarea a actualizar.
-     * @return Número de filas actualizadas.
-     */
-    @Update
-    suspend fun updateTaskCompletion(taskCompletion: TaskCompletion): Int
-    
-    /**
-     * Obtiene una completación de tarea por su ID.
-     *
-     * @param completionId ID de la completación.
-     * @return Flow con la completación, o null si no existe.
-     */
-    @Query("SELECT * FROM task_completions WHERE id = :completionId")
-    fun getTaskCompletionById(completionId: Int): Flow<TaskCompletion?>
     
     /**
      * Obtiene todas las completaciones de una tarea específica.
@@ -63,21 +24,55 @@ interface TaskCompletionDao {
     fun getTaskCompletionsByTaskId(taskId: Int): Flow<List<TaskCompletion>>
     
     /**
-     * Obtiene todas las completaciones que necesitan sincronizarse.
+     * Obtiene la última completación de una tarea.
      *
-     * @return Lista de completaciones que requieren sincronización.
+     * @param taskId ID de la tarea.
+     * @return Flow con la última completación de la tarea (o null si no existe).
      */
-    @Query("SELECT * FROM task_completions WHERE isLocalOnly = 1 AND isSynced = 0")
+    @Query("SELECT * FROM task_completions WHERE taskId = :taskId ORDER BY completedAt DESC LIMIT 1")
+    fun getLastTaskCompletion(taskId: Int): Flow<TaskCompletion?>
+    
+    /**
+     * Inserta una completación de tarea en la base de datos.
+     *
+     * @param taskCompletion Completación de tarea a insertar.
+     * @return ID generado para la nueva completación.
+     */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTaskCompletion(taskCompletion: TaskCompletion): Long
+    
+    /**
+     * Inserta varias completaciones de tarea en la base de datos.
+     *
+     * @param completions Lista de completaciones a insertar.
+     */
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertTaskCompletions(completions: List<TaskCompletion>)
+    
+    /**
+     * Obtiene todas las completaciones de tarea pendientes de sincronización.
+     *
+     * @return Lista de completaciones pendientes de sincronización.
+     */
+    @Query("SELECT * FROM task_completions WHERE isSynced = 0")
     suspend fun getTaskCompletionsToSync(): List<TaskCompletion>
     
     /**
-     * Marca completaciones de tareas como sincronizadas.
+     * Marca varias completaciones de tarea como sincronizadas.
      *
-     * @param completionIds Lista de IDs de completaciones.
-     * @return Número de filas actualizadas.
+     * @param completionIds Lista de IDs de completaciones a marcar.
      */
-    @Query("UPDATE task_completions SET isSynced = 1 WHERE id IN (:completionIds)")
-    suspend fun markTaskCompletionsAsSynced(completionIds: List<Int>): Int
+    @Query("UPDATE task_completions SET isSynced = 1, lastSyncAttempt = strftime('%s','now') * 1000, syncError = NULL WHERE id IN (:completionIds)")
+    suspend fun markTaskCompletionsAsSynced(completionIds: List<Int>)
+    
+    /**
+     * Marca una completación de tarea como fallida en la sincronización.
+     *
+     * @param completionId ID de la completación.
+     * @param errorMessage Mensaje de error.
+     */
+    @Query("UPDATE task_completions SET lastSyncAttempt = strftime('%s','now') * 1000, syncError = :errorMessage WHERE id = :completionId")
+    suspend fun markTaskCompletionSyncFailed(completionId: Int, errorMessage: String)
     
     /**
      * Elimina una completación de tarea por su ID.
@@ -98,55 +93,12 @@ interface TaskCompletionDao {
     suspend fun deleteTaskCompletionsByTaskId(taskId: Int): Int
     
     /**
-     * Obtiene todas las completaciones realizadas por un usuario específico.
+     * Sincroniza las completaciones con los datos del servidor.
      *
-     * @param userId ID del usuario.
-     * @return Flow con la lista de completaciones realizadas por el usuario.
-     */
-    @Query("SELECT * FROM task_completions WHERE completedBy = :userId ORDER BY completedAt DESC")
-    fun getTaskCompletionsByUserId(userId: Int): Flow<List<TaskCompletion>>
-    
-    /**
-     * Elimina todas las completaciones.
-     */
-    @Query("DELETE FROM task_completions")
-    suspend fun deleteAllTaskCompletions()
-    
-    /**
-     * Obtiene una completación de tarea por su ID de forma síncrona.
-     *
-     * @param completionId ID de la completación.
-     * @return La completación, o null si no existe.
-     */
-    @Query("SELECT * FROM task_completions WHERE id = :completionId")
-    suspend fun getTaskCompletionByIdSync(completionId: Int): TaskCompletion?
-    
-    /**
-     * Transacción para sincronizar completaciones desde el servidor.
-     * Actualiza las completaciones locales con los datos del servidor.
-     *
-     * @param completions Lista de completaciones del servidor.
+     * @param completions Completaciones recibidas del servidor.
      */
     @Transaction
     suspend fun syncTaskCompletionsFromServer(completions: List<TaskCompletion>) {
-        if (completions.isNotEmpty()) {
-            // Transformar las completaciones para indicar que están sincronizadas
-            val syncedCompletions = completions.map { completion ->
-                completion.copy(isLocalOnly = false, isSynced = true)
-            }
-            
-            // Insertar las completaciones sincronizadas
-            insertTaskCompletions(syncedCompletions)
-        }
+        insertTaskCompletions(completions)
     }
-    
-    /**
-     * Incrementa el contador de reintentos y actualiza el timestamp del último intento de sincronización.
-     *
-     * @param completionId ID de la completación.
-     * @param timestamp Timestamp del intento de sincronización.
-     * @return Número de filas actualizadas.
-     */
-    @Query("UPDATE task_completions SET retryCount = retryCount + 1, lastSyncAttempt = :timestamp WHERE id = :completionId")
-    suspend fun incrementRetryCount(completionId: Int, timestamp: Long): Int
 }

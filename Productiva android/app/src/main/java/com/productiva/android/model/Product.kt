@@ -1,146 +1,65 @@
 package com.productiva.android.model
 
 import androidx.room.Entity
-import androidx.room.Index
 import androidx.room.PrimaryKey
 import androidx.room.TypeConverters
-import com.google.gson.annotations.SerializedName
 import com.productiva.android.database.Converters
+import java.util.Date
 
 /**
- * Modelo para productos.
- * Representa un producto en el sistema con toda su información.
+ * Modelo de datos para un producto.
+ * Representa los productos del inventario que pueden imprimirse como etiquetas.
  */
-@Entity(
-    tableName = "products",
-    indices = [
-        Index("sku", unique = true),
-        Index("barcode")
-    ]
-)
+@Entity(tableName = "products")
 @TypeConverters(Converters::class)
 data class Product(
     @PrimaryKey
-    @SerializedName("id")
-    val id: Int = 0,
+    val id: Int,
     
-    @SerializedName("name")
+    // Información básica del producto
     val name: String,
+    val description: String?,
+    val sku: String?,
+    val barcode: String?,
     
-    @SerializedName("description")
-    val description: String? = null,
+    // Datos de categorización
+    val category: String?,
+    val subcategory: String?,
+    val brand: String?,
+    val supplier: String?,
     
-    @SerializedName("sku")
-    val sku: String,
+    // Datos de inventario
+    val stock: Int,
+    val minStock: Int?,
+    val maxStock: Int?,
+    val location: String?,
     
-    @SerializedName("barcode")
-    val barcode: String? = null,
+    // Datos económicos
+    val price: Double?,
+    val cost: Double?,
+    val tax: Double?,
     
-    @SerializedName("price")
-    val price: Double? = null,
+    // Datos de dimensiones y medidas
+    val weight: Double?,
+    val weightUnit: String?,
+    val dimensions: String?, // Formato: "ancho x alto x profundidad"
+    val dimensionUnit: String?,
     
-    @SerializedName("cost")
-    val cost: Double? = null,
+    // Datos adicionales
+    val imageUrl: String?,
+    val isActive: Boolean,
+    val notes: String?,
+    val attributes: Map<String, String>?, // Atributos adicionales como clave-valor
     
-    @SerializedName("stock")
-    val stock: Int = 0,
+    // Fechas importantes
+    val createdAt: Date,
+    val updatedAt: Date,
+    val expiryDate: Date?,
     
-    @SerializedName("min_stock")
-    val minStock: Int = 0,
+    // Datos de empresa
+    val companyId: Int,
     
-    @SerializedName("category")
-    val category: String? = null,
-    
-    @SerializedName("supplier")
-    val supplier: String? = null,
-    
-    @SerializedName("supplier_id")
-    val supplierId: Int? = null,
-    
-    @SerializedName("location_id")
-    val locationId: Int? = null,
-    
-    @SerializedName("company_id")
-    val companyId: Int? = null,
-    
-    @SerializedName("image_url")
-    val imageUrl: String? = null,
-    
-    @SerializedName("tags")
-    val tags: List<String> = emptyList(),
-    
-    @SerializedName("attributes")
-    val attributes: Map<String, String> = emptyMap(),
-    
-    @SerializedName("is_active")
-    val isActive: Boolean = true,
-    
-    @SerializedName("created_at")
-    val createdAt: String? = null,
-    
-    @SerializedName("updated_at")
-    val updatedAt: String? = null,
-    
-    // Campos locales
-    var isLocallyModified: Boolean = false,
-    var lastSyncTime: Long = 0,
-    var localImagePath: String? = null
-) {
-    /**
-     * Verifica si el producto tiene existencias disponibles.
-     */
-    fun hasStock(): Boolean {
-        return stock > 0
-    }
-    
-    /**
-     * Verifica si el producto está en nivel bajo de existencias.
-     */
-    fun isLowStock(): Boolean {
-        return stock <= minStock && stock > 0
-    }
-    
-    /**
-     * Verifica si el producto está agotado.
-     */
-    fun isOutOfStock(): Boolean {
-        return stock <= 0
-    }
-    
-    /**
-     * Obtiene el margen de ganancia en porcentaje.
-     */
-    fun getMarginPercent(): Double {
-        if (cost == null || price == null || cost <= 0) return 0.0
-        return ((price - cost) / cost) * 100
-    }
-    
-    /**
-     * Obtiene el margen de ganancia en valor absoluto.
-     */
-    fun getMarginValue(): Double {
-        if (cost == null || price == null) return 0.0
-        return price - cost
-    }
-    
-    /**
-     * Obtiene la URL de la imagen o la ruta local si existe.
-     */
-    fun getImageSource(): String? {
-        return localImagePath ?: imageUrl
-    }
-    
-    /**
-     * Verifica si el producto tiene imagen.
-     */
-    fun hasImage(): Boolean {
-        return !imageUrl.isNullOrEmpty() || !localImagePath.isNullOrEmpty()
-    }
-    
-    /**
-     * Verifica si el producto necesita ser sincronizado con el servidor.
-     */
-    fun needsSync(): Boolean {
-        return isLocallyModified
-    }
-}
+    // Datos para sincronización
+    val lastSyncTime: Long,
+    val isLocallyModified: Boolean = false // Indica si fue modificado localmente y requiere sincronización
+)

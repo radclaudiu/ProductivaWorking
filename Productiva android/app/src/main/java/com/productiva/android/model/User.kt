@@ -1,44 +1,71 @@
 package com.productiva.android.model
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.google.gson.annotations.SerializedName
 
 /**
- * Modelo de usuario
- * Representa tanto a usuarios de autenticación como perfiles de empleados
+ * Clase de entidad para representar un usuario en la base de datos
  */
-@Entity(tableName = "users")
+@Entity(
+    tableName = "users",
+    indices = [
+        Index("email", unique = true),
+        Index("username", unique = true)
+    ]
+)
 data class User(
     @PrimaryKey
-    val id: Int,
+    @ColumnInfo(name = "id")
+    @SerializedName("id")
+    val id: Int = 0,
     
-    // Datos de autenticación
+    @ColumnInfo(name = "name")
+    @SerializedName("name")
+    val name: String,
+    
+    @ColumnInfo(name = "email")
+    @SerializedName("email")
+    val email: String,
+    
+    @ColumnInfo(name = "username")
+    @SerializedName("username")
     val username: String,
-    val email: String? = null,
     
-    // Datos personales
-    val name: String? = null,
-    val lastName: String? = null,
-    @SerializedName("profile_image")
-    val profileImage: String? = null,
-    val phone: String? = null,
-    val address: String? = null,
-    
-    // Rol en el sistema
+    @ColumnInfo(name = "role")
+    @SerializedName("role")
     val role: String,
     
-    // Datos organizacionales
+    @ColumnInfo(name = "company_id")
     @SerializedName("company_id")
-    val companyId: Int? = null,
+    val companyId: Int,
+    
+    @ColumnInfo(name = "company_name")
+    @SerializedName("company_name")
+    val companyName: String = "",
+    
+    @ColumnInfo(name = "location_id")
     @SerializedName("location_id")
     val locationId: Int? = null,
     
-    // Información laboral
-    val position: String? = null,
-    @SerializedName("employee_id")
-    val employeeId: String? = null,
+    @ColumnInfo(name = "location_name")
+    @SerializedName("location_name")
+    val locationName: String = "",
     
-    // Estado
-    val active: Boolean = true
+    @ColumnInfo(name = "is_active")
+    @SerializedName("is_active")
+    val isActive: Boolean = true,
+    
+    @ColumnInfo(name = "profile_image")
+    @SerializedName("profile_image")
+    val profileImage: String? = null,
+    
+    @ColumnInfo(name = "phone")
+    @SerializedName("phone")
+    val phone: String? = null,
+    
+    @ColumnInfo(name = "last_sync")
+    val lastSync: Long = System.currentTimeMillis()
 )

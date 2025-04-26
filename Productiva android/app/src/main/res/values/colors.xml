@@ -16,6 +16,8 @@
     <color name="colorError">#F44336</color>
     <color name="colorTextPrimary">#212121</color>
     <color name="colorTextSecondary">#757575</color>
+    <color name="colorSurface">#FFFFFF</color>
+    <color name="colorDivider">#DEDEDE</color>
     
     <!-- Colores personalizados para la aplicación Productiva -->
     <color name="primary">#1E88E5</color>

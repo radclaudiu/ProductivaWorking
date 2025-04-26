@@ -16,6 +16,8 @@
     <color name="colorError">#F44336</color>
     <color name="colorTextPrimary">#E0E0E0</color>
     <color name="colorTextSecondary">#B0B0B0</color>
+    <color name="colorSurface">#202020</color>
+    <color name="colorDivider">#454545</color>
     
     <!-- Colores personalizados para la aplicación Productiva (modo oscuro) -->
     <color name="primary">#2196F3</color>

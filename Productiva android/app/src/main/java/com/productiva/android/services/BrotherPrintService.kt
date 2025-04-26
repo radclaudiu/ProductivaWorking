@@ -1,429 +1,488 @@
 package com.productiva.android.services
 
-import android.app.IntentService
 import android.content.Context
-import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.pdf.PdfRenderer
-import android.os.ParcelFileDescriptor
-import android.widget.Toast
-import com.brother.ptouch.sdk.LabelInfo
-import com.brother.ptouch.sdk.NetPrinter
-import com.brother.ptouch.sdk.Printer
-import com.brother.ptouch.sdk.PrinterInfo
-import com.brother.sdk.BrotherPrintLibrary
-import com.brother.sdk.printing.PrinterDriverGenerateResult
-import com.brother.sdk.printing.PrinterModel
-import com.productiva.android.ProductivaApplication
+import android.net.Uri
+import android.util.Log
+import android.webkit.WebView
+import android.webkit.WebViewClient
+import com.brother.sdk.LabelInfo
+import com.brother.sdk.PaperSize
+import com.brother.sdk.Printer
+import com.brother.sdk.PrinterDriver
+import com.brother.sdk.PrinterInfo
+import com.brother.sdk.PrinterStatus
+import com.productiva.android.model.LabelTemplate
 import com.productiva.android.model.SavedPrinter
-import com.productiva.android.utils.AppLogger
+import com.productiva.android.utils.FileUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.future.await
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.IOException
+import kotlin.coroutines.resume
 
 /**
- * Servicio para gestionar la impresión en impresoras Brother.
- * Maneja la impresión en segundo plano para evitar bloquear la UI.
+ * Servicio para la impresión de etiquetas utilizando el SDK de Brother.
  */
-class BrotherPrintService : IntentService("BrotherPrintService") {
+class BrotherPrintService(
+    private val context: Context
+) {
+    private val TAG = "BrotherPrintService"
+    private val coroutineScope = CoroutineScope(Dispatchers.IO)
     
-    companion object {
-        private const val TAG = "BrotherPrintService"
-        
-        // Acciones
-        const val ACTION_PRINT_PDF = "com.productiva.android.action.PRINT_PDF"
-        const val ACTION_PRINT_IMAGE = "com.productiva.android.action.PRINT_IMAGE"
-        const val ACTION_FIND_PRINTERS = "com.productiva.android.action.FIND_PRINTERS"
-        
-        // Parámetros
-        const val EXTRA_PRINTER_ID = "com.productiva.android.extra.PRINTER_ID"
-        const val EXTRA_FILE_PATH = "com.productiva.android.extra.FILE_PATH"
-        const val EXTRA_PRINTER_ADDRESS = "com.productiva.android.extra.PRINTER_ADDRESS"
-        const val EXTRA_PRINTER_MODEL = "com.productiva.android.extra.PRINTER_MODEL"
-        const val EXTRA_CONNECTION_TYPE = "com.productiva.android.extra.CONNECTION_TYPE"
-        const val EXTRA_PAPER_WIDTH = "com.productiva.android.extra.PAPER_WIDTH"
-        const val EXTRA_PAPER_HEIGHT = "com.productiva.android.extra.PAPER_HEIGHT"
-        const val EXTRA_QUALITY = "com.productiva.android.extra.QUALITY"
-        const val EXTRA_ORIENTATION = "com.productiva.android.extra.ORIENTATION"
-        const val EXTRA_PRINT_COPIES = "com.productiva.android.extra.PRINT_COPIES"
-        
-        // Broadcasts de respuesta
-        const val ACTION_PRINT_COMPLETE = "com.productiva.android.action.PRINT_COMPLETE"
-        const val ACTION_PRINT_ERROR = "com.productiva.android.action.PRINT_ERROR"
-        const val ACTION_PRINTERS_FOUND = "com.productiva.android.action.PRINTERS_FOUND"
-        
-        // Resultados adicionales
-        const val EXTRA_ERROR_MESSAGE = "com.productiva.android.extra.ERROR_MESSAGE"
-        const val EXTRA_PRINTERS_FOUND = "com.productiva.android.extra.PRINTERS_FOUND"
+    /**
+     * Estado de la operación de impresión.
+     */
+    sealed class PrintResult {
+        /**
+         * La impresión fue exitosa.
+         */
+        object Success : PrintResult()
         
         /**
-         * Inicia el servicio para imprimir un archivo PDF
+         * Error durante la impresión con mensaje descriptivo.
          */
-        fun printPdf(context: Context, printerId: Int, filePath: String, copies: Int = 1) {
-            val intent = Intent(context, BrotherPrintService::class.java).apply {
-                action = ACTION_PRINT_PDF
-                putExtra(EXTRA_PRINTER_ID, printerId)
-                putExtra(EXTRA_FILE_PATH, filePath)
-                putExtra(EXTRA_PRINT_COPIES, copies)
-            }
-            context.startService(intent)
-        }
+        data class Error(val message: String, val errorCode: Int = -1) : PrintResult()
         
         /**
-         * Inicia el servicio para imprimir una imagen
+         * La impresora no está lista (desconectada, sin papel, etc.).
          */
-        fun printImage(context: Context, printerId: Int, filePath: String, copies: Int = 1) {
-            val intent = Intent(context, BrotherPrintService::class.java).apply {
-                action = ACTION_PRINT_IMAGE
-                putExtra(EXTRA_PRINTER_ID, printerId)
-                putExtra(EXTRA_FILE_PATH, filePath)
-                putExtra(EXTRA_PRINT_COPIES, copies)
-            }
-            context.startService(intent)
-        }
+        data class PrinterNotReady(val message: String) : PrintResult()
         
         /**
-         * Inicia el servicio para buscar impresoras disponibles
+         * Error al renderizar la etiqueta.
          */
-        fun findPrinters(context: Context) {
-            val intent = Intent(context, BrotherPrintService::class.java).apply {
-                action = ACTION_FIND_PRINTERS
-            }
-            context.startService(intent)
+        data class RenderError(val message: String) : PrintResult()
+    }
+    
+    /**
+     * Descubre impresoras Brother disponibles mediante Bluetooth.
+     */
+    suspend fun discoverPrinters(): List<Printer> = withContext(Dispatchers.IO) {
+        try {
+            // Buscar impresoras Brother por Bluetooth
+            val printers = PrinterDriver.discoverPrinters().get().await()
+            Log.d(TAG, "Impresoras descubiertas: ${printers.size}")
+            return@withContext printers
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al descubrir impresoras", e)
+            return@withContext emptyList()
         }
     }
     
-    override fun onHandleIntent(intent: Intent?) {
-        if (intent == null) return
+    /**
+     * Convierte un objeto Printer de Brother a nuestro modelo SavedPrinter.
+     */
+    fun convertToSavedPrinter(brotherPrinter: Printer): SavedPrinter {
+        // Determinar tamaño de papel basado en modelo de impresora
+        val (paperWidth, paperHeight) = getPaperSizeForModel(brotherPrinter.model)
         
-        when (intent.action) {
-            ACTION_PRINT_PDF -> {
-                val printerId = intent.getIntExtra(EXTRA_PRINTER_ID, -1)
-                val filePath = intent.getStringExtra(EXTRA_FILE_PATH)
-                val copies = intent.getIntExtra(EXTRA_PRINT_COPIES, 1)
-                
-                if (printerId == -1 || filePath.isNullOrEmpty()) {
-                    sendErrorBroadcast("Parámetros de impresión inválidos")
-                    return
-                }
-                
-                handlePrintPdf(printerId, filePath, copies)
-            }
-            
-            ACTION_PRINT_IMAGE -> {
-                val printerId = intent.getIntExtra(EXTRA_PRINTER_ID, -1)
-                val filePath = intent.getStringExtra(EXTRA_FILE_PATH)
-                val copies = intent.getIntExtra(EXTRA_PRINT_COPIES, 1)
-                
-                if (printerId == -1 || filePath.isNullOrEmpty()) {
-                    sendErrorBroadcast("Parámetros de impresión inválidos")
-                    return
-                }
-                
-                handlePrintImage(printerId, filePath, copies)
-            }
-            
-            ACTION_FIND_PRINTERS -> {
-                handleFindPrinters()
-            }
+        return SavedPrinter(
+            name = brotherPrinter.name,
+            model = brotherPrinter.model,
+            macAddress = brotherPrinter.macAddress,
+            ipAddress = brotherPrinter.ipAddress,
+            connectionType = getBestConnectionType(brotherPrinter),
+            paperWidth = paperWidth,
+            paperHeight = paperHeight,
+            dpi = 203 // DPI estándar para la mayoría de impresoras Brother
+        )
+    }
+    
+    /**
+     * Determina el tamaño de papel basado en el modelo de impresora.
+     */
+    private fun getPaperSizeForModel(model: String): Pair<Int, Int> {
+        return when {
+            model.contains("QL-800") || model.contains("QL-810") || model.contains("QL-820") -> 
+                Pair(62, 100) // Ancho x Alto en mm
+            model.contains("QL-700") || model.contains("QL-710") || model.contains("QL-720") -> 
+                Pair(62, 100)
+            model.contains("QL-1100") || model.contains("QL-1110") -> 
+                Pair(103, 150)
+            model.contains("PT-") -> 
+                Pair(24, 80) // Etiquetas tipo cinta
+            else -> 
+                Pair(62, 100) // Tamaño predeterminado
         }
     }
     
     /**
-     * Maneja la impresión de un archivo PDF
+     * Obtiene el mejor tipo de conexión disponible para una impresora.
      */
-    private fun handlePrintPdf(printerId: Int, filePath: String, copies: Int) {
-        try {
-            AppLogger.d(TAG, "Iniciando impresión de PDF: $filePath para impresora ID: $printerId")
-            
-            // Obtener configuración de la impresora desde la base de datos
-            val printerDao = ProductivaApplication.instance.database.printerDao()
-            
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    val printer = printerDao.getPrinterById(printerId)
-                    
-                    if (printer == null) {
-                        withContext(Dispatchers.Main) {
-                            sendErrorBroadcast("Impresora no encontrada")
-                        }
-                        return@launch
-                    }
-                    
-                    // Convertir PDF a bitmap
-                    val bitmap = convertPdfToBitmap(filePath)
-                    
-                    if (bitmap == null) {
-                        withContext(Dispatchers.Main) {
-                            sendErrorBroadcast("Error al convertir PDF a imagen")
-                        }
-                        return@launch
-                    }
-                    
-                    // Imprimir la imagen
-                    val result = printBitmap(printer, bitmap, copies)
-                    
-                    withContext(Dispatchers.Main) {
-                        if (result) {
-                            sendCompleteBroadcast()
-                        } else {
-                            sendErrorBroadcast("Error al imprimir PDF")
-                        }
-                    }
-                } catch (e: Exception) {
-                    AppLogger.e(TAG, "Error en handlePrintPdf", e)
-                    withContext(Dispatchers.Main) {
-                        sendErrorBroadcast("Error: ${e.message}")
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            AppLogger.e(TAG, "Error general en handlePrintPdf", e)
-            sendErrorBroadcast("Error: ${e.message}")
+    private fun getBestConnectionType(printer: Printer): String {
+        return when {
+            printer.bluetoothAddress != null -> "bluetooth"
+            printer.ipAddress != null -> "wifi"
+            printer.usbSerialNumber != null -> "usb"
+            else -> "unknown"
         }
     }
     
     /**
-     * Maneja la impresión de una imagen
+     * Imprime una plantilla de etiqueta en una impresora Brother.
      */
-    private fun handlePrintImage(printerId: Int, filePath: String, copies: Int) {
+    suspend fun printTemplate(
+        printer: SavedPrinter,
+        template: LabelTemplate,
+        data: Map<String, String>
+    ): PrintResult = withContext(Dispatchers.IO) {
         try {
-            AppLogger.d(TAG, "Iniciando impresión de imagen: $filePath para impresora ID: $printerId")
+            Log.d(TAG, "Preparando impresión de etiqueta: ${template.name}")
             
-            // Obtener configuración de la impresora desde la base de datos
-            val printerDao = ProductivaApplication.instance.database.printerDao()
+            // Renderizar la plantilla con los datos
+            val html = prepareHtmlWithData(template, data)
             
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    val printer = printerDao.getPrinterById(printerId)
-                    
-                    if (printer == null) {
-                        withContext(Dispatchers.Main) {
-                            sendErrorBroadcast("Impresora no encontrada")
-                        }
-                        return@launch
-                    }
-                    
-                    // Cargar la imagen
-                    val bitmap = BitmapFactory.decodeFile(filePath)
-                    
-                    if (bitmap == null) {
-                        withContext(Dispatchers.Main) {
-                            sendErrorBroadcast("Error al cargar imagen")
-                        }
-                        return@launch
-                    }
-                    
-                    // Imprimir la imagen
-                    val result = printBitmap(printer, bitmap, copies)
-                    
-                    withContext(Dispatchers.Main) {
-                        if (result) {
-                            sendCompleteBroadcast()
-                        } else {
-                            sendErrorBroadcast("Error al imprimir imagen")
-                        }
-                    }
-                } catch (e: Exception) {
-                    AppLogger.e(TAG, "Error en handlePrintImage", e)
-                    withContext(Dispatchers.Main) {
-                        sendErrorBroadcast("Error: ${e.message}")
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            AppLogger.e(TAG, "Error general en handlePrintImage", e)
-            sendErrorBroadcast("Error: ${e.message}")
-        }
-    }
-    
-    /**
-     * Busca impresoras Brother disponibles en la red
-     */
-    private fun handleFindPrinters() {
-        try {
-            AppLogger.d(TAG, "Buscando impresoras Brother disponibles")
+            // Convertir HTML a imagen
+            val bitmap = renderHtmlToBitmap(html, template.width, template.height)
+                ?: return@withContext PrintResult.RenderError("Error al renderizar plantilla HTML")
             
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    // Buscar impresoras en la red
-                    val netPrinter = NetPrinter()
-                    val printers = netPrinter.getNetPrinters()
-                    
-                    val foundPrinters = mutableListOf<Map<String, String>>()
-                    
-                    if (printers != null && printers.isNotEmpty()) {
-                        for (i in printers.indices) {
-                            val printer = printers[i]
-                            val printerInfo = mapOf(
-                                "model" to printer.modelName,
-                                "address" to printer.ipAddress,
-                                "name" to (printer.nodeName ?: printer.modelName),
-                                "location" to (printer.location ?: "")
-                            )
-                            foundPrinters.add(printerInfo)
-                        }
-                    }
-                    
-                    withContext(Dispatchers.Main) {
-                        sendPrintersFoundBroadcast(foundPrinters)
-                    }
-                } catch (e: Exception) {
-                    AppLogger.e(TAG, "Error en handleFindPrinters", e)
-                    withContext(Dispatchers.Main) {
-                        sendErrorBroadcast("Error al buscar impresoras: ${e.message}")
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            AppLogger.e(TAG, "Error general en handleFindPrinters", e)
-            sendErrorBroadcast("Error: ${e.message}")
-        }
-    }
-    
-    /**
-     * Convierte un archivo PDF a un bitmap
-     */
-    private fun convertPdfToBitmap(pdfFilePath: String): Bitmap? {
-        var bitmap: Bitmap? = null
-        try {
-            val file = File(pdfFilePath)
-            val fileDescriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-            val pdfRenderer = PdfRenderer(fileDescriptor)
-            
-            // Solo tomamos la primera página
-            val page = pdfRenderer.openPage(0)
-            
-            // Crear un bitmap del tamaño de la página
-            bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
-            page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_PRINT)
-            
-            page.close()
-            pdfRenderer.close()
-            fileDescriptor.close()
-        } catch (e: Exception) {
-            AppLogger.e(TAG, "Error en convertPdfToBitmap", e)
-        }
-        
-        return bitmap
-    }
-    
-    /**
-     * Imprime un bitmap en una impresora Brother
-     */
-    private fun printBitmap(savedPrinter: SavedPrinter, bitmap: Bitmap, copies: Int): Boolean {
-        try {
             // Configurar la impresora
-            val printer = Printer()
-            val printerInfo = printer.printerInfo
+            val printerInfo = configurePrinter(printer)
             
-            // Configurar el modelo de impresora
-            when {
-                savedPrinter.model.startsWith("QL-") -> {
-                    printerInfo.printerModel = PrinterInfo.Model.QL_720NW
-                }
-                savedPrinter.model.startsWith("PT-") -> {
-                    printerInfo.printerModel = PrinterInfo.Model.PT_P950NW
-                }
-                else -> {
-                    printerInfo.printerModel = PrinterInfo.Model.QL_720NW
-                }
+            // Conectar con la impresora
+            val printerDriver = getPrinterDriver(printer, printerInfo)
+                ?: return@withContext PrintResult.Error("No se pudo conectar con la impresora")
+            
+            // Verificar estado de la impresora
+            val status = printerDriver.printerStatus.get().await()
+            if (!status.isReady) {
+                val errorMessage = getPrinterErrorMessage(status)
+                return@withContext PrintResult.PrinterNotReady(errorMessage)
             }
             
-            // Configurar tipo de conexión
-            when (savedPrinter.connectionType) {
-                SavedPrinter.TYPE_BLUETOOTH -> {
-                    printerInfo.port = PrinterInfo.Port.BLUETOOTH
-                    printerInfo.macAddress = savedPrinter.address
-                }
-                SavedPrinter.TYPE_WIFI -> {
-                    printerInfo.port = PrinterInfo.Port.NET
-                    printerInfo.ipAddress = savedPrinter.address
-                }
-                SavedPrinter.TYPE_USB -> {
-                    printerInfo.port = PrinterInfo.Port.USB
-                }
+            // Crear archivo temporal para la imagen
+            val imageFile = FileUtils.createFileFromBitmap(
+                context, 
+                bitmap, 
+                "label_${template.id}_"
+            ) ?: return@withContext PrintResult.Error("Error al crear archivo temporal")
+            
+            // Imprimir la imagen
+            Log.d(TAG, "Enviando trabajo de impresión")
+            val printResult = printerDriver.printImage(imageFile).get().await()
+            
+            // Limpiar archivo temporal
+            imageFile.delete()
+            
+            // Verificar resultado
+            return@withContext if (printResult) {
+                Log.d(TAG, "Impresión exitosa")
+                PrintResult.Success
+            } else {
+                val errorStatus = printerDriver.printerStatus.get().await()
+                val errorMessage = getPrinterErrorMessage(errorStatus)
+                Log.e(TAG, "Error en impresión: $errorMessage")
+                PrintResult.Error(errorMessage)
             }
-            
-            // Configurar etiqueta
-            printerInfo.paperSize = getLabelPaperSize(savedPrinter.paperWidth, savedPrinter.paperHeight)
-            printerInfo.orientation = when (savedPrinter.orientation) {
-                SavedPrinter.ORIENTATION_LANDSCAPE -> PrinterInfo.Orientation.LANDSCAPE
-                else -> PrinterInfo.Orientation.PORTRAIT
-            }
-            
-            // Configurar calidad
-            printerInfo.printQuality = when (savedPrinter.printQuality) {
-                SavedPrinter.QUALITY_HIGH -> PrinterInfo.PrintQuality.HIGH_RESOLUTION
-                SavedPrinter.QUALITY_NORMAL -> PrinterInfo.PrintQuality.NORMAL
-                else -> PrinterInfo.PrintQuality.NORMAL
-            }
-            
-            // Número de copias
-            printerInfo.numberOfCopies = copies
-            
-            // Imprimir
-            printer.printerInfo = printerInfo
-            val result = printer.print(bitmap)
-            
-            return result == PrinterInfo.Result.SUCCESS
         } catch (e: Exception) {
-            AppLogger.e(TAG, "Error en printBitmap", e)
-            return false
+            Log.e(TAG, "Error al imprimir plantilla", e)
+            return@withContext PrintResult.Error("Error al imprimir: ${e.message}")
         }
     }
     
     /**
-     * Obtiene el tamaño de papel adecuado para Brother
+     * Prepara el HTML con los datos para la plantilla.
      */
-    private fun getLabelPaperSize(width: Int, height: Int): LabelInfo.QL700.Media {
-        // Por defecto usamos tamaño de etiqueta de dirección
-        var labelSize = LabelInfo.QL700.Media.W62RB
+    private fun prepareHtmlWithData(template: LabelTemplate, data: Map<String, String>): String {
+        var html = template.htmlContent
         
-        // Determinar el tamaño basado en dimensiones
-        when {
-            width == 62 && height == 29 -> labelSize = LabelInfo.QL700.Media.W62H29
-            width == 62 -> labelSize = LabelInfo.QL700.Media.W62RB
-            width == 29 -> labelSize = LabelInfo.QL700.Media.W29H90
-            width == 17 -> labelSize = LabelInfo.QL700.Media.W17H54
-            width == 12 -> labelSize = LabelInfo.QL700.Media.W12
+        // Reemplazar variables en el HTML
+        data.forEach { (key, value) ->
+            html = html.replace("{{$key}}", value)
         }
         
-        return labelSize
-    }
-    
-    /**
-     * Envía un broadcast de impresión completada
-     */
-    private fun sendCompleteBroadcast() {
-        val intent = Intent(ACTION_PRINT_COMPLETE)
-        sendBroadcast(intent)
-    }
-    
-    /**
-     * Envía un broadcast de error de impresión
-     */
-    private fun sendErrorBroadcast(errorMessage: String) {
-        val intent = Intent(ACTION_PRINT_ERROR).apply {
-            putExtra(EXTRA_ERROR_MESSAGE, errorMessage)
-        }
-        sendBroadcast(intent)
+        // Agregar CSS
+        val css = template.cssContent ?: ""
+        html = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                    body { 
+                        margin: 0; 
+                        padding: 0; 
+                        width: ${template.width}mm; 
+                        height: ${template.height}mm; 
+                        overflow: hidden;
+                    }
+                    $css
+                </style>
+            </head>
+            <body>
+                $html
+            </body>
+            </html>
+        """.trimIndent()
         
-        // También mostramos un Toast para notificar al usuario
-        Toast.makeText(applicationContext, errorMessage, Toast.LENGTH_SHORT).show()
+        return html
     }
     
     /**
-     * Envía un broadcast con las impresoras encontradas
+     * Renderiza HTML a un bitmap usando WebView.
      */
-    private fun sendPrintersFoundBroadcast(printers: List<Map<String, String>>) {
-        val intent = Intent(ACTION_PRINTERS_FOUND).apply {
-            putExtra(EXTRA_PRINTERS_FOUND, ArrayList(printers))
+    private suspend fun renderHtmlToBitmap(html: String, width: Int, height: Int): Bitmap? {
+        return suspendCancellableCoroutine { continuation ->
+            coroutineScope.launch(Dispatchers.Main) {
+                try {
+                    val webView = WebView(context)
+                    webView.settings.apply {
+                        javaScriptEnabled = true
+                        useWideViewPort = true
+                        loadWithOverviewMode = true
+                    }
+                    
+                    // Calcular pixeles basados en densidad de pantalla
+                    val density = context.resources.displayMetrics.density
+                    val pixelWidth = (width * density * 3.779528).toInt() // Convertir mm a píxeles
+                    val pixelHeight = (height * density * 3.779528).toInt()
+                    
+                    webView.layout(0, 0, pixelWidth, pixelHeight)
+                    
+                    webView.webViewClient = object : WebViewClient() {
+                        override fun onPageFinished(view: WebView, url: String) {
+                            try {
+                                // Crear bitmap del tamaño de la etiqueta
+                                val bitmap = Bitmap.createBitmap(
+                                    pixelWidth, 
+                                    pixelHeight, 
+                                    Bitmap.Config.ARGB_8888
+                                )
+                                
+                                // Renderizar WebView en el bitmap
+                                view.draw(android.graphics.Canvas(bitmap))
+                                
+                                // Devolver resultado
+                                if (!continuation.isCompleted) {
+                                    continuation.resume(bitmap)
+                                }
+                                
+                                // Limpiar WebView
+                                webView.destroy()
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Error al renderizar HTML", e)
+                                if (!continuation.isCompleted) {
+                                    continuation.resume(null)
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Cargar HTML
+                    webView.loadDataWithBaseURL(
+                        "file:///android_asset/",
+                        html,
+                        "text/html",
+                        "UTF-8",
+                        null
+                    )
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error al configurar WebView", e)
+                    if (!continuation.isCompleted) {
+                        continuation.resume(null)
+                    }
+                }
+            }
         }
-        sendBroadcast(intent)
+    }
+    
+    /**
+     * Configura la información de la impresora para Brother SDK.
+     */
+    private fun configurePrinter(printer: SavedPrinter): PrinterInfo {
+        val printerInfo = PrinterInfo()
+        
+        // Configurar conexión
+        when (printer.connectionType.lowercase()) {
+            "bluetooth" -> {
+                printerInfo.printerModel = printer.model
+                printerInfo.port = PrinterInfo.Port.BLUETOOTH
+                printerInfo.macAddress = printer.macAddress
+            }
+            "wifi" -> {
+                printerInfo.printerModel = printer.model
+                printerInfo.port = PrinterInfo.Port.NET
+                printerInfo.ipAddress = printer.ipAddress ?: ""
+            }
+            "usb" -> {
+                printerInfo.printerModel = printer.model
+                printerInfo.port = PrinterInfo.Port.USB
+            }
+            else -> {
+                // Bluetooth por defecto
+                printerInfo.printerModel = printer.model
+                printerInfo.port = PrinterInfo.Port.BLUETOOTH
+                printerInfo.macAddress = printer.macAddress
+            }
+        }
+        
+        // Configurar tamaño de papel
+        printerInfo.paperSize = getPaperSizeForModel(printer)
+        printerInfo.orientation = PrinterInfo.Orientation.PORTRAIT
+        printerInfo.printMode = PrinterInfo.PrintMode.FIT_TO_PAGE
+        printerInfo.isAutoCut = true
+        
+        return printerInfo
+    }
+    
+    /**
+     * Obtiene el tamaño de papel correcto para el SDK de Brother.
+     */
+    private fun getPaperSizeForModel(printer: SavedPrinter): PaperSize {
+        // Mapear dimensiones a tamaños de Brother
+        return when {
+            printer.model.contains("QL-") -> {
+                when {
+                    printer.paperWidth <= 17 -> PaperSize.ROLL_W17H54
+                    printer.paperWidth <= 29 -> PaperSize.ROLL_W29H90
+                    printer.paperWidth <= 38 -> PaperSize.ROLL_W38H90
+                    printer.paperWidth <= 50 -> PaperSize.ROLL_W50H30
+                    printer.paperWidth <= 54 -> PaperSize.ROLL_W54H29
+                    printer.paperWidth <= 62 -> PaperSize.ROLL_W62
+                    printer.paperWidth <= 102 -> PaperSize.ROLL_W102
+                    else -> PaperSize.ROLL_W62
+                }
+            }
+            printer.model.contains("PT-") -> {
+                when {
+                    printer.paperWidth <= 3.5 -> PaperSize.PT_3_5
+                    printer.paperWidth <= 6 -> PaperSize.PT_6
+                    printer.paperWidth <= 9 -> PaperSize.PT_9
+                    printer.paperWidth <= 12 -> PaperSize.PT_12
+                    printer.paperWidth <= 18 -> PaperSize.PT_18
+                    printer.paperWidth <= 24 -> PaperSize.PT_24
+                    else -> PaperSize.PT_24
+                }
+            }
+            else -> PaperSize.ROLL_W62 // Valor predeterminado
+        }
+    }
+    
+    /**
+     * Obtiene un driver de impresora para Brother SDK.
+     */
+    private suspend fun getPrinterDriver(
+        printer: SavedPrinter,
+        printerInfo: PrinterInfo
+    ): PrinterDriver? = withContext(Dispatchers.IO) {
+        try {
+            val driver = PrinterDriver(printerInfo)
+            val isConnected = driver.connect().get().await()
+            
+            if (isConnected) {
+                return@withContext driver
+            } else {
+                Log.e(TAG, "No se pudo conectar con la impresora")
+                return@withContext null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al obtener driver de impresora", e)
+            return@withContext null
+        }
+    }
+    
+    /**
+     * Obtiene un mensaje de error descriptivo basado en el estado de la impresora.
+     */
+    private fun getPrinterErrorMessage(status: PrinterStatus): String {
+        return when {
+            !status.isOnline -> "La impresora no está conectada"
+            status.isPaperEmpty -> "No hay papel en la impresora"
+            status.isCoverOpen -> "La tapa de la impresora está abierta"
+            status.isBatteryLow -> "Batería baja en la impresora"
+            status.isError -> "Error en la impresora: ${status.errorCode}"
+            status.isProcessing -> "La impresora está procesando otro trabajo"
+            !status.isReady -> "La impresora no está lista"
+            else -> "Error desconocido"
+        }
+    }
+    
+    /**
+     * Crea un archivo PDF a partir de una plantilla para previsualización.
+     */
+    suspend fun createPdfPreview(
+        template: LabelTemplate,
+        data: Map<String, String>
+    ): File? = withContext(Dispatchers.IO) {
+        try {
+            // Renderizar la plantilla con los datos
+            val html = prepareHtmlWithData(template, data)
+            
+            // Convertir HTML a imagen
+            val bitmap = renderHtmlToBitmap(html, template.width, template.height)
+                ?: return@withContext null
+            
+            // Crear archivo PDF para previsualización (usando PdfRenderer)
+            // Implementación simplificada: guardamos como imagen por ahora
+            val previewFile = FileUtils.createFileFromBitmap(
+                context, 
+                bitmap, 
+                "preview_${template.id}_"
+            )
+            
+            return@withContext previewFile
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al crear vista previa", e)
+            return@withContext null
+        }
+    }
+    
+    /**
+     * Imprime una imagen desde Uri a una impresora Brother.
+     */
+    suspend fun printImageFromUri(
+        printer: SavedPrinter,
+        imageUri: Uri
+    ): PrintResult = withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG, "Preparando impresión de imagen desde Uri")
+            
+            // Convertir Uri a File
+            val imageFile = FileUtils.createFileFromUri(
+                context, 
+                imageUri, 
+                "print_image_"
+            ) ?: return@withContext PrintResult.Error("Error al preparar imagen para impresión")
+            
+            // Configurar la impresora
+            val printerInfo = configurePrinter(printer)
+            
+            // Conectar con la impresora
+            val printerDriver = getPrinterDriver(printer, printerInfo)
+                ?: return@withContext PrintResult.Error("No se pudo conectar con la impresora")
+            
+            // Verificar estado de la impresora
+            val status = printerDriver.printerStatus.get().await()
+            if (!status.isReady) {
+                val errorMessage = getPrinterErrorMessage(status)
+                return@withContext PrintResult.PrinterNotReady(errorMessage)
+            }
+            
+            // Imprimir la imagen
+            Log.d(TAG, "Enviando trabajo de impresión")
+            val printResult = printerDriver.printImage(imageFile).get().await()
+            
+            // Limpiar archivo temporal
+            imageFile.delete()
+            
+            // Verificar resultado
+            return@withContext if (printResult) {
+                Log.d(TAG, "Impresión exitosa")
+                PrintResult.Success
+            } else {
+                val errorStatus = printerDriver.printerStatus.get().await()
+                val errorMessage = getPrinterErrorMessage(errorStatus)
+                Log.e(TAG, "Error en impresión: $errorMessage")
+                PrintResult.Error(errorMessage)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al imprimir imagen", e)
+            return@withContext PrintResult.Error("Error al imprimir: ${e.message}")
+        }
     }
 }

@@ -2,124 +2,130 @@ package com.productiva.android.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import androidx.room.ColumnInfo
-import androidx.room.ForeignKey
-import androidx.room.Index
-import androidx.room.Ignore
+import com.google.gson.annotations.SerializedName
 import java.util.Date
 
 /**
- * Modelo de datos para tareas
+ * Entidad que representa una tarea en el sistema.
  */
-@Entity(
-    tableName = "tasks",
-    indices = [
-        Index("userId"),
-        Index("companyId"),
-        Index("locationId")
-    ]
-)
+@Entity(tableName = "tasks")
 data class Task(
     @PrimaryKey
+    @SerializedName("id")
     val id: Int,
     
-    @ColumnInfo(name = "title")
+    @SerializedName("title")
     val title: String,
     
-    @ColumnInfo(name = "description")
-    val description: String?,
+    @SerializedName("description")
+    val description: String? = null,
     
-    @ColumnInfo(name = "status")
-    val status: String,
+    @SerializedName("status")
+    val status: String = STATUS_PENDING,
     
-    @ColumnInfo(name = "userId")
-    val userId: Int,
+    @SerializedName("created_date")
+    val createdDate: Date? = null,
     
-    @ColumnInfo(name = "userName")
-    val userName: String?,
+    @SerializedName("due_date")
+    val dueDate: Date? = null,
     
-    @ColumnInfo(name = "companyId")
-    val companyId: Int,
+    @SerializedName("completed_date")
+    val completedDate: Date? = null,
     
-    @ColumnInfo(name = "companyName")
-    val companyName: String?,
+    @SerializedName("priority")
+    val priority: Int = 0, // 0: Baja, 1: Normal, 2: Alta
     
-    @ColumnInfo(name = "locationId")
-    val locationId: Int?,
+    @SerializedName("user_id")
+    val userId: Int? = null,
     
-    @ColumnInfo(name = "locationName")
-    val locationName: String?,
+    @SerializedName("user_name")
+    val userName: String? = null,
     
-    @ColumnInfo(name = "priority")
-    val priority: Int = 0,
+    @SerializedName("location_id")
+    val locationId: Int? = null,
     
-    @ColumnInfo(name = "dueDate")
-    val dueDate: Date?,
+    @SerializedName("location_name")
+    val locationName: String? = null,
     
-    @ColumnInfo(name = "completionDate")
-    val completionDate: Date? = null,
+    @SerializedName("company_id")
+    val companyId: Int? = null,
     
-    @ColumnInfo(name = "repeatFrequency")
-    val repeatFrequency: String? = null,
+    @SerializedName("company_name")
+    val companyName: String? = null,
     
-    @ColumnInfo(name = "tags")
+    @SerializedName("requires_signature")
+    val requiresSignature: Boolean = false,
+    
+    @SerializedName("requires_photo")
+    val requiresPhoto: Boolean = false,
+    
+    @SerializedName("has_attachments")
+    val hasAttachments: Boolean = false,
+    
+    @SerializedName("tags")
     val tags: List<String>? = null,
     
-    @ColumnInfo(name = "requiredSignature")
-    val requiredSignature: Boolean = false,
-    
-    @ColumnInfo(name = "requiredPhoto")
-    val requiredPhoto: Boolean = false,
-    
-    @ColumnInfo(name = "createdAt")
-    val createdAt: Date?,
-    
-    @ColumnInfo(name = "updatedAt")
-    val updatedAt: Date?,
-    
-    @ColumnInfo(name = "createdById")
-    val createdById: Int?,
-    
-    @ColumnInfo(name = "updatedById")
-    val updatedById: Int?,
-    
-    @ColumnInfo(name = "lastSyncedAt")
-    val lastSyncedAt: Date? = null,
-    
-    @ColumnInfo(name = "localId")
-    val localId: Long? = null,
-    
-    @ColumnInfo(name = "locallyModified")
-    val locallyModified: Boolean = false
+    // Campo para sincronización, no se envía al servidor
+    var syncPending: Boolean = false
 ) {
+    /**
+     * Verifica si la tarea está completada
+     */
+    fun isCompleted(): Boolean {
+        return status == STATUS_COMPLETED
+    }
+    
+    /**
+     * Verifica si la tarea está en progreso
+     */
+    fun isInProgress(): Boolean {
+        return status == STATUS_IN_PROGRESS
+    }
+    
+    /**
+     * Verifica si la tarea está cancelada
+     */
+    fun isCancelled(): Boolean {
+        return status == STATUS_CANCELLED
+    }
+    
+    /**
+     * Verifica si la tarea está pendiente
+     */
+    fun isPending(): Boolean {
+        return status == STATUS_PENDING
+    }
+    
+    /**
+     * Verifica si la tarea está vencida
+     */
+    fun isPastDue(): Boolean {
+        val now = Date()
+        return dueDate != null && dueDate.before(now) && !isCompleted() && !isCancelled()
+    }
+    
+    /**
+     * Obtiene el color de la prioridad
+     */
+    fun getPriorityColor(): Int {
+        return when (priority) {
+            2 -> 0xFFE53935.toInt() // Rojo para alta prioridad
+            1 -> 0xFFFB8C00.toInt() // Naranja para prioridad media
+            else -> 0xFF4CAF50.toInt() // Verde para prioridad baja
+        }
+    }
+    
     companion object {
         const val STATUS_PENDING = "pending"
         const val STATUS_IN_PROGRESS = "in_progress"
         const val STATUS_COMPLETED = "completed"
         const val STATUS_CANCELLED = "cancelled"
         
-        val STATUS_OPTIONS = listOf(
+        val ALL_STATUSES = listOf(
             STATUS_PENDING,
             STATUS_IN_PROGRESS,
             STATUS_COMPLETED,
             STATUS_CANCELLED
         )
-    }
-    
-    fun isCompleted(): Boolean {
-        return status == STATUS_COMPLETED
-    }
-    
-    fun isCancelled(): Boolean {
-        return status == STATUS_CANCELLED
-    }
-    
-    fun isActive(): Boolean {
-        return status == STATUS_PENDING || status == STATUS_IN_PROGRESS
-    }
-    
-    fun isPastDue(): Boolean {
-        if (dueDate == null) return false
-        return dueDate.before(Date()) && isActive()
     }
 }

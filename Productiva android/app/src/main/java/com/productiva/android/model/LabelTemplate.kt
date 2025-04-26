@@ -2,69 +2,95 @@ package com.productiva.android.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import androidx.room.ColumnInfo
-import java.util.Date
+import com.google.gson.annotations.SerializedName
 
 /**
- * Modelo de datos para plantillas de etiquetas
+ * Entidad que representa una plantilla de etiqueta en el sistema.
  */
 @Entity(tableName = "label_templates")
 data class LabelTemplate(
     @PrimaryKey
+    @SerializedName("id")
     val id: Int,
     
-    @ColumnInfo(name = "name")
+    @SerializedName("name")
     val name: String,
     
-    @ColumnInfo(name = "description")
-    val description: String?,
+    @SerializedName("description")
+    val description: String? = null,
     
-    @ColumnInfo(name = "userId")
-    val userId: Int?,
+    @SerializedName("html_template")
+    val htmlTemplate: String? = null,
     
-    @ColumnInfo(name = "companyId")
-    val companyId: Int?,
+    @SerializedName("fields")
+    val fields: String? = null, // Lista separada por comas de campos en la plantilla
     
-    @ColumnInfo(name = "templateData")
-    val templateData: String,
+    @SerializedName("width")
+    val width: Int = 62, // Ancho en mm
     
-    @ColumnInfo(name = "paperWidth")
-    val paperWidth: Int = 62,
+    @SerializedName("height")
+    val height: Int = 29, // Alto en mm
     
-    @ColumnInfo(name = "paperHeight")
-    val paperHeight: Int = 29,
+    @SerializedName("image_path")
+    val imagePath: String? = null, // Vista previa de la etiqueta
     
-    @ColumnInfo(name = "orientation")
-    val orientation: String = "landscape",
+    @SerializedName("company_id")
+    val companyId: Int? = null,
     
-    @ColumnInfo(name = "dpi")
-    val dpi: Int = 300,
+    @SerializedName("company_name")
+    val companyName: String? = null,
     
-    @ColumnInfo(name = "isPublic")
-    val isPublic: Boolean = false,
+    @SerializedName("created_by")
+    val createdBy: Int? = null,
     
-    @ColumnInfo(name = "createdAt")
-    val createdAt: Date?,
+    @SerializedName("created_date")
+    val createdDate: String? = null,
     
-    @ColumnInfo(name = "updatedAt")
-    val updatedAt: Date?,
+    @SerializedName("is_system")
+    val isSystem: Boolean = false,
     
-    @ColumnInfo(name = "synced")
-    val synced: Boolean = true,
+    @SerializedName("times_used")
+    val timesUsed: Int = 0,
     
-    @ColumnInfo(name = "pendingUpload")
-    val pendingUpload: Boolean = false,
+    @SerializedName("is_favorite")
+    val isFavorite: Boolean = false,
     
-    @ColumnInfo(name = "localId")
-    val localId: Long? = null
+    @SerializedName("last_used")
+    val lastUsed: Long = 0
 ) {
+    /**
+     * Genera una representación en texto de la plantilla
+     */
+    override fun toString(): String {
+        return name
+    }
+    
+    /**
+     * Obtiene la lista de campos como lista
+     */
+    fun getFieldsList(): List<String> {
+        return fields?.split(",")?.map { it.trim() } ?: emptyList()
+    }
+    
+    /**
+     * Verifica si la plantilla tiene campos definidos
+     */
+    fun hasFields(): Boolean {
+        return !fields.isNullOrBlank()
+    }
+    
+    /**
+     * Calcula el aspecto (ratio) de la etiqueta
+     */
+    fun getAspectRatio(): Float {
+        return if (height > 0) width.toFloat() / height.toFloat() else 1f
+    }
+    
     companion object {
-        const val ORIENTATION_PORTRAIT = "portrait"
-        const val ORIENTATION_LANDSCAPE = "landscape"
-        
-        val ORIENTATIONS = listOf(
-            ORIENTATION_PORTRAIT,
-            ORIENTATION_LANDSCAPE
-        )
+        // Tipos de plantillas predefinidas
+        const val TYPE_ADDRESS = "address"
+        const val TYPE_PRODUCT = "product"
+        const val TYPE_BARCODE = "barcode"
+        const val TYPE_CUSTOM = "custom"
     }
 }

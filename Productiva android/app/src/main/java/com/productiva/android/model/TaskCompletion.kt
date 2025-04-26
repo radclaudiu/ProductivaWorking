@@ -2,87 +2,100 @@ package com.productiva.android.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import androidx.room.ColumnInfo
-import androidx.room.ForeignKey
-import androidx.room.Index
+import com.google.gson.annotations.SerializedName
 import java.util.Date
 
 /**
- * Modelo de datos para completaciones de tareas
+ * Entidad que representa la completación de una tarea.
  */
-@Entity(
-    tableName = "task_completions",
-    foreignKeys = [
-        ForeignKey(
-            entity = Task::class,
-            parentColumns = ["id"],
-            childColumns = ["taskId"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ],
-    indices = [
-        Index("taskId"),
-        Index("userId")
-    ]
-)
+@Entity(tableName = "task_completions")
 data class TaskCompletion(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     
-    @ColumnInfo(name = "taskId")
+    @SerializedName("task_id")
     val taskId: Int,
     
-    @ColumnInfo(name = "userId")
+    @SerializedName("user_id")
     val userId: Int,
     
-    @ColumnInfo(name = "userName")
-    val userName: String?,
+    @SerializedName("user_name")
+    val userName: String? = null,
     
-    @ColumnInfo(name = "notes")
-    val notes: String?,
+    @SerializedName("completion_date")
+    val completionDate: Date? = null,
     
-    @ColumnInfo(name = "completionDate")
-    val completionDate: Date = Date(),
+    @SerializedName("notes")
+    val notes: String? = null,
     
-    @ColumnInfo(name = "locationId")
-    val locationId: Int?,
+    @SerializedName("location_id")
+    val locationId: Int? = null,
     
-    @ColumnInfo(name = "locationName")
-    val locationName: String?,
+    @SerializedName("location_name")
+    val locationName: String? = null,
     
-    @ColumnInfo(name = "latitude")
-    val latitude: Double? = null,
-    
-    @ColumnInfo(name = "longitude")
-    val longitude: Double? = null,
-    
-    @ColumnInfo(name = "hasSignature")
+    @SerializedName("has_signature")
     val hasSignature: Boolean = false,
     
-    @ColumnInfo(name = "signaturePath")
+    @SerializedName("signature_path")
     val signaturePath: String? = null,
     
-    @ColumnInfo(name = "hasPhoto")
+    @SerializedName("has_photo")
     val hasPhoto: Boolean = false,
     
-    @ColumnInfo(name = "photoPath")
+    @SerializedName("photo_path")
     val photoPath: String? = null,
     
-    @ColumnInfo(name = "remoteId")
-    val remoteId: Int? = null,
+    @SerializedName("has_attachments")
+    val hasAttachments: Boolean = false,
     
-    @ColumnInfo(name = "synced")
-    val synced: Boolean = false,
+    @SerializedName("attachment_paths")
+    val attachmentPaths: List<String>? = null,
     
-    @ColumnInfo(name = "pendingUpload")
-    val pendingUpload: Boolean = true,
+    @SerializedName("geolocation")
+    val geolocation: String? = null,
     
-    @ColumnInfo(name = "lastSyncedAt")
-    val lastSyncedAt: Date? = null,
+    // Campos para sincronización, no se envían al servidor
+    var syncPending: Boolean = false,
+    var remoteId: Int? = null
+) {
+    /**
+     * Verifica si la completación tiene recursos adjuntos (firma, foto, etc)
+     */
+    fun hasResources(): Boolean {
+        return hasSignature || hasPhoto || hasAttachments
+    }
     
-    @ColumnInfo(name = "createdAt")
-    val createdAt: Date = Date(),
+    /**
+     * Verifica si la completación tiene suficiente información para ser enviada
+     */
+    fun isValid(): Boolean {
+        return taskId > 0 && userId > 0 && completionDate != null
+    }
     
-    @ColumnInfo(name = "updatedAt")
-    val updatedAt: Date = Date()
-)
+    /**
+     * Obtiene una descripción para la completación (para mostrar en la UI)
+     */
+    fun getDisplayDescription(): String {
+        val description = StringBuilder()
+        
+        if (!notes.isNullOrBlank()) {
+            description.append(notes)
+        } else {
+            description.append("Tarea completada")
+        }
+        
+        val resources = mutableListOf<String>()
+        if (hasSignature) resources.add("firma")
+        if (hasPhoto) resources.add("foto")
+        if (hasAttachments) resources.add("archivos adjuntos")
+        
+        if (resources.isNotEmpty()) {
+            description.append(" (")
+            description.append(resources.joinToString(", "))
+            description.append(")")
+        }
+        
+        return description.toString()
+    }
+}

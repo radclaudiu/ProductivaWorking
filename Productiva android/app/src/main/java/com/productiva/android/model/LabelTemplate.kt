@@ -2,75 +2,127 @@ package com.productiva.android.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import androidx.room.ColumnInfo
 import com.google.gson.annotations.SerializedName
 
 /**
- * Entidad que representa una plantilla de etiqueta en la aplicación.
+ * Modelo de datos que representa una plantilla de etiqueta en la aplicación.
+ * Se almacena en la base de datos local y se sincroniza con el servidor.
  */
 @Entity(tableName = "label_templates")
 data class LabelTemplate(
     @PrimaryKey
-    @ColumnInfo(name = "id")
-    @SerializedName("id") 
+    @SerializedName("id")
     val id: Int,
     
-    @ColumnInfo(name = "name")
-    @SerializedName("name") 
+    @SerializedName("name")
     val name: String,
     
-    @ColumnInfo(name = "description")
-    @SerializedName("description") 
+    @SerializedName("description")
     val description: String?,
     
-    @ColumnInfo(name = "html_content")
-    @SerializedName("html_content") 
-    val htmlContent: String,
+    @SerializedName("printer_type")
+    val printerType: String,  // Tipos: "BROTHER_QL", "ZEBRA", "DYMO", etc.
     
-    @ColumnInfo(name = "css_content")
-    @SerializedName("css_content") 
-    val cssContent: String?,
+    @SerializedName("template_data")
+    val templateData: String,  // Estructura JSON o XML con la definición de la etiqueta
     
-    @ColumnInfo(name = "preview_url")
-    @SerializedName("preview_url") 
-    val previewUrl: String?,
+    @SerializedName("width")
+    val width: Int,  // Ancho en puntos o píxeles
     
-    @ColumnInfo(name = "width")
-    @SerializedName("width") 
-    val width: Int,
+    @SerializedName("height")
+    val height: Int,  // Alto en puntos o píxeles
     
-    @ColumnInfo(name = "height")
-    @SerializedName("height") 
-    val height: Int,
+    @SerializedName("is_default")
+    val isDefault: Boolean,
     
-    @ColumnInfo(name = "company_id")
-    @SerializedName("company_id") 
-    val companyId: Int?,
+    @SerializedName("usage_count")
+    val usageCount: Int,
     
-    @ColumnInfo(name = "is_favorite")
-    val isFavorite: Boolean = false,
+    @SerializedName("last_used")
+    val lastUsed: String?,
     
-    @ColumnInfo(name = "times_used")
-    val timesUsed: Int = 0,
+    @SerializedName("created_by")
+    val createdBy: Int?,
     
-    @ColumnInfo(name = "last_used")
-    val lastUsed: Long = 0,
+    @SerializedName("created_at")
+    val createdAt: String?,
     
-    @ColumnInfo(name = "last_sync")
-    val lastSync: Long = System.currentTimeMillis()
+    @SerializedName("updated_at")
+    val updatedAt: String?,
+    
+    @SerializedName("paper_type")
+    val paperType: String?,  // Para impresoras Brother: "W29H90", "W62H100", etc.
+    
+    @SerializedName("orientation")
+    val orientation: String?,  // "PORTRAIT" o "LANDSCAPE"
+    
+    @SerializedName("dpi")
+    val dpi: Int?,  // Resolución de la etiqueta
+    
+    @SerializedName("fields")
+    val fields: List<LabelField>?,  // Campos variables de la etiqueta
+    
+    // Campos locales (no se envían al servidor)
+    val needsSync: Boolean = false,
+    val localUsageCount: Int = 0,
+    val lastSyncTimestamp: Long = 0
 ) {
     /**
-     * Obtiene la descripción del tamaño de la etiqueta.
+     * Obtiene el nombre formateado para mostrar en UI.
      */
-    fun getSizeDescription(): String {
-        return "${width}mm x ${height}mm"
+    fun getDisplayName(): String {
+        return if (isDefault) "$name (Predeterminada)" else name
     }
     
     /**
-     * Verifica si esta plantilla coincide con el tamaño de papel especificado.
+     * Obtiene la descripción para mostrar en UI.
      */
-    fun matchesPaperSize(paperWidth: Int, paperHeight: Int): Boolean {
-        // Si la plantilla es más pequeña o igual que el papel, puede imprimirse
-        return width <= paperWidth && height <= paperHeight
+    fun getDisplayDescription(): String {
+        return description ?: "Sin descripción"
     }
+    
+    /**
+     * Verifica si la plantilla es compatible con el tipo de impresora especificado.
+     */
+    fun isCompatibleWith(printerType: String): Boolean {
+        return this.printerType.equals(printerType, ignoreCase = true)
+    }
+    
+    /**
+     * Clase para representar un campo variable en una plantilla de etiqueta.
+     */
+    data class LabelField(
+        @SerializedName("id")
+        val id: String,
+        
+        @SerializedName("name")
+        val name: String,
+        
+        @SerializedName("type")
+        val type: String,  // "TEXT", "BARCODE", "IMAGE", "QR", etc.
+        
+        @SerializedName("x")
+        val x: Int,  // Posición X en la etiqueta
+        
+        @SerializedName("y")
+        val y: Int,  // Posición Y en la etiqueta
+        
+        @SerializedName("width")
+        val width: Int?,
+        
+        @SerializedName("height")
+        val height: Int?,
+        
+        @SerializedName("font_size")
+        val fontSize: Int?,
+        
+        @SerializedName("font_name")
+        val fontName: String?,
+        
+        @SerializedName("alignment")
+        val alignment: String?,  // "LEFT", "CENTER", "RIGHT"
+        
+        @SerializedName("default_value")
+        val defaultValue: String?
+    )
 }

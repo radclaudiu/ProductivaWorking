@@ -1,6 +1,7 @@
 package com.productiva.android.network
 
 import com.productiva.android.model.LabelTemplate
+import com.productiva.android.model.Product
 import com.productiva.android.model.Task
 import com.productiva.android.model.TaskCompletion
 import com.productiva.android.model.User
@@ -12,6 +13,7 @@ import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Multipart
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -86,6 +88,30 @@ interface ApiService {
     suspend fun updateLabelTemplateUsage(@Path("id") templateId: Int): Response<ResponseBody>
     
     /**
+     * Productos
+     */
+    @GET("api/products")
+    suspend fun getProducts(): Response<List<Product>>
+    
+    @GET("api/products/{id}")
+    suspend fun getProductById(@Path("id") productId: Int): Response<Product>
+    
+    @PUT("api/products/{id}")
+    suspend fun updateProduct(
+        @Path("id") productId: Int,
+        @Body product: Product
+    ): Response<Product>
+    
+    @GET("api/products/category/{categoryId}")
+    suspend fun getProductsByCategory(@Path("categoryId") categoryId: Int): Response<List<Product>>
+    
+    @POST("api/products/{id}/stock")
+    suspend fun updateProductStock(
+        @Path("id") productId: Int,
+        @Body stockData: Map<String, Int>
+    ): Response<Product>
+    
+    /**
      * Sincronizaciones
      */
     @GET("api/sync/status")
@@ -95,6 +121,11 @@ interface ApiService {
     suspend fun syncTaskCompletions(
         @Body completions: List<TaskCompletion>
     ): Response<SyncTaskResponse>
+    
+    @POST("api/sync/products")
+    suspend fun syncProductChanges(
+        @Body products: List<Product>
+    ): Response<SyncProductResponse>
     
     /**
      * Datos adicionales
@@ -124,6 +155,16 @@ interface ApiService {
      * Clase para respuesta de sincronización de tareas.
      */
     data class SyncTaskResponse(
+        val success: Boolean,
+        val syncedCount: Int,
+        val failedCount: Int,
+        val errors: List<String>?
+    )
+    
+    /**
+     * Clase para respuesta de sincronización de productos.
+     */
+    data class SyncProductResponse(
         val success: Boolean,
         val syncedCount: Int,
         val failedCount: Int,

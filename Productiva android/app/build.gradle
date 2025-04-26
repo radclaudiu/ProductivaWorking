@@ -18,14 +18,14 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        
+
         // Habilitar multidex para APIs menores a 21
         multiDexEnabled true
-        
+
         // Vectores para compatibilidad
         vectorDrawables.useSupportLibrary = true
     }
-    
+
     lint {
         // Usar archivo baseline para ignorar errores conocidos
         baseline file("lint-baseline.xml")
@@ -34,7 +34,7 @@ android {
         // No verificar recursos duplicados - este es un problema conocido
         disable 'DuplicateResources'
     }
-    
+
     // Configuración AAPT para manejo de recursos
     aaptOptions {
         // Evitar la compresión de archivos WebP para mantener la calidad
@@ -42,19 +42,15 @@ android {
         // Deshabilitar el procesamiento de imágenes para acelerar la compilación
         cruncherEnabled false
     }
-    
+
     // Configuración para optimizar el manejo de recursos
     // Estas opciones ayudan a evitar conflictos durante la compilación
-    
+
     // Habilitar lint para mostrar y corregir problemas en recursos
-    android.buildFeatures.lint = true
-    
+
+
     // Validación específica para recursos vectoriales
-    vectorDrawables {
-        useSupportLibrary = true  // Para compatibilidad con versiones antiguas de Android
-        // No generar PNGs de respaldo para vectores
-        generatedDensities = []
-    }
+
 
     buildTypes {
         release {
@@ -69,7 +65,7 @@ android {
             debuggable true
         }
     }
-    
+
     compileOptions {
         // Flag para Java 8
         coreLibraryDesugaringEnabled true
@@ -77,27 +73,32 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-    
+
     kotlinOptions {
         jvmTarget = '1.8'
+        // Forzar compatibilidad para evitar errores de KAPT con Java 11+
+        freeCompilerArgs += [
+                "-Xjvm-default=all",
+                "-Xsam-conversions=class"
+        ]
     }
-    
+
     buildFeatures {
         compose true
         viewBinding true
     }
-    
+
     composeOptions {
         // Verificado compatible con Kotlin 1.9.0
         kotlinCompilerExtensionVersion '1.5.1'
     }
-    
+
     packagingOptions {
         resources {
             excludes += '/META-INF/{AL2.0,LGPL2.1}'
         }
     }
-    
+
     // Configuración mejorada para manejo de recursos
     sourceSets {
         main {
@@ -111,9 +112,6 @@ android {
             }
         }
     }
-    
-    // Deshabilitar PNG crushing para evitar problemas de recursos
-    android.aaptOptions.cruncherEnabled = false
 }
 
 dependencies {
@@ -124,13 +122,13 @@ dependencies {
     implementation 'androidx.fragment:fragment-ktx:1.6.2'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.7.0'
     implementation 'androidx.multidex:multidex:2.0.1'
-    
+
     // Componentes UI
     implementation 'com.google.android.material:material:1.11.0'
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
     implementation 'androidx.recyclerview:recyclerview:1.3.2'
-    
+
     // Jetpack Compose
     implementation platform('androidx.compose:compose-bom:2023.10.01')
     implementation 'androidx.compose.ui:ui'
@@ -141,53 +139,53 @@ dependencies {
     implementation 'androidx.activity:activity-compose:1.8.2'
     implementation 'androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0'
     implementation 'androidx.constraintlayout:constraintlayout-compose:1.0.1'
-    
+
     // Navigation
     implementation 'androidx.navigation:navigation-fragment-ktx:2.7.5'
     implementation 'androidx.navigation:navigation-ui-ktx:2.7.5'
     implementation 'androidx.navigation:navigation-compose:2.7.5'
-    
+
     // Room
     implementation 'androidx.room:room-runtime:2.6.1'
     implementation 'androidx.room:room-ktx:2.6.1'
     kapt 'androidx.room:room-compiler:2.6.1'
-    
+
     // Coroutines
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3'
-    
+
     // WorkManager
     implementation 'androidx.work:work-runtime-ktx:2.9.0'
-    
+
     // Retrofit y Networking
     implementation 'com.squareup.retrofit2:retrofit:2.9.0'
     implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
     implementation 'com.squareup.okhttp3:okhttp:4.11.0'
     implementation 'com.squareup.okhttp3:logging-interceptor:4.11.0'
-    
+
     // Gson
     implementation 'com.google.code.gson:gson:2.10.1'
-    
+
     // Security
     implementation 'androidx.security:security-crypto:1.1.0-alpha06'
-    
+
     // Bibliotecas de compatibilidad
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.3'
-    
+
     // Biblioteca para firmas digitales
     implementation 'com.github.gcacace:signature-pad:1.3.1'
-    
+
     // IMPORTANTE: NO DESCOMENTAR hasta tener el archivo real de la SDK
     // La implementación simulada BrotherPrintService.kt debe usarse mientras tanto
     // implementation files('libs/brotherprintsdk.jar')
-    
+
     // Unit y UI Testing
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
     androidTestImplementation platform('androidx.compose:compose-bom:2023.10.01')
     androidTestImplementation 'androidx.compose.ui:ui-test-junit4'
-    
+
     // Debug para Compose
     debugImplementation 'androidx.compose.ui:ui-tooling'
     debugImplementation 'androidx.compose.ui:ui-test-manifest'
@@ -195,6 +193,6 @@ dependencies {
 
 // Configuración para Kotlin Serialization
 kotlin {
-    // Usando compatibilidad con Java 8 a través de compileOptions en lugar de jvmToolchain
-    // Esto evita el error de toolchain en máquinas sin JDK 8 específico
+    // Configurando JDK 8 explicitamente
+    jvmToolchain(8)
 }

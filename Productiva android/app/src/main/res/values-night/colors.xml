@@ -11,7 +11,9 @@
     <!-- Colores antiguos (nombres) necesarios para compatibilidad -->
     <color name="colorPrimary">#2196F3</color>
     <color name="colorPrimaryDark">#1976D2</color>
+    <color name="colorPrimaryLight">#90CAF9</color>
     <color name="colorAccent">#FF7043</color>
+    <color name="colorAccentLight">#FFAB91</color>
     <color name="colorBackground">#121212</color>
     <color name="colorError">#F44336</color>
     <color name="colorTextPrimary">#E0E0E0</color>

@@ -1,136 +1,179 @@
 package com.productiva.android.network
 
 import android.content.Context
-import com.google.gson.Gson
-import com.google.gson.GsonBuilder
-import com.google.gson.JsonDeserializer
-import com.google.gson.reflect.TypeToken
+import com.productiva.android.BuildConfig
 import com.productiva.android.session.SessionManager
-import com.productiva.android.utils.API_BASE_URL
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 
 /**
- * Cliente Retrofit para la comunicación con la API.
- * Configura y proporciona la instancia de Retrofit para realizar peticiones.
+ * Cliente Retrofit para comunicación con la API del servidor.
+ * Configura Retrofit con los parámetros necesarios y proporciona el servicio API.
  */
 object RetrofitClient {
-    private const val CONNECT_TIMEOUT = 30L
-    private const val READ_TIMEOUT = 30L
-    private const val WRITE_TIMEOUT = 30L
-    
-    private var retrofit: Retrofit? = null
-    private var apiService: ApiService? = null
+    private const val BASE_URL = "https://productiva.mydomain.com/api/"
+    private const val TIMEOUT_SECONDS = 60L
     
     /**
-     * Obtiene la instancia del servicio de API.
-     * Si no existe, la crea con la configuración adecuada.
+     * Obtiene una instancia configurada del servicio API.
+     *
+     * @param context Contexto de la aplicación.
+     * @return Instancia del servicio API.
      */
     fun getApiService(context: Context): ApiService {
-        if (apiService == null) {
-            val client = createHttpClient(context)
-            val gson = createGsonConverter()
-            
-            retrofit = Retrofit.Builder()
-                .baseUrl(API_BASE_URL)
-                .client(client)
-                .addConverterFactory(GsonConverterFactory.create(gson))
-                .build()
-            
-            apiService = retrofit?.create(ApiService::class.java)
-        }
-        
-        return apiService ?: throw IllegalStateException("API Service no pudo ser inicializado")
+        return getRetrofit(context).create(ApiService::class.java)
     }
     
     /**
-     * Crea el cliente HTTP con los interceptores necesarios.
+     * Obtiene una instancia configurada de Retrofit.
+     *
+     * @param context Contexto de la aplicación.
+     * @return Instancia de Retrofit.
      */
-    private fun createHttpClient(context: Context): OkHttpClient {
-        val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
-        }
-        
-        val authInterceptor = Interceptor { chain ->
-            val original = chain.request()
-            
-            // Obtener token de autenticación del SessionManager
-            val token = SessionManager.getInstance().getAuthToken()
-            
-            // Si hay token, añadirlo a las cabeceras
-            val request = if (!token.isNullOrEmpty()) {
-                original.newBuilder()
-                    .header("Authorization", "Bearer $token")
-                    .header("Accept", "application/json")
-                    .method(original.method, original.body)
-                    .build()
-            } else {
-                original.newBuilder()
-                    .header("Accept", "application/json")
-                    .method(original.method, original.body)
-                    .build()
-            }
-            
-            chain.proceed(request)
-        }
-        
-        return OkHttpClient.Builder()
-            .connectTimeout(CONNECT_TIMEOUT, TimeUnit.SECONDS)
-            .readTimeout(READ_TIMEOUT, TimeUnit.SECONDS)
-            .writeTimeout(WRITE_TIMEOUT, TimeUnit.SECONDS)
-            .addInterceptor(authInterceptor)
-            .addInterceptor(loggingInterceptor)
+    private fun getRetrofit(context: Context): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .client(getOkHttpClient(context))
+            .addConverterFactory(GsonConverterFactory.create())
             .build()
     }
     
     /**
-     * Crea el convertidor Gson con los deserializadores necesarios.
+     * Obtiene un cliente OkHttpClient configurado con interceptores y timeouts.
+     *
+     * @param context Contexto de la aplicación.
+     * @return Instancia de OkHttpClient.
      */
-    private fun createGsonConverter(): Gson {
-        // Deserializador para listas de strings (para las etiquetas o tags)
-        val stringListType = object : TypeToken<List<String>>() {}.type
-        val stringListDeserializer = JsonDeserializer { json, _, _ ->
-            val list = mutableListOf<String>()
+    private fun getOkHttpClient(context: Context): OkHttpClient {
+        val builder = OkHttpClient.Builder()
             
-            if (json.isJsonArray) {
-                val jsonArray = json.asJsonArray
-                jsonArray.forEach {
-                    if (it.isJsonPrimitive) {
-                        list.add(it.asString)
-                    }
-                }
-            } else if (json.isJsonPrimitive) {
-                // Si es una cadena, intentar separar por comas o barras
-                val str = json.asString
-                if (str.contains(",")) {
-                    list.addAll(str.split(",").map { it.trim() })
-                } else if (str.contains("|")) {
-                    list.addAll(str.split("|").map { it.trim() })
-                } else {
-                    list.add(str)
-                }
+        // Añadir interceptor de logging en modo debug
+        if (BuildConfig.DEBUG) {
+            val loggingInterceptor = HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BODY
             }
-            
-            list
+            builder.addInterceptor(loggingInterceptor)
         }
         
-        return GsonBuilder()
-            .setLenient()
-            .registerTypeAdapter(stringListType, stringListDeserializer)
-            .create()
+        // Añadir interceptor de autenticación
+        builder.addInterceptor(AuthInterceptor(context))
+        
+        // Añadir interceptor para caché
+        builder.addInterceptor(CacheInterceptor(context))
+        
+        // Configurar timeouts
+        builder.connectTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        builder.readTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        builder.writeTimeout(TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        
+        return builder.build()
+    }
+}
+
+/**
+ * Interceptor para añadir cabeceras de autenticación a las peticiones.
+ */
+class AuthInterceptor(private val context: Context) : Interceptor {
+    
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request = chain.request()
+        val sessionManager = SessionManager.getInstance()
+        
+        // Si no es una ruta de autenticación y tenemos token, añadir cabecera Authorization
+        val token = sessionManager.getAccessToken()
+        val authenticatedRequest = if (token != null && !isAuthRoute(request)) {
+            request.newBuilder()
+                .header("Authorization", "Bearer $token")
+                .build()
+        } else {
+            request
+        }
+        
+        // Continuar con la cadena de interceptores
+        val response = chain.proceed(authenticatedRequest)
+        
+        // Si la respuesta es 401 (Unauthorized), intentar renovar el token
+        if (response.code == 401 && !isRefreshTokenRequest(request) && sessionManager.hasRefreshToken()) {
+            response.close()
+            
+            // Renovar token
+            val newToken = sessionManager.refreshToken(context)
+            
+            // Si se ha renovado el token, reintentar la petición original
+            return if (newToken != null) {
+                chain.proceed(
+                    authenticatedRequest.newBuilder()
+                        .header("Authorization", "Bearer $newToken")
+                        .build()
+                )
+            } else {
+                // Si no se ha podido renovar el token, devolver la respuesta 401 original
+                // para que la aplicación maneje el caso (normalmente, redirección a login)
+                chain.proceed(request)
+            }
+        }
+        
+        return response
     }
     
     /**
-     * Actualiza el token de autenticación.
-     * Útil cuando se inicia sesión o se renueva el token.
+     * Determina si la petición es para una ruta de autenticación.
      */
-    fun updateAuthToken(token: String?) {
-        // Forzar la recreación del cliente HTTP con el nuevo token
-        apiService = null
-        retrofit = null
+    private fun isAuthRoute(request: Request): Boolean {
+        val url = request.url.toString()
+        return url.contains("/auth/login") || url.contains("/auth/refresh")
+    }
+    
+    /**
+     * Determina si la petición es para renovar el token.
+     */
+    private fun isRefreshTokenRequest(request: Request): Boolean {
+        return request.url.toString().contains("/auth/refresh")
+    }
+}
+
+/**
+ * Interceptor para gestionar la caché de respuestas HTTP.
+ */
+class CacheInterceptor(private val context: Context) : Interceptor {
+    
+    override fun intercept(chain: Interceptor.Chain): Response {
+        val request = chain.request()
+        val connectivityMonitor = ConnectivityMonitor.getInstance(context)
+        
+        // Modificar la solicitud según la conectividad
+        val modifiedRequest = if (connectivityMonitor.isNetworkAvailable()) {
+            // Si hay conexión, no usar caché
+            request.newBuilder()
+                .cacheControl(okhttp3.CacheControl.FORCE_NETWORK)
+                .build()
+        } else {
+            // Si no hay conexión, intentar usar caché
+            request.newBuilder()
+                .cacheControl(okhttp3.CacheControl.FORCE_CACHE)
+                .build()
+        }
+        
+        // Proceder con la solicitud modificada
+        val response = chain.proceed(modifiedRequest)
+        
+        // Modificar la respuesta para configurar la caché
+        return if (connectivityMonitor.isNetworkAvailable()) {
+            // Si hay conexión, cachear por 5 minutos
+            response.newBuilder()
+                .header("Cache-Control", "public, max-age=300")
+                .build()
+        } else {
+            // Si no hay conexión, usar caché por hasta 7 días
+            response.newBuilder()
+                .header("Cache-Control", "public, only-if-cached, max-stale=604800")
+                .build()
+        }
     }
 }

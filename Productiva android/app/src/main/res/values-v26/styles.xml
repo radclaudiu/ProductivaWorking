@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Estilos específicos para API 26+ (Android 8.0+) -->
+<resources>
+    <!-- Estilo base para íconos adaptativos -->
+    <style name="AppIconAdaptive" parent="@android:style/Widget">
+        <item name="android:icon">@mipmap/ic_launcher</item>
+        <item name="android:roundIcon">@mipmap/ic_launcher_round</item>
+    </style>
+</resources>

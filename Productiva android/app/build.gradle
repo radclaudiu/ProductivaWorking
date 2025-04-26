@@ -28,13 +28,17 @@ android {
     
     // Configuración AAPT para manejo de recursos
     aaptOptions {
-        // Evitar la compresión de archivos WebP
+        // Evitar la compresión de archivos WebP para mantener la calidad
         noCompress "webp"
         // Deshabilitar el procesamiento de imágenes para acelerar la compilación
         cruncherEnabled false
+        // Ignorar advertencias en recursos para evitar fallas por archivos duplicados
+        ignoreWarnings true
     }
     
-    // Especificar patrones para eliminar archivos conflictivos
+    // Desactivamos la sección que elimina archivos durante la compilación
+    // ya que puede estar causando problemas en la versión actual de Gradle
+    /*
     android.applicationVariants.all { variant ->
         variant.mergeResourcesProvider.configure {
             doLast {
@@ -53,6 +57,7 @@ android {
             }
         }
     }
+    */
 
     buildTypes {
         release {
@@ -95,21 +100,22 @@ android {
         }
     }
     
-    // Excluir archivos PNG de iconos para evitar conflictos con WebP
+    // Configuración mejorada para manejo de recursos
     sourceSets {
         main {
-            res.excludes += [
-                'mipmap-mdpi/ic_launcher.png',
-                'mipmap-mdpi/ic_launcher_round.png',
-                'mipmap-xhdpi/ic_launcher.png', 
-                'mipmap-xhdpi/ic_launcher_round.png',
-                'mipmap-xxhdpi/ic_launcher.png',
-                'mipmap-xxhdpi/ic_launcher_round.png',
-                'mipmap-xxxhdpi/ic_launcher.png',
-                'mipmap-xxxhdpi/ic_launcher_round.png'
-            ]
+            // Desactivar la exclusión directa de archivos, puede causar problemas con AGP reciente
+            // Usar mergeRules en lugar de excludes
+            java {
+                srcDirs = ['src/main/java']
+            }
+            res {
+                srcDirs = ['src/main/res']
+            }
         }
     }
+    
+    // Deshabilitar PNG crushing para evitar problemas de recursos
+    android.aaptOptions.cruncherEnabled = false
 }
 
 dependencies {

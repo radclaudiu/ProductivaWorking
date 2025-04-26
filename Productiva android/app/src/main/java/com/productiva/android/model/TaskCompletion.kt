@@ -1,10 +1,10 @@
 package com.productiva.android.model
 
 import androidx.room.Entity
+import androidx.room.PrimaryKey
+import androidx.room.ColumnInfo
 import androidx.room.ForeignKey
 import androidx.room.Index
-import androidx.room.PrimaryKey
-import com.google.gson.annotations.SerializedName
 import java.util.Date
 
 /**
@@ -21,57 +21,68 @@ import java.util.Date
         )
     ],
     indices = [
-        Index("taskId")
+        Index("taskId"),
+        Index("userId")
     ]
 )
 data class TaskCompletion(
     @PrimaryKey(autoGenerate = true)
     val id: Int = 0,
     
-    @SerializedName("task_id")
+    @ColumnInfo(name = "taskId")
     val taskId: Int,
     
-    @SerializedName("user_id")
+    @ColumnInfo(name = "userId")
     val userId: Int,
     
-    @SerializedName("user_name")
-    val userName: String? = null,
+    @ColumnInfo(name = "userName")
+    val userName: String?,
     
-    @SerializedName("notes")
-    val notes: String? = null,
+    @ColumnInfo(name = "notes")
+    val notes: String?,
     
-    @SerializedName("status")
-    val status: String,
+    @ColumnInfo(name = "completionDate")
+    val completionDate: Date = Date(),
     
-    @SerializedName("completion_date")
-    val completionDate: Date? = null,
+    @ColumnInfo(name = "locationId")
+    val locationId: Int?,
     
-    @SerializedName("time_spent")
-    val timeSpent: Int? = null,
+    @ColumnInfo(name = "locationName")
+    val locationName: String?,
     
-    @SerializedName("client_name")
-    val clientName: String? = null,
+    @ColumnInfo(name = "latitude")
+    val latitude: Double? = null,
     
-    @SerializedName("has_signature")
-    val hasSignature: Boolean? = false,
+    @ColumnInfo(name = "longitude")
+    val longitude: Double? = null,
     
-    @SerializedName("signature_path")
+    @ColumnInfo(name = "hasSignature")
+    val hasSignature: Boolean = false,
+    
+    @ColumnInfo(name = "signaturePath")
     val signaturePath: String? = null,
     
-    @SerializedName("has_photo")
-    val hasPhoto: Boolean? = false,
+    @ColumnInfo(name = "hasPhoto")
+    val hasPhoto: Boolean = false,
     
-    @SerializedName("photo_path")
+    @ColumnInfo(name = "photoPath")
     val photoPath: String? = null,
     
-    @SerializedName("created_at")
-    val createdAt: Date? = null,
+    @ColumnInfo(name = "remoteId")
+    val remoteId: Int? = null,
     
-    @SerializedName("updated_at")
-    val updatedAt: Date? = null,
-    
-    // Campos para sincronización local
-    val lastSyncedAt: Date? = null,
+    @ColumnInfo(name = "synced")
     val synced: Boolean = false,
-    val pendingUpload: Boolean = true
+    
+    @ColumnInfo(name = "pendingUpload")
+    val pendingUpload: Boolean = true,
+    
+    @ColumnInfo(name = "lastSyncedAt")
+    val lastSyncedAt: Date? = null,
+    
+    @ColumnInfo(name = "createdAt")
+    val createdAt: Date = Date(),
+    
+    @ColumnInfo(name = "updatedAt")
+    val updatedAt: Date = Date()
 )

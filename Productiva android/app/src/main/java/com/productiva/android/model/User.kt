@@ -2,7 +2,8 @@ package com.productiva.android.model
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.google.gson.annotations.SerializedName
+import androidx.room.ColumnInfo
+import androidx.room.Ignore
 import java.util.Date
 
 /**
@@ -11,40 +12,60 @@ import java.util.Date
 @Entity(tableName = "users")
 data class User(
     @PrimaryKey
-    @SerializedName("id")
     val id: Int,
     
-    @SerializedName("username")
+    @ColumnInfo(name = "username")
     val username: String,
     
-    @SerializedName("email")
-    val email: String,
-    
-    @SerializedName("name")
+    @ColumnInfo(name = "name")
     val name: String,
     
-    @SerializedName("company_id")
+    @ColumnInfo(name = "email")
+    val email: String,
+    
+    @ColumnInfo(name = "companyId")
     val companyId: Int,
     
-    @SerializedName("company_name")
-    val companyName: String,
+    @ColumnInfo(name = "companyName")
+    val companyName: String?,
     
-    @SerializedName("role")
-    val role: String? = null,
+    @ColumnInfo(name = "phone")
+    val phone: String?,
     
-    @SerializedName("is_admin")
-    val isAdmin: Boolean = false,
+    @ColumnInfo(name = "role")
+    val role: String,
     
-    @SerializedName("is_active")
+    @ColumnInfo(name = "isActive")
     val isActive: Boolean = true,
     
-    @SerializedName("created_at")
+    @ColumnInfo(name = "lastLogin")
+    val lastLogin: Date? = null,
+    
+    @ColumnInfo(name = "locationId")
+    val locationId: Int? = null,
+    
+    @ColumnInfo(name = "locationName")
+    val locationName: String? = null,
+    
+    @ColumnInfo(name = "imageUrl")
+    val imageUrl: String? = null,
+    
+    @ColumnInfo(name = "createdAt")
     val createdAt: Date? = null,
     
-    @SerializedName("updated_at")
+    @ColumnInfo(name = "updatedAt")
     val updatedAt: Date? = null,
     
-    // Campos para sincronización local
-    val lastSyncedAt: Date? = null,
-    val locallyModified: Boolean = false
-)
+    @ColumnInfo(name = "syncedAt")
+    val syncedAt: Date? = null
+) {
+    @Ignore
+    var authToken: String? = null
+    
+    @Ignore
+    var isSelected: Boolean = false
+    
+    override fun toString(): String {
+        return name
+    }
+}

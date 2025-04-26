@@ -116,25 +116,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            showBluetoothMessage("Buscando impresoras Bluetooth... Por favor, asegúrate de que tu impresora está encendida y en modo de emparejamiento.");
+            showBluetoothMessage("Buscando dispositivos Bluetooth... Selecciona tu impresora de la lista.");
             
-            // Solicitar dispositivo Bluetooth (con filtros más amplios para detectar diferentes modelos)
+            // Solicitar cualquier dispositivo Bluetooth (sin filtros para máxima compatibilidad)
             const device = await navigator.bluetooth.requestDevice({
-                filters: [
-                    { namePrefix: 'Brother' },  // Impresoras Brother
-                    { namePrefix: 'PT-' },      // Brother P-touch
-                    { namePrefix: 'QL-' },      // Brother QL series
-                    { namePrefix: 'RJ-' },      // Brother RJ series
-                    { namePrefix: 'TD-' },      // Brother TD series
-                    { namePrefix: 'MW-' }       // Brother MW series
-                ],
+                // Aceptar cualquier dispositivo Bluetooth
+                acceptAllDevices: true,
                 // Incluir servicios opcionales para ampliar compatibilidad
                 optionalServices: [
                     'generic_access',
-                    'battery_service',
+                    'battery_service', 
                     '000018f0-0000-1000-8000-00805f9b34fb',  // Servicio de impresión estándar
                     '1222e5db-36e1-4a53-bfef-bf7da833c5a5',  // Servicio de impresión alternativo
-                    '00001101-0000-1000-8000-00805f9b34fb'   // Serial Port Profile
+                    '00001101-0000-1000-8000-00805f9b34fb',   // Serial Port Profile
+                    // Servicios genéricos de impresión que podrían usar otras impresoras
+                    '00001800-0000-1000-8000-00805f9b34fb',  // Servicio genérico
+                    '00001801-0000-1000-8000-00805f9b34fb',  // Servicio de atributos genéricos
+                    '0000180a-0000-1000-8000-00805f9b34fb',  // Información del dispositivo
+                    '0000180f-0000-1000-8000-00805f9b34fb'   // Servicio de batería
                 ]
             });
             
@@ -239,15 +238,18 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Mensajes de error específicos para diferentes situaciones
             if (error.name === 'NotFoundError') {
-                showBluetoothMessage("No se encontró ninguna impresora Brother compatible. Asegúrate de que la impresora esté encendida y en modo de emparejamiento.", true);
+                showBluetoothMessage("No se encontró ningún dispositivo compatible. Asegúrate de que el dispositivo esté encendido y en modo de emparejamiento.", true);
             } else if (error.name === 'SecurityError') {
                 showBluetoothMessage("No se concedieron permisos para acceder al Bluetooth. Debes permitir el acceso a Bluetooth en tu navegador.", true);
             } else if (error.name === 'NetworkError') {
-                showBluetoothMessage("Error de conexión con la impresora Bluetooth. Verifica que la impresora esté encendida y dentro del alcance.", true);
+                showBluetoothMessage("Error de conexión con el dispositivo Bluetooth. Verifica que esté encendido y dentro del alcance.", true);
             } else if (error.message.includes("User cancelled")) {
-                showBluetoothMessage("Selección de impresora cancelada por el usuario.", true);
+                showBluetoothMessage("Selección de dispositivo cancelada por el usuario.", true);
+            } else if (error.message.includes("No se pudo encontrar un servicio")) {
+                showBluetoothMessage("El dispositivo seleccionado no parece ser una impresora compatible. Intenta con otro dispositivo o verifica que esté en modo de emparejamiento correcto.", true);
             } else {
-                showBluetoothMessage("Error al imprimir: " + (error.message || "Error desconocido") + ". Intenta reiniciar la impresora y vuelve a intentarlo.", true);
+                showBluetoothMessage("Error al conectar: " + (error.message || "Error desconocido") + ". Intenta reiniciar el dispositivo y la aplicación, luego vuelve a intentarlo.", true);
+                console.error("Detalles completos del error:", error);
             }
         }
     });

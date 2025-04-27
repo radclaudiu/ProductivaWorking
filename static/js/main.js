@@ -11,6 +11,34 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// Deshabilitar pantallas de carga adicionales durante la navegación
+window.addEventListener('DOMContentLoaded', () => {
+  // Asegurarse de que no se muestre ninguna pantalla de carga durante la navegación normal
+  const disableSplashOnNavigation = () => {
+    const splashScreen = document.getElementById('splash-screen');
+    if (splashScreen) {
+      splashScreen.style.display = 'none';
+    }
+    
+    // Almacenar en localStorage que el usuario ya ha visto la splash screen
+    localStorage.setItem('splash_shown', 'true');
+  };
+  
+  // Esperar 100ms para asegurarnos de que cualquier otra lógica de splash se ha ejecutado
+  setTimeout(disableSplashOnNavigation, 100);
+  
+  // Prevenir que aparezca durante la navegación
+  const links = document.querySelectorAll('a');
+  links.forEach(link => {
+    if (link.hostname === window.location.hostname) {
+      link.addEventListener('click', () => {
+        // Ocultar inmediatamente cualquier splash screen al hacer clic en un enlace interno
+        disableSplashOnNavigation();
+      });
+    }
+  });
+});
+
 // Función para mostrar el banner de instalación de PWA en dispositivos iOS
 let deferredPrompt;
 
@@ -149,28 +177,38 @@ if (isRunningStandalone()) {
   // Añadir clase para estilos específicos de la PWA instalada
   document.body.classList.add('pwa-installed');
   
-  // Mostrar la pantalla de splash si está en modo standalone
+  // Mostrar la pantalla de splash SOLO en la primera carga después de instalar
   document.addEventListener('DOMContentLoaded', () => {
     const splashScreen = document.getElementById('splash-screen');
-    if (splashScreen) {
+    // Comprobar si es la primera vez que se abre la aplicación
+    const isFirstVisit = sessionStorage.getItem('app_initialized') !== 'true';
+    
+    if (splashScreen && isFirstVisit) {
+      // Establecer que la aplicación ya ha sido inicializada
+      sessionStorage.setItem('app_initialized', 'true');
+      
       // Mostrar splash screen
       splashScreen.style.display = 'flex';
       
-      // Ocultar después de 2 segundos
+      // Ocultar después de 1 segundo (reducido de 2 segundos)
       setTimeout(() => {
         splashScreen.classList.add('hidden');
         // Eliminar completamente después de que termine la animación
         setTimeout(() => {
           splashScreen.style.display = 'none';
-        }, 500);
-      }, 2000);
+        }, 300); // Reducido de 500ms
+      }, 1000); // Reducido de 2000ms
+    } else if (splashScreen) {
+      // Si no es la primera visita, ocultar la pantalla de splash inmediatamente
+      splashScreen.style.display = 'none';
     }
   });
 } else {
   // Mostrar instrucciones de instalación para iOS
   // Esperar a que el DOM esté completamente cargado
   document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(showIOSInstallInstructions, 2000); // Mostrar después de 2 segundos
+    // Reducir el tiempo de espera para mostrar las instrucciones
+    setTimeout(showIOSInstallInstructions, 1000); // Reducido de 2000ms
   });
 }
 

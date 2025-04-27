@@ -12,26 +12,26 @@
         </div>
         <div class="col-md-4 text-end">
             <div class="btn-group mb-2 w-100">
-                <a href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, year=prev_year, month=prev_month) }}" class="btn btn-outline-light">
+                <a href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, year=prev_year, month=prev_month) }}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> {{ prev_month_name }} {{ prev_year }}
                 </a>
-                <a href="{{ url_for('monthly_expenses.expenses_report', company_id=company.id, year=current_year) }}" class="btn btn-outline-warning">
+                <a href="{{ url_for('monthly_expenses.expenses_report', company_id=company.id, year=current_year) }}" class="btn" style="background-color: #a06235; color: white;">
                     <i class="bi bi-bar-chart"></i> Informe Anual
                 </a>
-                <a href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, year=next_year, month=next_month) }}" class="btn btn-outline-light">
+                <a href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, year=next_year, month=next_month) }}" class="btn btn-outline-secondary">
                     {{ next_month_name }} {{ next_year }} <i class="bi bi-arrow-right"></i>
                 </a>
             </div>
             <form method="GET" action="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id) }}" class="d-flex">
                 <div class="input-group">
-                    <select name="month" class="form-select bg-dark text-light border-secondary">
+                    <select name="month" class="form-select text-dark border-secondary" style="background-color: #f8f5eb;">
                         {% for month_value, month_name in form.month.choices %}
                             <option value="{{ month_value }}" {% if month_value == current_month %}selected{% endif %}>
                                 {{ month_name }}
                             </option>
                         {% endfor %}
                     </select>
-                    <select name="year" class="form-select bg-dark text-light border-secondary">
+                    <select name="year" class="form-select text-dark border-secondary" style="background-color: #f8f5eb;">
                         {% for year_value, year_name in form.year.choices %}
                             <option value="{{ year_value }}" {% if year_value == current_year %}selected{% endif %}>
                                 {{ year_name }}
@@ -48,37 +48,37 @@
 
     <div class="row mb-4">
         <div class="col-lg-3 col-md-6 mb-4">
-            <div class="card bg-dark border-secondary h-100">
+            <div class="card border-secondary h-100" style="background-color: #f5f0e3;">
                 <div class="card-body text-center">
-                    <h5 class="card-title text-muted">Total Gastos</h5>
-                    <p class="display-6 text-danger mb-0">{{ format_currency(summary.total_amount) }}</p>
+                    <h5 class="card-title" style="color: #8B4513;">Total Gastos</h5>
+                    <p class="display-6 mb-0" style="color: #a06235;">{{ format_currency(summary.total_amount) }}</p>
                     <small class="text-muted">{{ current_month|month_name }} {{ current_year }}</small>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6 mb-4">
-            <div class="card bg-dark border-secondary h-100">
+            <div class="card border-secondary h-100" style="background-color: #f5f0e3;">
                 <div class="card-body text-center">
-                    <h5 class="card-title text-muted">Gastos Fijos</h5>
-                    <p class="display-6 text-info mb-0">{{ format_currency(summary.fixed_expenses_total) }}</p>
+                    <h5 class="card-title" style="color: #8B4513;">Gastos Fijos</h5>
+                    <p class="display-6 mb-0" style="color: #6b8e23;">{{ format_currency(summary.fixed_expenses_total) }}</p>
                     <small class="text-muted">{{ (summary.fixed_expenses_total / summary.total_amount * 100)|round if summary.total_amount > 0 else 0 }}% del total</small>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6 mb-4">
-            <div class="card bg-dark border-secondary h-100">
+            <div class="card border-secondary h-100" style="background-color: #f5f0e3;">
                 <div class="card-body text-center">
-                    <h5 class="card-title text-muted">Gastos Variables</h5>
-                    <p class="display-6 text-warning mb-0">{{ format_currency(summary.custom_expenses_total) }}</p>
+                    <h5 class="card-title" style="color: #8B4513;">Gastos Variables</h5>
+                    <p class="display-6 mb-0" style="color: #CD853F;">{{ format_currency(summary.custom_expenses_total) }}</p>
                     <small class="text-muted">{{ (summary.custom_expenses_total / summary.total_amount * 100)|round if summary.total_amount > 0 else 0 }}% del total</small>
                 </div>
             </div>
         </div>
         <div class="col-lg-3 col-md-6 mb-4">
-            <div class="card bg-dark border-secondary h-100">
+            <div class="card border-secondary h-100" style="background-color: #f5f0e3;">
                 <div class="card-body text-center">
-                    <h5 class="card-title text-muted">Media Diaria</h5>
-                    <p class="display-6 text-success mb-0">{{ format_currency(daily_avg) }}</p>
+                    <h5 class="card-title" style="color: #8B4513;">Media Diaria</h5>
+                    <p class="display-6 mb-0" style="color: #556B2F;">{{ format_currency(daily_avg) }}</p>
                     <small class="text-muted">{{ days_in_month }} días en este mes</small>
                 </div>
             </div>
@@ -88,16 +88,16 @@
     <div class="row mb-4">
         <div class="col-12 mb-3">
             <div class="btn-group w-100">
-                <a href="{{ url_for('monthly_expenses.new_monthly_expense', company_id=company.id, year=current_year, month=current_month) }}" class="btn btn-success">
+                <a href="{{ url_for('monthly_expenses.new_monthly_expense', company_id=company.id, year=current_year, month=current_month) }}" class="btn" style="background-color: #556B2F; color: white;">
                     <i class="bi bi-plus-circle me-1"></i> Nuevo Gasto Variable
                 </a>
-                <a href="{{ url_for('monthly_expenses.manage_fixed_expenses', company_id=company.id) }}" class="btn btn-primary">
+                <a href="{{ url_for('monthly_expenses.manage_fixed_expenses', company_id=company.id) }}" class="btn" style="background-color: #6b8e23; color: white;">
                     <i class="bi bi-repeat me-1"></i> Gastos Fijos
                 </a>
-                <a href="{{ url_for('monthly_expenses.manage_categories', company_id=company.id) }}" class="btn btn-warning text-dark">
+                <a href="{{ url_for('monthly_expenses.manage_categories', company_id=company.id) }}" class="btn" style="background-color: #CD853F; color: white;">
                     <i class="bi bi-tags me-1"></i> Categorías
                 </a>
-                <a href="{{ url_for('monthly_expenses.manage_tokens', company_id=company.id) }}" class="btn btn-info text-dark">
+                <a href="{{ url_for('monthly_expenses.manage_tokens', company_id=company.id) }}" class="btn" style="background-color: #D2691E; color: white;">
                     <i class="bi bi-key me-1"></i> Tokens
                 </a>
             </div>
@@ -107,18 +107,18 @@
     <div class="row">
         <!-- Gastos Fijos -->
         <div class="col-md-6 mb-4">
-            <div class="card bg-dark border-secondary">
-                <div class="card-header bg-info text-dark d-flex justify-content-between align-items-center">
+            <div class="card border-secondary" style="background-color: #f8f5eb;">
+                <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #6b8e23; color: white;">
                     <h5 class="card-title mb-0">
                         <i class="bi bi-calendar-check me-2"></i>
                         Gastos Fijos
                     </h5>
-                    <span class="badge bg-dark">{{ fixed_expenses|length }} gastos</span>
+                    <span class="badge" style="background-color: #8B4513;">{{ fixed_expenses|length }} gastos</span>
                 </div>
                 <div class="card-body p-0">
                     {% if fixed_expenses %}
                         <div class="table-responsive">
-                            <table class="table table-dark table-hover table-striped mb-0">
+                            <table class="table table-hover table-striped mb-0" style="background-color: #f5f0e3;">
                                 <thead>
                                     <tr>
                                         <th>Concepto</th>
@@ -177,18 +177,18 @@
 
         <!-- Gastos Personalizados -->
         <div class="col-md-6 mb-4">
-            <div class="card bg-dark border-secondary">
-                <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+            <div class="card border-secondary" style="background-color: #f8f5eb;">
+                <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #CD853F; color: white;">
                     <h5 class="card-title mb-0">
                         <i class="bi bi-receipt me-2"></i>
                         Gastos Personalizados
                     </h5>
-                    <span class="badge bg-dark">{{ custom_expenses|length }} gastos</span>
+                    <span class="badge" style="background-color: #8B4513;">{{ custom_expenses|length }} gastos</span>
                 </div>
                 <div class="card-body p-0">
                     {% if custom_expenses %}
                         <div class="table-responsive">
-                            <table class="table table-dark table-hover table-striped mb-0">
+                            <table class="table table-hover table-striped mb-0" style="background-color: #f5f0e3;">
                                 <thead>
                                     <tr>
                                         <th>Concepto</th>

@@ -60,6 +60,56 @@ window.addEventListener('appinstalled', (evt) => {
   }
 });
 
+// Detección de estado online/offline
+function updateOnlineStatus() {
+  const onlineStatus = document.querySelector('.online-status');
+  const offlineStatus = document.querySelector('.offline-status');
+  const offlineNotification = document.getElementById('offline-notification');
+  
+  if (navigator.onLine) {
+    // Estamos online
+    if (onlineStatus) onlineStatus.style.display = 'inline-block';
+    if (offlineStatus) offlineStatus.style.display = 'none';
+    
+    // Ocultar notificación offline
+    if (offlineNotification) {
+      offlineNotification.classList.remove('visible');
+    }
+    
+    // Intentar sincronizar datos pendientes
+    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+      navigator.serviceWorker.ready
+        .then(registration => {
+          return registration.sync.register('sync-checkpoints');
+        })
+        .catch(err => console.log('Error al registrar la sincronización: ', err));
+    }
+  } else {
+    // Estamos offline
+    if (onlineStatus) onlineStatus.style.display = 'none';
+    if (offlineStatus) offlineStatus.style.display = 'inline-block';
+    
+    // Mostrar notificación offline
+    if (offlineNotification) {
+      offlineNotification.classList.add('visible');
+      
+      // Ocultar después de 5 segundos
+      setTimeout(() => {
+        offlineNotification.classList.remove('visible');
+      }, 5000);
+    }
+  }
+}
+
+// Registrar los eventos de cambio de estado de conexión
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+
+// Comprobar el estado inicial cuando la página se carga
+document.addEventListener('DOMContentLoaded', () => {
+  updateOnlineStatus();
+});
+
 // Función para comprobar si la aplicación está en modo standalone (instalada)
 function isRunningStandalone() {
   return (window.matchMedia('(display-mode: standalone)').matches) ||
@@ -70,8 +120,32 @@ function isRunningStandalone() {
 // Ajustar la interfaz si la aplicación está instalada
 if (isRunningStandalone()) {
   console.log('La aplicación está ejecutándose en modo instalado');
-  // Aquí puedes añadir código para ajustar la interfaz si es necesario
+  // Añadir clase para estilos específicos de la PWA instalada
   document.body.classList.add('pwa-installed');
+  
+  // Mostrar la pantalla de splash si está en modo standalone
+  document.addEventListener('DOMContentLoaded', () => {
+    const splashScreen = document.getElementById('splash-screen');
+    if (splashScreen) {
+      // Mostrar splash screen
+      splashScreen.style.display = 'flex';
+      
+      // Ocultar después de 2 segundos
+      setTimeout(() => {
+        splashScreen.classList.add('hidden');
+        // Eliminar completamente después de que termine la animación
+        setTimeout(() => {
+          splashScreen.style.display = 'none';
+        }, 500);
+      }, 2000);
+    }
+  });
+} else {
+  // Mostrar instrucciones de instalación para iOS
+  // Esperar a que el DOM esté completamente cargado
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(showIOSInstallInstructions, 2000); // Mostrar después de 2 segundos
+  });
 }
 
 // Función para mostrar un banner para usuarios de iOS (que no tienen soporte nativo para PWA)

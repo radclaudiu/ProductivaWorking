@@ -32,10 +32,18 @@
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pwa.css') }}">
     
     {% block head %}{% endblock %}
 </head>
 <body>
+    <!-- Splash Screen (se muestra solo en PWA) -->
+    <div id="splash-screen" class="splash-screen" style="display: none;">
+        <img src="{{ url_for('static', filename='icons/icon-192x192.png') }}" alt="Productiva" class="splash-logo">
+        <h1 class="splash-title">Productiva</h1>
+        <div class="splash-spinner"></div>
+    </div>
+    
     <!-- Navbar - Solo con logo y usuario -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
         <div class="container-fluid">
@@ -173,8 +181,17 @@
     <footer class="footer mt-5 py-3 bg-dark">
         <div class="container text-center">
             <span class="text-muted">© 2025 Productiva. Todos los derechos reservados.</span>
+            <div id="connection-status" class="mt-1">
+                <span class="badge bg-success online-status"><i class="bi bi-wifi"></i> Online</span>
+                <span class="badge bg-danger offline-status" style="display:none;"><i class="bi bi-wifi-off"></i> Offline</span>
+            </div>
         </div>
     </footer>
+    
+    <!-- Notificación de estado offline (oculta por defecto) -->
+    <div class="offline-notification" id="offline-notification">
+        <i class="bi bi-wifi-off"></i> Sin conexión
+    </div>
     
     <!-- Bootstrap JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>

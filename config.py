@@ -48,7 +48,10 @@ class Config:
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
     
     # Session configuration
-    PERMANENT_SESSION_LIFETIME = timedelta(days=7)
+    PERMANENT_SESSION_LIFETIME = timedelta(days=30)  # Aumentado de 7 a 30 días
+    SESSION_TYPE = 'filesystem'
+    SESSION_USE_SIGNER = True
+    SESSION_REFRESH_EACH_REQUEST = True  # Renovar la sesión en cada solicitud
     
     # Ensure upload directory exists
     @staticmethod

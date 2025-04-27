@@ -3,7 +3,7 @@ import sqlalchemy
 from datetime import datetime, time
 from functools import wraps
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, jsonify, send_from_directory, send_file
+from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, jsonify, send_from_directory, send_file, session
 from flask_login import login_user, logout_user, login_required, current_user
 from urllib.parse import urlparse
 from werkzeug.utils import secure_filename
@@ -67,6 +67,10 @@ def login():
             flash('Usuario o contraseña invalidos.', 'danger')
             return redirect(url_for('auth.login'))
         
+        # Hacer la sesión permanente si se selecciona "recordarme"
+        if form.remember_me.data:
+            session.permanent = True
+        
         login_user(user, remember=form.remember_me.data)
         log_activity(f'Login exitoso: {user.username}', user.id)
         
@@ -84,6 +88,8 @@ def login():
 def logout():
     log_activity(f'Logout: {current_user.username}')
     logout_user()
+    # Limpiar la sesión por completo para evitar problemas de persistencia
+    session.clear()
     flash('Has cerrado sesión correctamente.', 'success')
     return redirect(url_for('auth.login'))
 

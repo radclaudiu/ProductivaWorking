@@ -43,6 +43,18 @@
                         {{ form.submit(class="btn btn-primary w-100") }}
                     </form>
                 </div>
+                <div class="card-footer py-3" id="pwa-install-container" style="display: none; background-color: #f5f0e3; border-top: 1px solid #e0d8c0;">
+                    <div class="d-flex flex-column align-items-center">
+                        <div class="mb-2 text-center">
+                            <i class="bi bi-download text-success fs-3"></i>
+                            <h5 class="mb-0">Instala esta aplicación en tu teléfono</h5>
+                            <p class="text-muted small">Accede rápidamente y trabaja sin conexión</p>
+                        </div>
+                        <button id="pwa-install-button" class="btn w-75" style="background: linear-gradient(135deg, #4b6f44, #667d59); color: white;">
+                            <i class="bi bi-plus-circle me-2"></i> Instalar Productiva
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -55,6 +67,41 @@
     document.addEventListener('DOMContentLoaded', function() {
         // La función togglePasswordVisibility ya está definida en main.js
         togglePasswordVisibility('password', 'togglePassword');
+        
+        // Gestión de la instalación PWA
+        let deferredPrompt;
+        const pwaInstallContainer = document.getElementById('pwa-install-container');
+        const pwaInstallButton = document.getElementById('pwa-install-button');
+        
+        // Mostrar el botón de instalación solo si el navegador lo permite
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            pwaInstallContainer.style.display = 'block';
+        });
+        
+        // Manejar clic en el botón de instalación
+        pwaInstallButton.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`User response to the install prompt: ${outcome}`);
+                
+                if (outcome === 'accepted') {
+                    console.log('Usuario instaló la PWA');
+                    pwaInstallContainer.style.display = 'none';
+                }
+                
+                deferredPrompt = null;
+            }
+        });
+        
+        // Si ya está instalada, no mostrar el botón
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA ya instalada');
+            pwaInstallContainer.style.display = 'none';
+            deferredPrompt = null;
+        });
     });
 </script>
 {% endblock %}

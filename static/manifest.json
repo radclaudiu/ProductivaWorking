@@ -4,8 +4,8 @@
   "description": "Sistema de gestión de fichajes y recursos empresariales",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#3498db",
+  "background_color": "#f5f0e3",
+  "theme_color": "#5c4033",
   "icons": [
     {
       "src": "/static/icons/icon-72x72.png",

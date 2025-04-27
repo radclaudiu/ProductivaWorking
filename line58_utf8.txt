@@ -1,0 +1,1 @@
+flash('Debe iniciar sesion como punto de fichaje.', 'warning')

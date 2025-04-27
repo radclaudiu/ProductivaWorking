@@ -55,7 +55,7 @@ def checkpoint_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'checkpoint_id' not in session:
-            flash("Debe iniciar sesion como punto de fichaje.", "warning")
+            flash('Debe iniciar sesión como punto de fichaje.', 'warning')
             return redirect(url_for('checkpoints_slug.login'))
         return f(*args, **kwargs)
     return decorated_function

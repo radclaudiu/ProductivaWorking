@@ -154,32 +154,13 @@ def auto_close_pending_records():
                         check_out_time = datetime.combine(check_out_date, checkpoint.operation_end_time)
                         check_out_time = TIMEZONE.localize(check_out_time)
                         
-                    # Guardar la hora de salida original antes de cualquier ajuste
-                    original_checkout = check_out_time
+                    # El barrido automático no interactúa con los registros originales
+                    # (No crea ni modifica registros en checkpoint_original_records)
+                    print(f"  ℹ️ El barrido automático no guardará información en registros originales para registro {record.id}")
                     
-                    # Obtener o crear el registro original
-                    from models_checkpoints import CheckPointOriginalRecord
-                    
-                    # Buscar si ya existe un registro original
-                    existing_original = CheckPointOriginalRecord.query.filter_by(record_id=record.id).first()
-                    
-                    if existing_original:
-                        # Actualizar el registro existente sin modificar la hora de salida original
-                        # No asignamos original_check_out_time para dejarlo sin cambios
-                        existing_original.adjustment_reason = "Registro original actualizado por cierre automático"
-                        db.session.add(existing_original)
-                        print(f"  ✓ Actualizado registro original ID {existing_original.id} para registro {record.id} - Sin modificar salida original")
-                    else:
-                        # Si no existe, crear uno nuevo (sin guardar la hora de salida original)
-                        original_record = CheckPointOriginalRecord(
-                            record_id=record.id,
-                            original_check_in_time=record.check_in_time,
-                            # No incluimos original_check_out_time para dejarlo vacío
-                            original_notes=record.notes,
-                            adjustment_reason="Registro original creado por cierre automático - Sin hora de salida guardada"
-                        )
-                        db.session.add(original_record)
-                        print(f"  ✓ Creado nuevo registro original para registro {record.id}")
+                    # Variables para usar más adelante (para compatibilidad con el código existente)
+                    existing_original = None
+                    original_record = None
                     
                     # Asignar la hora de salida calculada al registro principal
                     record.check_out_time = check_out_time
@@ -206,13 +187,8 @@ def auto_close_pending_records():
                         # asignar directamente las horas diarias del contrato
                         daily_contract_hours = contract_hours.daily_hours
                         
-                        # Actualizar el registro original con las horas por contrato
-                        if existing_original:
-                            existing_original.hours_worked = daily_contract_hours
-                            print(f"  ✓ Asignadas {daily_contract_hours} horas contractuales al registro original ID {existing_original.id}")
-                        else:
-                            original_record.hours_worked = daily_contract_hours
-                            print(f"  ✓ Asignadas {daily_contract_hours} horas contractuales al registro original")
+                        # Ya no actualizamos registros originales con el barrido automático
+                        print(f"  ✓ Usando {daily_contract_hours} horas contractuales para actualizaciones de acumulados")
                             
                         # Actualizar las tablas de acumulados de horas trabajadas
                         update_success = update_employee_work_hours(

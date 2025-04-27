@@ -647,8 +647,8 @@ def export_original_records_pdf(records, start_date=None, end_date=None, company
                 pdf.cell(40, 7, 'Fecha', 1, 0, 'C', True)
                 pdf.cell(30, 7, 'Entrada', 1, 0, 'C', True)
                 pdf.cell(30, 7, 'Salida', 1, 0, 'C', True)
-                pdf.cell(30, 7, 'Horas', 1, 0, 'C', True)
-                pdf.cell(60, 7, 'Observaciones', 1, 1, 'C', True)
+                pdf.cell(30, 7, 'Horas', 1, 1, 'C', True)
+                # Se ha eliminado la columna de Observaciones
                 
                 # Datos de fichajes de esta semana
                 pdf.set_font('Arial', '', 9)

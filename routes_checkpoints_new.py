@@ -686,16 +686,7 @@ def export_original_records_pdf(records, start_date=None, end_date=None, company
                         hours_str = f"{hours:.2f} h"
                     else:
                         hours_str = hours
-                    pdf.cell(30, 7, hours_str, 1, 0, 'C', True)
-                    
-                    # Observaciones
-                    observaciones = ''
-                    if record.adjustment_reason:
-                        if len(record.adjustment_reason) > 30:
-                            observaciones = record.adjustment_reason[:27] + '...'
-                        else:
-                            observaciones = record.adjustment_reason
-                    pdf.cell(60, 7, observaciones, 1, 1, 'L', True)
+                    pdf.cell(30, 7, hours_str, 1, 1, 'C', True)  # 1 en 4to parámetro para hacer salto de línea
                     
                     row_count += 1
                 
@@ -703,8 +694,9 @@ def export_original_records_pdf(records, start_date=None, end_date=None, company
                 pdf.set_font('Arial', 'B', 10)
                 pdf.set_fill_color(*pdf.primary_color)
                 pdf.set_text_color(255, 255, 255)
-                pdf.cell(100, 8, 'TOTAL SEMANA:', 1, 0, 'R', True)
-                pdf.cell(90, 8, f"{week_total_hours:.2f} h", 1, 1, 'C', True)
+                # Ajustamos el ancho total a 130 (suma del ancho de las columnas: 40+30+30+30=130)
+                pdf.cell(65, 8, 'TOTAL SEMANA:', 1, 0, 'R', True)
+                pdf.cell(65, 8, f"{week_total_hours:.2f} h", 1, 1, 'C', True)
                 pdf.set_text_color(0, 0, 0)  # Restaurar color de texto
                 
                 # Espacio después de cada tabla semanal

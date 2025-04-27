@@ -1,35 +1,61 @@
-/* Estilos modernos para Productiva */
+/* Estilos modernos para Productiva - Paleta de colores Tierra y Naturaleza */
+
+/* Variables de colores personalizados */
+:root {
+  /* Beige para fondos */
+  --beige-light: #f5f0e3;
+  --beige-medium: #ebe5d6;
+  --beige-dark: #d9d0bc;
+  
+  /* Tonos tierra */
+  --chocolate: #5c4033; /* Marrón chocolate para titulares */
+  --terracota: #c87f5d; /* Terracota suave para elementos destacados */
+  
+  /* Verdes naturales */
+  --olive-green: #556b2f; /* Verde oliva para iconos y acentos */
+  --sage-green: #8a9f80; /* Verde salvia para elementos secundarios */
+  
+  /* Naranjas cálidos */
+  --burnt-orange: #d35400; /* Naranja quemado para llamadas a la acción */
+  --ochre: #c19a6b; /* Ocre para elementos informativos */
+  
+  /* Colores de función */
+  --success: #626e59; /* Verde oliva para éxito */
+  --warning: #d8985f; /* Naranja claro para advertencias */
+  --danger: #a54026; /* Terracota oscuro para peligro */
+  --info: #6b8fa3; /* Azul apagado para información */
+}
 
 /* Resetear tema oscuro a claro con fondo beige */
 [data-bs-theme="light"], [data-bs-theme="dark"] {
-  --bs-body-color: #212529;
-  --bs-body-bg: #f5f2e9; /* Fondo beige muy claro */
-  --bs-body-color-rgb: 33, 37, 41;
-  --bs-body-bg-rgb: 245, 242, 233;
-  --bs-emphasis-color: #000;
-  --bs-emphasis-color-rgb: 0, 0, 0;
+  --bs-body-color: #3c3c3c;
+  --bs-body-bg: var(--beige-light); /* Fondo beige */
+  --bs-body-color-rgb: 60, 60, 60;
+  --bs-body-bg-rgb: 245, 240, 227;
+  --bs-emphasis-color: var(--chocolate);
+  --bs-emphasis-color-rgb: 92, 64, 51;
   --bs-secondary-color: #6c757d;
   --bs-secondary-color-rgb: 108, 117, 125;
-  --bs-secondary-bg: #f8f6f1; /* Beige secundario */
-  --bs-secondary-bg-rgb: 248, 246, 241;
-  --bs-tertiary-color: rgba(33, 37, 41, 0.5);
-  --bs-tertiary-color-rgb: 33, 37, 41;
-  --bs-tertiary-bg: #ebe7db; /* Beige terciario */
-  --bs-tertiary-bg-rgb: 235, 231, 219;
-  --bs-heading-color: #000000;
+  --bs-secondary-bg: var(--beige-medium); /* Beige secundario */
+  --bs-secondary-bg-rgb: 235, 229, 214;
+  --bs-tertiary-color: rgba(60, 60, 60, 0.5);
+  --bs-tertiary-color-rgb: 60, 60, 60;
+  --bs-tertiary-bg: var(--beige-dark); /* Beige terciario */
+  --bs-tertiary-bg-rgb: 217, 208, 188;
+  --bs-heading-color: var(--chocolate);
 }
 
 /* Ajustes globales */
 body {
-  background-color: #f5f2e9; /* Fondo beige muy claro */
-  color: #333333;
+  background-color: var(--beige-light);
+  color: #3c3c3c;
   font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
 }
 
 /* Navbar moderno */
 .navbar {
-  background: linear-gradient(135deg, #3498db, #2980b9) !important;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, var(--chocolate), var(--terracota)) !important;
+  box-shadow: 0 2px 10px rgba(92, 64, 51, 0.15);
   border-bottom: none;
   padding: 0.8rem 1rem;
   border-radius: 0 0 16px 16px;
@@ -38,6 +64,21 @@ body {
 .navbar-brand {
   font-weight: 700;
   letter-spacing: 0.5px;
+  color: #fff !important;
+}
+
+.navbar-nav .nav-link {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.navbar-nav .nav-link:hover {
+  color: #fff !important;
+}
+
+.navbar-nav .active > .nav-link,
+.navbar-nav .nav-link.active {
+  color: #fff !important;
+  font-weight: 600;
 }
 
 /* Botones con bordes redondeados */
@@ -56,6 +97,56 @@ body {
 
 .btn:active {
   transform: translateY(0);
+}
+
+/* Colores de botones personalizados */
+.btn-primary {
+  background-color: var(--olive-green);
+  border-color: var(--olive-green);
+}
+
+.btn-primary:hover, .btn-primary:focus {
+  background-color: #415223;
+  border-color: #415223;
+}
+
+.btn-secondary {
+  background-color: var(--sage-green);
+  border-color: var(--sage-green);
+}
+
+.btn-success {
+  background-color: var(--success);
+  border-color: var(--success);
+}
+
+.btn-danger {
+  background-color: var(--danger);
+  border-color: var(--danger);
+}
+
+.btn-warning {
+  background-color: var(--warning);
+  border-color: var(--warning);
+  color: #fff;
+}
+
+.btn-info {
+  background-color: var(--info);
+  border-color: var(--info);
+  color: #fff;
+}
+
+.btn-action {
+  background-color: var(--burnt-orange);
+  border-color: var(--burnt-orange);
+  color: #fff;
+}
+
+.btn-action:hover, .btn-action:focus {
+  background-color: #bf4c00;
+  border-color: #bf4c00;
+  color: #fff;
 }
 
 /* Tarjetas con bordes redondeados */
@@ -77,11 +168,17 @@ body {
   background-color: #ffffff; /* Fondo blanco para el encabezado */
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   font-weight: 600;
+  color: var(--chocolate);
 }
 
 .card-footer {
   background-color: #ffffff; /* Fondo blanco para el footer */
   border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.card-title {
+  color: var(--chocolate);
+  font-weight: 600;
 }
 
 /* Tablas más modernas */
@@ -93,14 +190,14 @@ body {
 }
 
 .table thead th {
-  background-color: #f8f6f1; /* Color beige claro para encabezados */
+  background-color: var(--beige-medium); /* Color beige para encabezados */
   font-weight: 600;
   text-transform: uppercase;
   font-size: 0.8rem;
   letter-spacing: 0.5px;
   border-bottom: none;
   padding: 12px 15px;
-  color: #333;
+  color: var(--chocolate);
 }
 
 .table tbody tr {
@@ -117,11 +214,11 @@ body {
 }
 
 .table-striped > tbody > tr:nth-of-type(odd) {
-  background-color: rgba(245, 242, 233, 0.3); /* Rayas sutilmente beige para tablas con rayas */
+  background-color: rgba(245, 240, 227, 0.3); /* Rayas sutilmente beige para tablas con rayas */
 }
 
 .table-hover > tbody > tr:hover {
-  background-color: rgba(245, 242, 233, 0.5); /* Efecto hover con tono beige */
+  background-color: rgba(245, 240, 227, 0.5); /* Efecto hover con tono beige */
 }
 
 /* Formularios modernos */
@@ -134,15 +231,15 @@ body {
 }
 
 .form-control:focus, .form-select:focus {
-  border-color: #3498db;
-  box-shadow: 0 0 0 0.2rem rgba(52, 152, 219, 0.25);
+  border-color: var(--olive-green);
+  box-shadow: 0 0 0 0.2rem rgba(85, 107, 47, 0.2);
   background-color: #ffffff; /* Mantener fondo blanco al enfocar */
 }
 
 .form-label {
   font-weight: 500;
   margin-bottom: 0.4rem;
-  color: #333;
+  color: var(--chocolate);
 }
 
 /* Formularios con fondo */
@@ -161,6 +258,37 @@ body {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
+/* Colores de alertas personalizados */
+.alert-primary {
+  background-color: rgba(85, 107, 47, 0.15);
+  color: var(--olive-green);
+}
+
+.alert-secondary {
+  background-color: rgba(138, 159, 128, 0.15);
+  color: var(--sage-green);
+}
+
+.alert-success {
+  background-color: rgba(98, 110, 89, 0.15);
+  color: var(--success);
+}
+
+.alert-danger {
+  background-color: rgba(165, 64, 38, 0.15);
+  color: var(--danger);
+}
+
+.alert-warning {
+  background-color: rgba(216, 152, 95, 0.15);
+  color: var(--warning);
+}
+
+.alert-info {
+  background-color: rgba(107, 143, 163, 0.15);
+  color: var(--info);
+}
+
 /* Badges redondeadas */
 .badge {
   border-radius: 8px;
@@ -168,17 +296,46 @@ body {
   font-weight: 500;
 }
 
+/* Colores de badges personalizados */
+.badge-primary {
+  background-color: var(--olive-green);
+}
+
+.badge-secondary {
+  background-color: var(--sage-green);
+}
+
+.badge-success {
+  background-color: var(--success);
+}
+
+.badge-danger {
+  background-color: var(--danger);
+}
+
+.badge-warning {
+  background-color: var(--warning);
+}
+
+.badge-info {
+  background-color: var(--info);
+}
+
+.badge-action {
+  background-color: var(--burnt-orange);
+}
+
 /* Footer */
 .footer {
-  background: linear-gradient(135deg, #3498db, #2980b9) !important;
+  background: linear-gradient(135deg, var(--chocolate), var(--terracota)) !important;
   color: white;
   border-radius: 16px 16px 0 0;
   margin-top: 3rem;
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 -2px 10px rgba(92, 64, 51, 0.15);
 }
 
 .footer .text-muted {
-  color: rgba(255, 255, 255, 0.8) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
 }
 
 /* Dashboard */
@@ -198,14 +355,23 @@ body {
 .dashboard-icon {
   font-size: 2.5rem;
   margin-bottom: 1rem;
-  color: #3498db;
+  color: var(--olive-green);
 }
 
 .dashboard-stats {
   font-size: 2rem;
   font-weight: 700;
   margin-bottom: 0.5rem;
-  color: #2c3e50;
+  color: var(--chocolate);
+}
+
+.dashboard-card-title {
+  color: var(--chocolate);
+  font-weight: 600;
+}
+
+.dashboard-card-text {
+  color: #4a4a4a;
 }
 
 /* Iconos flotantes */
@@ -216,13 +382,13 @@ body {
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background-color: #3498db;
+  background-color: var(--burnt-orange);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 24px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(211, 84, 0, 0.25);
   cursor: pointer;
   transition: all 0.3s ease;
   z-index: 1000;
@@ -230,7 +396,8 @@ body {
 
 .floating-icon:hover {
   transform: translateY(-5px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 6px 16px rgba(211, 84, 0, 0.35);
+  background-color: #bf4c00;
 }
 
 /* Ajustes responsivos */
@@ -291,18 +458,86 @@ body {
 
 /* Colores de estado */
 .status-active {
-  color: #2ecc71;
+  color: var(--success);
 }
 .status-pending {
-  color: #f39c12;
+  color: var(--warning);
 }
 .status-inactive {
-  color: #e74c3c;
+  color: var(--danger);
 }
 
 /* Tooltips mejorados */
 .tooltip .tooltip-inner {
   border-radius: 8px;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 3px 10px rgba(92, 64, 51, 0.15);
   padding: 8px 12px;
+  background-color: var(--chocolate);
+}
+
+/* Estilos adicionales para elementos interactivos */
+.link-earth {
+  color: var(--olive-green);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.link-earth:hover {
+  color: #415223;
+  text-decoration: underline;
+}
+
+.link-terracota {
+  color: var(--terracota);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.link-terracota:hover {
+  color: #b16b4d;
+  text-decoration: underline;
+}
+
+.link-ochre {
+  color: var(--ochre);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.link-ochre:hover {
+  color: #a7845b;
+  text-decoration: underline;
+}
+
+/* Texto en tonos tierra */
+.text-earth {
+  color: var(--olive-green);
+}
+
+.text-terracota {
+  color: var(--terracota);
+}
+
+.text-ochre {
+  color: var(--ochre);
+}
+
+.text-chocolate {
+  color: var(--chocolate);
+}
+
+.bg-beige-light {
+  background-color: var(--beige-light);
+}
+
+.bg-beige-medium {
+  background-color: var(--beige-medium);
+}
+
+.border-earth {
+  border-color: var(--olive-green) !important;
+}
+
+.border-terracota {
+  border-color: var(--terracota) !important;
 }

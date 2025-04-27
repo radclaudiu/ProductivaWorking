@@ -1,0 +1,239 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h2 mb-0 fw-bold">
+            <i class="bi bi-speedometer"></i> Dashboard
+        </h1>
+        <div class="d-flex align-items-center">
+            <span class="text-muted">Última actualización: {{ datetime.now().strftime('%d/%m/%Y %H:%M') }}</span>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="row g-4">
+        {% if current_user.is_admin() %}
+        <div class="col-xl-3 col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-body dashboard-card-body">
+                    <div class="dashboard-icon">
+                        <i class="bi bi-building"></i>
+                    </div>
+                    <h3 class="dashboard-stats">{{ stats.total_companies }}</h3>
+                    <p class="text-uppercase fw-bold text-primary mb-0 small">Empresas Registradas</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-body dashboard-card-body">
+                    <div class="dashboard-icon">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <h3 class="dashboard-stats">{{ stats.total_employees }}</h3>
+                    <p class="text-uppercase fw-bold text-success mb-0 small">Total Empleados</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-body dashboard-card-body">
+                    <div class="dashboard-icon">
+                        <i class="bi bi-person-check"></i>
+                    </div>
+                    <h3 class="dashboard-stats">{{ stats.active_employees }}</h3>
+                    <p class="text-uppercase fw-bold text-info mb-0 small">Empleados Activos</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-body dashboard-card-body">
+                    <div class="dashboard-icon">
+                        <i class="bi bi-graph-up"></i>
+                    </div>
+                    <h3 class="dashboard-stats">
+                        {% if stats.total_employees > 0 %}
+                            {{ (stats.active_employees / stats.total_employees * 100) | round(1) }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </h3>
+                    <p class="text-uppercase fw-bold text-warning mb-0 small">Tasa de Actividad</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Additional Stats Row -->
+    <div class="row g-4 mt-1">
+        <div class="col-xl-3 col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-body dashboard-card-body">
+                    <div class="dashboard-icon">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <h3 class="dashboard-stats">{{ stats.employees_on_shift }}</h3>
+                    <p class="text-uppercase fw-bold text-danger mb-0 small">Empleados en Jornada</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-body dashboard-card-body">
+                    <div class="dashboard-icon">
+                        <i class="bi bi-check2-all"></i>
+                    </div>
+                    <h3 class="dashboard-stats">{{ stats.today_tasks_percentage }}%</h3>
+                    <p class="text-uppercase fw-bold text-success mb-0 small">Progreso Tareas Hoy</p>
+                    <div class="progress mt-2" style="height: 8px;">
+                        <div class="progress-bar bg-success" role="progressbar"
+                            style="width: {{ stats.today_tasks_percentage }}%"></div>
+                    </div>
+                    <div class="small text-muted mt-2">
+                        {{ stats.today_tasks_completed }} de {{ stats.today_tasks_total }} tareas
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-body dashboard-card-body">
+                    <div class="dashboard-icon">
+                        <i class="bi bi-calendar-check"></i>
+                    </div>
+                    <h3 class="dashboard-stats">{{ stats.yesterday_tasks_percentage }}%</h3>
+                    <p class="text-uppercase fw-bold text-info mb-0 small">Tareas Ayer</p>
+                    <div class="progress mt-2" style="height: 8px;">
+                        <div class="progress-bar bg-info" role="progressbar"
+                            style="width: {{ stats.yesterday_tasks_percentage }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card dashboard-card">
+                <div class="card-body dashboard-card-body">
+                    <div class="dashboard-icon">
+                        <i class="bi bi-calendar-week"></i>
+                    </div>
+                    <h3 class="dashboard-stats">{{ stats.week_tasks_percentage }}%</h3>
+                    <p class="text-uppercase fw-bold text-warning mb-0 small">Tareas Última Semana</p>
+                    <div class="progress mt-2" style="height: 8px;">
+                        <div class="progress-bar bg-warning" role="progressbar"
+                            style="width: {{ stats.week_tasks_percentage }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart and Activity Row -->
+    <div class="row g-4 mt-4">
+        <!-- Contract Types Chart -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header py-3">
+                    <h6 class="fw-bold m-0">Distribución por Tipo de Contrato</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="contractTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Employee Status Chart -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header py-3">
+                    <h6 class="fw-bold m-0">Distribución por Estado</h6>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="height: 300px;">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header py-3">
+                    <h6 class="fw-bold m-0">Actividad Reciente</h6>
+                </div>
+                <div class="card-body">
+                    <div class="activity-log" style="height: 300px; overflow-y: auto;">
+                        {% if stats.recent_activities %}
+                            {% for activity in stats.recent_activities %}
+                                <div class="activity-log-item p-3 mb-2 bg-light rounded">
+                                    <div class="d-flex justify-content-between">
+                                        <span>
+                                            <i class="bi bi-clock-history text-primary"></i> 
+                                            <strong>{{ activity.user.username if activity.user else 'Sistema' }}</strong>: 
+                                            {{ activity.action }}
+                                        </span>
+                                        <small class="text-muted">
+                                            {{ activity.timestamp.strftime('%d/%m/%Y %H:%M') }}
+                                        </small>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="bi bi-clock-history fa-3x text-muted mb-3"></i>
+                                <p class="text-muted">No hay actividad reciente para mostrar.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Prepare data for the contract type chart
+        const employeesByContract = {{ stats.employees_by_contract | tojson }};
+        const employeesByStatus = {{ stats.employees_by_status | tojson }};
+        
+        // Labels dictionary for contract types
+        const employeesLabels = {
+            'indefinido': 'Indefinido',
+            'temporal': 'Temporal',
+            'practicas': 'Prácticas',
+            'formacion': 'Formación',
+            'obra': 'Obra y Servicio',
+            'tiempo_parcial': 'Tiempo Parcial',
+            'relevo': 'Relevo',
+            'autonomo': 'Autónomo',
+            'mercantil': 'Mercantil'
+        };
+        
+        // Labels dictionary for employee status
+        const statusLabels = {
+            'activo': 'Activo',
+            'baja_medica': 'Baja Médica',
+            'excedencia': 'Excedencia',
+            'vacaciones': 'Vacaciones',
+            'inactivo': 'Inactivo'
+        };
+        
+        // Initialize dashboard charts
+        initDashboardCharts(employeesByContract, employeesLabels, employeesByStatus, statusLabels);
+    });
+</script>
+{% endblock %}

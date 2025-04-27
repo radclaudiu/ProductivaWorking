@@ -67,16 +67,16 @@ android {
     }
 
     compileOptions {
-        // Flag para Java 8
+        // Flag para desugaring (necesario para características de Java modernas en Android)
         coreLibraryDesugaringEnabled true
-        // Compatibilidad para Java 8 en todas las versiones de Android
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        // Actualizado a Java 11
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
 
     kotlinOptions {
-        jvmTarget = '1.8'
-        // Forzar compatibilidad para evitar errores de KAPT con Java 11+
+        jvmTarget = '11'
+        // Argumentos para compatibilidad con Java 11
         freeCompilerArgs += [
                 "-Xjvm-default=all",
                 "-Xsam-conversions=class"
@@ -193,6 +193,6 @@ dependencies {
 
 // Configuración para Kotlin Serialization
 kotlin {
-    // Configurando JDK 8 explicitamente
-    jvmToolchain(8)
+    // Actualizado a JDK 11
+    jvmToolchain(11)
 }

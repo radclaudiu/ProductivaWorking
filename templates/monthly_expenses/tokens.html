@@ -25,14 +25,14 @@
     <div class="row">
         <!-- Lista de tokens existentes -->
         <div class="col-md-7">
-            <div class="card bg-dark border-secondary mb-4">
-                <div class="card-header bg-dark border-secondary">
+            <div class="card border-secondary mb-4" style="background-color: #f5f0e3;">
+                <div class="card-header border-secondary text-white" style="background: linear-gradient(135deg, #5c4033, #894e34);">
                     <h5 class="card-title mb-0">Tokens Disponibles</h5>
                 </div>
                 <div class="card-body">
                     {% if tokens %}
                     <div class="table-responsive">
-                        <table class="table table-dark table-hover">
+                        <table class="table table-hover" style="background-color: #f5f0e3;">
                             <thead>
                                 <tr>
                                     <th>Nombre</th>
@@ -98,8 +98,8 @@
             
             <!-- Enlaces directos para empleados -->
             {% if tokens %}
-            <div class="card bg-dark border-secondary mb-4">
-                <div class="card-header bg-dark border-secondary">
+            <div class="card border-secondary mb-4" style="background-color: #f5f0e3;">
+                <div class="card-header border-secondary text-white" style="background: linear-gradient(135deg, #4b6f44, #667d59);">
                     <h5 class="card-title mb-0">Enlaces directos para empleados</h5>
                 </div>
                 <div class="card-body">
@@ -109,7 +109,7 @@
                     <div class="list-group">
                         {% for token in tokens %}
                         {% if token.is_active %}
-                        <div class="list-group-item bg-dark border-secondary">
+                        <div class="list-group-item border-secondary" style="background-color: #f8f5eb;">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <strong>{{ token.name }}</strong>
@@ -136,8 +136,8 @@
         
         <!-- Formulario para crear un nuevo token -->
         <div class="col-md-5">
-            <div class="card bg-dark border-secondary">
-                <div class="card-header bg-dark border-secondary">
+            <div class="card border-secondary" style="background-color: #f5f0e3;">
+                <div class="card-header border-secondary text-white" style="background: linear-gradient(135deg, #a06235, #c87f5d);">
                     <h5 class="card-title mb-0">Crear Nuevo Token</h5>
                 </div>
                 <div class="card-body">

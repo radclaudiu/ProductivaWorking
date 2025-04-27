@@ -51,7 +51,10 @@
 
 {% block scripts %}
 <script>
-    // Toggle password visibility
-    togglePasswordVisibility('password', 'togglePassword');
+    // Inicializar la función cuando el DOM esté cargado
+    document.addEventListener('DOMContentLoaded', function() {
+        // La función togglePasswordVisibility ya está definida en main.js
+        togglePasswordVisibility('password', 'togglePassword');
+    });
 </script>
 {% endblock %}

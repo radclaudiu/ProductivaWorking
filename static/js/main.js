@@ -110,6 +110,32 @@ document.addEventListener('DOMContentLoaded', () => {
   updateOnlineStatus();
 });
 
+// Función para alternar la visibilidad de la contraseña
+function togglePasswordVisibility(passwordId, buttonId) {
+    const passwordInput = document.getElementById(passwordId);
+    const toggleButton = document.getElementById(buttonId);
+    
+    if (passwordInput && toggleButton) {
+        toggleButton.addEventListener('click', function() {
+            // Cambiar el tipo de input entre password y text
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            
+            // Cambiar el ícono
+            const icon = toggleButton.querySelector('i');
+            if (icon) {
+                if (type === 'password') {
+                    icon.classList.remove('bi-eye-slash');
+                    icon.classList.add('bi-eye');
+                } else {
+                    icon.classList.remove('bi-eye');
+                    icon.classList.add('bi-eye-slash');
+                }
+            }
+        });
+    }
+}
+
 // Función para comprobar si la aplicación está en modo standalone (instalada)
 function isRunningStandalone() {
   return (window.matchMedia('(display-mode: standalone)').matches) ||

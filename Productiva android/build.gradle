@@ -6,6 +6,11 @@ buildscript {
         classpath "androidx.navigation:navigation-safe-args-gradle-plugin:2.7.5"
         classpath "org.jetbrains.kotlin:kotlin-serialization:1.9.0"
     }
+    
+    // Configuración de JDK 11 para todo el proyecto
+    ext {
+        javaVersion = JavaVersion.VERSION_11
+    }
 }
 
 // Configuración para todos los proyectos
@@ -21,4 +26,25 @@ plugins {
 // Limpiar tareas para todos los proyectos
 tasks.register('clean', Delete) {
     delete rootProject.layout.buildDirectory
+}
+
+// Aplicar configuración de Java 11 a todos los subproyectos
+subprojects {
+    afterEvaluate {
+        if (project.hasProperty('android')) {
+            android {
+                compileOptions {
+                    sourceCompatibility = JavaVersion.VERSION_11
+                    targetCompatibility = JavaVersion.VERSION_11
+                }
+            }
+            
+            // Para proyectos Kotlin
+            if (project.hasProperty('kotlin')) {
+                kotlin {
+                    jvmToolchain(11)
+                }
+            }
+        }
+    }
 }

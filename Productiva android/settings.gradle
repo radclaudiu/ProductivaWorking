@@ -4,6 +4,14 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
     }
+    
+    // Configuración específica para plugins - asegura que se use JDK 11
+    plugins {
+        id 'com.android.application' version '8.2.0'
+        id 'com.android.library' version '8.2.0'
+        id 'org.jetbrains.kotlin.android' version '1.9.0'
+        id 'com.google.devtools.ksp' version '1.9.0-1.0.13'
+    }
 }
 
 dependencyResolutionManagement {

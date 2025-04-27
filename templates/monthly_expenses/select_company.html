@@ -15,15 +15,15 @@
     <div class="row">
         {% for company in companies %}
         <div class="col-md-4 col-sm-6 mb-4">
-            <div class="card bg-dark border-secondary h-100">
+            <div class="card border-secondary h-100" style="background-color: #f5f0e3;">
                 <div class="card-body">
                     <h5 class="card-title">{{ company.name }}</h5>
                     <p class="card-text text-muted">
                         <i class="bi bi-geo-alt"></i> {{ company.address or 'Sin dirección' }}
                     </p>
                 </div>
-                <div class="card-footer bg-dark border-top border-secondary">
-                    <a href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id) }}" class="btn btn-danger w-100">
+                <div class="card-footer border-top border-secondary" style="background-color: #f8f5eb;">
+                    <a href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id) }}" class="btn w-100" style="background: linear-gradient(135deg, #a06235, #c87f5d); color: white;">
                         <i class="bi bi-receipt me-2"></i> Gestionar Gastos
                     </a>
                 </div>

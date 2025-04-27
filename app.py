@@ -319,7 +319,7 @@ def db_query():
 def service_worker():
     """Sirve el service worker para la funcionalidad PWA."""
     from flask import send_from_directory
-    return send_from_directory('static', 'service-worker.js')
+    return send_from_directory('static/js', 'service-worker.js')
 
 @app.route('/manifest.json')
 def manifest():

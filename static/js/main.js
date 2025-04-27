@@ -1,334 +1,118 @@
-// main.js - General JavaScript functionality for the application
+// Registro del Service Worker para PWA
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/static/js/service-worker.js')
+      .then((registration) => {
+        console.log('Service Worker registrado correctamente:', registration.scope);
+      })
+      .catch((error) => {
+        console.log('Error al registrar el Service Worker:', error);
+      });
+  });
+}
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
+// Función para mostrar el banner de instalación de PWA en dispositivos iOS
+let deferredPrompt;
 
-    // Initialize popovers
-    const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
-    popoverTriggerList.map(function (popoverTriggerEl) {
-        return new bootstrap.Popover(popoverTriggerEl);
-    });
-
-    // Handle confirmation dialogs
-    document.querySelectorAll('.confirm-action').forEach(button => {
-        button.addEventListener('click', function(e) {
-            if(!confirm(this.getAttribute('data-confirm-message') || '¿Estás seguro de realizar esta acción?')) {
-                e.preventDefault();
-                return false;
-            }
-        });
-    });
-
-    // File input custom display
-    document.querySelectorAll('.custom-file-input').forEach(input => {
-        input.addEventListener('change', function() {
-            const fileName = this.files[0].name;
-            const fileLabel = this.nextElementSibling;
-            fileLabel.textContent = fileName;
-        });
-    });
-
-    // Handle search form
-    const searchForm = document.getElementById('searchForm');
-    if (searchForm) {
-        searchForm.addEventListener('submit', function(e) {
-            const searchInput = this.querySelector('input[name="query"]');
-            if (!searchInput.value.trim()) {
-                e.preventDefault();
-                return false;
-            }
-        });
-    }
-
-    // Handle sidebar toggle on mobile
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    if (sidebarToggle) {
-        sidebarToggle.addEventListener('click', function() {
-            document.querySelector('.sidebar').classList.toggle('d-none');
-        });
-    }
-
-    // Handle date inputs (for browsers that don't support date input)
-    document.querySelectorAll('input[type="date"]').forEach(input => {
-        if (input.type !== 'date') {
-            // Add a fallback datepicker if browser doesn't support date input
-            console.log('Browser does not support date input, consider adding a datepicker library');
-        }
-    });
-
-    // Auto-hide flash messages after 5 seconds
-    setTimeout(function() {
-        document.querySelectorAll('.alert-dismissible').forEach(alert => {
-            if (alert && !alert.classList.contains('alert-danger')) {
-                const bsAlert = new bootstrap.Alert(alert);
-                bsAlert.close();
-            }
-        });
-    }, 5000);
-
-    // Handle table row click to navigate to detail view
-    document.querySelectorAll('tr[data-href]').forEach(row => {
-        row.addEventListener('click', function(e) {
-            // Ignore clicks on buttons or links within the row
-            if (
-                e.target.tagName === 'A' ||
-                e.target.tagName === 'BUTTON' ||
-                e.target.closest('a') ||
-                e.target.closest('button')
-            ) {
-                return;
-            }
-            
-            window.location.href = this.dataset.href;
-        });
-        
-        // Add pointer cursor to indicate clickable
-        row.classList.add('cursor-pointer');
-    });
-
-    // Form validation styles
-    document.querySelectorAll('.form-control').forEach(input => {
-        input.addEventListener('blur', function() {
-            if (this.checkValidity()) {
-                this.classList.remove('is-invalid');
-                this.classList.add('is-valid');
-            } else if (this.value !== '') {
-                this.classList.remove('is-valid');
-                this.classList.add('is-invalid');
-            }
-        });
-    });
+window.addEventListener('beforeinstallprompt', (e) => {
+  // Prevenir que Chrome muestre automáticamente la ventana de instalación
+  e.preventDefault();
+  // Guardar el evento para usarlo más tarde
+  deferredPrompt = e;
+  // Mostrar nuestro botón personalizado de instalación
+  showInstallPromotion();
 });
 
-// Function to handle form confirmation before submission
-function confirmFormSubmit(formId, message) {
-    const form = document.getElementById(formId);
-    if (!form) return;
+function showInstallPromotion() {
+  const installButton = document.getElementById('install-button');
+  const installButtonContainer = document.getElementById('install-button-container');
+  
+  if (installButton && installButtonContainer) {
+    // Mostrar el contenedor y el botón
+    installButtonContainer.classList.remove('d-none');
+    installButton.style.display = 'block';
     
-    form.addEventListener('submit', function(e) {
-        if (!confirm(message || '¿Estás seguro de enviar este formulario?')) {
-            e.preventDefault();
-            return false;
-        }
+    installButton.addEventListener('click', async () => {
+      // Ocultar el botón de instalación
+      installButton.style.display = 'none';
+      installButtonContainer.classList.add('d-none');
+      
+      // Mostrar el diálogo de instalación
+      deferredPrompt.prompt();
+      
+      // Esperar a que el usuario responda al diálogo
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log(`User response to the install prompt: ${outcome}`);
+      
+      // Limpiar el evento guardado
+      deferredPrompt = null;
     });
+  }
 }
 
-// Function to toggle password visibility
-function togglePasswordVisibility(inputId, toggleId) {
-    const input = document.getElementById(inputId);
-    
-    if (!input) return;
-    
-    // Si no se proporciona toggleId, asumimos que se está llamando directamente (onclick)
-    if (!toggleId) {
-        const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
-        input.setAttribute('type', type);
-        
-        // Buscamos el botón adjunto
-        const button = document.querySelector(`button[onclick*="togglePasswordVisibility('${inputId}')"]`);
-        if (button) {
-            if (type === 'password') {
-                button.innerHTML = '<i class="bi bi-eye"></i>';
-            } else {
-                button.innerHTML = '<i class="bi bi-eye-slash"></i>';
-            }
-        }
-        return;
-    }
-    
-    // Comportamiento para escuchador de eventos
-    const toggle = document.getElementById(toggleId);
-    if (!toggle) return;
-    
-    toggle.addEventListener('click', function() {
-        const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
-        input.setAttribute('type', type);
-        
-        // Toggle icon
-        if (type === 'password') {
-            this.innerHTML = '<i class="bi bi-eye"></i>';
-        } else {
-            this.innerHTML = '<i class="bi bi-eye-slash"></i>';
-        }
-    });
+// Detectar si la aplicación ya está instalada
+window.addEventListener('appinstalled', (evt) => {
+  console.log('Aplicación instalada');
+  // Ocultar el botón de instalación si está visible
+  const installButton = document.getElementById('install-button');
+  if (installButton) {
+    installButton.style.display = 'none';
+  }
+});
+
+// Función para comprobar si la aplicación está en modo standalone (instalada)
+function isRunningStandalone() {
+  return (window.matchMedia('(display-mode: standalone)').matches) ||
+         (window.navigator.standalone) || // Para iOS
+         document.referrer.includes('android-app://');
 }
 
-// Función para copiar texto al portapapeles
-function copyToClipboard(text) {
-    // Si recibimos un ID en lugar de texto, obtenemos el valor del campo
-    if (typeof text === 'string' && document.getElementById(text)) {
-        const element = document.getElementById(text);
-        text = element.value || element.textContent;
-    }
-    
-    // Crear un elemento temporal
-    const tempElement = document.createElement('textarea');
-    tempElement.value = text;
-    document.body.appendChild(tempElement);
-    
-    // Seleccionar y copiar
-    tempElement.select();
-    document.execCommand('copy');
-    
-    // Eliminar el elemento temporal
-    document.body.removeChild(tempElement);
-    
-    // Mostrar notificación
-    const toast = `<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
-        <div class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
-            <div class="d-flex">
-                <div class="toast-body">
-                    <i class="bi bi-check-circle me-2"></i> Texto copiado al portapapeles
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-            </div>
-        </div>
-    </div>`;
-    
-    document.body.insertAdjacentHTML('beforeend', toast);
-    const toastElement = document.querySelector('.toast:last-child');
-    const bsToast = new bootstrap.Toast(toastElement);
-    bsToast.show();
+// Ajustar la interfaz si la aplicación está instalada
+if (isRunningStandalone()) {
+  console.log('La aplicación está ejecutándose en modo instalado');
+  // Aquí puedes añadir código para ajustar la interfaz si es necesario
+  document.body.classList.add('pwa-installed');
 }
 
-// Función para cargar credenciales del portal
-function loadPortalCredentials(locationId) {
-    // Verificar que los elementos existen
-    const usernameElement = document.getElementById('portal-username');
-    const passwordContainer = document.getElementById('password-container');
+// Función para mostrar un banner para usuarios de iOS (que no tienen soporte nativo para PWA)
+function showIOSInstallInstructions() {
+  // Detectar si es un dispositivo iOS
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isInStandaloneMode = window.navigator.standalone;
+  
+  if (isIOS && !isInStandaloneMode) {
+    const iosBanner = document.createElement('div');
+    iosBanner.innerHTML = `
+      <div id="ios-install-banner">
+        <span class="close-banner" onclick="this.parentElement.style.display='none'">&times;</span>
+        <p>Instala esta aplicación en tu iPhone: pulsa <strong>Compartir</strong> <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> y luego <strong>Añadir a la pantalla de inicio</strong></p>
+      </div>
+    `;
+    document.body.appendChild(iosBanner);
     
-    // Chequear si estamos en la página de detalles del local (tiene otro formato)
-    const portalPasswordField = document.getElementById('portalPassword');
-    if (portalPasswordField) {
-        // Estamos en la página de detalles del local
-        return loadLocationDetailCredentials(locationId);
-    }
-    
-    if (!usernameElement || !passwordContainer) {
-        console.error('Elementos necesarios no encontrados');
-        return;
-    }
-    
-    // Obtener el token CSRF
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    
-    // Mostrar indicador de carga
-    passwordContainer.innerHTML = '<div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Cargando...</span></div>';
-    
-    // Realizar la solicitud AJAX
-    fetch(`/tasks/api/get-portal-credentials/${locationId}`, {
-        method: 'GET',
-        headers: {
-            'X-CSRFToken': csrfToken,
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Actualizar el username
-            if (usernameElement) {
-                usernameElement.textContent = data.username || 'No configurado';
-            }
-            
-            // Mostrar la contraseña
-            if (data.username) {
-                passwordContainer.innerHTML = `
-                    <div class="input-group">
-                        <input type="text" class="form-control" id="portal-password-field" value="${data.password}" readonly>
-                        <button class="btn btn-outline-secondary" type="button" onclick="copyToClipboard('portal-password-field')">
-                            <i class="bi bi-clipboard"></i>
-                        </button>
-                    </div>`;
-            } else {
-                passwordContainer.innerHTML = '<em>No configurado</em>';
-            }
-        } else {
-            passwordContainer.innerHTML = `<span class="text-danger">Error: ${data.error || 'No se pudo cargar'}</span>`;
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        passwordContainer.innerHTML = '<span class="text-danger">Error de conexión</span>';
-    });
-}
-
-// Función específica para cargar las credenciales en la página de detalles del local
-function loadLocationDetailCredentials(locationId) {
-    // Verificar que el elemento existe
-    const portalPasswordField = document.getElementById('portalPassword');
-    const portalUsernameField = document.getElementById('portalUsername');
-    
-    if (!portalPasswordField) {
-        console.error('Campo de contraseña no encontrado');
-        return;
-    }
-    
-    // Obtener el token CSRF
-    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-    
-    // Mostrar indicador de carga
-    if (portalPasswordField) {
-        portalPasswordField.value = 'Cargando...';
-    }
-    
-    // Realizar la solicitud AJAX
-    fetch(`/tasks/api/get-portal-credentials/${locationId}`, {
-        method: 'GET',
-        headers: {
-            'X-CSRFToken': csrfToken,
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Actualizar los campos
-            if (portalUsernameField) {
-                portalUsernameField.value = data.username;
-            }
-            
-            if (portalPasswordField) {
-                portalPasswordField.value = data.password;
-            }
-        } else {
-            if (portalPasswordField) {
-                portalPasswordField.value = 'Error al cargar las credenciales';
-            }
-            console.error('Error:', data.error || 'No se pudo cargar las credenciales');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        if (portalPasswordField) {
-            portalPasswordField.value = 'Error de conexión';
-        }
-    });
-}
-
-// Función para mostrar/ocultar la contraseña del portal
-function showPortalPassword(locationId) {
-    const passwordField = document.getElementById('portal-password-field');
-    const passwordButton = passwordField.nextElementSibling;
-    
-    if (!passwordField || !passwordButton) return;
-    
-    // Alternar entre mostrar y ocultar la contraseña
-    if (passwordField.type === 'text') {
-        passwordField.type = 'password';
-        passwordButton.innerHTML = '<i class="bi bi-eye"></i>';
-    } else {
-        passwordField.type = 'text';
-        passwordButton.innerHTML = '<i class="bi bi-eye-slash"></i>';
-    }
-}
-
-// Esta función ya no se usa ya que las credenciales son fijas
-// Se mantiene por compatibilidad con versiones anteriores
-function regeneratePortalPassword(locationId) {
-    alert('Las credenciales del portal son fijas y no pueden ser regeneradas. Use las credenciales proporcionadas.');
+    // Estilos para el banner
+    const style = document.createElement('style');
+    style.textContent = `
+      #ios-install-banner {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: #3498db;
+        color: white;
+        padding: 12px;
+        text-align: center;
+        z-index: 9999;
+        font-family: Arial, sans-serif;
+      }
+      .close-banner {
+        position: absolute;
+        right: 10px;
+        top: 5px;
+        cursor: pointer;
+        font-size: 20px;
+      }
+    `;
+    document.head.appendChild(style);
+  }
 }

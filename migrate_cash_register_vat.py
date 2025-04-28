@@ -9,6 +9,7 @@ import os
 import sys
 import logging
 from datetime import datetime
+from sqlalchemy import text
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO, 
@@ -67,7 +68,9 @@ def migrate_tables():
             if columns_to_add_cash_register:
                 with db.engine.connect() as conn:
                     for column_def in columns_to_add_cash_register:
-                        conn.execute(f"ALTER TABLE cash_registers ADD COLUMN {column_def}")
+                        sql = text(f"ALTER TABLE cash_registers ADD COLUMN {column_def}")
+                        conn.execute(sql)
+                        conn.commit()
                 logger.info(f"Añadidas columnas a cash_registers: {', '.join(columns_to_add_cash_register)}")
             else:
                 logger.info("No es necesario añadir columnas a cash_registers, ya existen")
@@ -75,7 +78,9 @@ def migrate_tables():
             if columns_to_add_summary:
                 with db.engine.connect() as conn:
                     for column_def in columns_to_add_summary:
-                        conn.execute(f"ALTER TABLE cash_register_summaries ADD COLUMN {column_def}")
+                        sql = text(f"ALTER TABLE cash_register_summaries ADD COLUMN {column_def}")
+                        conn.execute(sql)
+                        conn.commit()
                 logger.info(f"Añadidas columnas a cash_register_summaries: {', '.join(columns_to_add_summary)}")
             else:
                 logger.info("No es necesario añadir columnas a cash_register_summaries, ya existen")

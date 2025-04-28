@@ -523,17 +523,21 @@ document.addEventListener('DOMContentLoaded', function() {
         button.addEventListener('click', function() {
             const url = this.getAttribute('data-token-url');
             navigator.clipboard.writeText(url).then(() => {
-                // Cambiar temporalmente el texto del botón
+                // Guardar el estilo original y color del botón
                 const originalHtml = this.innerHTML;
+                const originalBgColor = this.style.backgroundColor;
+                const originalColor = this.style.color;
+                
+                // Cambiar temporalmente el texto y estilo del botón
                 this.innerHTML = '<i class="bi bi-check"></i> Copiado';
-                this.classList.remove('btn-outline-info');
-                this.classList.add('btn-success');
+                this.style.backgroundColor = '#6b8e23';
+                this.style.color = 'white';
                 
                 // Restaurar después de 2 segundos
                 setTimeout(() => {
                     this.innerHTML = originalHtml;
-                    this.classList.remove('btn-success');
-                    this.classList.add('btn-outline-info');
+                    this.style.backgroundColor = originalBgColor;
+                    this.style.color = originalColor;
                 }, 2000);
             });
         });

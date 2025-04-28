@@ -16,7 +16,7 @@
             <p class="text-light">{{ company.name }}</p>
         </div>
         <div class="col-md-4 text-end">
-            <a href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, year=form.year.data, month=form.month.data) }}" class="btn btn-outline-light">
+            <a href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, year=form.year.data, month=form.month.data) }}" class="btn" style="background-color: #6b8e23; color: white;">
                 <i class="bi bi-arrow-left me-1"></i> Volver al Dashboard
             </a>
         </div>
@@ -59,7 +59,7 @@
                             </div>
                             <div class="col-md-6">
                                 {{ form.month.label(class="form-label") }}
-                                {{ form.month(class="form-select bg-dark text-light border-secondary") }}
+                                {{ form.month(class="form-select text-dark border-secondary", style="background-color: #f5f0e3;") }}
                                 {% if form.month.errors %}
                                     <div class="invalid-feedback d-block">
                                         {% for error in form.month.errors %}
@@ -72,7 +72,7 @@
                         
                         <div class="mb-3">
                             {{ form.name.label(class="form-label") }}
-                            {{ form.name(class="form-control bg-dark text-light border-secondary") }}
+                            {{ form.name(class="form-control text-dark border-secondary", style="background-color: #f5f0e3;") }}
                             {% if form.name.errors %}
                                 <div class="invalid-feedback d-block">
                                     {% for error in form.name.errors %}
@@ -84,7 +84,7 @@
                         
                         <div class="mb-3">
                             {{ form.description.label(class="form-label") }}
-                            {{ form.description(class="form-control bg-dark text-light border-secondary", rows=3) }}
+                            {{ form.description(class="form-control text-dark border-secondary", style="background-color: #f5f0e3;", rows=3) }}
                             {% if form.description.errors %}
                                 <div class="invalid-feedback d-block">
                                     {% for error in form.description.errors %}
@@ -97,8 +97,8 @@
                         <div class="mb-3">
                             {{ form.amount.label(class="form-label") }}
                             <div class="input-group">
-                                {{ form.amount(class="form-control bg-dark text-light border-secondary", step="0.01", min="0") }}
-                                <span class="input-group-text bg-dark text-light border-secondary">€</span>
+                                {{ form.amount(class="form-control text-dark border-secondary", style="background-color: #f5f0e3;", step="0.01", min="0", oninput="validateNumericInput(this, 0, 999999.99)") }}
+                                <span class="input-group-text text-dark border-secondary" style="background-color: #f5f0e3;">€</span>
                             </div>
                             {% if form.amount.errors %}
                                 <div class="invalid-feedback d-block">
@@ -111,7 +111,7 @@
                         
                         <div class="mb-3">
                             {{ form.category_id.label(class="form-label") }}
-                            {{ form.category_id(class="form-select bg-dark text-light border-secondary") }}
+                            {{ form.category_id(class="form-select text-dark border-secondary", style="background-color: #f5f0e3;") }}
                             {% if form.category_id.errors %}
                                 <div class="invalid-feedback d-block">
                                     {% for error in form.category_id.errors %}
@@ -125,7 +125,7 @@
                         <div class="mb-3 form-check">
                             {{ form.is_fixed(class="form-check-input") }}
                             {{ form.is_fixed.label(class="form-check-label") }}
-                            <div class="form-text text-muted">
+                            <div class="form-text text-dark">
                                 Si marca esta opción, este gasto se creará también como gasto fijo mensual para futuros meses.
                             </div>
                         </div>
@@ -133,18 +133,18 @@
                         
                         <div class="row">
                             <div class="col-md-6">
-                                <a href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, year=form.year.data, month=form.month.data) }}" class="btn btn-secondary w-100">
+                                <a href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, year=form.year.data, month=form.month.data) }}" class="btn w-100" style="background-color: #c87137; color: white;">
                                     Cancelar
                                 </a>
                             </div>
                             <div class="col-md-6">
-                                {{ form.submit(class="btn btn-success w-100") }}
+                                {{ form.submit(class="btn w-100", style="background-color: #6b8e23; color: white;") }}
                             </div>
                         </div>
                     </form>
                 </div>
-                <div class="card-footer bg-transparent border-top border-secondary">
-                    <div class="alert alert-info mb-0">
+                <div class="card-footer border-top border-secondary" style="background-color: #f0e8d9;">
+                    <div class="alert mb-0" style="background-color: #e0d5c0; color: #5d4037; border-color: #6b8e23;">
                         <i class="bi bi-info-circle me-2"></i>
                         <strong>Información:</strong> Los gastos mensuales se asignan específicamente al mes y año seleccionados.
                     </div>
@@ -165,5 +165,65 @@
             }
         });
     });
+    
+    // Función para validar valores numéricos en los campos
+    function validateNumericInput(input, min, max) {
+        let value = parseFloat(input.value);
+        
+        // Validar que sea un número
+        if (isNaN(value)) {
+            input.value = "";
+            showValidationMessage(input, "Por favor ingrese un valor numérico válido.");
+            return;
+        }
+        
+        // Validar rango mínimo
+        if (value < min) {
+            input.value = min;
+            showValidationMessage(input, `El valor mínimo permitido es ${min}.`);
+            return;
+        }
+        
+        // Validar rango máximo
+        if (value > max) {
+            input.value = max;
+            showValidationMessage(input, `El valor máximo permitido es ${max.toLocaleString('es-ES')}.`);
+            return;
+        }
+        
+        // Formato correcto, eliminar mensaje de error si existe
+        hideValidationMessage(input);
+    }
+    
+    // Mostrar mensaje de validación
+    function showValidationMessage(input, message) {
+        // Buscar si ya existe un mensaje de validación
+        let validationMessage = input.parentNode.querySelector('.validation-message');
+        
+        if (!validationMessage) {
+            // Crear nuevo mensaje
+            validationMessage = document.createElement('div');
+            validationMessage.className = 'text-danger validation-message small mt-1';
+            
+            // Determinar dónde insertar el mensaje (después del input o su grupo)
+            let targetNode = input.parentNode.classList.contains('input-group') ? 
+                input.parentNode : input;
+            
+            targetNode.parentNode.insertBefore(validationMessage, targetNode.nextSibling);
+        }
+        
+        validationMessage.textContent = message;
+    }
+    
+    // Ocultar mensaje de validación
+    function hideValidationMessage(input) {
+        let targetNode = input.parentNode.classList.contains('input-group') ? 
+            input.parentNode : input;
+            
+        let validationMessage = targetNode.parentNode.querySelector('.validation-message');
+        if (validationMessage) {
+            validationMessage.remove();
+        }
+    }
 </script>
 {% endblock %}

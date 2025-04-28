@@ -47,6 +47,14 @@ class CashRegisterForm(FlaskForm):
     
     expenses_amount = FloatField('Gastos (€)', default=0, 
                                 validators=[validators.NumberRange(min=0)])
+                                
+    # Campos para el IVA
+    vat_percentage = FloatField('Porcentaje de IVA (%)', default=21.0,
+                               validators=[validators.NumberRange(min=0, max=100)])
+    vat_amount = FloatField('Importe del IVA (€)', default=0, 
+                          validators=[validators.NumberRange(min=0)])
+    net_amount = FloatField('Importe Neto (sin IVA) (€)', default=0,
+                          validators=[validators.NumberRange(min=0)])
     
     # Campos de notas
     expenses_notes = TextAreaField('Detalle de Gastos', validators=[Optional(), Length(max=500)])
@@ -180,6 +188,14 @@ class PublicCashRegisterForm(FlaskForm):
     
     expenses_amount = FloatField('Gastos (€)', default=0, 
                                 validators=[validators.NumberRange(min=0)])
+                                
+    # Campos para el IVA
+    vat_percentage = FloatField('Porcentaje de IVA (%)', default=21.0,
+                               validators=[validators.NumberRange(min=0, max=100)])
+    vat_amount = FloatField('Importe del IVA (€)', default=0, 
+                          validators=[validators.NumberRange(min=0)])
+    net_amount = FloatField('Importe Neto (sin IVA) (€)', default=0,
+                          validators=[validators.NumberRange(min=0)])
     
     # Campos de notas
     expenses_notes = TextAreaField('Detalle de Gastos', validators=[Optional(), Length(max=500)])

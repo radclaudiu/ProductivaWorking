@@ -205,6 +205,59 @@
                             </div>
                         </div>
                         
+                        <h5 class="mt-4 mb-3 border-bottom pb-2">Información del IVA</h5>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.vat_percentage.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {{ form.vat_percentage(class="form-control", placeholder="21.0", id="vatPercentage") }}
+                                        <span class="input-group-text">%</span>
+                                    </div>
+                                    {% if form.vat_percentage.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.vat_percentage.errors %}
+                                        {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.vat_amount.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {{ form.vat_amount(class="form-control bg-dark text-info", placeholder="0.00", id="vatAmount", readonly=true) }}
+                                        <span class="input-group-text">€</span>
+                                    </div>
+                                    {% if form.vat_amount.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.vat_amount.errors %}
+                                        {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.net_amount.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {{ form.net_amount(class="form-control bg-dark text-info", placeholder="0.00", id="netAmount", readonly=true) }}
+                                        <span class="input-group-text">€</span>
+                                    </div>
+                                    {% if form.net_amount.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.net_amount.errors %}
+                                        {{ error }}
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
                         <h5 class="mt-4 mb-3 border-bottom pb-2">Notas</h5>
                         
                         <div class="row mb-3">
@@ -270,8 +323,34 @@ document.addEventListener('DOMContentLoaded', function() {
             // Actualizar ambos campos: el visible (totalAmount) y el campo oculto del formulario (total_amount)
             document.getElementById('totalAmount').value = total.toFixed(2);
             document.getElementById('total_amount').value = total.toFixed(2);
+            
+            // Calcular el IVA
+            calculateVAT(total);
         } catch (error) {
             console.error('Error al calcular el total:', error);
+        }
+    }
+    
+    // Función para calcular el IVA y el importe neto
+    function calculateVAT(total) {
+        try {
+            const vatPercentage = parseFloat(document.getElementById('vatPercentage').value) || 21.0;
+            
+            // Calcular el importe del IVA: total - (total / (1 + (vatPercentage / 100)))
+            // Esta fórmula extrae el IVA de un precio con IVA incluido
+            const vatAmount = total - (total / (1 + (vatPercentage / 100)));
+            const netAmount = total - vatAmount;
+            
+            console.log(`Calculando IVA: Total=${total}, Porcentaje=${vatPercentage}%, IVA=${vatAmount.toFixed(2)}, Neto=${netAmount.toFixed(2)}`);
+            
+            // Actualizar los campos de IVA y neto
+            document.getElementById('vatAmount').value = vatAmount.toFixed(2);
+            document.getElementById('vat_amount').value = vatAmount.toFixed(2);
+            
+            document.getElementById('netAmount').value = netAmount.toFixed(2);
+            document.getElementById('net_amount').value = netAmount.toFixed(2);
+        } catch (error) {
+            console.error('Error al calcular el IVA:', error);
         }
     }
     
@@ -282,6 +361,11 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('delivery_cash_amount').addEventListener('input', calculateTotal);
         document.getElementById('delivery_online_amount').addEventListener('input', calculateTotal);
         document.getElementById('check_amount').addEventListener('input', calculateTotal);
+        
+        // Asignar evento al campo de porcentaje de IVA
+        document.getElementById('vatPercentage').addEventListener('input', function() {
+            calculateTotal(); // Recalcular todo cuando cambia el porcentaje de IVA
+        });
         
         // Verificar que se han asignado correctamente los event listeners
         console.log('Event listeners asignados correctamente a los campos de importe');

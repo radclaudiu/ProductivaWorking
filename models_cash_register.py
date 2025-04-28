@@ -35,6 +35,11 @@ class CashRegister(db.Model):
     check_amount = Column(Float, nullable=False, default=0.0)
     expenses_amount = Column(Float, nullable=False, default=0.0)
     
+    # Campos para el IVA
+    vat_percentage = Column(Float, nullable=False, default=21.0)  # Porcentaje de IVA (21% por defecto)
+    vat_amount = Column(Float, nullable=False, default=0.0)      # Importe del IVA calculado
+    net_amount = Column(Float, nullable=False, default=0.0)      # Importe neto (sin IVA)
+    
     # Campos de notas
     expenses_notes = Column(Text)
     notes = Column(Text)
@@ -93,6 +98,12 @@ class CashRegisterSummary(db.Model):
     weekly_delivery_online = Column(Float, nullable=False, default=0.0)
     weekly_check = Column(Float, nullable=False, default=0.0)
     weekly_expenses = Column(Float, nullable=False, default=0.0)
+    
+    # Campos para el IVA (acumulados semanalmente)
+    weekly_vat_amount = Column(Float, nullable=False, default=0.0)
+    weekly_net_amount = Column(Float, nullable=False, default=0.0)
+    monthly_vat_amount = Column(Float, nullable=False, default=0.0)
+    monthly_net_amount = Column(Float, nullable=False, default=0.0)
     
     # Datos de coste de personal
     weekly_staff_cost = Column(Float, nullable=False, default=0.0)

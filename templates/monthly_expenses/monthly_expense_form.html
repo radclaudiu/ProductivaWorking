@@ -13,7 +13,7 @@
                     Editar Gasto Mensual
                 {% endif %}
             </h1>
-            <p class="text-muted">{{ company.name }}</p>
+            <p class="text-light">{{ company.name }}</p>
         </div>
         <div class="col-md-4 text-end">
             <a href="{{ url_for('monthly_expenses.company_dashboard', company_id=company.id, year=form.year.data, month=form.month.data) }}" class="btn btn-outline-light">
@@ -24,8 +24,8 @@
 
     <div class="row">
         <div class="col-md-8 mx-auto">
-            <div class="card bg-dark border-secondary">
-                <div class="card-header bg-success text-white">
+            <div class="card border-secondary" style="background-color: #f8f5eb;">
+                <div class="card-header text-white" style="background-color: #6b8e23;">
                     <h5 class="card-title mb-0">
                         {% if is_new %}
                             <i class="bi bi-plus-circle me-2"></i>
@@ -48,7 +48,7 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 {{ form.year.label(class="form-label") }}
-                                {{ form.year(class="form-control bg-dark text-light border-secondary") }}
+                                {{ form.year(class="form-control text-dark border-secondary", style="background-color: #f5f0e3;") }}
                                 {% if form.year.errors %}
                                     <div class="invalid-feedback d-block">
                                         {% for error in form.year.errors %}

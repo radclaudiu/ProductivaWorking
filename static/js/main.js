@@ -55,7 +55,13 @@ function showInstallPromotion() {
   const installButton = document.getElementById('install-button');
   const installButtonContainer = document.getElementById('install-button-container');
   
-  if (installButton && installButtonContainer) {
+  // Comprobar si estamos en la página de login o en el dashboard principal
+  const currentPath = window.location.pathname;
+  const isLoginPage = currentPath === '/login' || currentPath === '/';
+  const isDashboardPage = currentPath === '/dashboard' || currentPath === '/index';
+  
+  // Solo mostrar en login o dashboard
+  if ((isLoginPage || isDashboardPage) && installButton && installButtonContainer) {
     // Mostrar el contenedor y el botón
     installButtonContainer.classList.remove('d-none');
     installButton.style.display = 'block';
@@ -75,6 +81,10 @@ function showInstallPromotion() {
       // Limpiar el evento guardado
       deferredPrompt = null;
     });
+  } else if (installButton && installButtonContainer) {
+    // Ocultar el botón en las demás páginas
+    installButtonContainer.classList.add('d-none');
+    installButton.style.display = 'none';
   }
 }
 
@@ -218,7 +228,13 @@ function showIOSInstallInstructions() {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   const isInStandaloneMode = window.navigator.standalone;
   
-  if (isIOS && !isInStandaloneMode) {
+  // Comprobar si estamos en la página de login o en el dashboard principal
+  const currentPath = window.location.pathname;
+  const isLoginPage = currentPath === '/login' || currentPath === '/';
+  const isDashboardPage = currentPath === '/dashboard' || currentPath === '/index';
+  
+  // Solo mostrar en login o dashboard
+  if ((isLoginPage || isDashboardPage) && isIOS && !isInStandaloneMode) {
     const iosBanner = document.createElement('div');
     iosBanner.innerHTML = `
       <div id="ios-install-banner">
@@ -228,7 +244,7 @@ function showIOSInstallInstructions() {
     `;
     document.body.appendChild(iosBanner);
     
-    // Estilos para el banner
+    // Estilos para el banner con colores tierra
     const style = document.createElement('style');
     style.textContent = `
       #ios-install-banner {
@@ -236,12 +252,13 @@ function showIOSInstallInstructions() {
         bottom: 0;
         left: 0;
         right: 0;
-        background-color: #3498db;
+        background-color: #5c4033;
         color: white;
         padding: 12px;
         text-align: center;
         z-index: 9999;
-        font-family: Arial, sans-serif;
+        font-family: 'Roboto', Arial, sans-serif;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
       }
       .close-banner {
         position: absolute;

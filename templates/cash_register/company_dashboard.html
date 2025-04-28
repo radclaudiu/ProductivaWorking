@@ -25,8 +25,8 @@
     <!-- Resumen semanal -->
     <div class="row mb-4">
         <div class="col-md-12">
-            <div class="card bg-dark border-warning">
-                <div class="card-header bg-warning text-dark">
+            <div class="card border-secondary" style="background-color: #f8f5eb;">
+                <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #CD853F; color: white;">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0">
                             {% if view_type == 'month' %}
@@ -42,20 +42,20 @@
                         </h5>
                         <div class="btn-group">
                             {% if view_type == 'month' %}
-                                <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id, view_type='month', month=current_month-1, year=current_year if current_month > 1 else current_year-1) }}" class="btn btn-sm btn-outline-dark">
+                                <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id, view_type='month', month=current_month-1, year=current_year if current_month > 1 else current_year-1) }}" class="btn btn-sm btn-light">
                                     <i class="bi bi-arrow-left"></i> Mes Anterior
                                 </a>
                             {% elif view_type == 'year' %}
-                                <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id, view_type='year', year=current_year-1) }}" class="btn btn-sm btn-outline-dark">
+                                <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id, view_type='year', year=current_year-1) }}" class="btn btn-sm btn-light">
                                     <i class="bi bi-arrow-left"></i> Año Anterior
                                 </a>
                             {% else %}
-                                <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id, week=current_week-1, year=current_year) }}" class="btn btn-sm btn-outline-dark">
+                                <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id, week=current_week-1, year=current_year) }}" class="btn btn-sm btn-light">
                                     <i class="bi bi-arrow-left"></i> Semana Anterior
                                 </a>
                             {% endif %}
                             
-                            <button type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <button type="button" class="btn btn-sm btn-light dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                                 <i class="bi bi-calendar-event"></i> Navegar
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end">
@@ -68,15 +68,15 @@
                             </ul>
                             
                             {% if view_type == 'month' %}
-                                <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id, view_type='month', month=current_month+1, year=current_year if current_month < 12 else current_year+1) }}" class="btn btn-sm btn-outline-dark">
+                                <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id, view_type='month', month=current_month+1, year=current_year if current_month < 12 else current_year+1) }}" class="btn btn-sm btn-light">
                                     Mes Siguiente <i class="bi bi-arrow-right"></i>
                                 </a>
                             {% elif view_type == 'year' %}
-                                <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id, view_type='year', year=current_year+1) }}" class="btn btn-sm btn-outline-dark">
+                                <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id, view_type='year', year=current_year+1) }}" class="btn btn-sm btn-light">
                                     Año Siguiente <i class="bi bi-arrow-right"></i>
                                 </a>
                             {% else %}
-                                <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id, week=current_week+1, year=current_year) }}" class="btn btn-sm btn-outline-dark">
+                                <a href="{{ url_for('cash_register.company_dashboard', company_id=company.id, week=current_week+1, year=current_year) }}" class="btn btn-sm btn-light">
                                     Semana Siguiente <i class="bi bi-arrow-right"></i>
                                 </a>
                             {% endif %}
@@ -88,49 +88,49 @@
                     <div class="row">
                         <div class="col-md-6">
                             <ul class="list-group list-group-flush bg-transparent">
-                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
+                                <li class="list-group-item d-flex justify-content-between" style="background-color: #f5f0e3; border-color: #d1c9b8;">
                                     <span>Total Semanal:</span>
-                                    <span class="fw-bold text-success {% if view_type != 'week' and view_type != None %}text-muted{% endif %}">{{ format_currency(summary.weekly_total) }}</span>
+                                    <span class="fw-bold" style="color: {% if view_type != 'week' and view_type != None %}#8c8576{% else %}#6b8e23{% endif %}">{{ format_currency(summary.weekly_total) }}</span>
                                 </li>
-                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
+                                <li class="list-group-item d-flex justify-content-between" style="background-color: #f5f0e3; border-color: #d1c9b8;">
                                     <span>Total Mensual:</span>
-                                    <span class="fw-bold text-success {% if view_type != 'month' %}{% if view_type != 'week' and view_type != None %}text-white{% else %}text-muted{% endif %}{% endif %}">{{ format_currency(summary.monthly_total) }}</span>
+                                    <span class="fw-bold" style="color: {% if view_type != 'month' %}{% if view_type != 'week' and view_type != None %}#8c8576{% else %}#8c8576{% endif %}{% else %}#6b8e23{% endif %}">{{ format_currency(summary.monthly_total) }}</span>
                                 </li>
-                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
+                                <li class="list-group-item d-flex justify-content-between" style="background-color: #f5f0e3; border-color: #d1c9b8;">
                                     <span>Total Anual:</span>
-                                    <span class="fw-bold text-success {% if view_type != 'year' %}{% if view_type != 'week' and view_type != None %}text-muted{% endif %}{% endif %}">{{ format_currency(summary.yearly_total) }}</span>
+                                    <span class="fw-bold" style="color: {% if view_type != 'year' %}{% if view_type != 'week' and view_type != None %}#8c8576{% endif %}{% else %}#6b8e23{% endif %}">{{ format_currency(summary.yearly_total) }}</span>
                                 </li>
-                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
+                                <li class="list-group-item d-flex justify-content-between" style="background-color: #f5f0e3; border-color: #d1c9b8;">
                                     <span>Gastos Semanales:</span>
-                                    <span class="fw-bold text-danger">{{ format_currency(summary.weekly_expenses) }}</span>
+                                    <span class="fw-bold" style="color: #D2691E;">{{ format_currency(summary.weekly_expenses) }}</span>
                                 </li>
                             </ul>
                         </div>
                         <div class="col-md-6">
                             <ul class="list-group list-group-flush bg-transparent">
                                 {% if staff_cost %}
-                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
+                                <li class="list-group-item d-flex justify-content-between" style="background-color: #f5f0e3; border-color: #d1c9b8;">
                                     <span>Horas Trabajadas (Semana):</span>
                                     <span class="fw-bold">{{ staff_cost.weekly_hours }} h</span>
                                 </li>
-                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
+                                <li class="list-group-item d-flex justify-content-between" style="background-color: #f5f0e3; border-color: #d1c9b8;">
                                     <span>Coste Personal (Semana):</span>
-                                    <span class="fw-bold text-danger">{{ format_currency(staff_cost.weekly_cost) }}</span>
+                                    <span class="fw-bold" style="color: #D2691E;">{{ format_currency(staff_cost.weekly_cost) }}</span>
                                 </li>
-                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
+                                <li class="list-group-item d-flex justify-content-between" style="background-color: #f5f0e3; border-color: #d1c9b8;">
                                     <span>% Coste/Ingresos (Semana):</span>
-                                    <span class="fw-bold {% if summary.weekly_staff_cost_percentage > 30 %}text-danger{% else %}text-warning{% endif %}">
+                                    <span class="fw-bold" style="color: {% if summary.weekly_staff_cost_percentage > 30 %}#D2691E{% else %}#CD853F{% endif %}">
                                         {{ format_percentage(summary.weekly_staff_cost_percentage) }}
                                     </span>
                                 </li>
-                                <li class="list-group-item bg-dark border-secondary d-flex justify-content-between">
+                                <li class="list-group-item d-flex justify-content-between" style="background-color: #f5f0e3; border-color: #d1c9b8;">
                                     <span>% Coste/Ingresos (Mes):</span>
-                                    <span class="fw-bold {% if summary.monthly_staff_cost_percentage > 30 %}text-danger{% else %}text-warning{% endif %}">
+                                    <span class="fw-bold" style="color: {% if summary.monthly_staff_cost_percentage > 30 %}#D2691E{% else %}#CD853F{% endif %}">
                                         {{ format_percentage(summary.monthly_staff_cost_percentage) }}
                                     </span>
                                 </li>
                                 {% else %}
-                                <li class="list-group-item bg-dark border-secondary">
+                                <li class="list-group-item" style="background-color: #f5f0e3; border-color: #d1c9b8;">
                                     <span class="text-muted">No hay datos de coste de personal disponibles</span>
                                 </li>
                                 {% endif %}
@@ -143,8 +143,8 @@
                     </div>
                     {% endif %}
                 </div>
-                <div class="card-footer bg-transparent border-top border-secondary">
-                    <a href="{{ url_for('cash_register.company_report', company_id=company.id) }}" class="btn btn-outline-warning btn-sm">
+                <div class="card-footer" style="background-color: #f8f5eb; border-top-color: #d1c9b8;">
+                    <a href="{{ url_for('cash_register.company_report', company_id=company.id) }}" class="btn btn-sm" style="background-color: #CD853F; color: white;">
                         <i class="bi bi-graph-up me-1"></i> Ver Informe Completo
                     </a>
                 </div>
@@ -155,8 +155,8 @@
     <div class="row mb-4">
         <!-- Métodos de pago (gráfico) -->
         <div class="col-md-6">
-            <div class="card bg-dark border-secondary h-100">
-                <div class="card-header bg-transparent border-bottom border-secondary">
+            <div class="card border-secondary h-100" style="background-color: #f8f5eb;">
+                <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #556B2F; color: white;">
                     <h5 class="card-title mb-0">
                         <i class="bi bi-pie-chart me-2"></i>
                         {% if view_type == 'month' %}

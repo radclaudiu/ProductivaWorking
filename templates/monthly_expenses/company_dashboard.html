@@ -8,7 +8,7 @@
                 <i class="bi bi-cash-coin me-2"></i>
                 Gastos Mensuales
             </h1>
-            <p class="text-muted">{{ company.name }} - {{ current_month|month_name }} {{ current_year }}</p>
+            <p class="text-light">{{ company.name }} - {{ current_month|month_name }} {{ current_year }}</p>
         </div>
         <div class="col-md-4 text-end">
             <div class="btn-group mb-2 w-100">
@@ -52,7 +52,7 @@
                 <div class="card-body text-center">
                     <h5 class="card-title" style="color: #8B4513;">Total Gastos</h5>
                     <p class="display-6 mb-0" style="color: #a06235;">{{ format_currency(summary.total_amount) }}</p>
-                    <small class="text-muted">{{ current_month|month_name }} {{ current_year }}</small>
+                    <small class="text-dark">{{ current_month|month_name }} {{ current_year }}</small>
                 </div>
             </div>
         </div>
@@ -61,7 +61,7 @@
                 <div class="card-body text-center">
                     <h5 class="card-title" style="color: #8B4513;">Gastos Fijos</h5>
                     <p class="display-6 mb-0" style="color: #6b8e23;">{{ format_currency(summary.fixed_expenses_total) }}</p>
-                    <small class="text-muted">{{ (summary.fixed_expenses_total / summary.total_amount * 100)|round if summary.total_amount > 0 else 0 }}% del total</small>
+                    <small class="text-dark">{{ (summary.fixed_expenses_total / summary.total_amount * 100)|round if summary.total_amount > 0 else 0 }}% del total</small>
                 </div>
             </div>
         </div>
@@ -70,7 +70,7 @@
                 <div class="card-body text-center">
                     <h5 class="card-title" style="color: #8B4513;">Gastos Variables</h5>
                     <p class="display-6 mb-0" style="color: #CD853F;">{{ format_currency(summary.custom_expenses_total) }}</p>
-                    <small class="text-muted">{{ (summary.custom_expenses_total / summary.total_amount * 100)|round if summary.total_amount > 0 else 0 }}% del total</small>
+                    <small class="text-dark">{{ (summary.custom_expenses_total / summary.total_amount * 100)|round if summary.total_amount > 0 else 0 }}% del total</small>
                 </div>
             </div>
         </div>
@@ -79,7 +79,7 @@
                 <div class="card-body text-center">
                     <h5 class="card-title" style="color: #8B4513;">Media Diaria</h5>
                     <p class="display-6 mb-0" style="color: #556B2F;">{{ format_currency(daily_avg) }}</p>
-                    <small class="text-muted">{{ days_in_month }} días en este mes</small>
+                    <small class="text-dark">{{ days_in_month }} días en este mes</small>
                 </div>
             </div>
         </div>

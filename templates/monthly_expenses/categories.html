@@ -21,7 +21,7 @@
         <!-- Formulario de Nueva Categoría -->
         <div class="col-md-4 mb-4">
             <div class="card bg-dark border-secondary">
-                <div class="card-header bg-warning text-dark">
+                <div class="card-header" style="background-color: #CD853F; color: white;">
                     <h5 class="card-title mb-0">
                         <i class="bi bi-plus-circle me-2"></i>
                         Nueva Categoría de Gasto
@@ -95,7 +95,8 @@
                             </table>
                         </div>
                     {% else %}
-                        <div class="alert alert-warning m-3">
+                        <div class="alert m-3" style="background-color: #f5f0e3; color: #5c4033; border-color: #e0d8c0;">
+                            <i class="bi bi-info-circle me-2"></i>
                             No hay categorías del sistema disponibles.
                         </div>
                     {% endif %}

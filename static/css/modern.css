@@ -417,6 +417,62 @@ body {
   .dashboard-stats {
     font-size: 1.5rem;
   }
+  
+  /* Ajustes para botones del menú móvil */
+  .navbar-collapse .nav-item {
+    margin-bottom: 0.5rem;
+    width: 100%;
+  }
+  
+  .navbar-collapse .nav-item .btn {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
+    min-height: 44px; /* Altura mínima para mejor área táctil */
+    padding: 0.75rem 1rem; /* Más padding vertical */
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+    white-space: normal; /* Permitir múltiples líneas de texto */
+  }
+  
+  .navbar-collapse .nav-item .btn i {
+    margin-right: 10px;
+    font-size: 1.1rem;
+    min-width: 24px; /* Ancho fijo para los iconos */
+  }
+}
+
+/* Estilos mejorados para el menú móvil */
+.navbar-collapse {
+  padding: 1rem 0;
+}
+
+@media (max-width: 991px) {
+  .navbar-collapse {
+    background-color: rgba(92, 64, 51, 0.97);
+    border-radius: 0 0 16px 16px;
+    padding: 1rem;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  
+  .navbar-nav.me-auto {
+    margin-bottom: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    padding-bottom: 1rem;
+  }
+  
+  /* Aplicar espaciado extra solo en móvil */
+  .dropdown-menu {
+    margin-top: 0.5rem !important;
+    padding: 0.75rem 0 !important;
+  }
+  
+  .dropdown-item {
+    padding: 0.75rem 1.5rem !important;
+  }
 }
 
 /* Estilos para el modo instalado PWA */

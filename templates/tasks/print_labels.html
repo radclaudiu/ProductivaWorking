@@ -173,13 +173,13 @@
     </style>
 </head>
 <body>
-    <!-- Controles de impresión optimizados para tablets -->
-    <div class="print-controls" style="background-color: var(--olive-green); border-radius: 12px; padding: 20px; margin: 20px auto; max-width: 90%; box-shadow: 0 8px 16px rgba(0,0,0,0.2);">
-        <h4 class="text-white mb-3">Impresión de Etiqueta Brother</h4>
+    <!-- Controles de impresión optimizados para tablets y ordenadores -->
+    <div class="print-controls" style="background-color: var(--olive-green); border-radius: 12px; padding: 15px; margin: 15px auto; max-width: 90%; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
+        <h5 class="text-white mb-2">Impresión de Etiqueta Brother</h5>
         
-        <div class="row g-3 justify-content-center align-items-center">
+        <div class="row g-2 justify-content-center align-items-center">
             <div class="col-auto">
-                <select id="quantity-selector" class="form-select form-select-lg me-2" style="min-width: 70px;">
+                <select id="quantity-selector" class="form-select me-2" style="min-width: 60px; font-weight: bold;">
                     <option value="1" selected>1</option>
                     <option value="2">2</option>
                     <option value="3">3</option>
@@ -189,18 +189,47 @@
                 </select>
             </div>
             <div class="col-auto">
-                <button id="bluetooth-print-btn" class="btn btn-lg" style="background-color: #EFEFEF; color: var(--chocolate-brown); font-weight: bold; min-height: 54px; min-width: 220px;">
+                <button id="bluetooth-print-btn" class="btn" style="background-color: #EFEFEF; color: var(--chocolate-brown); font-weight: bold; min-height: 40px; min-width: 200px;">
                     <i class="bi bi-printer"></i> Imprimir Etiqueta
                 </button>
             </div>
         </div>
         
-        <div id="print-message" class="alert alert-info mt-3" style="display: none; font-size: 18px;"></div>
+        <div id="print-message" class="alert alert-info mt-2 mb-0" style="display: none; font-size: 14px;"></div>
         
-        <p class="text-white-50 text-center mt-2 small">
+        <p class="text-white-50 text-center mt-1 mb-0 small">
             <i class="bi bi-info-circle-fill me-1"></i> Pulse el botón para conectarse a la impresora Brother
         </p>
     </div>
+    
+    <!-- Script para adaptar según dispositivo -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            
+            // Adaptar tamaños si estamos en tablet/móvil
+            if (isMobile) {
+                const printBtn = document.getElementById('bluetooth-print-btn');
+                const quantitySelector = document.getElementById('quantity-selector');
+                const printMessage = document.getElementById('print-message');
+                
+                if (printBtn) {
+                    printBtn.classList.add('btn-lg');
+                    printBtn.style.minHeight = '54px';
+                    printBtn.style.minWidth = '220px';
+                }
+                
+                if (quantitySelector) {
+                    quantitySelector.classList.add('form-select-lg');
+                    quantitySelector.style.fontSize = '1.2rem';
+                }
+                
+                if (printMessage) {
+                    printMessage.style.fontSize = '16px';
+                }
+            }
+        });
+    </script>
     
     <!-- Script para actualizar la cantidad -->
     <script>

@@ -55,13 +55,12 @@ function showInstallPromotion() {
   const installButton = document.getElementById('install-button');
   const installButtonContainer = document.getElementById('install-button-container');
   
-  // Comprobar si estamos en la página de login o en el dashboard principal
+  // Comprobar si estamos en la página de login
   const currentPath = window.location.pathname;
   const isLoginPage = currentPath === '/login' || currentPath === '/';
-  const isDashboardPage = currentPath === '/dashboard' || currentPath === '/index';
   
-  // Solo mostrar en login o dashboard
-  if ((isLoginPage || isDashboardPage) && installButton && installButtonContainer) {
+  // Solo mostrar en login
+  if (isLoginPage && installButton && installButtonContainer) {
     // Mostrar el contenedor y el botón
     installButtonContainer.classList.remove('d-none');
     installButton.style.display = 'block';
@@ -228,13 +227,12 @@ function showIOSInstallInstructions() {
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
   const isInStandaloneMode = window.navigator.standalone;
   
-  // Comprobar si estamos en la página de login o en el dashboard principal
+  // Comprobar si estamos en la página de login
   const currentPath = window.location.pathname;
   const isLoginPage = currentPath === '/login' || currentPath === '/';
-  const isDashboardPage = currentPath === '/dashboard' || currentPath === '/index';
   
-  // Solo mostrar en login o dashboard
-  if ((isLoginPage || isDashboardPage) && isIOS && !isInStandaloneMode) {
+  // Solo mostrar en login
+  if (isLoginPage && isIOS && !isInStandaloneMode) {
     const iosBanner = document.createElement('div');
     iosBanner.innerHTML = `
       <div id="ios-install-banner">

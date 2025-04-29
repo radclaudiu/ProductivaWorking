@@ -2,6 +2,15 @@
 
 {% block styles %}
 <style>
+    :root {
+        --olive-green: #556b2f;
+        --chocolate-brown: #5c4033;
+        --terracotta: #cd5c5c;
+        --burnt-orange: #cc5500;
+        --bg-beige: #f5f0e1;
+        --bg-light-beige: #faf6eb;
+    }
+    
     /* Estilos para el carrusel de fechas */
     .day-selector {
         display: inline-block;
@@ -10,17 +19,18 @@
         width: 80px;
         transition: all 0.3s;
         border: 2px solid transparent;
+        background-color: white;
     }
     
     .day-selector.active {
-        background-color: var(--bs-primary);
+        background-color: var(--olive-green);
         color: white;
         box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         transform: scale(1.1);
     }
     
     .day-selector:not(.active):hover {
-        background-color: rgba(13, 110, 253, 0.1);
+        background-color: rgba(85, 107, 47, 0.1);
         cursor: pointer;
         transform: scale(1.05);
     }
@@ -36,7 +46,7 @@
     }
     
     .today:not(.active) {
-        border: 2px solid var(--bs-primary);
+        border: 2px solid var(--olive-green);
     }
     
     /* Estilos para el layout de dos columnas */
@@ -46,18 +56,18 @@
     }
     
     .list-group-item:hover {
-        background-color: rgba(var(--bs-primary-rgb), 0.05);
+        background-color: var(--bg-light-beige);
     }
     
     .list-group-item.active {
-        background-color: rgba(var(--bs-primary-rgb), 0.1);
-        color: var(--bs-body-color);
-        border-color: rgba(var(--bs-primary-rgb), 0.25);
+        background-color: var(--bg-light-beige);
+        color: var(--chocolate-brown);
+        border-color: var(--olive-green);
         font-weight: bold;
     }
     
     .list-group-item.active i {
-        color: var(--bs-primary);
+        color: var(--olive-green);
     }
     
     /* Altura mínima para las tarjetas */
@@ -71,13 +81,28 @@
     }
     
     .table tbody tr:hover {
-        background-color: rgba(var(--bs-secondary-rgb), 0.1);
+        background-color: var(--bg-light-beige);
     }
     
     /* Efectos adicionales para las tablas */
     .table th {
-        background-color: rgba(var(--bs-light-rgb), 0.1);
-        border-bottom: 2px solid var(--bs-border-color);
+        background-color: var(--chocolate-brown);
+        color: white;
+        border-bottom: 2px solid var(--olive-green);
+    }
+    
+    .badge.bg-success {
+        background-color: var(--olive-green) !important;
+    }
+    
+    .complete-task-btn {
+        background-color: var(--olive-green);
+        border-color: var(--olive-green);
+    }
+    
+    .complete-task-btn:hover, .complete-task-btn:focus {
+        background-color: #475a26;
+        border-color: #475a26;
     }
     
     /* Estilos responsivos */
@@ -97,7 +122,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid px-3 py-4">
+<div class="container-fluid px-2 py-4">
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">
             <i class="bi bi-list-check"></i> Tareas del Día

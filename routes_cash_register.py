@@ -875,7 +875,7 @@ def public_register(token_str):
             # Se permite crear múltiples arqueos por día
             logger.info(f"Creando nuevo arqueo por token: fecha={form.date.data}, total={form.total_amount.data}")
             
-            # Crear nuevo arqueo
+            # Crear nuevo arqueo con datos de IVA
             register = CashRegister(
                 company_id=company.id,
                 date=form.date.data,
@@ -889,7 +889,11 @@ def public_register(token_str):
                 expenses_notes=form.expenses_notes.data,
                 notes=form.notes.data,
                 employee_id=token.employee_id,
-                employee_name=form.employee_name.data
+                employee_name=form.employee_name.data,
+                # Campos de IVA
+                vat_percentage=form.vat_percentage.data,
+                vat_amount=form.vat_amount.data,
+                net_amount=form.net_amount.data
             )
             
             logger.info("Añadiendo registro a la sesión de base de datos")

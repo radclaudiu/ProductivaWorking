@@ -260,22 +260,30 @@ class CheckPointOriginalRecord(db.Model):
         if check_out < check_in:
             # Ajustar manualmente el día para calcular correctamente
             delta = (check_out - check_in).total_seconds() + (24 * 3600)  # Sumar 24 horas en segundos
-            return delta / 3600  # Convertir a horas
+            return delta / 3600  # Convertir a horas (formato decimal)
         
         delta = check_out - check_in
-        return delta.total_seconds() / 3600  # Convertir segundos a horas
+        return delta.total_seconds() / 3600  # Convertir segundos a horas (formato decimal)
     
     def __repr__(self):
         return f"<CheckPointOriginalRecord {self.id} - Record {self.record_id}>"
     
     def to_dict(self):
         """Convierte el registro a un diccionario para serialización"""
+        # Importar la función de formateo para mostrar la duración correctamente
+        from utils_checkpoints import format_hours_minutes
+        
+        # Calcular la duración
+        duration_value = self.duration()
+        formatted_duration = format_hours_minutes(duration_value) if duration_value is not None else None
+        
         result = {
             'id': self.id,
             'record_id': self.record_id,
             'original_check_in_time': self.original_check_in_time.isoformat() if self.original_check_in_time else None,
             'original_check_out_time': self.original_check_out_time.isoformat() if self.original_check_out_time else None,
-            'duration': self.duration(),
+            'duration': formatted_duration,
+            'duration_decimal': None if duration_value is None else round(duration_value, 2),
             'original_has_signature': self.original_has_signature,
             'original_notes': self.original_notes,
             'adjusted_at': self.adjusted_at.isoformat() if self.adjusted_at else None,

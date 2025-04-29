@@ -13,6 +13,29 @@ from timezone_config import get_current_time, datetime_to_madrid, TIMEZONE
 
 logger = logging.getLogger(__name__)
 
+def format_hours_minutes(hours_decimal):
+    """
+    Convierte horas en formato decimal (0-100) a formato horario estándar (0-60).
+    Por ejemplo, 1.75 (1h 75m) se convierte a "1h 45m".
+    
+    Args:
+        hours_decimal: Número de horas en formato decimal
+        
+    Returns:
+        String con el formato "XXh YYm" donde YY es en base 60
+    """
+    if hours_decimal is None:
+        return "-"
+        
+    # Separar las horas enteras de la parte decimal
+    hours_whole = int(hours_decimal)
+    minutes_decimal = hours_decimal - hours_whole
+    
+    # Convertir la parte decimal a minutos en base 60
+    minutes = int(minutes_decimal * 60)
+    
+    return f"{hours_whole}h {minutes:02}m"
+
 class CheckPointPDF(FPDF):
     """Clase personalizada para generar PDFs de fichajes con cabecera y pie de página"""
     
@@ -741,10 +764,7 @@ def generate_pdf_report(records, start_date, end_date, include_signature=True):
                 
                 # Horas trabajadas
                 duration = record.duration()
-                if duration is not None:
-                    hours_str = f"{duration:.2f}h"
-                else:
-                    hours_str = '-'
+                hours_str = format_hours_minutes(duration)
                 pdf.cell(col_widths[3], 10, hours_str, 1, 0, 'C', True)
                 
                 # Celda para firma
@@ -804,7 +824,7 @@ def generate_pdf_report(records, start_date, end_date, include_signature=True):
             pdf.cell(combined_width, 10, 'TOTAL SEMANA', 1, 0, 'C', True)
             
             # Horas totales
-            pdf.cell(col_widths[3], 10, f"{week_total_hours:.2f}h", 1, 0, 'C', True)
+            pdf.cell(col_widths[3], 10, format_hours_minutes(week_total_hours), 1, 0, 'C', True)
             
             # Celda vacía para la firma
             pdf.cell(col_widths[4], 10, '', 1, 1, 'C', True)
@@ -832,7 +852,7 @@ def generate_pdf_report(records, start_date, end_date, include_signature=True):
             pdf.set_y(pdf.get_y() + 2)  # Espacio antes del total general
             pdf.set_x(total_title_x)
             pdf.rect(total_title_x, pdf.get_y(), total_title_width, 10, 'F')
-            pdf.cell(total_title_width, 10, f"TOTAL GENERAL: {total_hours:.2f} HORAS", 0, 1, 'C', True)
+            pdf.cell(total_title_width, 10, f"TOTAL GENERAL: {format_hours_minutes(total_hours)}", 0, 1, 'C', True)
             
             # Restaurar color de texto
             pdf.set_text_color(0, 0, 0)

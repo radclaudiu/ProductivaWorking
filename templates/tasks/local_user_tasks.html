@@ -105,6 +105,25 @@
         border-color: #475a26;
     }
     
+    /* Sobreescrituras para colores tierra */
+    .badge.bg-primary {
+        background-color: var(--olive-green) !important;
+    }
+    
+    .badge.bg-info {
+        background-color: var(--terracotta) !important;
+        color: white;
+    }
+    
+    .badge.bg-warning {
+        background-color: var(--burnt-orange) !important;
+        color: white;
+    }
+    
+    .badge.bg-secondary {
+        background-color: var(--chocolate-brown) !important;
+    }
+    
     /* Estilos responsivos */
     @media (max-width: 768px) {
         .col-md-4 {
@@ -126,11 +145,11 @@
     <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
         <h1 class="h2">
             <i class="bi bi-list-check"></i> Tareas del Día
-            <span class="badge bg-primary">{{ local_user.name }} - {{ location.name }}</span>
+            <span class="badge" style="background-color: var(--olive-green);">{{ local_user.name }} - {{ location.name }}</span>
         </h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <div class="btn-group me-2">
-                <a href="{{ url_for('tasks.local_user_labels') }}" class="btn btn-primary">
+                <a href="{{ url_for('tasks.local_user_labels') }}" class="btn btn-primary" style="background-color: var(--olive-green); border-color: var(--olive-green);">
                     <i class="bi bi-tags"></i> <span class="d-none d-md-inline">Etiquetas</span>
                 </a>
                 <a href="{{ url_for('tasks.local_logout') }}" class="btn btn-outline-secondary">
@@ -155,7 +174,7 @@
                                     <div class="day-name {% if date_item.active %}fw-bold{% endif %}">{{ date_item.day_name }}</div>
                                     <div class="day-number">{{ date_item.day }}</div>
                                     {% if date_item.date == today %}
-                                        <div class="badge badge-sm bg-primary mt-1">Hoy</div>
+                                        <div class="badge badge-sm mt-1" style="background-color: var(--olive-green);">Hoy</div>
                                     {% endif %}
                                 </div>
                             </a>

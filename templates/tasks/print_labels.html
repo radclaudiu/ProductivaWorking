@@ -255,10 +255,45 @@
     
     <!-- Scripts para Bootstrap y las impresoras -->
     <script src="/static/js/bootstrap.min.js"></script>
+    <!-- Cargar en orden: primero la biblioteca base, luego los scripts específicos -->
     <script src="/static/js/brother-printer.js"></script>
     <script src="/static/js/brother-bluetooth.js"></script>
-    <!-- Nuevo script mejorado para tablets/PWA -->
+    <!-- Script optimizado para tablets/PWA con Web Bluetooth API mejorado -->
     <script src="/static/js/brother-label-pwa.js"></script>
+    
+    <!-- Script para mejorar rendimiento táctil en tablets -->
+    <script>
+        // Implementar respuesta táctil más rápida en Safari iOS/iPadOS
+        document.addEventListener('DOMContentLoaded', function() {
+            // Evitar delay de 300ms en Safari
+            document.documentElement.style.touchAction = "manipulation";
+            
+            // Mejorar respuesta del botón de impresión
+            const printBtn = document.getElementById('bluetooth-print-btn');
+            if (printBtn) {
+                // Feedback visual al tocar
+                printBtn.addEventListener('touchstart', function() {
+                    this.style.transform = 'scale(0.97)';
+                    this.style.opacity = '0.9';
+                });
+                
+                ['touchend', 'touchcancel'].forEach(event => {
+                    printBtn.addEventListener(event, function() {
+                        this.style.transform = 'scale(1)';
+                        this.style.opacity = '1';
+                    });
+                });
+                
+                // También hacer que el selector tenga mejor respuesta táctil
+                const quantitySelector = document.getElementById('quantity-selector');
+                if (quantitySelector) {
+                    quantitySelector.style.fontWeight = 'bold';
+                    // Hacer que la fuente sea más grande para mejor selección en táctil
+                    quantitySelector.style.fontSize = '1.2rem';
+                }
+            }
+        });
+    </script>
     
     <script>
         // Inicializar controles

@@ -1,55 +1,101 @@
-// Brother Label PWA - Versión mejorada para acceso Bluetooth en tablets
+/**
+ * Módulo mejorado para impresión de etiquetas Brother en tablets
+ * Versión 2.0 (29/04/2025)
+ * 
+ * Este script está diseñado específicamente para trabajar con impresoras
+ * Brother QL/PT usando Web Bluetooth API en dispositivos tablet modernos,
+ * priorizando la experiencia de usuario en entornos táctiles.
+ */
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Verificar si estamos en un contexto PWA o standalone
-    const isPwa = window.matchMedia('(display-mode: standalone)').matches || 
-                  window.navigator.standalone || 
-                  document.referrer.includes('android-app://');
+    console.log("Inicializando sistema de impresora Brother para tablets");
     
-    // Verificar si estamos en una tablet
-    const isTablet = /iPad|Android(?!.*Mobile)|Tablet/i.test(navigator.userAgent);
+    // Variables para recordar la última impresora usada
+    let lastConnectedPrinter = localStorage.getItem('lastBrotherPrinter');
+    let lastConnectedPrinterName = localStorage.getItem('lastBrotherPrinterName');
     
-    console.log("PWA Status:", isPwa, "Tablet Status:", isTablet);
+    // Verificar si el botón está presente
+    const printButton = document.getElementById('bluetooth-print-btn');
+    const messageArea = document.getElementById('print-message');
     
-    // Elemento de mensajes y estado
-    const createStatusElement = () => {
-        const existingStatus = document.getElementById('printer-status');
-        if (existingStatus) return existingStatus;
+    if (!printButton) {
+        console.log("No se encontró el botón de impresión en la página");
+        return;
+    }
+    
+    // Mostrar información de la última impresora conectada si existe
+    if (lastConnectedPrinterName) {
+        let useLastText = "Última impresora: " + lastConnectedPrinterName;
         
-        const statusElement = document.createElement('div');
-        statusElement.id = 'printer-status';
-        statusElement.className = 'alert alert-info mt-3';
-        statusElement.style.display = 'none';
-        
-        // Añadir después de los controles de impresión
-        const printControls = document.querySelector('.print-controls');
-        if (printControls) {
-            printControls.appendChild(statusElement);
+        // Agregar indicador de última impresora si no existe
+        let lastPrinterInfo = document.getElementById('last-printer-info');
+        if (!lastPrinterInfo) {
+            lastPrinterInfo = document.createElement('p');
+            lastPrinterInfo.id = 'last-printer-info';
+            lastPrinterInfo.className = 'text-white-50 text-center small mt-2';
+            lastPrinterInfo.innerHTML = '<i class="bi bi-printer-fill me-1"></i> ' + useLastText;
+            
+            // Insertar después del área de mensajes
+            if (messageArea) {
+                messageArea.parentNode.insertBefore(lastPrinterInfo, messageArea.nextSibling);
+            } else if (printButton) {
+                printButton.parentNode.parentNode.appendChild(lastPrinterInfo);
+            }
         } else {
-            document.body.appendChild(statusElement);
+            lastPrinterInfo.innerHTML = '<i class="bi bi-printer-fill me-1"></i> ' + useLastText;
         }
+    }
+    
+    // Función para mostrar mensajes
+    const showMessage = (message, isError = false) => {
+        if (!messageArea) return;
         
-        return statusElement;
+        messageArea.style.display = "block";
+        messageArea.textContent = message;
+        messageArea.className = isError ? 
+            "alert alert-danger mt-3" : 
+            "alert alert-info mt-3";
+        
+        // Añadir un tamaño de letra más grande para tablets
+        messageArea.style.fontSize = "1.1rem";
+        
+        // Ocultar después de 5 segundos solo si no es error
+        if (!isError) {
+            setTimeout(() => {
+                messageArea.style.display = "none";
+            }, 5000);
+        }
     };
     
-    // Mostrar estado
-    const showStatus = (message, type = 'info') => {
-        const statusElement = createStatusElement();
-        statusElement.textContent = message;
-        statusElement.className = `alert alert-${type} mt-3`;
-        statusElement.style.display = 'block';
+    // Función para obtener los datos de impresión
+    const getPrintData = () => {
+        const productName = document.getElementById("product-name")?.textContent || "";
+        const conservationType = document.getElementById("conservation-type")?.textContent || "";
+        const preparedBy = document.getElementById("prepared-by")?.textContent || "";
+        const startDate = document.getElementById("start-date")?.textContent || "";
+        const expiryDate = document.getElementById("expiry-date")?.textContent || "";
+        const secondaryExpiryDate = document.getElementById("secondary-expiry-date")?.textContent || "";
         
-        // Registrar mensaje en la consola también
-        console.log(`[Printer Status ${type}]:`, message);
+        // Cantidad de etiquetas
+        const quantity = parseInt(document.getElementById("quantity")?.value || "1");
+        
+        return {
+            productName,
+            conservationType,
+            preparedBy,
+            startDate,
+            expiryDate,
+            secondaryExpiryDate,
+            quantity
+        };
     };
     
-    // Generar comandos para la impresora Brother
+    // Generar los comandos específicos para las impresoras Brother
     const generateBrotherCommand = (data) => {
-        // Inicio de comandos ESC/POS
+        // Comandos ESC/POS para impresoras Brother
         const ESC = 0x1B;
         const GS = 0x1D;
         const INIT = [ESC, 0x40]; // Inicializar impresora
-        const FONT_B = [ESC, 0x4D, 0x01]; // Fuente B (más pequeña)
-        const FONT_A = [ESC, 0x4D, 0x00]; // Fuente A (normal)
         const ALIGN_CENTER = [ESC, 0x61, 0x01]; // Centrar texto
         const ALIGN_LEFT = [ESC, 0x61, 0x00]; // Alinear a la izquierda
         const BOLD_ON = [ESC, 0x45, 0x01]; // Activar negrita
@@ -59,302 +105,270 @@ document.addEventListener('DOMContentLoaded', function() {
         const LINE_FEED = [0x0A]; // Salto de línea
         const CUT_PAPER = [GS, 0x56, 0x41, 0x10]; // Cortar papel
         
-        // Construir el comando completo
+        // Construir los comandos completos
         let command = [];
         
-        // Inicializar impresora
+        // Inicializar la impresora
         command = command.concat(INIT);
         
-        // Configurar título (Nombre del producto)
+        // Título del producto (en grande y negrita)
         command = command.concat(ALIGN_CENTER, FONT_SIZE_DOUBLE, BOLD_ON);
         command = command.concat(Array.from(new TextEncoder().encode(data.productName)));
         command = command.concat(LINE_FEED, LINE_FEED);
         
-        // Configurar tipo de conservación
+        // Tipo de conservación (centrado y negrita)
         command = command.concat(FONT_SIZE_NORMAL, BOLD_ON);
         command = command.concat(Array.from(new TextEncoder().encode(data.conservationType)));
         command = command.concat(LINE_FEED, LINE_FEED);
         
-        // Configurar información de preparación
+        // Información del empleado
         command = command.concat(ALIGN_LEFT, BOLD_OFF);
         command = command.concat(Array.from(new TextEncoder().encode(data.preparedBy)));
         command = command.concat(LINE_FEED);
         
-        // Configurar fecha de inicio
+        // Fecha de inicio
         command = command.concat(Array.from(new TextEncoder().encode(data.startDate)));
         command = command.concat(LINE_FEED);
         
-        // Configurar fecha de caducidad (en negrita)
+        // Fecha de caducidad (en negrita)
         command = command.concat(BOLD_ON);
         command = command.concat(Array.from(new TextEncoder().encode(data.expiryDate)));
         command = command.concat(LINE_FEED);
         
-        // Agregar fecha de caducidad secundaria si existe
+        // Fecha de caducidad secundaria si existe
         if (data.secondaryExpiryDate) {
             command = command.concat(BOLD_OFF);
             command = command.concat(Array.from(new TextEncoder().encode(data.secondaryExpiryDate)));
             command = command.concat(LINE_FEED);
         }
         
-        // Agregar espacio al final y cortar papel
+        // Espacio final y cortar papel
         command = command.concat(LINE_FEED, LINE_FEED, LINE_FEED, CUT_PAPER);
         
         return new Uint8Array(command);
     };
     
-    // Extraer los datos de la etiqueta del DOM
-    const getEtiquetaData = () => {
-        return {
-            productName: document.getElementById("product-name").textContent || "",
-            conservationType: document.getElementById("conservation-type").textContent || "",
-            preparedBy: document.getElementById("prepared-by").textContent || "",
-            startDate: document.getElementById("start-date").textContent || "",
-            expiryDate: document.getElementById("expiry-date").textContent || "",
-            secondaryExpiryDate: document.getElementById("secondary-expiry-date") ? 
-                document.getElementById("secondary-expiry-date").textContent : "",
-            quantity: parseInt(document.getElementById("quantity").value || "1")
-        };
-    };
-    
-    // Conectar a la impresora Brother vía Web Bluetooth
-    const connectBrother = async () => {
+    // Función principal para iniciar la impresión
+    const startBrotherPrinting = async () => {
         try {
+            // Verificar si el navegador soporta Web Bluetooth API
             if (!navigator.bluetooth) {
-                throw new Error("Tu navegador no soporta Bluetooth. Intenta con Chrome o Edge en Android");
+                showMessage("Tu navegador no soporta Bluetooth. Por favor, utiliza Chrome para Android o iOS reciente", true);
+                return;
             }
             
-            showStatus("Buscando impresoras Brother cercanas...");
+            // Verificar si hay una última impresora conocida
+            let device;
             
-            // Servicios conocidos para impresoras Brother
-            const brotherServices = [
-                '000018f0-0000-1000-8000-00805f9b34fb',  // Brother/Generic printer service
-                '1222e5db-36e1-4a53-bfef-bf7da833c5a5',  // Printer service variant
-                '00001101-0000-1000-8000-00805f9b34fb',  // Serial Port Profile
-                'e7810a71-73ae-499d-8c15-faa9aef0c3f2',  // Thermal printer service
-                'af20fbac-2518-4998-9af7-af42540731b3',  // Printer data service
-                'bef8d6c9-9c21-4c9e-b632-bd58c1009f9f',  // Data transfer service
-            ];
+            // Solicitar dispositivo Bluetooth
+            showMessage("Buscando impresoras Brother... Selecciona tu impresora de la lista");
             
-            // Intentar con nombres conocidos de dispositivos Brother
-            // Pero también aceptar cualquier dispositivo si el usuario así lo desea
-            const device = await navigator.bluetooth.requestDevice({
-                filters: [
-                    { namePrefix: "Brother" },
-                    { namePrefix: "PT-" },     // Brother P-touch
-                    { namePrefix: "QL" },      // Brother QL series
-                    { namePrefix: "TD" },      // Brother TD series
-                    { namePrefix: "RJ" },      // Brother RJ series
-                ],
+            // Solicitar dispositivo Bluetooth - usando filtros más permisivos para mejor compatibilidad
+            device = await navigator.bluetooth.requestDevice({
+                // Aceptar cualquier dispositivo Bluetooth para máxima compatibilidad
                 acceptAllDevices: true,
-                optionalServices: brotherServices
+                // Incluir servicios opcionales para ampliar compatibilidad con diferentes modelos
+                optionalServices: [
+                    // Servicios genéricos
+                    'generic_access',
+                    'battery_service',
+                    
+                    // Servicios de impresora Brother conocidos
+                    '000018f0-0000-1000-8000-00805f9b34fb',  // Servicio principal Brother
+                    '1222e5db-36e1-4a53-bfef-bf7da833c5a5',  // Servicio alternativo
+                    '00001101-0000-1000-8000-00805f9b34fb',  // Serial Port Profile
+                    
+                    // Servicios genéricos Bluetooth
+                    '00001800-0000-1000-8000-00805f9b34fb',  // Generic Access
+                    '00001801-0000-1000-8000-00805f9b34fb',  // Generic Attribute
+                    '0000180a-0000-1000-8000-00805f9b34fb',  // Device Information
+                    '0000180f-0000-1000-8000-00805f9b34fb',  // Battery Service
+                    
+                    // Servicios adicionales para impresoras térmicas
+                    'e7810a71-73ae-499d-8c15-faa9aef0c3f2',  // Thermal printer
+                    'af20fbac-2518-4998-9af7-af42540731b3',  // Alternate printer
+                    'bef8d6c9-9c21-4c9e-b632-bd58c1009f9f',  // Data transfer
+                    
+                    // Rangos SPP adicionales
+                    '0000110a-0000-1000-8000-00805f9b34fb',
+                    '0000110b-0000-1000-8000-00805f9b34fb',
+                    '0000110c-0000-1000-8000-00805f9b34fb',
+                    '0000110d-0000-1000-8000-00805f9b34fb',
+                    '0000110e-0000-1000-8000-00805f9b34fb',
+                    '0000110f-0000-1000-8000-00805f9b34fb'
+                ]
             });
             
-            showStatus(`Dispositivo Bluetooth seleccionado: ${device.name}. Conectando...`);
+            // Guardar referencia a la última impresora
+            localStorage.setItem('lastBrotherPrinter', device.id || '');
+            localStorage.setItem('lastBrotherPrinterName', device.name || 'Impresora Brother');
             
-            // Guardar en localStorage para futuros usos
-            localStorage.setItem('lastBrotherDevice', device.name);
+            // Actualizar información de la última impresora
+            let lastPrinterInfo = document.getElementById('last-printer-info');
+            if (lastPrinterInfo) {
+                lastPrinterInfo.innerHTML = '<i class="bi bi-printer-fill me-1"></i> Última impresora: ' + device.name;
+            }
+            
+            showMessage(`Conectando a ${device.name}...`);
             
             // Conectar al dispositivo GATT
             const server = await device.gatt.connect();
             
-            // Buscar un servicio de impresión disponible
+            // Lista de servicios a probar para encontrar el correcto
+            const serviceIds = [
+                '000018f0-0000-1000-8000-00805f9b34fb',  // Brother principal
+                '1222e5db-36e1-4a53-bfef-bf7da833c5a5',  // Alternativo
+                '00001101-0000-1000-8000-00805f9b34fb',  // SPP (Serial Port Profile)
+                'e7810a71-73ae-499d-8c15-faa9aef0c3f2',  // Thermal printer
+                'af20fbac-2518-4998-9af7-af42540731b3'   // Alternate printer
+            ];
+            
+            // Obtener el servicio correcto
             let service = null;
-            for (const serviceUuid of brotherServices) {
-                try {
-                    service = await server.getPrimaryService(serviceUuid);
-                    console.log(`Servicio encontrado: ${serviceUuid}`);
-                    break;
-                } catch (e) {
-                    console.log(`Servicio ${serviceUuid} no disponible`);
+            
+            // Probar obtener todos los servicios primero
+            try {
+                const services = await server.getPrimaryServices();
+                console.log("Servicios disponibles:", services.map(s => s.uuid));
+                
+                // Buscar uno con características de escritura
+                for (const svc of services) {
+                    try {
+                        const chars = await svc.getCharacteristics();
+                        for (const char of chars) {
+                            if (char.properties.write || char.properties.writeWithoutResponse) {
+                                service = svc;
+                                console.log(`Encontrado servicio con características de escritura: ${svc.uuid}`);
+                                break;
+                            }
+                        }
+                        if (service) break;
+                    } catch (e) {
+                        console.log(`Error al obtener características para ${svc.uuid}:`, e);
+                    }
+                }
+            } catch (e) {
+                console.log("No se pudo obtener lista completa de servicios:", e);
+            }
+            
+            // Si no encontramos un servicio adecuado, probar los específicos
+            if (!service) {
+                for (const serviceId of serviceIds) {
+                    try {
+                        service = await server.getPrimaryService(serviceId);
+                        console.log(`Servicio encontrado: ${serviceId}`);
+                        break;
+                    } catch (e) {
+                        console.log(`Servicio ${serviceId} no disponible:`, e);
+                    }
                 }
             }
             
             if (!service) {
-                throw new Error(`No se encontró un servicio de impresión compatible en ${device.name}`);
+                throw new Error("No se encontró un servicio compatible en la impresora");
             }
             
-            // Buscar una característica con capacidad de escritura
+            // Obtener características de escritura
             const characteristics = await service.getCharacteristics();
-            let writeCharacteristic = null;
+            console.log("Características disponibles:", characteristics.length);
             
-            for (const characteristic of characteristics) {
-                if (characteristic.properties.write || characteristic.properties.writeWithoutResponse) {
-                    writeCharacteristic = characteristic;
+            // Encontrar una característica que permita escritura
+            let characteristic = null;
+            for (const char of characteristics) {
+                if (char.properties.write || char.properties.writeWithoutResponse) {
+                    characteristic = char;
+                    console.log(`Característica de escritura encontrada: ${char.uuid}`);
                     break;
                 }
             }
             
-            if (!writeCharacteristic) {
-                throw new Error("No se encontró una característica con permisos de escritura");
+            if (!characteristic) {
+                throw new Error("No se encontró una característica de escritura");
             }
             
-            return {
-                device,
-                server,
-                writeCharacteristic,
-                // Determinar si requiere respuesta o no
-                writeWithResponse: writeCharacteristic.properties.write,
-                writeWithoutResponse: writeCharacteristic.properties.writeWithoutResponse
-            };
+            // Obtener datos para la impresión
+            const printData = getPrintData();
+            const command = generateBrotherCommand(printData);
             
-        } catch (error) {
-            showStatus(`Error al conectar: ${error.message}`, 'danger');
-            throw error;
-        }
-    };
-    
-    // Imprimir etiqueta a través de conexión Bluetooth
-    const printBrotherLabel = async () => {
-        try {
-            // Obtener datos de la etiqueta
-            const data = getEtiquetaData();
+            showMessage(`Enviando datos a la impresora ${device.name}...`);
             
-            // Conectar a la impresora
-            showStatus("Conectando a la impresora...");
-            const connection = await connectBrother();
-            
-            // Generar comando de impresión
-            const command = generateBrotherCommand(data);
-            
-            // Imprimir el número especificado de etiquetas
-            for (let i = 0; i < data.quantity; i++) {
-                showStatus(`Imprimiendo etiqueta ${i+1} de ${data.quantity}...`);
+            // Imprimir la cantidad de etiquetas solicitada
+            for (let i = 0; i < printData.quantity; i++) {
+                // Esperar entre impresiones
+                if (i > 0) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
                 
-                // Enviar el comando en chunks para evitar desbordamientos de buffer
-                const CHUNK_SIZE = 512;
+                // Imprimir etiqueta
+                if (characteristic.properties.writeWithoutResponse) {
+                    await characteristic.writeValueWithoutResponse(command);
+                } else {
+                    await characteristic.writeValue(command);
+                }
                 
-                for (let j = 0; j < command.length; j += CHUNK_SIZE) {
-                    const chunk = command.slice(j, j + CHUNK_SIZE);
-                    
-                    if (connection.writeWithoutResponse) {
-                        await connection.writeCharacteristic.writeValueWithoutResponse(chunk);
-                    } else {
-                        await connection.writeCharacteristic.writeValue(chunk);
+                showMessage(`Imprimiendo etiqueta ${i+1} de ${printData.quantity}...`);
+            }
+            
+            showMessage("¡Impresión completada con éxito!");
+            
+            // Desconectar del dispositivo después de un breve retraso
+            setTimeout(() => {
+                try {
+                    if (device.gatt.connected) {
+                        device.gatt.disconnect();
+                        console.log("Desconectado de la impresora");
                     }
-                    
-                    // Pausa breve entre chunks
-                    await new Promise(resolve => setTimeout(resolve, 50));
+                } catch (e) {
+                    console.log("Error al desconectar:", e);
                 }
-                
-                // Pausa entre etiquetas múltiples
-                if (i < data.quantity - 1) {
-                    await new Promise(resolve => setTimeout(resolve, 500));
-                }
-            }
-            
-            showStatus(`¡Impresión exitosa! Se imprimieron ${data.quantity} etiqueta(s)`, 'success');
-            
-            // Desconectar de la impresora
-            if (connection.device.gatt.connected) {
-                connection.device.gatt.disconnect();
-            }
-            
-            return true;
+            }, 2000);
             
         } catch (error) {
-            console.error("Error de impresión:", error);
-            
-            // Determinar mensaje de error apropiado según el tipo de error
-            let errorMessage = "Error desconocido al imprimir";
+            // Manejar errores específicos
+            let errorMessage = "Error de conexión Bluetooth: ";
             
             if (error.name === 'NotFoundError') {
-                errorMessage = "No se encontró ninguna impresora Brother compatible";
+                errorMessage += "No se encontraron dispositivos compatibles";
             } else if (error.name === 'SecurityError') {
-                errorMessage = "No se tienen permisos suficientes para acceder a Bluetooth";
+                errorMessage += "No se concedió permiso para acceder a Bluetooth";
             } else if (error.name === 'NetworkError') {
-                errorMessage = "La impresora se desconectó durante la operación";
+                errorMessage += "Error de comunicación con la impresora";
             } else if (error.message) {
-                errorMessage = error.message;
-            }
-            
-            showStatus(errorMessage, 'danger');
-            return false;
-        }
-    };
-    
-    // Alternativa: Generar PDF para descarga (para navegadores sin soporte Bluetooth)
-    const generateLabelPDF = () => {
-        showStatus("Generando PDF para imprimir...");
-        
-        // Crear elemento para descargar
-        const downloadLink = document.createElement('a');
-        downloadLink.setAttribute('href', `/tasks/download_label_pdf?product_id=${getProductId()}&quantity=${getQuantity()}`);
-        downloadLink.setAttribute('download', 'etiqueta.pdf');
-        downloadLink.style.display = 'none';
-        document.body.appendChild(downloadLink);
-        
-        // Simular clic en el enlace
-        downloadLink.click();
-        
-        // Limpiar
-        document.body.removeChild(downloadLink);
-        
-        showStatus("PDF generado. Guárdalo e imprímelo en tu impresora de etiquetas.", 'success');
-    };
-    
-    // Funciones auxiliares para obtener datos
-    const getProductId = () => {
-        // Intentar extraer del URL actual
-        const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get('product_id') || '';
-    };
-    
-    const getQuantity = () => {
-        return document.getElementById("quantity")?.value || 1;
-    };
-    
-    // Configurar evento del botón de impresión
-    const setupPrintButton = () => {
-        const printButton = document.getElementById('bluetooth-print-btn');
-        if (!printButton) return;
-        
-        // Añadir clase para PWA si estamos en modo PWA
-        if (isPwa) {
-            printButton.classList.add('pwa-mode');
-            printButton.textContent = '🖨️ Imprimir Etiqueta (Modo App)';
-        }
-        
-        // Añadir alternativa PDF si no hay soporte Bluetooth
-        if (!navigator.bluetooth) {
-            // Crear botón PDF como alternativa
-            const pdfButton = document.createElement('button');
-            pdfButton.id = 'pdf-download-btn';
-            pdfButton.className = 'btn btn-lg btn-outline-secondary ms-2';
-            pdfButton.textContent = '📄 Descargar PDF';
-            pdfButton.addEventListener('click', generateLabelPDF);
-            
-            // Añadir junto al botón original
-            printButton.parentNode.appendChild(pdfButton);
-            
-            // Actualizar etiqueta del botón principal
-            printButton.textContent = '🖶 Imprimir (Web)';
-        }
-        
-        // Configurar evento principal
-        printButton.addEventListener('click', async (e) => {
-            e.preventDefault();
-            
-            if (navigator.bluetooth) {
-                // Intentar impresión Bluetooth directa
-                await printBrotherLabel();
+                errorMessage += error.message;
             } else {
-                // Mostrar opciones alternativas
-                showStatus("Tu navegador no soporta conexión Bluetooth directa a impresoras. " +
-                           "Usa la opción de descarga PDF o instala esta web como aplicación " +
-                           "para acceder a más funciones.", 'warning');
+                errorMessage += "Error desconocido";
             }
+            
+            console.error("Error de impresión:", error);
+            showMessage(errorMessage, true);
+        }
+    };
+    
+    // Asignar el evento al botón de impresión
+    printButton.addEventListener('click', function(e) {
+        e.preventDefault();
+        startBrotherPrinting();
+    });
+    
+    // Feedback visual al pulsar botones en tablets
+    const addTouchFeedback = (element) => {
+        if (!element) return;
+        
+        element.addEventListener('touchstart', function() {
+            this.style.transform = 'scale(0.95)';
+            this.style.opacity = '0.9';
+        });
+        
+        ['touchend', 'touchcancel'].forEach(evt => {
+            element.addEventListener(evt, function() {
+                this.style.transform = 'scale(1)';
+                this.style.opacity = '1';
+            });
         });
     };
     
-    // Inicializar
-    setupPrintButton();
+    // Aplicar feedback táctil al botón principal
+    addTouchFeedback(printButton);
     
-    // Mostrar mensaje inicial según contexto
-    if (isPwa && navigator.bluetooth) {
-        showStatus("Modo aplicación activo. Podrás conectar directamente a tu impresora Brother.", 'info');
-    } else if (navigator.bluetooth) {
-        showStatus("Pulsa el botón para conectar con la impresora Brother Bluetooth", 'info');
-    } else {
-        showStatus("Tu navegador no soporta conexión directa a impresoras. Recomendamos instalar esta web como aplicación o usar Chrome en Android para todas las funciones.", 'warning');
-    }
+    console.log("Sistema de impresión Brother para tablets inicializado correctamente");
 });

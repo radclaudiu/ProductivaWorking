@@ -139,6 +139,49 @@
                     </div>
                 </div>
                 
+                <h5 class="card-title mt-4">Información de IVA</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.vat_percentage.label(class="form-label") }}
+                            {{ form.vat_percentage(class="form-control", id="vat_percentage") }}
+                            {% if form.vat_percentage.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.vat_percentage.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.vat_amount.label(class="form-label") }}
+                            {{ form.vat_amount(class="form-control", readonly=true, id="vat_amount") }}
+                            {% if form.vat_amount.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.vat_amount.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.net_amount.label(class="form-label") }}
+                            {{ form.net_amount(class="form-control", readonly=true, id="net_amount") }}
+                            {% if form.net_amount.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in form.net_amount.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="row">
                     <div class="col-md-6">
                         <div class="mb-3">
@@ -194,15 +237,37 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Actualizar campo de total
         document.getElementById('total_amount').value = total.toFixed(2);
+        
+        // Calcular IVA y neto
+        calculateVAT();
+    }
+    
+    // Función para calcular IVA y neto
+    function calculateVAT() {
+        const totalAmount = parseFloat(document.getElementById('total_amount').value) || 0;
+        const vatPercentage = parseFloat(document.getElementById('vat_percentage').value) || 0;
+        
+        // Calcular el importe del IVA
+        const vatAmount = totalAmount * (vatPercentage / 100);
+        
+        // Calcular el importe neto (sin IVA)
+        const netAmount = totalAmount - vatAmount;
+        
+        // Actualizar los campos
+        document.getElementById('vat_amount').value = vatAmount.toFixed(2);
+        document.getElementById('net_amount').value = netAmount.toFixed(2);
     }
     
     // Calcular total al cargar la página
     calculateTotal();
     
-    // Añadir event listeners para recalcular cuando cambie cualquier campo
+    // Añadir event listeners para recalcular cuando cambie cualquier campo de pago
     document.querySelectorAll('.payment-amount').forEach(function(input) {
         input.addEventListener('input', calculateTotal);
     });
+    
+    // Añadir listener para el porcentaje de IVA
+    document.getElementById('vat_percentage').addEventListener('input', calculateVAT);
 });
 </script>
 {% endblock %}

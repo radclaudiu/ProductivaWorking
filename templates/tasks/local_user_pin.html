@@ -5,7 +5,7 @@
     <div class="row justify-content-center">
         <div class="col-md-8 col-lg-5">
             <div class="card shadow-lg border-0 rounded-4">
-                <div class="card-header bg-primary text-white text-center py-4">
+                <div class="card-header text-center py-4">
                     <div class="mb-3">
                         {% if user.photo_path %}
                         <img src="{{ url_for('static', filename=user.photo_path) }}" 
@@ -99,6 +99,15 @@
 
 {% block scripts %}
 <style>
+    :root {
+        --olive-green: #556b2f;
+        --chocolate-brown: #5c4033;
+        --terracotta: #cd5c5c;
+        --burnt-orange: #cc5500;
+        --bg-beige: #f5f0e1;
+        --bg-light-beige: #faf6eb;
+    }
+    
     body {
         touch-action: manipulation;
         overscroll-behavior: none;
@@ -109,7 +118,7 @@
         height: 120px;
         object-fit: cover;
         border: 3px solid white;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         margin: 0 auto;
     }
     
@@ -117,14 +126,14 @@
         width: 120px;
         height: 120px;
         border-radius: 50%;
-        background-color: rgba(255,255,255,0.3);
+        background-color: var(--olive-green);
         color: white;
         display: flex;
         justify-content: center;
         align-items: center;
         margin: 0 auto;
         border: 3px solid white;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     }
     
     .initials {
@@ -151,8 +160,8 @@
     }
     
     .pin-dot.filled {
-        background-color: var(--bs-primary);
-        border-color: var(--bs-primary);
+        background-color: var(--olive-green);
+        border-color: var(--olive-green);
         transform: scale(1.1);
     }
     
@@ -162,17 +171,68 @@
         margin: 0 auto;
     }
     
-    .keypad-btn, #clearPinBtn, #deletePinBtn {
+    .keypad-btn {
         font-size: 1.8rem;
         font-weight: 500;
         padding: 0.75rem;
         min-height: 75px;
         touch-action: manipulation;
         border-radius: 10px;
+        border-color: var(--olive-green);
+        color: var(--olive-green);
     }
     
-    .keypad-btn:active {
+    .keypad-btn:hover, .keypad-btn:active, .keypad-btn:focus {
+        background-color: var(--olive-green);
+        border-color: var(--olive-green);
+        color: white;
+    }
+    
+    #clearPinBtn {
+        font-size: 1.8rem;
+        font-weight: 500;
+        padding: 0.75rem;
+        min-height: 75px;
+        touch-action: manipulation;
+        border-radius: 10px;
+        background-color: var(--terracotta);
+        border-color: var(--terracotta);
+    }
+    
+    #deletePinBtn {
+        font-size: 1.8rem;
+        font-weight: 500;
+        padding: 0.75rem;
+        min-height: 75px;
+        touch-action: manipulation;
+        border-radius: 10px;
+        background-color: var(--burnt-orange);
+        border-color: var(--burnt-orange);
+    }
+    
+    .keypad-btn:active, #clearPinBtn:active, #deletePinBtn:active {
         transform: scale(0.95);
+    }
+    
+    .btn-primary {
+        background-color: var(--olive-green);
+        border-color: var(--olive-green);
+    }
+    
+    .btn-primary:hover, .btn-primary:focus {
+        background-color: #475a26;
+        border-color: #475a26;
+    }
+    
+    .btn-outline-secondary {
+        color: var(--chocolate-brown);
+        border-color: var(--chocolate-brown);
+    }
+    
+    .btn-outline-secondary:hover, .btn-outline-secondary:focus {
+        background-color: var(--chocolate-brown);
+        border-color: var(--chocolate-brown);
+        color: white;
     }
     
     /* Media queries para tablets */

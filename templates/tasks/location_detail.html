@@ -98,7 +98,7 @@
                     
                     <div class="card mb-3 border-0 shadow-sm">
                         <div class="card-header text-white" style="background: linear-gradient(135deg, #5c4033, #894e34);">
-                            <h6 class="mb-0"><i class="bi bi-key"></i> Credenciales del Portal</h6>
+                            <h6 class="mb-0 text-white"><i class="bi bi-key"></i> Credenciales del Portal</h6>
                         </div>
                         <div class="card-body" style="background-color: #f8f5e9;">
                             <p class="mb-2 text-muted">Las credenciales de acceso al portal pueden personalizarse según tus preferencias:</p>
@@ -142,6 +142,12 @@
                                 <form id="formCustomCredentials" method="post" action="{{ url_for('tasks.update_portal_credentials', location_id=location.id) }}">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <div class="row g-3">
+                                        <div class="col-md-12 mb-2">
+                                            <label for="portal_name" class="form-label">Nombre del Portal</label>
+                                            <input type="text" class="form-control" id="portal_name" name="portal_name" 
+                                                   value="{{ location.name }}" placeholder="Nombre del portal">
+                                            <div class="form-text">Este nombre se mostrará en el portal de acceso para los empleados</div>
+                                        </div>
                                         <div class="col-md-6">
                                             <label for="portal_username" class="form-label">Usuario del Portal</label>
                                             <input type="text" class="form-control" id="portal_username" 

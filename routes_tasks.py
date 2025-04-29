@@ -1648,7 +1648,7 @@ def regenerate_password(location_id):
 @login_required
 @manager_required
 def update_portal_credentials(location_id):
-    """Actualiza la contraseña personalizada del portal para un local"""
+    """Actualiza las credenciales del portal para un local (nombre y contraseña)"""
     location = Location.query.get_or_404(location_id)
     
     # Verificar permisos (admin o gerente de la empresa)
@@ -1657,20 +1657,34 @@ def update_portal_credentials(location_id):
         return redirect(url_for('tasks.list_locations'))
     
     # Obtener datos del formulario
+    portal_name = request.form.get('portal_name', '').strip()
     custom_password = request.form.get('custom_password', '').strip()
     
+    changes_made = False
+    
     try:
+        # Actualizar nombre del portal si se ha proporcionado y es diferente al actual
+        if portal_name and portal_name != location.name:
+            old_name = location.name
+            location.name = portal_name
+            changes_made = True
+            
+            # Registrar cambio en los logs
+            log_activity(f'Actualización de nombre del portal para local: {old_name} → {portal_name}', user_id=current_user.id)
+        
         # Actualizar contraseña personalizada solo si se ha proporcionado una nueva
         if custom_password:
             location.set_portal_password(custom_password)
-            db.session.commit()
+            changes_made = True
             
             # Registrar cambio en los logs
             log_activity(f'Actualización de contraseña del portal para local: {location.name}', user_id=current_user.id)
-            
-            flash('Contraseña del portal actualizada correctamente', 'success')
+        
+        if changes_made:
+            db.session.commit()
+            flash('Credenciales del portal actualizadas correctamente', 'success')
         else:
-            flash('No se ha proporcionado una nueva contraseña', 'warning')
+            flash('No se han detectado cambios en las credenciales', 'warning')
     except Exception as e:
         db.session.rollback()
         flash(f'Error al actualizar las credenciales: {str(e)}', 'danger')

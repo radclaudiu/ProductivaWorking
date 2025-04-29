@@ -1,8 +1,13 @@
 // Script mejorado para impresión Bluetooth con impresoras Brother desde dispositivos móviles
+// Versión optimizada para tablets (2025-04-29)
 document.addEventListener('DOMContentLoaded', function() {
     // Verificar si hay un botón de impresión Bluetooth en la página
     const bluetoothPrintBtn = document.getElementById("bluetooth-print-btn");
     if (!bluetoothPrintBtn) return;
+    
+    // Modificar el botón para destacarlo mejor en tablets
+    bluetoothPrintBtn.classList.add("btn-lg");
+    bluetoothPrintBtn.innerHTML = '<i class="bi bi-bluetooth"></i> Imprimir en Brother';
     
     console.log("Inicializando sistema de impresión Bluetooth");
     

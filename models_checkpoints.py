@@ -136,7 +136,7 @@ class CheckPointRecord(db.Model):
             return delta / 3600  # Convertir a horas
         
         delta = check_out - check_in
-        return delta.total_seconds() / 3600  # Convertir a horas
+        return delta.total_seconds() / 3600  # Convertir a horas (formato decimal)
     
     @property
     def has_original_record(self):
@@ -146,13 +146,21 @@ class CheckPointRecord(db.Model):
     
     def to_dict(self):
         """Convierte el registro a un diccionario para serialización"""
+        # Importar la función de formateo para mostrar la duración correctamente
+        from utils_checkpoints import format_hours_minutes
+        
+        # Calcular la duración
+        duration_value = self.duration()
+        formatted_duration = format_hours_minutes(duration_value) if duration_value is not None else None
+        
         result = {
             'id': self.id,
             'employee_id': self.employee_id,
             'employee_name': f"{self.employee.first_name} {self.employee.last_name}",
             'check_in_time': self.check_in_time.isoformat() if self.check_in_time else None,
             'check_out_time': self.check_out_time.isoformat() if self.check_out_time else None,
-            'duration': None if self.duration() is None else round(self.duration(), 2),
+            'duration': formatted_duration,
+            'duration_decimal': None if duration_value is None else round(duration_value, 2),
             'adjusted': self.adjusted,
             'has_signature': self.has_signature,
             'has_original_record': self.has_original_record

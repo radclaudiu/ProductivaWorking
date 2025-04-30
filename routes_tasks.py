@@ -1259,6 +1259,7 @@ def local_user_login(user_id):
     if location and not location.requires_pin:
         # Guardar usuario en sesión sin verificar PIN
         session['local_user_id'] = user.id
+        session['local_user_name'] = user.name
         
         log_activity(f'Acceso de usuario local (sin PIN): {user.name} en {user.location.name}')
         flash(f'Bienvenido, {user.name}!', 'success')
@@ -1271,6 +1272,7 @@ def local_user_login(user_id):
         if user.check_pin(form.pin.data):
             # Guardar usuario en sesión
             session['local_user_id'] = user.id
+            session['local_user_name'] = user.name
             
             log_activity(f'Acceso de usuario local: {user.name} en {user.location.name}')
             flash(f'Bienvenido, {user.name}!', 'success')
@@ -1288,6 +1290,7 @@ def local_logout():
     """Cerrar sesión de usuario local"""
     location_id = session.get('location_id')
     session.pop('local_user_id', None)
+    session.pop('local_user_name', None)
     flash('Has cerrado sesión correctamente.', 'success')
     
     if location_id:
@@ -1302,6 +1305,7 @@ def portal_logout():
     session.pop('location_id', None)
     session.pop('local_user_username', None)
     session.pop('local_user_id', None)
+    session.pop('local_user_name', None)
     session.pop('portal_authenticated', None)
     session.pop('portal_location_id', None)
     

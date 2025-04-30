@@ -56,8 +56,8 @@
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
-                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation" style="color: var(--chocolate); border-color: var(--chocolate);">
+                <span class="navbar-toggler-icon" style="filter: brightness(0.7);"></span>
             </button>
             
             <div class="collapse navbar-collapse" id="navbarNav">
@@ -98,7 +98,7 @@
                 <form class="d-flex ms-auto" id="searchForm" action="{{ url_for('main.search') }}" method="get">
                     <div class="input-group">
                         <input type="text" class="form-control" placeholder="Buscar..." name="query">
-                        <button class="btn btn-outline-light" type="submit">
+                        <button class="btn btn-outline-dark" type="submit" style="color: var(--chocolate); border-color: var(--chocolate);">
                             <i class="bi bi-search"></i>
                         </button>
                     </div>

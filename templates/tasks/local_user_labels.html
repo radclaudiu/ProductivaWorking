@@ -144,12 +144,12 @@
 {% endblock %}
 
 <!-- Modal de Configuración de Impresora -->
-<div class="modal fade" id="printerSettingsModal" tabindex="-1" aria-labelledby="printerSettingsModalLabel" aria-hidden="true">
+<div class="modal fade" id="printerSettingsModal" tabindex="-1" aria-labelledby="printerSettingsModalLabel" aria-hidden="true" style="display: none;">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header bg-earth-dark text-white">
                 <h5 class="modal-title" id="printerSettingsModalLabel"><i class="bi bi-printer-fill me-2"></i>Configuración de Impresora</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" onclick="closeModal()" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="row mb-3">
@@ -292,6 +292,22 @@
         background-color: #6B8E23;
         color: white;
     }
+    
+    /* Estilos adicionales para el modal personalizado */
+    .modal.show {
+        display: block;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+    
+    .modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1040;
+    }
 </style>
 {% endblock %}
 
@@ -301,32 +317,47 @@
     document.addEventListener('DOMContentLoaded', function() {
         console.log("Inicializando componentes de la página de etiquetas...");
         
-        // Comprobar disponibilidad de Bootstrap modal
-        if (typeof bootstrap !== 'undefined') {
-            console.log("Bootstrap cargado correctamente");
+        // Referencias a botones y elementos del formulario
+        const checkPrinterBtn = document.getElementById('checkPrinterBtn');
+        const testPrinterBtn = document.getElementById('testPrinterBtn');
+        const savePrinterBtn = document.getElementById('savePrinterBtn');
+        const configBtn = document.querySelector('button[data-bs-target="#printerSettingsModal"]');
+        const modalElement = document.getElementById('printerSettingsModal');
+        
+        // Comprobar si el botón de configuración existe
+        if (configBtn) {
+            console.log("Botón configurar impresora encontrado");
             
-            // Asegurarse de que podemos abrir modales
-            const modalTest = document.getElementById('printerSettingsModal');
-            if (modalTest) {
-                console.log("Modal encontrado en el DOM: #printerSettingsModal");
-                
-                // Inicializar explícitamente el modal
-                const printerModal = new bootstrap.Modal(modalTest);
-                
-                // Añadir evento al botón para abrir el modal manualmente
-                const configBtn = document.querySelector('[data-bs-target="#printerSettingsModal"]');
-                if (configBtn) {
-                    console.log("Botón configurar impresora encontrado");
-                    configBtn.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        printerModal.show();
-                    });
+            // Crear un nuevo botón que reemplace al original pero sin los atributos data-bs
+            const newBtn = document.createElement('button');
+            newBtn.className = configBtn.className;
+            newBtn.innerHTML = configBtn.innerHTML;
+            newBtn.type = 'button';
+            
+            // Reemplazar el botón original
+            configBtn.parentNode.replaceChild(newBtn, configBtn);
+            
+            // Añadir el manejador de eventos al nuevo botón
+            newBtn.addEventListener('click', function() {
+                // Mostrar el modal usando jQuery si está disponible (más compatible)
+                if (typeof $ !== 'undefined') {
+                    $('#printerSettingsModal').modal('show');
+                } else {
+                    // Alternativa: manipular directamente las clases CSS
+                    if (modalElement) {
+                        modalElement.style.display = 'block';
+                        modalElement.classList.add('show');
+                        document.body.classList.add('modal-open');
+                        
+                        // Crear backdrop manualmente
+                        const backdrop = document.createElement('div');
+                        backdrop.className = 'modal-backdrop fade show';
+                        document.body.appendChild(backdrop);
+                    }
                 }
-            } else {
-                console.error("No se encontró el modal en el DOM");
-            }
+            });
         } else {
-            console.error("Bootstrap no está disponible");
+            console.error("No se encontró el botón de configurar impresora");
         }
         
         // Referencia al checkbox de autenticación
@@ -339,11 +370,6 @@
                 authFields.style.display = this.checked ? 'block' : 'none';
             });
         }
-        
-        // Referencias a botones
-        const checkPrinterBtn = document.getElementById('checkPrinterBtn');
-        const testPrinterBtn = document.getElementById('testPrinterBtn');
-        const savePrinterBtn = document.getElementById('savePrinterBtn');
         
         // Cargar configuración de impresora al abrir la página
         loadPrinterConfig();
@@ -532,9 +558,20 @@
     function closeModal() {
         const modalElement = document.getElementById('printerSettingsModal');
         if (modalElement) {
-            const modal = bootstrap.Modal.getInstance(modalElement);
-            if (modal) {
-                modal.hide();
+            // Intentar cerrar con jQuery si está disponible
+            if (typeof $ !== 'undefined') {
+                $('#printerSettingsModal').modal('hide');
+            } else {
+                // Cerrar manualmente
+                modalElement.style.display = 'none';
+                modalElement.classList.remove('show');
+                document.body.classList.remove('modal-open');
+                
+                // Quitar el backdrop
+                const backdrop = document.querySelector('.modal-backdrop');
+                if (backdrop) {
+                    backdrop.remove();
+                }
             }
         }
     }

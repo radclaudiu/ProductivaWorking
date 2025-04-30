@@ -32,6 +32,7 @@ def format_hours_minutes(hours_decimal):
     minutes_decimal = hours_decimal - hours_whole
     
     # Convertir la parte decimal a minutos en base 60
+    # La multiplicación por 60 convierte directamente de base 100 a base 60
     minutes = int(minutes_decimal * 60)
     
     return f"{hours_whole}h {minutes:02}m"

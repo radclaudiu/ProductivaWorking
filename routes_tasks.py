@@ -1252,6 +1252,19 @@ def local_user_login(user_id):
         flash('Usuario no válido para este local.', 'danger')
         return redirect(url_for('tasks.local_portal', location_id=session['location_id']))
     
+    # Obtener configuración de la ubicación
+    location = Location.query.get(session['location_id'])
+    
+    # Si la ubicación no requiere PIN, permitir acceso directo
+    if location and not location.requires_pin:
+        # Guardar usuario en sesión sin verificar PIN
+        session['local_user_id'] = user.id
+        
+        log_activity(f'Acceso de usuario local (sin PIN): {user.name} en {user.location.name}')
+        flash(f'Bienvenido, {user.name}!', 'success')
+        return redirect(url_for('tasks.local_user_tasks'))
+    
+    # Si requiere PIN, continuar con la verificación normal
     form = LocalUserPinForm()
     
     if form.validate_on_submit():

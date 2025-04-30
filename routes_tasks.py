@@ -11,7 +11,7 @@ from werkzeug.utils import secure_filename
 from wtforms.validators import Optional
 
 from app import db
-from models import User, Company
+from models import User, Company, Employee
 from models_tasks import (Location, LocalUser, Task, TaskSchedule, TaskCompletion, TaskPriority, 
                          TaskFrequency, TaskStatus, WeekDay, TaskGroup, TaskWeekday,
                          Product, ProductConservation, ProductLabel, ConservationType, LabelTemplate,
@@ -427,6 +427,66 @@ def view_location(id):
                           monthly_counts=monthly_counts,
                           portal_url=portal_url)
 
+# Función para sincronizar/importar empleados como usuarios locales
+def sync_employees_to_local_users(location_id):
+    """
+    Sincroniza los empleados de la empresa como usuarios locales.
+    Los empleados que ya existen como usuarios locales importados se actualizan.
+    Los empleados que no existen como usuarios locales se crean.
+    
+    Args:
+        location_id: ID de la ubicación para la que se importan los empleados
+        
+    Returns:
+        Tuple[int, int, int]: (total_synced, total_created, total_updated)
+    """
+    location = Location.query.get_or_404(location_id)
+    company_id = location.company_id
+    
+    # Obtener todos los empleados activos de la empresa
+    employees = Employee.query.filter_by(company_id=company_id, is_active=True).all()
+    
+    total_created = 0
+    total_updated = 0
+    
+    for employee in employees:
+        # Verificar si ya existe un usuario local importado para este empleado
+        local_user = LocalUser.query.filter_by(employee_id=employee.id, location_id=location_id).first()
+        
+        if local_user:
+            # Actualizar datos del usuario local
+            local_user.name = employee.first_name
+            local_user.last_name = employee.last_name
+            local_user.is_active = employee.is_active
+            total_updated += 1
+        else:
+            # Crear un nuevo usuario local
+            username = f"{employee.first_name.lower()}_{employee.last_name.lower()}_{datetime.now().strftime('%y%m%d%H%M%S')}"
+            
+            # Crear PIN predeterminado (últimos 4 dígitos del DNI o 1234 si no hay DNI)
+            default_pin = "1234"
+            if employee.dni and len(employee.dni) >= 4:
+                default_pin = employee.dni[-4:]
+            
+            local_user = LocalUser(
+                name=employee.first_name,
+                last_name=employee.last_name,
+                username=username,
+                location_id=location_id,
+                is_active=employee.is_active,
+                imported=True,
+                employee_id=employee.id
+            )
+            
+            # Establecer PIN
+            local_user.set_pin(default_pin)
+            
+            db.session.add(local_user)
+            total_created += 1
+    
+    db.session.commit()
+    return len(employees), total_created, total_updated
+
 # Rutas para gestión de usuarios locales
 @tasks_bp.route('/locations/<int:location_id>/users')
 @login_required
@@ -442,10 +502,52 @@ def list_local_users(location_id):
     
     users = LocalUser.query.filter_by(location_id=location_id).all()
     
+    # Contar empleados disponibles para importar
+    available_employees_count = Employee.query.filter_by(
+        company_id=location.company_id,
+        is_active=True
+    ).count()
+    
+    # Contar usuarios ya importados
+    imported_users_count = LocalUser.query.filter_by(
+        location_id=location_id,
+        imported=True
+    ).count()
+    
     return render_template('tasks/local_user_list.html',
                           title=f'Usuarios del Local: {location.name}',
                           location=location,
-                          users=users)
+                          users=users,
+                          available_employees_count=available_employees_count,
+                          imported_users_count=imported_users_count)
+
+@tasks_bp.route('/locations/<int:location_id>/users/sync-employees', methods=['POST'])
+@login_required
+@manager_required
+def sync_employees(location_id):
+    """Sincronizar empleados de la empresa como usuarios locales"""
+    location = Location.query.get_or_404(location_id)
+    
+    # Verificar permisos (admin o gerente de la empresa)
+    if not current_user.is_admin() and (not current_user.is_gerente() or current_user.company_id != location.company_id):
+        flash('No tienes permiso para sincronizar empleados en este local.', 'danger')
+        return redirect(url_for('tasks.list_locations'))
+    
+    # Realizar la sincronización
+    try:
+        total_employees, created, updated = sync_employees_to_local_users(location_id)
+        
+        if created > 0 or updated > 0:
+            flash(f'Sincronización completada: {created} empleados nuevos importados, {updated} empleados actualizados.', 'success')
+            log_activity(f'Empleados sincronizados en {location.name}: {created} nuevos, {updated} actualizados')
+        else:
+            flash('No se encontraron cambios para sincronizar.', 'info')
+            
+    except Exception as e:
+        flash(f'Error al sincronizar empleados: {str(e)}', 'danger')
+        log_activity(f'Error al sincronizar empleados en {location.name}: {str(e)}', level='error')
+    
+    return redirect(url_for('tasks.list_local_users', location_id=location_id))
 
 @tasks_bp.route('/locations/<int:location_id>/users/create', methods=['GET', 'POST'])
 @login_required

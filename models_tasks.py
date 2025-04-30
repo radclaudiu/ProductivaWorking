@@ -153,10 +153,15 @@ class LocalUser(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
+    imported = db.Column(db.Boolean, default=False)  # Indica si el usuario fue importado de Employee
     
     # Relaciones
     location_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=False)
     location = db.relationship('Location', back_populates='local_users')
+    
+    # Relación con el empleado (si fue importado)
+    employee_id = db.Column(db.Integer, db.ForeignKey('employees.id'), nullable=True)
+    employee = db.relationship('Employee', backref=db.backref('local_user', uselist=False))
     
     # Relación con las tareas completadas
     completed_tasks = db.relationship('TaskCompletion', back_populates='local_user')
@@ -182,7 +187,10 @@ class LocalUser(db.Model):
             'photo_path': self.photo_path,
             'location_id': self.location_id,
             'location_name': self.location.name if self.location else None,
-            'is_active': self.is_active
+            'is_active': self.is_active,
+            'imported': self.imported,
+            'employee_id': self.employee_id,
+            'employee_name': f"{self.employee.first_name} {self.employee.last_name}" if self.employee else None
         }
 
 class Task(db.Model):

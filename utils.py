@@ -74,8 +74,15 @@ def log_employee_change(employee, field_name, old_value, new_value):
     )
     db.session.add(history)
 
-def log_activity(action, user_id=None):
-    """Log user activity."""
+def log_activity(action, user_id=None, level='info'):
+    """
+    Log user activity.
+    
+    Args:
+        action: La acción a registrar
+        user_id: ID del usuario (opcional, si no se proporciona usa el usuario actual)
+        level: Nivel de log ('info', 'warning', 'error', etc.)
+    """
     try:
         # Crear una nueva sesión para evitar problemas con transacciones abiertas
         log = ActivityLog(
@@ -85,6 +92,15 @@ def log_activity(action, user_id=None):
             timestamp=datetime.utcnow()
         )
         db.session.add(log)
+        
+        # Registrar en el logger según el nivel
+        if level == 'error':
+            current_app.logger.error(action)
+        elif level == 'warning':
+            current_app.logger.warning(action)
+        else:
+            # Por defecto, usar nivel info
+            current_app.logger.info(action)
         
         try:
             db.session.commit()

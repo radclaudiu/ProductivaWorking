@@ -57,7 +57,7 @@ body {
   background: linear-gradient(135deg, var(--chocolate), var(--terracota)) !important;
   box-shadow: 0 2px 10px rgba(92, 64, 51, 0.15);
   border-bottom: none;
-  padding: 0.8rem 1rem;
+  padding: 0.4rem 0.75rem; /* Reducido el padding vertical y horizontal */
   border-radius: 0 0 16px 16px;
 }
 
@@ -88,6 +88,12 @@ body {
   font-weight: 500;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease-in-out;
+}
+
+/* Botones más pequeños y compactos en la barra de navegación */
+.navbar .btn-sm {
+  padding: 0.3rem 0.6rem;
+  font-size: 0.85rem;
 }
 
 .btn:hover {
@@ -420,7 +426,7 @@ body {
   
   /* Ajustes para botones del menú móvil */
   .navbar-collapse .nav-item {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.3rem;
     width: 100%;
   }
   
@@ -429,10 +435,10 @@ body {
     align-items: center;
     justify-content: flex-start;
     width: 100%;
-    min-height: 44px; /* Altura mínima para mejor área táctil */
-    padding: 0.75rem 1rem; /* Más padding vertical */
-    margin-top: 0.25rem;
-    margin-bottom: 0.25rem;
+    min-height: 38px; /* Reducida la altura mínima */
+    padding: 0.5rem 0.8rem; /* Reducido el padding */
+    margin-top: 0.2rem;
+    margin-bottom: 0.2rem;
     white-space: normal; /* Permitir múltiples líneas de texto */
   }
   

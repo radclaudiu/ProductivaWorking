@@ -63,33 +63,33 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 {% if current_user.is_authenticated %}
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item mx-1 my-1">
-                        <a class="btn btn-primary fw-bold" href="{{ url_for('company.list_companies') }}">
+                    <li class="nav-item mx-1 my-0">
+                        <a class="btn btn-primary btn-sm fw-bold" href="{{ url_for('company.list_companies') }}">
                             <i class="bi bi-building"></i> Empresas
                         </a>
                     </li>
-                    <li class="nav-item mx-1 my-1">
-                        <a class="btn btn-success fw-bold" href="{{ url_for('checkpoints.select_company') }}">
-                            <i class="bi bi-clock-history"></i> Punto de Fichaje
+                    <li class="nav-item mx-1 my-0">
+                        <a class="btn btn-success btn-sm fw-bold" href="{{ url_for('checkpoints.select_company') }}">
+                            <i class="bi bi-clock-history"></i> Fichaje
                         </a>
                     </li>
-                    <li class="nav-item mx-1 my-1">
-                        <a class="btn btn-info fw-bold" href="{{ url_for('tasks.index') }}">
-                            <i class="bi bi-list-check"></i> Panel de Tareas
+                    <li class="nav-item mx-1 my-0">
+                        <a class="btn btn-info btn-sm fw-bold" href="{{ url_for('tasks.index') }}">
+                            <i class="bi bi-list-check"></i> Tareas
                         </a>
                     </li>
-                    <li class="nav-item mx-1 my-1">
-                        <a class="btn btn-warning fw-bold" href="{{ url_for('cash_register.dashboard') }}">
-                            <i class="bi bi-cash-coin"></i> Arqueos de Caja
+                    <li class="nav-item mx-1 my-0">
+                        <a class="btn btn-warning btn-sm fw-bold" href="{{ url_for('cash_register.dashboard') }}">
+                            <i class="bi bi-cash-coin"></i> Arqueos
                         </a>
                     </li>
-                    <li class="nav-item mx-1 my-1">
-                        <a class="btn btn-danger fw-bold" href="{{ url_for('monthly_expenses.select_company') }}">
-                            <i class="bi bi-receipt"></i> Gastos Mensuales
+                    <li class="nav-item mx-1 my-0">
+                        <a class="btn btn-danger btn-sm fw-bold" href="{{ url_for('monthly_expenses.select_company') }}">
+                            <i class="bi bi-receipt"></i> Gastos
                         </a>
                     </li>
-                    <li class="nav-item mx-1 my-1">
-                        <a class="btn btn-secondary fw-bold" href="https://horarios.gestemps.es" target="_blank">
+                    <li class="nav-item mx-1 my-0">
+                        <a class="btn btn-secondary btn-sm fw-bold" href="https://horarios.gestemps.es" target="_blank">
                             <i class="bi bi-calendar-week"></i> Horarios
                         </a>
                     </li>
@@ -154,7 +154,7 @@
     </nav>
     
     <!-- Main Content -->
-    <div class="container-fluid mt-5 pt-3">
+    <div class="container-fluid mt-4 pt-2">
         <div class="row">
             {% if current_user.is_authenticated %}
             <!-- Main content (sin sidebar) -->

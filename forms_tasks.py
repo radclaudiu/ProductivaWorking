@@ -20,6 +20,10 @@ class LocationForm(FlaskForm):
     company_id = SelectField('Empresa', coerce=int, validators=[DataRequired()])
     is_active = BooleanField('Local Activo', default=True)
     
+    # Configuración del portal
+    requires_pin = BooleanField('Requiere PIN para empleados', default=True,
+                             description='Si está activado, se solicitará PIN a los empleados para acceder a sus tareas')
+    
     # Credenciales de portal (solo contraseña)
     portal_password = PasswordField('Contraseña del Portal', validators=[Optional(), Length(min=4)],
                                    description='Contraseña para acceder al portal de tareas (opcional)')

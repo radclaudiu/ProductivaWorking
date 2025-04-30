@@ -77,6 +77,10 @@ class Location(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
     
+    # Configuración del portal
+    requires_pin = db.Column(db.Boolean, default=True, 
+                             info={'description': 'Si se requiere PIN para empleados'})
+    
     # Credenciales de acceso al portal
     portal_username = db.Column(db.String(64), unique=True)
     portal_password_hash = db.Column(db.String(256))

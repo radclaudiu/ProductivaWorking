@@ -66,7 +66,7 @@ body {
 /* Ajustes específicos para pantallas grandes */
 @media (min-width: 992px) {
   .navbar {
-    max-height: 45px; /* Altura máxima fija para la barra en pantallas grandes */
+    max-height: 50px; /* Altura máxima fija para la barra en pantallas grandes */
     overflow: hidden; /* Evitar que los elementos se salgan */
   }
   .navbar-nav {

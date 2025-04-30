@@ -402,24 +402,46 @@
     // Función para cargar la configuración de impresora
     function loadPrinterConfig() {
         fetch('/api/printers/location/{{ location.id }}')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success && data.printer) {
                     const printer = data.printer;
                     
-                    // Rellenar el formulario con los datos de la impresora
-                    document.getElementById('printerName').value = printer.name || '';
-                    document.getElementById('printerIp').value = printer.ip_address || '';
-                    document.getElementById('printerPort').value = printer.port || 80;
-                    document.getElementById('printerModel').value = printer.model || '';
-                    document.getElementById('apiPath').value = printer.api_path || '/brother_d/printer/print';
-                    document.getElementById('requiresAuth').checked = printer.requires_auth || false;
-                    document.getElementById('printerUsername').value = printer.username || '';
-                    document.getElementById('printerPassword').value = ''; // No mostrar la contraseña por seguridad
-                    document.getElementById('isDefault').checked = printer.is_default || false;
+                    // Lista de elementos a actualizar
+                    const elements = {
+                        'printerName': printer.name || '',
+                        'printerIp': printer.ip_address || '',
+                        'printerPort': printer.port || 80,
+                        'printerModel': printer.model || '',
+                        'apiPath': printer.api_path || '/brother_d/printer/print',
+                        'requiresAuth': printer.requires_auth || false,
+                        'printerUsername': printer.username || '',
+                        'printerPassword': '', // No mostrar la contraseña por seguridad
+                        'isDefault': printer.is_default || false
+                    };
+                    
+                    // Actualizar cada elemento verificando primero que exista
+                    for (const [id, value] of Object.entries(elements)) {
+                        const element = document.getElementById(id);
+                        if (element) {
+                            if (typeof value === 'boolean') {
+                                element.checked = value;
+                            } else {
+                                element.value = value;
+                            }
+                        }
+                    }
                     
                     // Mostrar/ocultar campos de autenticación
-                    document.getElementById('authFields').style.display = printer.requires_auth ? 'block' : 'none';
+                    const authFields = document.getElementById('authFields');
+                    if (authFields) {
+                        authFields.style.display = printer.requires_auth ? 'block' : 'none';
+                    }
                     
                     // Actualizar estado
                     updatePrinterConfigStatus(true, printer);
@@ -437,11 +459,23 @@
     function checkPrinterStatus() {
         const statusBadge = document.getElementById('printerStatusBadge');
         
+        // Verificar que el elemento exista
+        if (!statusBadge) {
+            console.error('Elemento printerStatusBadge no encontrado en el DOM');
+            return;
+        }
+        
         statusBadge.className = 'badge bg-warning me-1';
         statusBadge.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Comprobando...';
         
+        // Capturar errores en la respuesta
         fetch('/api/printers/check/{{ location.id }}')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     if (data.online) {
@@ -461,15 +495,25 @@
             })
             .catch(error => {
                 console.error('Error al comprobar el estado de la impresora:', error);
-                statusBadge.className = 'badge bg-danger me-1';
-                statusBadge.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> Error de conexión';
+                if (statusBadge) {
+                    statusBadge.className = 'badge bg-danger me-1';
+                    statusBadge.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> Error de conexión';
+                }
             });
     }
     
     // Función para probar la conexión con la impresora
     function testPrinterConnection() {
-        const ipAddress = document.getElementById('printerIp').value;
-        const port = document.getElementById('printerPort').value;
+        const ipAddressElement = document.getElementById('printerIp');
+        const portElement = document.getElementById('printerPort');
+        
+        if (!ipAddressElement) {
+            console.error('Elemento printerIp no encontrado en el DOM');
+            return;
+        }
+        
+        const ipAddress = ipAddressElement.value;
+        const port = portElement ? portElement.value : '80';
         
         if (!ipAddress) {
             alert('Por favor, introduzca una dirección IP válida.');
@@ -486,7 +530,12 @@
                 port: parseInt(port) || 80
             }),
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 alert('Conexión exitosa: La impresora está en línea.');
@@ -504,23 +553,53 @@
     function savePrinterConfig() {
         const form = document.getElementById('printerSettingsForm');
         
+        if (!form) {
+            console.error('Elemento printerSettingsForm no encontrado en el DOM');
+            return;
+        }
+        
         // Validación básica del formulario
         if (!form.checkValidity()) {
             form.reportValidity();
             return;
         }
         
+        // Lista de elementos a obtener
+        const elements = {
+            'printerName': '',
+            'printerIp': '',
+            'printerPort': 80,
+            'printerModel': '',
+            'apiPath': '/brother_d/printer/print',
+            'requiresAuth': false,
+            'printerUsername': '',
+            'printerPassword': '',
+            'isDefault': true
+        };
+        
+        // Obtener valores de los elementos verificando primero que existan
+        for (const id in elements) {
+            const element = document.getElementById(id);
+            if (element) {
+                if (id === 'requiresAuth' || id === 'isDefault') {
+                    elements[id] = element.checked;
+                } else {
+                    elements[id] = element.value;
+                }
+            }
+        }
+        
         // Recopilar datos del formulario
         const printerData = {
-            name: document.getElementById('printerName').value,
-            ip_address: document.getElementById('printerIp').value,
-            port: parseInt(document.getElementById('printerPort').value) || 80,
-            model: document.getElementById('printerModel').value,
-            api_path: document.getElementById('apiPath').value,
-            requires_auth: document.getElementById('requiresAuth').checked,
-            username: document.getElementById('printerUsername').value,
-            password: document.getElementById('printerPassword').value,
-            is_default: document.getElementById('isDefault').checked,
+            name: elements.printerName,
+            ip_address: elements.printerIp,
+            port: parseInt(elements.printerPort) || 80,
+            model: elements.printerModel,
+            api_path: elements.apiPath,
+            requires_auth: elements.requiresAuth,
+            username: elements.printerUsername,
+            password: elements.printerPassword,
+            is_default: elements.isDefault,
             location_id: {{ location.id }}
         };
         
@@ -531,7 +610,12 @@
             },
             body: JSON.stringify(printerData),
         })
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
                 alert('Configuración guardada correctamente.');
@@ -545,7 +629,7 @@
                 // Cerrar el modal
                 closeModal();
             } else {
-                alert('Error al guardar la configuración: ' + data.message);
+                alert('Error al guardar la configuración: ' + (data.message || 'Error desconocido'));
             }
         })
         .catch(error => {
@@ -579,6 +663,12 @@
     // Función para actualizar el estado de la configuración
     function updatePrinterConfigStatus(configured, printer = null) {
         const statusDiv = document.getElementById('printerConfigStatus');
+        
+        // Verificar que el elemento exista
+        if (!statusDiv) {
+            console.error('Elemento printerConfigStatus no encontrado en el DOM');
+            return;
+        }
         
         if (configured && printer) {
             let statusClass = 'secondary';

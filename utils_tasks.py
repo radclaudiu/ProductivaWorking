@@ -216,14 +216,21 @@ def sync_employees_to_local_users(location_id):
             else:
                 # Crear nuevo usuario local vinculado al empleado
                 username = f"{employee.first_name.lower()}_{employee.last_name.lower()}".replace(" ", "_")
-                # Generar PIN aleatorio de 4 dígitos
-                pin = ''.join(random.choices(string.digits, k=4))
+                
+                # Usar los últimos 4 dígitos del DNI como PIN
+                # Si no hay DNI o no tiene al menos 4 caracteres, usar PIN por defecto
+                if employee.dni and len(employee.dni) >= 4:
+                    pin = employee.dni[-4:]
+                    # Verificar que sean dígitos, si no, usar PIN por defecto
+                    if not pin.isdigit():
+                        pin = '1234'
+                else:
+                    pin = '1234'
                 
                 local_user = LocalUser(
                     name=employee.first_name,
                     last_name=employee.last_name,
                     username=username,
-                    pin=pin,  # Se establecerá el hash más adelante
                     is_active=True,
                     imported=True,
                     location_id=location_id,
@@ -238,7 +245,7 @@ def sync_employees_to_local_users(location_id):
                 db.session.add(local_user)
                 total_created += 1
                 
-                # Loggear el PIN generado (solo para desarrollo)
+                # Registrar la creación para fines de auditoría
                 current_app.logger.info(f"Usuario {username} creado con PIN: {pin}")
                 
         # Guardar cambios en la base de datos

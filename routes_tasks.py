@@ -13,11 +13,13 @@ from app import db
 from models import User, Company
 from models_tasks import (Location, LocalUser, Task, TaskSchedule, TaskCompletion, TaskPriority, 
                          TaskFrequency, TaskStatus, WeekDay, TaskGroup, TaskWeekday,
-                         Product, ProductConservation, ProductLabel, ConservationType, LabelTemplate)
+                         Product, ProductConservation, ProductLabel, ConservationType, LabelTemplate,
+                         NetworkPrinter)
 from forms_tasks import (LocationForm, LocalUserForm, TaskForm, DailyScheduleForm, WeeklyScheduleForm, 
                         MonthlyScheduleForm, BiweeklyScheduleForm, TaskCompletionForm, 
                         LocalUserPinForm, SearchForm, TaskGroupForm, CustomWeekdaysForm, PortalLoginForm,
-                        ProductForm, ProductConservationForm, GenerateLabelForm, LabelEditorForm)
+                        ProductForm, ProductConservationForm, GenerateLabelForm, LabelEditorForm,
+                        NetworkPrinterForm)
 from utils import log_activity, can_manage_company, save_file
 from utils_tasks import create_default_local_user, regenerate_portal_password
 
@@ -1849,6 +1851,284 @@ def product_conservation_selection(product_id):
                           location=location,
                           product=product,
                           now=now)
+
+# Rutas para gestión de impresoras de red
+@tasks_bp.route('/dashboard/printers')
+@tasks_bp.route('/dashboard/printers/<int:location_id>')
+@login_required
+@manager_required
+def list_printers(location_id=None):
+    """Lista de impresoras de red disponibles, filtradas por ubicación si se especifica"""
+    if current_user.is_admin():
+        # Si no se especifica ubicación, mostrar todas las impresoras para administradores
+        if location_id is None:
+            printers = NetworkPrinter.query.all()
+            locations = Location.query.all()
+        else:
+            location = Location.query.get_or_404(location_id)
+            printers = NetworkPrinter.query.filter_by(location_id=location_id).all()
+            locations = [location]
+    elif current_user.is_gerente():
+        # Los gerentes solo ven las impresoras de sus empresas
+        company_ids = [c.id for c in current_user.companies]
+        locations = Location.query.filter(Location.company_id.in_(company_ids)).all()
+        
+        if location_id is None and locations:
+            # Si no se especifica ubicación pero hay ubicaciones disponibles, usar la primera
+            location_id = locations[0].id
+            printers = NetworkPrinter.query.filter_by(location_id=location_id).all()
+        elif location_id is not None:
+            # Verificar que la ubicación pertenece a una empresa del gerente
+            location = Location.query.get_or_404(location_id)
+            if location.company_id not in company_ids:
+                flash('No tienes permiso para ver las impresoras de esa ubicación.', 'danger')
+                return redirect(url_for('tasks.index'))
+            printers = NetworkPrinter.query.filter_by(location_id=location_id).all()
+        else:
+            printers = []
+    else:
+        # Otros usuarios no tendrían acceso
+        printers = []
+        locations = []
+    
+    return render_template('tasks/printer_list.html',
+                          title='Gestión de Impresoras',
+                          printers=printers,
+                          locations=locations,
+                          current_location_id=location_id)
+
+@tasks_bp.route('/dashboard/printers/create/<int:location_id>', methods=['GET', 'POST'])
+@login_required
+@manager_required
+def create_printer(location_id):
+    """Crear una nueva impresora para una ubicación"""
+    location = Location.query.get_or_404(location_id)
+    
+    # Verificar permisos (admin o gerente de la empresa)
+    if not current_user.is_admin() and (not current_user.is_gerente() or location.company_id not in [c.id for c in current_user.companies]):
+        flash('No tienes permiso para crear impresoras en esta ubicación.', 'danger')
+        return redirect(url_for('tasks.list_printers'))
+    
+    form = NetworkPrinterForm()
+    form.location_id.choices = [(location.id, location.name)]
+    form.location_id.data = location.id
+    
+    if form.validate_on_submit():
+        printer = NetworkPrinter(
+            name=form.name.data,
+            ip_address=form.ip_address.data,
+            model=form.model.data,
+            port=form.port.data,
+            api_path=form.api_path.data,
+            requires_auth=form.requires_auth.data,
+            username=form.username.data if form.requires_auth.data else None,
+            password=form.password.data if form.requires_auth.data else None,
+            is_default=form.is_default.data,
+            location_id=form.location_id.data,
+            is_active=True
+        )
+        
+        # Si es la impresora predeterminada, desmarcar otras como predeterminadas
+        if printer.is_default:
+            other_default_printers = NetworkPrinter.query.filter_by(
+                location_id=printer.location_id,
+                is_default=True
+            ).all()
+            
+            for other_printer in other_default_printers:
+                other_printer.is_default = False
+        
+        db.session.add(printer)
+        db.session.commit()
+        
+        # Verificar conexión con la impresora
+        status = printer.check_status()
+        db.session.commit()  # Guardar el estado
+        
+        log_activity(f'Impresora creada: {printer.name} para la ubicación {location.name}')
+        flash(f'Impresora "{printer.name}" creada correctamente. Estado: {"Online" if status else "Offline"}', 'success')
+        return redirect(url_for('tasks.list_printers', location_id=location_id))
+    
+    return render_template('tasks/printer_form.html',
+                          title='Crear Nueva Impresora',
+                          form=form,
+                          location=location)
+
+@tasks_bp.route('/dashboard/printers/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+@manager_required
+def edit_printer(id):
+    """Editar una impresora existente"""
+    printer = NetworkPrinter.query.get_or_404(id)
+    location = printer.location
+    
+    # Verificar permisos (admin o gerente de la empresa)
+    if not current_user.is_admin() and (not current_user.is_gerente() or location.company_id not in [c.id for c in current_user.companies]):
+        flash('No tienes permiso para editar esta impresora.', 'danger')
+        return redirect(url_for('tasks.list_printers'))
+    
+    form = NetworkPrinterForm(obj=printer)
+    form.location_id.choices = [(location.id, location.name)]
+    
+    if form.validate_on_submit():
+        printer.name = form.name.data
+        printer.ip_address = form.ip_address.data
+        printer.model = form.model.data
+        printer.port = form.port.data
+        printer.api_path = form.api_path.data
+        printer.requires_auth = form.requires_auth.data
+        
+        # Solo actualizar credenciales si se requiere autenticación
+        if printer.requires_auth:
+            printer.username = form.username.data
+            if form.password.data:  # Solo actualizar la contraseña si se proporciona una nueva
+                printer.password = form.password.data
+        else:
+            printer.username = None
+            printer.password = None
+        
+        old_default = printer.is_default
+        new_default = form.is_default.data
+        printer.is_default = new_default
+        
+        # Si ahora es predeterminada y antes no lo era, desmarcar otras predeterminadas
+        if new_default and not old_default:
+            other_default_printers = NetworkPrinter.query.filter(
+                NetworkPrinter.location_id == printer.location_id,
+                NetworkPrinter.id != printer.id,
+                NetworkPrinter.is_default == True
+            ).all()
+            
+            for other_printer in other_default_printers:
+                other_printer.is_default = False
+        
+        db.session.commit()
+        
+        # Verificar conexión con la impresora
+        status = printer.check_status()
+        db.session.commit()  # Guardar el estado
+        
+        log_activity(f'Impresora actualizada: {printer.name}')
+        flash(f'Impresora "{printer.name}" actualizada correctamente. Estado: {"Online" if status else "Offline"}', 'success')
+        return redirect(url_for('tasks.list_printers', location_id=location.id))
+    
+    return render_template('tasks/printer_form.html',
+                          title=f'Editar Impresora: {printer.name}',
+                          form=form,
+                          printer=printer)
+
+@tasks_bp.route('/dashboard/printers/delete/<int:id>', methods=['POST'])
+@login_required
+@manager_required
+def delete_printer(id):
+    """Eliminar una impresora"""
+    printer = NetworkPrinter.query.get_or_404(id)
+    location = printer.location
+    
+    # Verificar permisos (admin o gerente de la empresa)
+    if not current_user.is_admin() and (not current_user.is_gerente() or location.company_id not in [c.id for c in current_user.companies]):
+        flash('No tienes permiso para eliminar esta impresora.', 'danger')
+        return redirect(url_for('tasks.list_printers'))
+    
+    name = printer.name
+    location_id = location.id
+    db.session.delete(printer)
+    db.session.commit()
+    
+    log_activity(f'Impresora eliminada: {name}')
+    flash(f'Impresora "{name}" eliminada correctamente.', 'success')
+    return redirect(url_for('tasks.list_printers', location_id=location_id))
+
+@tasks_bp.route('/dashboard/printers/test/<int:id>', methods=['POST'])
+@login_required
+@manager_required
+def test_printer(id):
+    """Probar conexión con una impresora"""
+    printer = NetworkPrinter.query.get_or_404(id)
+    
+    # Verificar permisos (admin o gerente de la empresa)
+    if not current_user.is_admin() and (not current_user.is_gerente() or printer.location.company_id not in [c.id for c in current_user.companies]):
+        flash('No tienes permiso para probar esta impresora.', 'danger')
+        return redirect(url_for('tasks.list_printers'))
+    
+    status = printer.check_status()
+    db.session.commit()  # Guardar el estado
+    
+    if status:
+        flash(f'La impresora "{printer.name}" está en línea.', 'success')
+    else:
+        flash(f'No se pudo conectar con la impresora "{printer.name}". Por favor, verifica la dirección IP y el puerto.', 'danger')
+    
+    return redirect(url_for('tasks.list_printers', location_id=printer.location_id))
+
+@tasks_bp.route('/dashboard/printers/set-default/<int:id>', methods=['POST'])
+@login_required
+@manager_required
+def set_default_printer(id):
+    """Establecer una impresora como predeterminada"""
+    printer = NetworkPrinter.query.get_or_404(id)
+    location = printer.location
+    
+    # Verificar permisos (admin o gerente de la empresa)
+    if not current_user.is_admin() and (not current_user.is_gerente() or location.company_id not in [c.id for c in current_user.companies]):
+        flash('No tienes permiso para modificar esta impresora.', 'danger')
+        return redirect(url_for('tasks.list_printers'))
+    
+    # Desmarcar todas las impresoras predeterminadas para esta ubicación
+    other_default_printers = NetworkPrinter.query.filter(
+        NetworkPrinter.location_id == printer.location_id,
+        NetworkPrinter.is_default == True
+    ).all()
+    
+    for other_printer in other_default_printers:
+        other_printer.is_default = False
+    
+    # Marcar esta impresora como predeterminada
+    printer.is_default = True
+    db.session.commit()
+    
+    log_activity(f'Impresora "{printer.name}" establecida como predeterminada')
+    flash(f'Impresora "{printer.name}" establecida como predeterminada.', 'success')
+    return redirect(url_for('tasks.list_printers', location_id=printer.location_id))
+
+# API para obtener impresoras (usado por el script brother-printer.js)
+@tasks_bp.route('/api/printers/<int:location_id>')
+@login_required
+def api_get_printers(location_id):
+    """API para obtener la lista de impresoras disponibles para una ubicación"""
+    # Verificar acceso
+    if not current_user.is_admin() and current_user.is_gerente():
+        company_ids = [c.id for c in current_user.companies]
+        location = Location.query.get_or_404(location_id)
+        
+        if location.company_id not in company_ids:
+            return jsonify({'error': 'Acceso denegado'}), 403
+    
+    # Obtener impresoras activas
+    printers = NetworkPrinter.query.filter_by(location_id=location_id, is_active=True).all()
+    
+    # Formatear respuesta
+    printer_list = []
+    for printer in printers:
+        printer_list.append({
+            'id': printer.id,
+            'name': printer.name,
+            'ip_address': printer.ip_address,
+            'port': printer.port,
+            'model': printer.model,
+            'api_path': printer.api_path,
+            'requires_auth': printer.requires_auth,
+            'username': printer.username if printer.requires_auth else None,
+            'password': printer.password if printer.requires_auth else None,
+            'is_default': printer.is_default,
+            'last_status': printer.last_status,
+            'last_status_check': printer.last_status_check.isoformat() if printer.last_status_check else None
+        })
+    
+    return jsonify({
+        'location_id': location_id,
+        'printers': printer_list
+    })
 
 # Gestor de etiquetas en la página de tareas
 @tasks_bp.route('/dashboard/labels')

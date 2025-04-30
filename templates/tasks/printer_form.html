@@ -1,0 +1,186 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-earth-dark text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-print me-2"></i>{{ title }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="" novalidate>
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.name.label(class="form-label") }}
+                                    {{ form.name(class="form-control") }}
+                                    {% if form.name.errors %}
+                                        {% for error in form.name.errors %}
+                                            <span class="text-danger">{{ error }}</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.ip_address.label(class="form-label") }}
+                                    {{ form.ip_address(class="form-control", placeholder="192.168.1.100") }}
+                                    {% if form.ip_address.errors %}
+                                        {% for error in form.ip_address.errors %}
+                                            <span class="text-danger">{{ error }}</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.model.label(class="form-label") }}
+                                    {{ form.model(class="form-control", placeholder="QL-820NWB") }}
+                                    {% if form.model.errors %}
+                                        {% for error in form.model.errors %}
+                                            <span class="text-danger">{{ error }}</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if form.model.description %}
+                                        <small class="form-text text-muted">{{ form.model.description }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.port.label(class="form-label") }}
+                                    {{ form.port(class="form-control") }}
+                                    {% if form.port.errors %}
+                                        {% for error in form.port.errors %}
+                                            <span class="text-danger">{{ error }}</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    {{ form.location_id.label(class="form-label") }}
+                                    {{ form.location_id(class="form-select") }}
+                                    {% if form.location_id.errors %}
+                                        {% for error in form.location_id.errors %}
+                                            <span class="text-danger">{{ error }}</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.api_path.label(class="form-label") }}
+                                    {{ form.api_path(class="form-control") }}
+                                    {% if form.api_path.errors %}
+                                        {% for error in form.api_path.errors %}
+                                            <span class="text-danger">{{ error }}</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if form.api_path.description %}
+                                        <small class="form-text text-muted">{{ form.api_path.description }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check mt-4">
+                                    {{ form.is_default(class="form-check-input") }}
+                                    {{ form.is_default.label(class="form-check-label") }}
+                                    {% if form.is_default.errors %}
+                                        {% for error in form.is_default.errors %}
+                                            <span class="text-danger">{{ error }}</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-3">
+                            <div class="card-header bg-light">
+                                <div class="form-check">
+                                    {{ form.requires_auth(class="form-check-input", id="requiresAuth") }}
+                                    {{ form.requires_auth.label(class="form-check-label") }}
+                                    {% if form.requires_auth.errors %}
+                                        {% for error in form.requires_auth.errors %}
+                                            <span class="text-danger">{{ error }}</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="card-body" id="authSection">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            {{ form.username.label(class="form-label") }}
+                                            {{ form.username(class="form-control") }}
+                                            {% if form.username.errors %}
+                                                {% for error in form.username.errors %}
+                                                    <span class="text-danger">{{ error }}</span>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            {{ form.password.label(class="form-label") }}
+                                            {{ form.password(class="form-control") }}
+                                            {% if form.password.errors %}
+                                                {% for error in form.password.errors %}
+                                                    <span class="text-danger">{{ error }}</span>
+                                                {% endfor %}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('tasks.list_printers', location_id=location.id) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>Volver
+                            </a>
+                            {{ form.submit(class="btn btn-olive") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const requiresAuthCheckbox = document.getElementById('requiresAuth');
+        const authSection = document.getElementById('authSection');
+        
+        function toggleAuthSection() {
+            if (requiresAuthCheckbox.checked) {
+                authSection.style.display = 'block';
+            } else {
+                authSection.style.display = 'none';
+            }
+        }
+        
+        // Inicialización
+        toggleAuthSection();
+        
+        // Evento de cambio
+        requiresAuthCheckbox.addEventListener('change', toggleAuthSection);
+    });
+</script>
+{% endblock %}

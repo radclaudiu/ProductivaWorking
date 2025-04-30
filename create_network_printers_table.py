@@ -18,6 +18,7 @@ def get_db_connection():
         sys.exit(1)
     
     try:
+        from sqlalchemy import text
         engine = create_engine(db_url)
         conn = engine.connect()
         return conn, engine
@@ -55,7 +56,7 @@ def create_network_printers_table(conn):
             last_status VARCHAR(50),
             last_status_check TIMESTAMP,
             location_id INTEGER REFERENCES locations(id) ON DELETE CASCADE
-        )
+        );
         """)
         print("Tabla network_printers creada correctamente.")
     except SQLAlchemyError as e:

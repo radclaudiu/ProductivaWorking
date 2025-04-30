@@ -296,16 +296,48 @@
 
 {% block scripts %}
 <script>
-    // Mostrar/ocultar campos de autenticación
+    // Asegurarse de que Bootstrap modal esté disponible 
     document.addEventListener('DOMContentLoaded', function() {
+        console.log("Inicializando componentes de la página de etiquetas...");
+        
+        // Comprobar disponibilidad de Bootstrap modal
+        if (typeof bootstrap !== 'undefined') {
+            console.log("Bootstrap cargado correctamente");
+            
+            // Asegurarse de que podemos abrir modales
+            const modalTest = document.getElementById('printerSettingsModal');
+            if (modalTest) {
+                console.log("Modal encontrado en el DOM: #printerSettingsModal");
+                
+                // Inicializar explícitamente el modal
+                const printerModal = new bootstrap.Modal(modalTest);
+                
+                // Añadir evento al botón para abrir el modal manualmente
+                const configBtn = document.querySelector('[data-bs-target="#printerSettingsModal"]');
+                if (configBtn) {
+                    console.log("Botón configurar impresora encontrado");
+                    configBtn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        printerModal.show();
+                    });
+                }
+            } else {
+                console.error("No se encontró el modal en el DOM");
+            }
+        } else {
+            console.error("Bootstrap no está disponible");
+        }
+        
         // Referencia al checkbox de autenticación
         const requiresAuthCheckbox = document.getElementById('requiresAuth');
         const authFields = document.getElementById('authFields');
         
         // Mostrar/ocultar campos de autenticación cuando se marca/desmarca el checkbox
-        requiresAuthCheckbox.addEventListener('change', function() {
-            authFields.style.display = this.checked ? 'block' : 'none';
-        });
+        if (requiresAuthCheckbox) {
+            requiresAuthCheckbox.addEventListener('change', function() {
+                authFields.style.display = this.checked ? 'block' : 'none';
+            });
+        }
         
         // Referencias a botones
         const checkPrinterBtn = document.getElementById('checkPrinterBtn');
@@ -319,19 +351,25 @@
         setTimeout(checkPrinterStatus, 1000);
         
         // Evento para comprobar el estado de la impresora
-        checkPrinterBtn.addEventListener('click', function() {
-            checkPrinterStatus();
-        });
+        if (checkPrinterBtn) {
+            checkPrinterBtn.addEventListener('click', function() {
+                checkPrinterStatus();
+            });
+        }
         
         // Evento para probar la conexión con la impresora
-        testPrinterBtn.addEventListener('click', function() {
-            testPrinterConnection();
-        });
+        if (testPrinterBtn) {
+            testPrinterBtn.addEventListener('click', function() {
+                testPrinterConnection();
+            });
+        }
         
         // Evento para guardar la configuración de la impresora
-        savePrinterBtn.addEventListener('click', function() {
-            savePrinterConfig();
-        });
+        if (savePrinterBtn) {
+            savePrinterBtn.addEventListener('click', function() {
+                savePrinterConfig();
+            });
+        }
     });
     
     // Función para cargar la configuración de impresora

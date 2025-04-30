@@ -1,6 +1,109 @@
 {% extends "tasks/portal_layout.html" %}
 
 {% block content %}
+<!-- Modal de Configuración de Impresora - Versión personalizada, sin clases Bootstrap modal -->
+<div id="printerSettingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1050;">
+    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1040;"></div>
+    <div style="position: relative; width: 80%; max-width: 800px; margin: 30px auto; z-index: 1050;">
+        <div class="card">
+            <div class="card-header bg-earth-dark text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-printer-fill me-2"></i>Configuración de Impresora</h5>
+                <button type="button" class="btn-close btn-close-white" onclick="closeModal()" aria-label="Close"></button>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle-fill me-2"></i>Configure su impresora Brother conectada a la red WiFi para imprimir etiquetas.
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Formulario de Configuración -->
+                <form id="printerSettingsForm">
+                    <div class="mb-3">
+                        <label for="printerName" class="form-label">Nombre de la impresora</label>
+                        <input type="text" class="form-control" id="printerName" name="name" placeholder="Ej: Impresora Brother QL-820NWB" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label for="printerIp" class="form-label">Dirección IP</label>
+                            <input type="text" class="form-control" id="printerIp" name="ip_address" placeholder="Ej: 192.168.1.100" required 
+                                   pattern="^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$">
+                            <div class="form-text">Dirección IP de la impresora en su red local</div>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="printerPort" class="form-label">Puerto</label>
+                            <input type="number" class="form-control" id="printerPort" name="port" placeholder="80" min="1" max="65535" value="80" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="printerModel" class="form-label">Modelo de impresora</label>
+                        <input type="text" class="form-control" id="printerModel" name="model" placeholder="Ej: QL-820NWB">
+                        <div class="form-text">Opcional: Ayuda a identificar el tipo de impresora</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="apiPath" class="form-label">Ruta de la API</label>
+                        <input type="text" class="form-control" id="apiPath" name="api_path" value="/brother_d/printer/print">
+                        <div class="form-text">Normalmente no es necesario cambiar este valor</div>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="requiresAuth" name="requires_auth">
+                        <label class="form-check-label" for="requiresAuth">La impresora requiere autenticación</label>
+                    </div>
+                    
+                    <div id="authFields" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="printerUsername" class="form-label">Usuario</label>
+                                <input type="text" class="form-control" id="printerUsername" name="username">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="printerPassword" class="form-label">Contraseña</label>
+                                <input type="password" class="form-control" id="printerPassword" name="password">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="isDefault" name="is_default" checked>
+                        <label class="form-check-label" for="isDefault">Establecer como impresora predeterminada</label>
+                    </div>
+                </form>
+                
+                <!-- Estado de la configuración -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6><i class="bi bi-info-circle me-2"></i>Estado actual</h6>
+                                <div id="printerConfigStatus">
+                                    <div class="alert alert-secondary">
+                                        No hay impresora configurada. Complete el formulario y haga clic en Guardar.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+                <button type="button" class="btn btn-info" id="testPrinterBtn">
+                    <i class="bi bi-arrow-clockwise me-1"></i>Probar Conexión
+                </button>
+                <button type="button" class="btn btn-olive" id="savePrinterBtn">
+                    <i class="bi bi-save me-1"></i>Guardar Configuración
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="container-fluid py-4">
     <div class="row mb-4">
         <div class="col-12">
@@ -143,108 +246,7 @@
 </div>
 {% endblock %}
 
-<!-- Modal de Configuración de Impresora - Versión personalizada, sin clases Bootstrap modal -->
-<div id="printerSettingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1050;">
-    <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1040;"></div>
-    <div style="position: relative; width: 80%; max-width: 800px; margin: 30px auto; z-index: 1050;">
-        <div class="card">
-            <div class="card-header bg-earth-dark text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-printer-fill me-2"></i>Configuración de Impresora</h5>
-                <button type="button" class="btn-close btn-close-white" onclick="closeModal()" aria-label="Close"></button>
-            </div>
-            <div class="card-body">
-                <div class="row mb-3">
-                    <div class="col-12">
-                        <div class="alert alert-info">
-                            <i class="bi bi-info-circle-fill me-2"></i>Configure su impresora Brother conectada a la red WiFi para imprimir etiquetas.
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Formulario de Configuración -->
-                <form id="printerSettingsForm">
-                    <div class="mb-3">
-                        <label for="printerName" class="form-label">Nombre de la impresora</label>
-                        <input type="text" class="form-control" id="printerName" name="name" placeholder="Ej: Impresora Brother QL-820NWB" required>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-8 mb-3">
-                            <label for="printerIp" class="form-label">Dirección IP</label>
-                            <input type="text" class="form-control" id="printerIp" name="ip_address" placeholder="Ej: 192.168.1.100" required 
-                                   pattern="^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$">
-                            <div class="form-text">Dirección IP de la impresora en su red local</div>
-                        </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="printerPort" class="form-label">Puerto</label>
-                            <input type="number" class="form-control" id="printerPort" name="port" placeholder="80" min="1" max="65535" value="80" required>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="printerModel" class="form-label">Modelo de impresora</label>
-                        <input type="text" class="form-control" id="printerModel" name="model" placeholder="Ej: QL-820NWB">
-                        <div class="form-text">Opcional: Ayuda a identificar el tipo de impresora</div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="apiPath" class="form-label">Ruta de la API</label>
-                        <input type="text" class="form-control" id="apiPath" name="api_path" value="/brother_d/printer/print">
-                        <div class="form-text">Normalmente no es necesario cambiar este valor</div>
-                    </div>
-                    
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="requiresAuth" name="requires_auth">
-                        <label class="form-check-label" for="requiresAuth">La impresora requiere autenticación</label>
-                    </div>
-                    
-                    <div id="authFields" style="display: none;">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="printerUsername" class="form-label">Usuario</label>
-                                <input type="text" class="form-control" id="printerUsername" name="username">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="printerPassword" class="form-label">Contraseña</label>
-                                <input type="password" class="form-control" id="printerPassword" name="password">
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="isDefault" name="is_default" checked>
-                        <label class="form-check-label" for="isDefault">Establecer como impresora predeterminada</label>
-                    </div>
-                </form>
-                
-                <!-- Estado de la configuración -->
-                <div class="row mt-4">
-                    <div class="col-12">
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <h6><i class="bi bi-info-circle me-2"></i>Estado actual</h6>
-                                <div id="printerConfigStatus">
-                                    <div class="alert alert-secondary">
-                                        No hay impresora configurada. Complete el formulario y haga clic en Guardar.
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-                <button type="button" class="btn btn-info" id="testPrinterBtn">
-                    <i class="bi bi-arrow-clockwise me-1"></i>Probar Conexión
-                </button>
-                <button type="button" class="btn btn-olive" id="savePrinterBtn">
-                    <i class="bi bi-save me-1"></i>Guardar Configuración
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+
 
 {% block styles %}
 <style>

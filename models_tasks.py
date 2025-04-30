@@ -4,6 +4,7 @@ import enum
 from sqlalchemy import Enum
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import User, Company
+import socket
 
 class TaskPriority(enum.Enum):
     BAJA = "baja"

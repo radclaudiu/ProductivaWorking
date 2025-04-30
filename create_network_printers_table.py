@@ -38,7 +38,8 @@ def create_network_printers_table(conn):
         return
     
     try:
-        conn.execute("""
+        from sqlalchemy import text
+        create_table_sql = text("""
         CREATE TABLE network_printers (
             id SERIAL PRIMARY KEY,
             name VARCHAR(100) NOT NULL,
@@ -58,6 +59,7 @@ def create_network_printers_table(conn):
             location_id INTEGER REFERENCES locations(id) ON DELETE CASCADE
         );
         """)
+        conn.execute(create_table_sql)
         print("Tabla network_printers creada correctamente.")
     except SQLAlchemyError as e:
         print(f"Error al crear la tabla network_printers: {e}")

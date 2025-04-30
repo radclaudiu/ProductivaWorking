@@ -386,7 +386,7 @@
     
     // Función para cargar la configuración de impresora
     function loadPrinterConfig() {
-        fetch('/api/printers/location/{{ location.id }}')
+        fetch('/tasks/api/printers/location/{{ location.id }}')
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Error HTTP: ${response.status}`);
@@ -454,7 +454,7 @@
         statusBadge.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Comprobando...';
         
         // Capturar errores en la respuesta
-        fetch('/api/printers/check/{{ location.id }}')
+        fetch('/tasks/api/printers/check/{{ location.id }}')
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`Error HTTP: ${response.status}`);
@@ -505,7 +505,7 @@
             return;
         }
         
-        fetch('/api/printers/test-connection', {
+        fetch('/tasks/api/printers/test-connection', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -588,7 +588,7 @@
             location_id: {{ location.id }}
         };
         
-        fetch('/api/printers/save', {
+        fetch('/tasks/api/printers/save', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

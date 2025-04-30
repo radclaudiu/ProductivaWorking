@@ -4,6 +4,7 @@ from functools import wraps
 from datetime import datetime, date, timedelta
 import os
 import io
+import socket
 import openpyxl
 from fpdf import FPDF
 from werkzeug.utils import secure_filename
@@ -3082,3 +3083,254 @@ def manage_product_conservations(id):
         conservations=conservations,
         conservation_dict=conservation_dict
     )
+
+# API para gestión de impresoras desde el portal de usuarios
+@tasks_bp.route('/api/printers/location/<int:location_id>')
+def api_get_location_printer(location_id):
+    """API para obtener la impresora predeterminada para una ubicación"""
+    # Verificar si el usuario ha iniciado sesión en el portal de tareas
+    if 'portal_authenticated' not in session or not session['portal_authenticated']:
+        return jsonify({'success': False, 'error': 'unauthorized', 'message': 'No autorizado'}), 403
+    
+    # Verificar si el usuario tiene acceso a esta ubicación
+    if session.get('location_id') != location_id:
+        return jsonify({'success': False, 'error': 'forbidden', 'message': 'Acceso no permitido a esta ubicación'}), 403
+    
+    # Buscar la impresora predeterminada para esta ubicación
+    printer = NetworkPrinter.query.filter_by(
+        location_id=location_id, 
+        is_default=True, 
+        is_active=True
+    ).first()
+    
+    # Si no hay una predeterminada, obtener cualquier impresora activa
+    if not printer:
+        printer = NetworkPrinter.query.filter_by(
+            location_id=location_id,
+            is_active=True
+        ).first()
+    
+    if printer:
+        # No enviamos la contraseña por seguridad
+        return jsonify({
+            'success': True,
+            'printer': {
+                'id': printer.id,
+                'name': printer.name,
+                'ip_address': printer.ip_address,
+                'port': printer.port,
+                'model': printer.model,
+                'api_path': printer.api_path,
+                'requires_auth': printer.requires_auth,
+                'username': printer.username if printer.requires_auth else None,
+                'is_default': printer.is_default,
+                'last_status': printer.last_status,
+                'last_status_check': printer.last_status_check.isoformat() if printer.last_status_check else None
+            }
+        })
+    else:
+        return jsonify({
+            'success': False,
+            'error': 'no_printer',
+            'message': 'No hay impresora configurada para esta ubicación'
+        })
+
+@tasks_bp.route('/api/printers/check/<int:location_id>')
+def api_check_printer_status(location_id):
+    """API para comprobar el estado de la impresora de una ubicación"""
+    # Verificar si el usuario ha iniciado sesión en el portal de tareas
+    if 'portal_authenticated' not in session or not session['portal_authenticated']:
+        return jsonify({'success': False, 'error': 'unauthorized', 'message': 'No autorizado'}), 403
+    
+    # Verificar si el usuario tiene acceso a esta ubicación
+    if session.get('location_id') != location_id:
+        return jsonify({'success': False, 'error': 'forbidden', 'message': 'Acceso no permitido a esta ubicación'}), 403
+    
+    # Buscar la impresora predeterminada para esta ubicación
+    printer = NetworkPrinter.query.filter_by(
+        location_id=location_id, 
+        is_default=True, 
+        is_active=True
+    ).first()
+    
+    # Si no hay una predeterminada, obtener cualquier impresora activa
+    if not printer:
+        printer = NetworkPrinter.query.filter_by(
+            location_id=location_id,
+            is_active=True
+        ).first()
+    
+    if not printer:
+        return jsonify({
+            'success': False,
+            'error': 'no_printer',
+            'message': 'No hay impresora configurada para esta ubicación'
+        })
+    
+    # Comprobar el estado de la impresora
+    is_online = printer.check_status()
+    
+    # Actualizar la base de datos con el nuevo estado
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'online': is_online,
+        'printer_id': printer.id,
+        'printer_name': printer.name,
+        'status': printer.last_status,
+        'last_check': printer.last_status_check.isoformat() if printer.last_status_check else None
+    })
+
+@tasks_bp.route('/api/printers/test-connection', methods=['POST'])
+def api_test_printer_connection():
+    """API para probar la conexión con una impresora sin guardar la configuración"""
+    # Verificar si el usuario ha iniciado sesión en el portal de tareas
+    if 'portal_authenticated' not in session or not session['portal_authenticated']:
+        return jsonify({'success': False, 'error': 'unauthorized', 'message': 'No autorizado'}), 403
+    
+    # Obtener datos del formulario
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'error': 'invalid_request', 'message': 'Datos no válidos'}), 400
+    
+    ip_address = data.get('ip_address')
+    port = data.get('port', 80)
+    
+    if not ip_address:
+        return jsonify({'success': False, 'error': 'missing_data', 'message': 'Dirección IP requerida'}), 400
+    
+    try:
+        # Intentar conectarse al puerto de la impresora
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(2.0)  # Timeout de 2 segundos
+        result = s.connect_ex((ip_address, port))
+        s.close()
+        
+        if result == 0:
+            return jsonify({
+                'success': True,
+                'message': 'Conexión exitosa'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'connection_failed',
+                'message': f'No se pudo conectar a la impresora en {ip_address}:{port}'
+            })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': 'test_error',
+            'message': f'Error al probar la conexión: {str(e)}'
+        })
+
+@tasks_bp.route('/api/printers/save', methods=['POST'])
+def api_save_printer_config():
+    """API para guardar la configuración de una impresora"""
+    # Verificar si el usuario ha iniciado sesión en el portal de tareas
+    if 'portal_authenticated' not in session or not session['portal_authenticated']:
+        return jsonify({'success': False, 'error': 'unauthorized', 'message': 'No autorizado'}), 403
+    
+    # Obtener datos del formulario
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'error': 'invalid_request', 'message': 'Datos no válidos'}), 400
+    
+    # Obtener datos necesarios
+    location_id = data.get('location_id')
+    if not location_id or session.get('location_id') != location_id:
+        return jsonify({'success': False, 'error': 'forbidden', 'message': 'Acceso no permitido a esta ubicación'}), 403
+    
+    name = data.get('name')
+    ip_address = data.get('ip_address')
+    port = data.get('port', 80)
+    model = data.get('model', '')
+    api_path = data.get('api_path', '/brother_d/printer/print')
+    requires_auth = data.get('requires_auth', False)
+    username = data.get('username', '')
+    password = data.get('password', '')
+    is_default = data.get('is_default', True)
+    
+    if not name or not ip_address:
+        return jsonify({'success': False, 'error': 'missing_data', 'message': 'Nombre e IP son requeridos'}), 400
+    
+    try:
+        # Buscar si ya existe una impresora para esta ubicación
+        printer = NetworkPrinter.query.filter_by(
+            location_id=location_id,
+            is_default=True,
+            is_active=True
+        ).first()
+        
+        # Si es una impresora nueva
+        if not printer:
+            printer = NetworkPrinter(
+                name=name,
+                ip_address=ip_address,
+                port=port,
+                model=model,
+                api_path=api_path,
+                requires_auth=requires_auth,
+                username=username if requires_auth else '',
+                password=password if requires_auth and password else '',
+                is_default=is_default,
+                is_active=True,
+                location_id=location_id
+            )
+            db.session.add(printer)
+        else:
+            # Actualizar la impresora existente
+            printer.name = name
+            printer.ip_address = ip_address
+            printer.port = port
+            printer.model = model
+            printer.api_path = api_path
+            printer.requires_auth = requires_auth
+            printer.username = username if requires_auth else ''
+            # Solo actualizar la contraseña si se proporciona una nueva
+            if requires_auth and password:
+                printer.password = password
+            printer.is_default = is_default
+        
+        # Si esta impresora es la predeterminada, desmarcar cualquier otra predeterminada
+        if is_default:
+            other_printers = NetworkPrinter.query.filter(
+                NetworkPrinter.location_id == location_id,
+                NetworkPrinter.is_default == True,
+                NetworkPrinter.id != (printer.id if printer.id else -1)
+            ).all()
+            
+            for other in other_printers:
+                other.is_default = False
+        
+        # Verificar la conexión con la impresora
+        printer.check_status()
+        
+        # Guardar cambios
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': 'Configuración guardada correctamente',
+            'printer': {
+                'id': printer.id,
+                'name': printer.name,
+                'ip_address': printer.ip_address,
+                'port': printer.port,
+                'model': printer.model,
+                'api_path': printer.api_path,
+                'requires_auth': printer.requires_auth,
+                'username': printer.username if printer.requires_auth else None,
+                'is_default': printer.is_default,
+                'last_status': printer.last_status,
+                'last_status_check': printer.last_status_check.isoformat() if printer.last_status_check else None
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': 'save_error',
+            'message': f'Error al guardar la configuración: {str(e)}'
+        })

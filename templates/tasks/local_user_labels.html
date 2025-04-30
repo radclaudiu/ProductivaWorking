@@ -231,9 +231,10 @@
                         </div>
                     </div>
                 </div>
+                </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
                 <button type="button" class="btn btn-info" id="testPrinterBtn">
                     <i class="bi bi-arrow-clockwise me-1"></i>Probar Conexión
                 </button>
@@ -514,6 +515,9 @@
                 
                 // Actualizar el estado en la interfaz principal
                 checkPrinterStatus();
+                
+                // Cerrar el modal
+                closeModal();
             } else {
                 alert('Error al guardar la configuración: ' + data.message);
             }
@@ -522,6 +526,17 @@
             console.error('Error al guardar la configuración:', error);
             alert('Error de sistema al guardar la configuración.');
         });
+    }
+    
+    // Función para cerrar el modal
+    function closeModal() {
+        const modalElement = document.getElementById('printerSettingsModal');
+        if (modalElement) {
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) {
+                modal.hide();
+            }
+        }
     }
     
     // Función para actualizar el estado de la configuración

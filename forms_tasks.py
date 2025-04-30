@@ -1,7 +1,7 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed, FileRequired
 from wtforms import StringField, TextAreaField, SelectField, DateField, TimeField, IntegerField, PasswordField, BooleanField, SubmitField, SelectMultipleField, widgets
-from wtforms.validators import DataRequired, Length, Optional, NumberRange, ValidationError, EqualTo
+from wtforms.validators import DataRequired, Length, Optional, NumberRange, ValidationError, EqualTo, IPAddress
 from datetime import date, datetime
 from models_tasks import TaskPriority, TaskFrequency, WeekDay
 
@@ -221,6 +221,37 @@ class GenerateLabelForm(FlaskForm):
         from models_tasks import ConservationType
         self.conservation_type.choices = [(ct.value, ct.name.capitalize()) for ct in ConservationType]
         
+class NetworkPrinterForm(FlaskForm):
+    """Formulario para gestionar impresoras en red para etiquetas"""
+    name = StringField('Nombre de la impresora', validators=[DataRequired(), Length(max=100)])
+    ip_address = StringField('Dirección IP', validators=[DataRequired(), IPAddress(message="Por favor ingrese una dirección IP válida")])
+    model = StringField('Modelo de impresora', validators=[Optional(), Length(max=100)], 
+                      description="Ejemplo: QL-800, QL-820NWB, etc.")
+    port = IntegerField('Puerto', validators=[Optional(), NumberRange(min=1, max=65535)], default=80)
+    api_path = StringField('Ruta de la API', validators=[Optional()], default="/brother_d/printer/print",
+                         description="La ruta de la API para enviar trabajos de impresión")
+    requires_auth = BooleanField('Requiere autenticación', default=False)
+    username = StringField('Usuario', validators=[Optional(), Length(max=100)])
+    password = PasswordField('Contraseña', validators=[Optional(), Length(max=100)])
+    is_default = BooleanField('Impresora predeterminada', default=False)
+    location_id = SelectField('Local', coerce=int, validators=[DataRequired()])
+    submit = SubmitField('Guardar Impresora')
+    
+    def validate(self):
+        if not super().validate():
+            return False
+        
+        if self.requires_auth.data:
+            if not self.username.data:
+                self.username.errors.append('El usuario es requerido cuando la impresora requiere autenticación')
+                return False
+            if not self.password.data:
+                self.password.errors.append('La contraseña es requerida cuando la impresora requiere autenticación')
+                return False
+        
+        return True
+
+
 class LabelEditorForm(FlaskForm):
     """Formulario para el editor de etiquetas personalizado"""
     titulo_x = IntegerField('Posición X del Título', validators=[NumberRange(min=0, max=100)], default=50)

@@ -526,6 +526,76 @@ class ProductConservation(db.Model):
         # Retornar el datetime completo con hora exacta
         return from_date + timedelta(hours=self.hours_valid)
         
+class NetworkPrinter(db.Model):
+    """Modelo para almacenar las impresoras de red para imprimir etiquetas"""
+    __tablename__ = 'network_printers'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False)
+    ip_address = db.Column(db.String(50), nullable=False)
+    model = db.Column(db.String(100))
+    api_path = db.Column(db.String(255), default='/brother_d/printer/print')
+    port = db.Column(db.Integer, default=80)
+    requires_auth = db.Column(db.Boolean, default=False)
+    username = db.Column(db.String(100))
+    password = db.Column(db.String(100))
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_default = db.Column(db.Boolean, default=False)
+    is_active = db.Column(db.Boolean, default=True)
+    last_status = db.Column(db.String(50))
+    last_status_check = db.Column(db.DateTime)
+    
+    # Relaciones
+    location_id = db.Column(db.Integer, db.ForeignKey('locations.id'))
+    location = db.relationship('Location', backref=db.backref('printers', lazy=True))
+    
+    def __repr__(self):
+        return f'<NetworkPrinter {self.name} - {self.ip_address}>'
+    
+    def get_full_url(self):
+        """Retorna la URL completa de la API de la impresora"""
+        return f"http://{self.ip_address}:{self.port}{self.api_path}"
+    
+    def check_status(self):
+        """Verifica si la impresora está en línea"""
+        try:
+            # Intenta conectarse al puerto de la impresora
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(2.0)  # Timeout de 2 segundos
+            result = s.connect_ex((self.ip_address, self.port))
+            s.close()
+            
+            if result == 0:
+                self.last_status = "online"
+                self.last_status_check = datetime.utcnow()
+                return True
+            else:
+                self.last_status = "offline"
+                self.last_status_check = datetime.utcnow()
+                return False
+        except Exception as e:
+            self.last_status = f"error: {str(e)}"
+            self.last_status_check = datetime.utcnow()
+            return False
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'ip_address': self.ip_address,
+            'model': self.model,
+            'port': self.port,
+            'requires_auth': self.requires_auth,
+            'is_default': self.is_default,
+            'is_active': self.is_active,
+            'last_status': self.last_status,
+            'last_status_check': self.last_status_check.isoformat() if self.last_status_check else None,
+            'location_id': self.location_id,
+            'location_name': self.location.name if self.location else None
+        }
+
+
 class LabelTemplate(db.Model):
     """Modelo para almacenar las plantillas de etiquetas personalizadas"""
     __tablename__ = 'label_templates'

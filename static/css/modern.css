@@ -57,10 +57,22 @@ body {
   background: linear-gradient(135deg, var(--chocolate), var(--terracota)) !important;
   box-shadow: 0 2px 10px rgba(92, 64, 51, 0.15);
   border-bottom: none;
-  padding: 0.25rem 0.5rem; /* Reducido aún más el padding vertical y horizontal */
+  padding: 0.15rem 0.5rem; /* Reducido aún más el padding vertical */
   min-height: auto; /* Eliminar la altura mínima */
   height: auto; /* Permitir que se ajuste al contenido */
   border-radius: 0 0 16px 16px;
+}
+
+/* Ajustes específicos para pantallas grandes */
+@media (min-width: 992px) {
+  .navbar {
+    max-height: 45px; /* Altura máxima fija para la barra en pantallas grandes */
+    overflow: hidden; /* Evitar que los elementos se salgan */
+  }
+  .navbar-nav {
+    display: flex;
+    align-items: center; /* Centrar verticalmente los elementos */
+  }
 }
 
 .navbar-brand {

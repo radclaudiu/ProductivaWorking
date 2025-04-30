@@ -382,8 +382,8 @@ def generate_simple_pdf_report(records, start_date, end_date, include_signature=
         pdf.set_font('Arial', 'B', 10)
         
         # Cabecera de tabla
-        col_widths = [35, 30, 30, 40]
-        header = ['Fecha', 'Entrada', 'Salida', 'Firma']
+        col_widths = [35, 25, 25, 30, 40]
+        header = ['Fecha', 'Entrada', 'Salida', 'Duración', 'Firma']
         table_width = sum(col_widths)
         
         # Calcular posición X para centrar la tabla
@@ -669,8 +669,8 @@ def generate_pdf_report(records, start_date, end_date, include_signature=True):
         pdf.set_font('Arial', 'B', 10)
         
         # Cabecera de tabla
-        col_widths = [35, 30, 30, 30, 40]
-        header = ['Fecha', 'Entrada', 'Salida', 'Horas', 'Firma']
+        col_widths = [35, 25, 25, 30, 40]
+        header = ['Fecha', 'Entrada', 'Salida', 'Duración', 'Firma']
         table_width = sum(col_widths)
         
         # Calcular posición X para centrar la tabla
@@ -775,7 +775,7 @@ def generate_pdf_report(records, start_date, end_date, include_signature=True):
                 else:
                     pdf.cell(col_widths[2], 10, '-', 1, 0, 'C', True)
                 
-                # Horas trabajadas
+                # Horas trabajadas (duración)
                 duration = record.duration()
                 hours_str = format_hours_minutes(duration)
                 pdf.cell(col_widths[3], 10, hours_str, 1, 0, 'C', True)

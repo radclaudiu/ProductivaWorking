@@ -1,6 +1,7 @@
 from datetime import datetime
-from flask import session
+from flask import session, current_app
 from app import db
+from models import Employee
 from models_tasks import LocalUser, Location
 import random
 import string
@@ -120,3 +121,132 @@ def regenerate_portal_password(location_id, only_return=False):
             db.session.rollback()
         print(f"Error al manipular contraseña: {str(e)}")
         return None
+        
+def count_available_employees(location_id):
+    """
+    Cuenta cuántos empleados de la empresa asociada a la ubicación están
+    disponibles para ser sincronizados (no tienen un usuario local asociado).
+    
+    Args:
+        location_id: ID de la ubicación
+        
+    Returns:
+        Número de empleados disponibles para sincronización
+    """
+    try:
+        # Obtenemos la ubicación para verificar su empresa
+        location = Location.query.get(location_id)
+        if not location:
+            return 0
+            
+        # Obtenemos IDs de los empleados que ya están importados como usuarios locales
+        imported_employee_ids = db.session.query(LocalUser.employee_id).filter(
+            LocalUser.location_id == location_id,
+            LocalUser.employee_id.isnot(None)
+        ).all()
+        
+        # Convertir lista de tuplas a lista simple
+        imported_ids = [item[0] for item in imported_employee_ids if item[0] is not None]
+        
+        # Consultar empleados activos de la empresa que no estén en la lista de importados
+        company_id = location.company_id
+        query = Employee.query.filter(
+            Employee.company_id == company_id,
+            Employee.is_active == True,
+            ~Employee.id.in_(imported_ids) if imported_ids else True
+        )
+        
+        # Contar empleados disponibles
+        available_count = query.count()
+        return available_count
+        
+    except Exception as e:
+        current_app.logger.error(f"Error al contar empleados disponibles: {str(e)}")
+        return 0
+        
+def sync_employees_to_local_users(location_id):
+    """
+    Sincroniza empleados de la empresa como usuarios locales.
+    
+    Args:
+        location_id: ID de la ubicación
+        
+    Returns:
+        Tupla con (total_empleados, creados, actualizados)
+    """
+    try:
+        # Obtenemos la ubicación para verificar su empresa
+        location = Location.query.get(location_id)
+        if not location:
+            raise ValueError(f"Ubicación no encontrada: {location_id}")
+        
+        company_id = location.company_id
+        
+        # Obtener IDs de empleados ya importados
+        imported_employees = LocalUser.query.filter(
+            LocalUser.location_id == location_id,
+            LocalUser.employee_id.isnot(None)
+        ).all()
+        
+        imported_ids = {user.employee_id: user for user in imported_employees if user.employee_id is not None}
+        
+        # Consultar todos los empleados activos de la empresa
+        employees = Employee.query.filter_by(
+            company_id=company_id,
+            is_active=True
+        ).all()
+        
+        if not employees:
+            return 0, 0, 0
+            
+        total_created = 0
+        total_updated = 0
+        
+        for employee in employees:
+            # Si el empleado ya tiene un usuario local, actualizamos sus datos
+            if employee.id in imported_ids:
+                local_user = imported_ids[employee.id]
+                # Actualizamos los datos básicos
+                local_user.name = employee.first_name
+                local_user.last_name = employee.last_name
+                # La foto la dejamos como está en LocalUser
+                # El PIN lo dejamos como está
+                local_user.updated_at = datetime.utcnow()
+                total_updated += 1
+            else:
+                # Crear nuevo usuario local vinculado al empleado
+                username = f"{employee.first_name.lower()}_{employee.last_name.lower()}".replace(" ", "_")
+                # Generar PIN aleatorio de 4 dígitos
+                pin = ''.join(random.choices(string.digits, k=4))
+                
+                local_user = LocalUser(
+                    name=employee.first_name,
+                    last_name=employee.last_name,
+                    username=username,
+                    pin=pin,  # Se establecerá el hash más adelante
+                    is_active=True,
+                    imported=True,
+                    location_id=location_id,
+                    employee_id=employee.id,
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow()
+                )
+                
+                # Establecer el PIN hasheado
+                local_user.set_pin(pin)
+                
+                db.session.add(local_user)
+                total_created += 1
+                
+                # Loggear el PIN generado (solo para desarrollo)
+                current_app.logger.info(f"Usuario {username} creado con PIN: {pin}")
+                
+        # Guardar cambios en la base de datos
+        db.session.commit()
+        
+        return len(employees), total_created, total_updated
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error en sincronización de empleados: {str(e)}")
+        raise

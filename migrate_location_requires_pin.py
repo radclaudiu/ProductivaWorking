@@ -4,7 +4,7 @@ Script para añadir la columna 'requires_pin' a la tabla 'locations'.
 Esta columna permite configurar si se requiere PIN para los empleados en el portal.
 """
 import logging
-from sqlalchemy import Column, Boolean
+from sqlalchemy import Column, Boolean, text
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
 from app import db, create_app
@@ -23,6 +23,7 @@ def add_requires_pin_column():
     app = create_app()
     with app.app_context():
         connection = db.engine.connect()
+        transaction = connection.begin()
         try:
             # Verificar si la columna ya existe
             inspector = db.inspect(db.engine)
@@ -31,18 +32,23 @@ def add_requires_pin_column():
             if 'requires_pin' not in columns:
                 logger.info("Añadiendo columna 'requires_pin' a la tabla 'locations'")
                 
-                # Añadir la columna a través de una sentencia SQL
-                connection.execute('ALTER TABLE locations ADD COLUMN requires_pin BOOLEAN DEFAULT TRUE')
+                # Añadir la columna a través de una sentencia SQL con text()
+                connection.execute(text('ALTER TABLE locations ADD COLUMN requires_pin BOOLEAN DEFAULT TRUE'))
                 
                 # Actualizar todos los registros existentes para establecer requires_pin en True
-                connection.execute('UPDATE locations SET requires_pin = TRUE')
+                connection.execute(text('UPDATE locations SET requires_pin = TRUE'))
+                
+                # Confirmar los cambios
+                transaction.commit()
                 
                 logger.info("Columna 'requires_pin' añadida correctamente")
             else:
                 logger.info("La columna 'requires_pin' ya existe en la tabla 'locations'")
+                transaction.rollback()
                 
         except (OperationalError, ProgrammingError) as e:
             logger.error(f"Error al añadir columna: {str(e)}")
+            transaction.rollback()
             return False
         finally:
             connection.close()

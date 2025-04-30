@@ -93,10 +93,23 @@
                             {% endfor %}
                         </div>
                         
-                        <div class="form-check form-switch mb-4">
+                        <div class="form-check form-switch mb-2">
                             {{ form.is_active(class="form-check-input" + (" is-invalid" if form.is_active.errors else "")) }}
                             {{ form.is_active.label(class="form-check-label") }}
                             {% for error in form.is_active.errors %}
+                            <div class="invalid-feedback">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        <h5 class="mt-4 mb-3 border-bottom pb-2">Configuración del Portal</h5>
+                        
+                        <div class="form-check form-switch mb-3">
+                            {{ form.requires_pin(class="form-check-input" + (" is-invalid" if form.requires_pin.errors else "")) }}
+                            {{ form.requires_pin.label(class="form-check-label") }}
+                            {% if form.requires_pin.description %}
+                            <div class="form-text">{{ form.requires_pin.description }}</div>
+                            {% endif %}
+                            {% for error in form.requires_pin.errors %}
                             <div class="invalid-feedback">{{ error }}</div>
                             {% endfor %}
                         </div>

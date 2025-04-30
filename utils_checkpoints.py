@@ -451,6 +451,16 @@ def generate_simple_pdf_report(records, start_date, end_date, include_signature=
                 pdf.cell(col_widths[2], 10, record.check_out_time.strftime('%H:%M'), 1, 0, 'C', True)
             else:
                 pdf.cell(col_widths[2], 10, '-', 1, 0, 'C', True)
+                
+            # Duración (horas trabajadas)
+            if record.check_out_time:
+                # Calcular duración
+                duration = record.duration()
+                # Formatear las horas usando format_hours_minutes para convertir correctamente
+                hours_str = format_hours_minutes(duration)
+                pdf.cell(col_widths[3], 10, hours_str, 1, 0, 'C', True)
+            else:
+                pdf.cell(col_widths[3], 10, '-', 1, 0, 'C', True)
             
             # Firma si está habilitado
             if include_signature:
@@ -461,7 +471,7 @@ def generate_simple_pdf_report(records, start_date, end_date, include_signature=
                     firma_y = pdf.get_y()
                     
                     # Crear celda para la firma
-                    pdf.cell(col_widths[3], 10, '', 1, 1, 'C', True)
+                    pdf.cell(col_widths[4], 10, '', 1, 1, 'C', True)
                     
                     # Si hay firma digital, intentar dibujarla
                     result = draw_signature(pdf, record.signature_data, firma_x + 5, firma_y + 1, 30, 8)
@@ -470,14 +480,14 @@ def generate_simple_pdf_report(records, start_date, end_date, include_signature=
                         current_y = pdf.get_y()
                         pdf.set_xy(firma_x, firma_y)
                         pdf.set_font('Arial', 'I', 8)
-                        pdf.cell(col_widths[3], 10, 'Error firma', 1, 1, 'C', True)
+                        pdf.cell(col_widths[4], 10, 'Error firma', 1, 1, 'C', True)
                         pdf.set_font('Arial', '', 10)
                 else:
                     # Espacio para firma con texto indicativo
-                    pdf.cell(col_widths[3], 10, 'Sin firma', 1, 1, 'C', True)
+                    pdf.cell(col_widths[4], 10, 'Sin firma', 1, 1, 'C', True)
             else:
                 # Si no se incluye firma, simplemente dejar un espacio o algún texto
-                pdf.cell(col_widths[3], 10, 'No requerido', 1, 1, 'C', True)
+                pdf.cell(col_widths[4], 10, 'No requerido', 1, 1, 'C', True)
             
             row_count += 1
         

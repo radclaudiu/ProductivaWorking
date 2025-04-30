@@ -22,7 +22,7 @@ from forms_tasks import (LocationForm, LocalUserForm, TaskForm, DailyScheduleFor
                         ProductForm, ProductConservationForm, GenerateLabelForm, LabelEditorForm,
                         NetworkPrinterForm)
 from utils import log_activity, can_manage_company, save_file
-from utils_tasks import create_default_local_user, regenerate_portal_password
+from utils_tasks import create_default_local_user, regenerate_portal_password, count_available_employees, sync_employees_to_local_users
 
 # Crear el Blueprint para las tareas
 tasks_bp = Blueprint('tasks', __name__)
@@ -427,65 +427,7 @@ def view_location(id):
                           monthly_counts=monthly_counts,
                           portal_url=portal_url)
 
-# Función para sincronizar/importar empleados como usuarios locales
-def sync_employees_to_local_users(location_id):
-    """
-    Sincroniza los empleados de la empresa como usuarios locales.
-    Los empleados que ya existen como usuarios locales importados se actualizan.
-    Los empleados que no existen como usuarios locales se crean.
-    
-    Args:
-        location_id: ID de la ubicación para la que se importan los empleados
-        
-    Returns:
-        Tuple[int, int, int]: (total_synced, total_created, total_updated)
-    """
-    location = Location.query.get_or_404(location_id)
-    company_id = location.company_id
-    
-    # Obtener todos los empleados activos de la empresa
-    employees = Employee.query.filter_by(company_id=company_id, is_active=True).all()
-    
-    total_created = 0
-    total_updated = 0
-    
-    for employee in employees:
-        # Verificar si ya existe un usuario local importado para este empleado
-        local_user = LocalUser.query.filter_by(employee_id=employee.id, location_id=location_id).first()
-        
-        if local_user:
-            # Actualizar datos del usuario local
-            local_user.name = employee.first_name
-            local_user.last_name = employee.last_name
-            local_user.is_active = employee.is_active
-            total_updated += 1
-        else:
-            # Crear un nuevo usuario local
-            username = f"{employee.first_name.lower()}_{employee.last_name.lower()}_{datetime.now().strftime('%y%m%d%H%M%S')}"
-            
-            # Crear PIN predeterminado (últimos 4 dígitos del DNI o 1234 si no hay DNI)
-            default_pin = "1234"
-            if employee.dni and len(employee.dni) >= 4:
-                default_pin = employee.dni[-4:]
-            
-            local_user = LocalUser(
-                name=employee.first_name,
-                last_name=employee.last_name,
-                username=username,
-                location_id=location_id,
-                is_active=employee.is_active,
-                imported=True,
-                employee_id=employee.id
-            )
-            
-            # Establecer PIN
-            local_user.set_pin(default_pin)
-            
-            db.session.add(local_user)
-            total_created += 1
-    
-    db.session.commit()
-    return len(employees), total_created, total_updated
+# La función sync_employees_to_local_users ha sido movida a utils_tasks.py para mejor organización
 
 # Rutas para gestión de usuarios locales
 @tasks_bp.route('/locations/<int:location_id>/users')
@@ -502,11 +444,9 @@ def list_local_users(location_id):
     
     users = LocalUser.query.filter_by(location_id=location_id).all()
     
-    # Contar empleados disponibles para importar
-    available_employees_count = Employee.query.filter_by(
-        company_id=location.company_id,
-        is_active=True
-    ).count()
+    # Contar empleados disponibles para importar utilizando la función especializada
+    # que excluye los que ya están importados como usuarios locales
+    available_employees_count = count_available_employees(location_id)
     
     # Contar usuarios ya importados
     imported_users_count = LocalUser.query.filter_by(

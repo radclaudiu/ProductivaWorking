@@ -3101,12 +3101,14 @@ def manage_product_conservations(id):
 @tasks_bp.route('/api/printers/location/<int:location_id>')
 def api_get_location_printer(location_id):
     """API para obtener la impresora predeterminada para una ubicación"""
-    # Verificar si el usuario ha iniciado sesión en el portal de tareas
-    if 'portal_authenticated' not in session or not session['portal_authenticated']:
+    # Verificar si hay algún tipo de autenticación (portal o general)
+    if ('portal_authenticated' not in session or not session['portal_authenticated']) and not current_user.is_authenticated:
+        current_app.logger.warning(f"Acceso no autorizado a API de impresora para ubicación {location_id}")
         return jsonify({'success': False, 'error': 'unauthorized', 'message': 'No autorizado'}), 403
     
-    # Verificar si el usuario tiene acceso a esta ubicación
-    if session.get('location_id') != location_id:
+    # Si es usuario autenticado del portal, verificar que tenga acceso a esta ubicación
+    if 'portal_authenticated' in session and session['portal_authenticated'] and session.get('location_id') != location_id:
+        current_app.logger.warning(f"Usuario de portal intenta acceder a ubicación no permitida: {location_id}")
         return jsonify({'success': False, 'error': 'forbidden', 'message': 'Acceso no permitido a esta ubicación'}), 403
     
     # Buscar la impresora predeterminada para esta ubicación
@@ -3151,12 +3153,14 @@ def api_get_location_printer(location_id):
 @tasks_bp.route('/api/printers/check/<int:location_id>')
 def api_check_printer_status(location_id):
     """API para comprobar el estado de la impresora de una ubicación"""
-    # Verificar si el usuario ha iniciado sesión en el portal de tareas
-    if 'portal_authenticated' not in session or not session['portal_authenticated']:
+    # Verificar si hay algún tipo de autenticación (portal o general)
+    if ('portal_authenticated' not in session or not session['portal_authenticated']) and not current_user.is_authenticated:
+        current_app.logger.warning(f"Acceso no autorizado a API de verificación de impresora para ubicación {location_id}")
         return jsonify({'success': False, 'error': 'unauthorized', 'message': 'No autorizado'}), 403
     
-    # Verificar si el usuario tiene acceso a esta ubicación
-    if session.get('location_id') != location_id:
+    # Si es usuario autenticado del portal, verificar que tenga acceso a esta ubicación
+    if 'portal_authenticated' in session and session['portal_authenticated'] and session.get('location_id') != location_id:
+        current_app.logger.warning(f"Usuario de portal intenta verificar impresora de ubicación no permitida: {location_id}")
         return jsonify({'success': False, 'error': 'forbidden', 'message': 'Acceso no permitido a esta ubicación'}), 403
     
     # Buscar la impresora predeterminada para esta ubicación

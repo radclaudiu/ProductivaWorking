@@ -338,6 +338,37 @@ body {
   background-color: var(--burnt-orange);
 }
 
+/* Menú desplegable de módulos */
+#navbarModulesDropdown {
+  transition: all 0.3s ease;
+}
+
+#navbarModulesDropdown:hover {
+  background-color: rgba(85, 107, 47, 0.2);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.dropdown-menu {
+  border-radius: 10px;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  border: none;
+  padding: 0.5rem 0;
+  overflow: hidden;
+}
+
+.dropdown-item {
+  padding: 0.7rem 1.2rem;
+  font-weight: 500;
+  border-left: 3px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background-color: rgba(245, 240, 227, 0.5);
+  border-left-color: var(--olive-green);
+}
+
 /* Footer */
 .footer {
   background: linear-gradient(135deg, var(--chocolate), var(--terracota)) !important;

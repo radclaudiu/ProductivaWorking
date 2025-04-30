@@ -62,38 +62,47 @@
             
             <div class="collapse navbar-collapse" id="navbarNav">
                 {% if current_user.is_authenticated %}
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item mx-1 my-0">
-                        <a class="btn btn-primary btn-sm fw-bold" href="{{ url_for('company.list_companies') }}">
-                            <i class="bi bi-building"></i> Empresas
+                <!-- Menú colapsable en un botón -->
+                <div class="navbar-nav me-auto">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle btn btn-sm fw-bold" href="#" id="navbarModulesDropdown" role="button"
+                           data-bs-toggle="dropdown" aria-expanded="false" style="color: var(--olive-green); background-color: rgba(85, 107, 47, 0.1); border: 1px solid var(--olive-green); border-radius: 8px; padding: 0.4rem 0.8rem;">
+                            <i class="bi bi-grid-3x3-gap-fill me-1"></i> Módulos
                         </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarModulesDropdown">
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="{{ url_for('company.list_companies') }}">
+                                    <i class="bi bi-building me-2 text-primary"></i> <span>Empresas</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="{{ url_for('checkpoints.select_company') }}">
+                                    <i class="bi bi-clock-history me-2 text-success"></i> <span>Fichaje</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="{{ url_for('tasks.index') }}">
+                                    <i class="bi bi-list-check me-2 text-info"></i> <span>Tareas</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="{{ url_for('cash_register.dashboard') }}">
+                                    <i class="bi bi-cash-coin me-2 text-warning"></i> <span>Arqueos</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="{{ url_for('monthly_expenses.select_company') }}">
+                                    <i class="bi bi-receipt me-2 text-danger"></i> <span>Gastos</span>
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item d-flex align-items-center" href="https://horarios.gestemps.es" target="_blank">
+                                    <i class="bi bi-calendar-week me-2 text-secondary"></i> <span>Horarios</span>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
-                    <li class="nav-item mx-1 my-0">
-                        <a class="btn btn-success btn-sm fw-bold" href="{{ url_for('checkpoints.select_company') }}">
-                            <i class="bi bi-clock-history"></i> Fichaje
-                        </a>
-                    </li>
-                    <li class="nav-item mx-1 my-0">
-                        <a class="btn btn-info btn-sm fw-bold" href="{{ url_for('tasks.index') }}">
-                            <i class="bi bi-list-check"></i> Tareas
-                        </a>
-                    </li>
-                    <li class="nav-item mx-1 my-0">
-                        <a class="btn btn-warning btn-sm fw-bold" href="{{ url_for('cash_register.dashboard') }}">
-                            <i class="bi bi-cash-coin"></i> Arqueos
-                        </a>
-                    </li>
-                    <li class="nav-item mx-1 my-0">
-                        <a class="btn btn-danger btn-sm fw-bold" href="{{ url_for('monthly_expenses.select_company') }}">
-                            <i class="bi bi-receipt"></i> Gastos
-                        </a>
-                    </li>
-                    <li class="nav-item mx-1 my-0">
-                        <a class="btn btn-secondary btn-sm fw-bold" href="https://horarios.gestemps.es" target="_blank">
-                            <i class="bi bi-calendar-week"></i> Horarios
-                        </a>
-                    </li>
-                </ul>
+                </div>
                 
                 <form class="d-flex ms-auto" id="searchForm" action="{{ url_for('main.search') }}" method="get">
                     <div class="input-group">

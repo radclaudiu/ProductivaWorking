@@ -3202,8 +3202,9 @@ def api_check_printer_status(location_id):
 @tasks_bp.route('/api/printers/test-connection', methods=['POST'])
 def api_test_printer_connection():
     """API para probar la conexión con una impresora sin guardar la configuración"""
-    # Verificar si el usuario ha iniciado sesión en el portal de tareas
-    if 'portal_authenticated' not in session or not session['portal_authenticated']:
+    # Verificar si hay algún tipo de autenticación (portal o general)
+    if ('portal_authenticated' not in session or not session['portal_authenticated']) and not current_user.is_authenticated:
+        current_app.logger.warning(f"Acceso no autorizado a API de prueba de impresora")
         return jsonify({'success': False, 'error': 'unauthorized', 'message': 'No autorizado'}), 403
     
     # Obtener datos del formulario
@@ -3245,8 +3246,9 @@ def api_test_printer_connection():
 @tasks_bp.route('/api/printers/save', methods=['POST'])
 def api_save_printer_config():
     """API para guardar la configuración de una impresora"""
-    # Verificar si el usuario ha iniciado sesión en el portal de tareas
-    if 'portal_authenticated' not in session or not session['portal_authenticated']:
+    # Verificar si hay algún tipo de autenticación (portal o general)
+    if ('portal_authenticated' not in session or not session['portal_authenticated']) and not current_user.is_authenticated:
+        current_app.logger.warning(f"Acceso no autorizado a API de guardado de impresora")
         return jsonify({'success': False, 'error': 'unauthorized', 'message': 'No autorizado'}), 403
     
     # Obtener datos del formulario

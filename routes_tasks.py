@@ -2048,7 +2048,8 @@ def edit_printer(id):
         printer.name = form.name.data
         printer.ip_address = form.ip_address.data
         printer.model = form.model.data
-        printer.port = form.port.data
+        # Si se deja vacío el campo del puerto, establecer None
+        printer.port = form.port.data if form.port.data else None
         printer.api_path = form.api_path.data
         printer.requires_auth = form.requires_auth.data
         

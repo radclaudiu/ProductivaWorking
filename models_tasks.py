@@ -558,7 +558,7 @@ class NetworkPrinter(db.Model):
     ip_address = db.Column(db.String(50), nullable=False)
     model = db.Column(db.String(100))
     api_path = db.Column(db.String(255), default='/brother_d/printer/print')
-    port = db.Column(db.Integer, default=80)
+    port = db.Column(db.Integer, default=80, nullable=True)
     requires_auth = db.Column(db.Boolean, default=False)
     username = db.Column(db.String(100))
     password = db.Column(db.String(100))
@@ -578,7 +578,11 @@ class NetworkPrinter(db.Model):
     
     def get_full_url(self):
         """Retorna la URL completa de la API de la impresora"""
-        return f"http://{self.ip_address}:{self.port}{self.api_path}"
+        # Si hay un puerto especificado, incluirlo en la URL
+        if self.port:
+            return f"http://{self.ip_address}:{self.port}{self.api_path}"
+        # Si no hay puerto, omitirlo en la URL
+        return f"http://{self.ip_address}{self.api_path}"
     
     def check_status(self):
         """Verifica si la impresora está en línea"""
@@ -586,7 +590,11 @@ class NetworkPrinter(db.Model):
             # Intenta conectarse al puerto de la impresora
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(2.0)  # Timeout de 2 segundos
-            result = s.connect_ex((self.ip_address, self.port))
+            
+            # Si no hay puerto especificado, usar el puerto 80 para la comprobación
+            port_to_check = self.port if self.port else 80
+            
+            result = s.connect_ex((self.ip_address, port_to_check))
             s.close()
             
             if result == 0:

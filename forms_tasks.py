@@ -231,7 +231,8 @@ class NetworkPrinterForm(FlaskForm):
     ip_address = StringField('Dirección IP', validators=[DataRequired(), IPAddress(message="Por favor ingrese una dirección IP válida")])
     model = StringField('Modelo de impresora', validators=[Optional(), Length(max=100)], 
                       description="Ejemplo: QL-800, QL-820NWB, etc.")
-    port = IntegerField('Puerto', validators=[Optional(), NumberRange(min=1, max=65535)], default=80)
+    port = IntegerField('Puerto', validators=[Optional(), NumberRange(min=1, max=65535)], default=80,
+                    description="Dejar vacío si la impresora no utiliza un puerto específico")
     api_path = StringField('Ruta de la API', validators=[Optional()], default="/brother_d/printer/print",
                          description="La ruta de la API para enviar trabajos de impresión")
     requires_auth = BooleanField('Requiere autenticación', default=False)

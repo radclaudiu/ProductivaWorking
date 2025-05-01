@@ -6,6 +6,9 @@
         <h1 class="h2">{{ title }}</h1>
         <div>
             {% if selected_location %}
+            <a href="{{ url_for('tasks.list_task_groups', id=selected_location.id) }}" class="btn btn-info me-2">
+                <i class="bi bi-tags me-2"></i>Grupos
+            </a>
             <a href="{{ url_for('tasks.create_product', location_id=selected_location.id) }}" class="btn btn-success me-2">
                 <i class="bi bi-plus-circle me-2"></i>Nuevo Producto en {{ selected_location.name }}
             </a>

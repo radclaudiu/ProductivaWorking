@@ -15,9 +15,7 @@
                 <a href="{{ url_for('tasks.edit_location', id=location.id) }}" class="btn btn-sm btn-primary">
                     <i class="bi bi-pencil"></i> Editar
                 </a>
-                <a href="{{ url_for('tasks.list_task_groups', id=location.id) }}" class="btn btn-sm btn-info">
-                    <i class="bi bi-tags"></i> Grupos
-                </a>
+
                 <a href="{{ url_for('tasks.list_local_users', location_id=location.id) }}" class="btn btn-sm btn-success">
                     <i class="bi bi-people"></i> Empleados
                 </a>

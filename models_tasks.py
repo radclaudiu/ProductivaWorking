@@ -113,8 +113,19 @@ class Location(db.Model):
     @property
     def portal_fixed_username(self):
         """Retorna el nombre de usuario para este local"""
-        # Siempre usamos el formato predeterminado
+        # Si hay un usuario personalizado, lo devolvemos
+        if self.portal_username:
+            return self.portal_username
+        # Si no, usamos el formato predeterminado
         return f"portal_{self.id}"
+        
+    def set_portal_username(self, username):
+        """Establece un nombre de usuario personalizado para el portal"""
+        # Verificar que el nombre de usuario no exista ya para otro local
+        existing = Location.query.filter(Location.portal_username == username, Location.id != self.id).first()
+        if existing:
+            raise ValueError(f"El nombre de usuario '{username}' ya está en uso por otro local")
+        self.portal_username = username
         
     @property
     def portal_fixed_password(self):

@@ -1721,6 +1721,7 @@ def update_portal_credentials(location_id):
     
     # Obtener datos del formulario
     portal_name = request.form.get('portal_name', '').strip()
+    custom_username = request.form.get('custom_username', '').strip()
     custom_password = request.form.get('custom_password', '').strip()
     
     changes_made = False
@@ -1734,6 +1735,19 @@ def update_portal_credentials(location_id):
             
             # Registrar cambio en los logs
             log_activity(f'Actualización de nombre del portal para local: {old_name} → {portal_name}', user_id=current_user.id)
+        
+        # Actualizar nombre de usuario personalizado si se ha proporcionado uno nuevo
+        if custom_username and custom_username != location.portal_fixed_username:
+            old_username = location.portal_fixed_username
+            try:
+                location.set_portal_username(custom_username)
+                changes_made = True
+                
+                # Registrar cambio en los logs
+                log_activity(f'Actualización de nombre de usuario del portal para local: {old_username} → {custom_username}', user_id=current_user.id)
+            except ValueError as e:
+                flash(str(e), 'danger')
+                return redirect(url_for('tasks.location_detail', id=location.id))
         
         # Actualizar contraseña personalizada solo si se ha proporcionado una nueva
         if custom_password:

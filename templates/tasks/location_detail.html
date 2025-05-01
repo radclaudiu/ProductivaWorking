@@ -150,10 +150,11 @@
                                             <div class="form-text">Este nombre se mostrará en el portal de acceso para los empleados</div>
                                         </div>
                                         <div class="col-md-6">
-                                            <label for="portal_username" class="form-label">Usuario del Portal</label>
-                                            <input type="text" class="form-control" id="portal_username" 
-                                                   value="portal_{{ location.id }}" readonly>
-                                            <div class="form-text">El nombre de usuario del portal es fijo y no se puede modificar</div>
+                                            <label for="custom_username" class="form-label">Usuario del Portal</label>
+                                            <input type="text" class="form-control" id="custom_username" name="custom_username" 
+                                                   value="{{ location.portal_fixed_username }}" 
+                                                   placeholder="Usuario personalizado">
+                                            <div class="form-text">Personaliza el nombre de usuario del portal</div>
                                         </div>
                                         <div class="col-md-6">
                                             <label for="custom_password" class="form-label">Nueva Contraseña</label>

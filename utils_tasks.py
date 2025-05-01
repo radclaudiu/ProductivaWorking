@@ -215,7 +215,8 @@ def sync_employees_to_local_users(location_id):
                 total_updated += 1
             else:
                 # Crear nuevo usuario local vinculado al empleado
-                username = f"{employee.first_name.lower()}_{employee.last_name.lower()}".replace(" ", "_")
+                # Generamos un nombre de usuario con espacios en lugar de barras bajas
+                username = f"{employee.first_name} {employee.last_name}"
                 
                 # Usar los últimos 4 dígitos del DNI como PIN
                 # Si no hay DNI o no tiene al menos 4 caracteres, usar PIN por defecto

@@ -1992,7 +1992,7 @@ def create_printer(location_id):
             name=form.name.data,
             ip_address=form.ip_address.data,
             model=form.model.data,
-            port=form.port.data,
+            port=form.port.data if form.port.data else None,
             api_path=form.api_path.data,
             requires_auth=form.requires_auth.data,
             username=form.username.data if form.requires_auth.data else None,
@@ -3348,7 +3348,7 @@ def api_save_printer_config():
             printer = NetworkPrinter(
                 name=name,
                 ip_address=ip_address,
-                port=port,
+                port=port if port else None,
                 model=model,
                 api_path=api_path,
                 requires_auth=requires_auth,
@@ -3363,7 +3363,7 @@ def api_save_printer_config():
             # Actualizar la impresora existente
             printer.name = name
             printer.ip_address = ip_address
-            printer.port = port
+            printer.port = port if port else None
             printer.model = model
             printer.api_path = api_path
             printer.requires_auth = requires_auth

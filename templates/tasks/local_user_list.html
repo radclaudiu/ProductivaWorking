@@ -70,7 +70,7 @@
                     <i class="bi bi-person-circle display-3 mb-3"></i>
                     {% endif %}
                     
-                    <p class="mb-1"><strong>Usuario:</strong> {{ user.username }}</p>
+                    <p class="mb-1"><strong>Usuario:</strong> {{ user.get_full_name() }}</p>
                     <p class="mb-0"><strong>PIN:</strong> <span class="text-secondary">••••</span></p>
                     
                     {% if user.employee_id %}

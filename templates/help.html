@@ -234,6 +234,52 @@
                     <button class="help-edit-button" data-item="company4">Editar</button>
                     {% endif %}
                 </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Por qué no puedo eliminar una empresa o ubicación?</div>
+                    <div class="help-answer" id="answer-company8">
+                        <p>Existen varias razones por las que no puedes eliminar una empresa o ubicación del sistema:</p>
+                        
+                        <h4>Razón 1: La empresa/ubicación tiene datos asociados</h4>
+                        <p>Por motivos de integridad de datos, no se permite eliminar empresas o ubicaciones que tengan:</p>
+                        <ul>
+                            <li>Empleados activos o históricos</li>
+                            <li>Registros de fichajes (entradas/salidas)</li>
+                            <li>Arqueos de caja realizados</li>
+                            <li>Gastos mensuales registrados</li>
+                            <li>Tareas digitales asignadas</li>
+                        </ul>
+                        <p><strong>Solución:</strong> En lugar de eliminar, utiliza la opción "Dar de baja" que mantiene los datos históricos pero marca la empresa/ubicación como inactiva.</p>
+                        
+                        <h4>Razón 2: Permisos insuficientes</h4>
+                        <ul>
+                            <li>Solo los usuarios con rol de Administrador pueden dar de baja empresas</li>
+                            <li>Los gerentes pueden dar de baja ubicaciones, pero no empresas completas</li>
+                            <li>Los usuarios básicos no pueden dar de baja ninguna entidad</li>
+                        </ul>
+                        <p><strong>Solución:</strong> Contacta con un administrador del sistema si necesitas eliminar o dar de baja una empresa o ubicación.</p>
+                        
+                        <h4>Razón 3: Restricciones de relaciones</h4>
+                        <p>Las ubicaciones no se pueden eliminar si:</p>
+                        <ul>
+                            <li>Son la única ubicación activa de una empresa</li>
+                            <li>Tienen configuraciones especiales (impresoras, plantillas personalizadas)</li>
+                            <li>Están siendo utilizadas activamente (puntos de fichaje activos)</li>
+                        </ul>
+                        <p><strong>Solución:</strong> Primero resuelve estas dependencias (desactiva servicios, mueve configuraciones, etc.) y luego intenta dar de baja.</p>
+                        
+                        <h4>Caso excepcional: Eliminación permanente</h4>
+                        <p>Si realmente necesitas eliminar permanentemente una empresa (por ejemplo, fue creada por error):</p>
+                        <ol>
+                            <li>Contacta con soporte técnico a través de la sección "Ayuda" > "Contactar con soporte"</li>
+                            <li>Proporciona la justificación y los detalles de la empresa a eliminar</li>
+                            <li>El equipo técnico evaluará si es posible realizar la eliminación sin afectar la integridad del sistema</li>
+                        </ol>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="company8">Editar</button>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>
@@ -858,6 +904,58 @@
                     </div>
                     {% if current_user.is_admin() %}
                     <button class="help-edit-button" data-item="task5">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Por qué no aparecen todos los empleados en el portal de tareas?</div>
+                    <div class="help-answer" id="answer-task10">
+                        <p>Si algunos empleados no aparecen en el portal de tareas o punto de fichaje, puede deberse a varias razones:</p>
+                        
+                        <h4>Causa 1: Empleado no sincronizado como usuario local</h4>
+                        <ul>
+                            <li>Los empleados deben estar sincronizados como usuarios locales para aparecer en el portal</li>
+                            <li>Para sincronizar empleados:</li>
+                            <ol>
+                                <li>Ve a "Tareas" > Selecciona la ubicación</li>
+                                <li>Haz clic en "Gestionar Usuarios"</li>
+                                <li>Selecciona "Sincronizar Empleados" para importar empleados de la empresa</li>
+                                <li>Marca los empleados que quieres sincronizar y haz clic en "Importar Seleccionados"</li>
+                            </ol>
+                        </ul>
+                        
+                        <h4>Causa 2: Empleado pertenece a otra ubicación o empresa</h4>
+                        <ul>
+                            <li>Solo aparecerán los empleados asignados a la ubicación actual del portal</li>
+                            <li>Verifica la asignación del empleado en "Empleados" > [Nombre del empleado] > "Detalles"</li>
+                            <li>Si es necesario, cambia su ubicación y luego sincronízalo de nuevo</li>
+                        </ul>
+                        
+                        <h4>Causa 3: Empleado inactivo</h4>
+                        <ul>
+                            <li>Los empleados con estado inactivo no aparecen en el portal por defecto</li>
+                            <li>Comprueba el estado del empleado en "Empleados" > [Nombre del empleado]</li>
+                            <li>Si quieres que aparezcan empleados inactivos en el portal:</li>
+                            <ol>
+                                <li>Ve a "Tareas" > Ubicación > "Configuración"</li>
+                                <li>Activa la opción "Mostrar empleados inactivos en el portal"</li>
+                                <li>Guarda los cambios</li>
+                            </ol>
+                        </ul>
+                        
+                        <h4>Causa 4: Problema de sincronización</h4>
+                        <p>Si has sincronizado correctamente pero siguen sin aparecer:</p>
+                        <ol>
+                            <li>Recarga completamente el portal (no solo la página)</li>
+                            <li>Limpia la caché del navegador</li>
+                            <li>Si persiste el problema, intenta resincronizar los empleados de nuevo</li>
+                            <li>En casos extremos, puede ser necesario eliminar todos los usuarios locales y volver a sincronizarlos</li>
+                        </ol>
+                        
+                        <p><strong>Nota:</strong> Recuerda que los empleados recién creados deben ser sincronizados manualmente para aparecer en el portal.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="task10">Editar</button>
                     {% endif %}
                 </div>
             </div>

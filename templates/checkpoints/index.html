@@ -348,8 +348,8 @@
                         <div class="tab-pane fade" id="incidentsTab" role="tabpanel" aria-labelledby="incidents-tab">
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h4>Incidencias</h4>
-                                <a href="{{ url_for('checkpoints.create_incident') }}" class="btn btn-primary">
-                                    <i class="bi bi-plus-circle"></i> Nueva Incidencia
+                                <a href="{{ url_for('checkpoints.report_incident') }}" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle"></i> Reportar Incidencia
                                 </a>
                             </div>
                             
@@ -399,10 +399,10 @@
                                             </td>
                                             <td>{{ incident.description|truncate(30) }}</td>
                                             <td>
-                                                <a href="{{ url_for('checkpoints.view_incident', id=incident.id) }}" class="btn btn-sm btn-outline-primary">
+                                                <a href="{{ url_for('checkpoints.get_incident', id=incident.id) }}" class="btn btn-sm btn-outline-primary">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
-                                                <a href="{{ url_for('checkpoints.edit_incident', id=incident.id) }}" class="btn btn-sm btn-outline-secondary">
+                                                <a href="{{ url_for('checkpoints.edit_incident_route', id=incident.id) }}" class="btn btn-sm btn-outline-secondary">
                                                     <i class="bi bi-pencil"></i>
                                                 </a>
                                             </td>

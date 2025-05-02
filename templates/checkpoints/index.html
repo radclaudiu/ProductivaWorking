@@ -501,6 +501,133 @@
                                         </div>
                                     </div>
                                 </div>
+                                
+                                <!-- Configuración de Horas de Contrato para Empleados -->
+                                <div class="col-12 mb-4">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5 class="mb-0">Configuración de Horas de Contrato para Empleados</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <p class="card-text">Establezca las horas de contrato diarias o semanales para cada empleado.</p>
+                                            
+                                            <!-- Selector de empleado -->
+                                            <div class="row g-3 mb-4">
+                                                <div class="col-md-6">
+                                                    <label for="employeeSelector" class="form-label">Seleccione un empleado</label>
+                                                    <select class="form-select" id="employeeSelector">
+                                                        <option value="">-- Seleccione un empleado --</option>
+                                                        {% for employee in employees %}
+                                                            <option value="{{ employee.id }}">{{ employee.first_name }} {{ employee.last_name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6 d-flex align-items-end">
+                                                    <button class="btn btn-primary" id="loadEmployeeConfig">
+                                                        <i class="bi bi-person-gear"></i> Cargar Configuración
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Formulario de horas de contrato (inicialmente oculto) -->
+                                            <div id="employeeConfigForm" style="display: none;">
+                                                <form>
+                                                    <div class="row g-3 mb-3">
+                                                        <div class="col-md-6">
+                                                            <div class="card">
+                                                                <div class="card-header bg-light">
+                                                                    <h6 class="mb-0">Configuración de horas diarias</h6>
+                                                                </div>
+                                                                <div class="card-body">
+                                                                    <div class="mb-3">
+                                                                        <label for="dailyHours" class="form-label">Horas diarias de contrato</label>
+                                                                        <input type="number" class="form-control" id="dailyHours" min="0" max="24" step="0.5" value="8">
+                                                                        <small class="text-muted">Número de horas que debe trabajar diariamente según contrato.</small>
+                                                                    </div>
+                                                                    <div class="mb-3">
+                                                                        <div class="form-check">
+                                                                            <input class="form-check-input" type="checkbox" id="enforceDaily">
+                                                                            <label class="form-check-label" for="enforceDaily">
+                                                                                Aplicar límite diario estricto
+                                                                            </label>
+                                                                        </div>
+                                                                        <small class="text-muted">Si se activa, el sistema advertirá cuando un empleado exceda sus horas diarias.</small>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <div class="card">
+                                                                <div class="card-header bg-light">
+                                                                    <h6 class="mb-0">Configuración de horas semanales</h6>
+                                                                </div>
+                                                                <div class="card-body">
+                                                                    <div class="mb-3">
+                                                                        <label for="weeklyHours" class="form-label">Horas semanales de contrato</label>
+                                                                        <input type="number" class="form-control" id="weeklyHours" min="0" max="168" step="0.5" value="40">
+                                                                        <small class="text-muted">Número de horas que debe trabajar semanalmente según contrato.</small>
+                                                                    </div>
+                                                                    <div class="mb-3">
+                                                                        <div class="form-check">
+                                                                            <input class="form-check-input" type="checkbox" id="enforceWeekly" checked>
+                                                                            <label class="form-check-label" for="enforceWeekly">
+                                                                                Aplicar límite semanal estricto
+                                                                            </label>
+                                                                        </div>
+                                                                        <small class="text-muted">Si se activa, el sistema no permitirá que un empleado exceda sus horas semanales.</small>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div class="row mb-3">
+                                                        <div class="col-md-12">
+                                                            <div class="card">
+                                                                <div class="card-header bg-light">
+                                                                    <h6 class="mb-0">Opciones adicionales</h6>
+                                                                </div>
+                                                                <div class="card-body">
+                                                                    <div class="row g-3">
+                                                                        <div class="col-md-6">
+                                                                            <div class="form-check">
+                                                                                <input class="form-check-input" type="checkbox" id="allowOvertime">
+                                                                                <label class="form-check-label" for="allowOvertime">
+                                                                                    Permitir horas extras
+                                                                                </label>
+                                                                            </div>
+                                                                            <small class="text-muted">Si se activa, el empleado podrá acumular horas extras.</small>
+                                                                        </div>
+                                                                        <div class="col-md-6">
+                                                                            <div class="form-check">
+                                                                                <input class="form-check-input" type="checkbox" id="autoAdjustBreaks">
+                                                                                <label class="form-check-label" for="autoAdjustBreaks">
+                                                                                    Ajustar descansos automáticamente
+                                                                                </label>
+                                                                            </div>
+                                                                            <small class="text-muted">El sistema ajustará automáticamente los tiempos de descanso según la normativa.</small>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <div class="d-grid gap-2">
+                                                        <button type="button" class="btn btn-success" id="saveEmployeeConfig">
+                                                            <i class="bi bi-save"></i> Guardar Configuración de Empleado
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                            
+                                            <!-- Mensaje para cuando no hay empleado seleccionado -->
+                                            <div id="noEmployeeSelected" class="alert alert-info mt-3">
+                                                <i class="bi bi-info-circle me-2"></i> Seleccione un empleado para configurar sus horas de trabajo según contrato.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -620,6 +747,88 @@
                 }, 1500);
             }
         });
+        
+        // Configuración de empleados - Mostrar/ocultar formulario
+        const employeeSelector = document.getElementById('employeeSelector');
+        const loadEmployeeConfigBtn = document.getElementById('loadEmployeeConfig');
+        const employeeConfigForm = document.getElementById('employeeConfigForm');
+        const noEmployeeSelected = document.getElementById('noEmployeeSelected');
+        const saveEmployeeConfigBtn = document.getElementById('saveEmployeeConfig');
+        
+        // Inicialmente ocultar el formulario y mostrar el mensaje
+        if (employeeConfigForm && noEmployeeSelected) {
+            employeeConfigForm.style.display = 'none';
+            noEmployeeSelected.style.display = 'block';
+        }
+        
+        // Cargar configuración de empleado al hacer clic en el botón
+        if (loadEmployeeConfigBtn) {
+            loadEmployeeConfigBtn.addEventListener('click', function() {
+                const selectedEmployeeId = employeeSelector.value;
+                
+                if (!selectedEmployeeId) {
+                    alert('Por favor, seleccione un empleado.');
+                    return;
+                }
+                
+                // Simulación de carga de datos
+                this.disabled = true;
+                this.innerHTML = '<i class="bi bi-hourglass-split"></i> Cargando...';
+                
+                setTimeout(() => {
+                    this.disabled = false;
+                    this.innerHTML = '<i class="bi bi-person-gear"></i> Cargar Configuración';
+                    
+                    // Mostrar el formulario y ocultar el mensaje
+                    if (employeeConfigForm && noEmployeeSelected) {
+                        employeeConfigForm.style.display = 'block';
+                        noEmployeeSelected.style.display = 'none';
+                    }
+                    
+                    // Aquí normalmente cargaríamos los datos del empleado seleccionado
+                    // Simulamos algunos valores predeterminados
+                    document.getElementById('dailyHours').value = '8';
+                    document.getElementById('weeklyHours').value = '40';
+                    document.getElementById('enforceWeekly').checked = true;
+                    document.getElementById('enforceDaily').checked = false;
+                    document.getElementById('allowOvertime').checked = true;
+                    document.getElementById('autoAdjustBreaks').checked = false;
+                    
+                    // Mensaje de éxito
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-success alert-dismissible fade show mt-3';
+                    alert.innerHTML = `
+                        <i class="bi bi-check-circle me-2"></i> Configuración del empleado cargada correctamente.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    `;
+                    
+                    document.querySelector('#configTab').prepend(alert);
+                }, 1000);
+            });
+        }
+        
+        // Guardar configuración de empleado
+        if (saveEmployeeConfigBtn) {
+            saveEmployeeConfigBtn.addEventListener('click', function() {
+                this.disabled = true;
+                this.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando...';
+                
+                setTimeout(() => {
+                    this.disabled = false;
+                    this.innerHTML = '<i class="bi bi-save"></i> Guardar Configuración de Empleado';
+                    
+                    // Mensaje de éxito
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-success alert-dismissible fade show mt-3';
+                    alert.innerHTML = `
+                        <i class="bi bi-check-circle me-2"></i> Configuración del empleado guardada correctamente.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    `;
+                    
+                    document.querySelector('#configTab').prepend(alert);
+                }, 1500);
+            });
+        }
     });
 </script>
 {% endblock %}

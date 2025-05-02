@@ -6,11 +6,16 @@
     color: white !important;
 }
 .nav-pills .nav-link {
-    color: white !important;
+    color: #8D6E63 !important;
     border-radius: 0.5rem;
     padding: 0.75rem 1.25rem;
     margin-right: 0.5rem;
     font-weight: 500;
+}
+
+/* Para las tarjetas con fondo marrón */
+.card-header.text-white .nav-pills .nav-link {
+    color: white !important;
 }
 
 /* Botones */

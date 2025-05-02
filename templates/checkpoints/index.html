@@ -180,7 +180,7 @@
                                                 </button>
                                                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="checkpoint{{ checkpoint.id }}Actions">
                                                     <li><a class="dropdown-item" href="{{ url_for('checkpoints.edit_checkpoint', id=checkpoint.id) }}"><i class="bi bi-pencil me-2"></i> Editar</a></li>
-                                                    <li><a class="dropdown-item" href="{{ url_for('checkpoints.records') }}?checkpoint_id={{ checkpoint.id }}"><i class="bi bi-clock-history me-2"></i> Ver registros</a></li>
+                                                    <li><a class="dropdown-item" href="{{ url_for('checkpoints.list_records_all') }}?checkpoint_id={{ checkpoint.id }}"><i class="bi bi-clock-history me-2"></i> Ver registros</a></li>
                                                     <li><a class="dropdown-item" href="{{ url_for('checkpoints.login', checkpoint_id=checkpoint.id) }}"><i class="bi bi-box-arrow-in-right me-2"></i> Acceder</a></li>
                                                     <li><hr class="dropdown-divider"></li>
                                                     <li>
@@ -365,7 +365,7 @@
                                     </div>
                                 </div>
                                 <div class="card-footer">
-                                    <a href="{{ url_for('checkpoints.records') }}" class="btn btn-outline-primary">
+                                    <a href="{{ url_for('checkpoints.list_records_all') }}" class="btn btn-outline-primary">
                                         <i class="bi bi-list"></i> Ver todos los registros
                                     </a>
                                 </div>

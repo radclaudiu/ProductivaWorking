@@ -220,6 +220,64 @@ show_info() {
     echo -e "${GREEN}Tamaño del backup SQL:${NC} $(grep "# Tamaño del backup SQL:" "$0" | cut -d: -f2-)"
     echo -e "${GREEN}Tablas:${NC} $(grep "# Tablas:" "$0" | cut -d: -f2-)"
     echo -e "${GREEN}Registros:${NC} $(grep "# Registros:" "$0" | cut -d: -f2-)"
+    echo -e "${GREEN}Módulos actualizados:${NC} Arqueos de Caja, Gastos Mensuales, IVA y Ventana Horaria"
+    echo
+
+    # Verificar módulos presentes extrayendo primero la parte SQL
+    echo -e "${BLUE}Analizando módulos incluidos en este backup...${NC}"
+    
+    # Extraer SQL a un archivo temporal para analizar contenido
+    temp_sql=\$(mktemp)
+    sed -n '/^__SQL_DUMP_BELOW__$/,/^__SQL_DUMP_ABOVE__$/p' "\$0" | sed '1d;\$d' > "\$temp_sql"
+    
+    # Verificar sistema base
+    if grep -q "CREATE TABLE public.users" "\$temp_sql" && grep -q "CREATE TABLE public.companies" "\$temp_sql"; then
+        echo -e "${GREEN}\u2713 Sistema Base${NC}"
+    else
+        echo -e "${YELLOW}\u26a0\ufe0f Sistema Base (incompleto)${NC}"
+    fi
+    
+    # Verificar control horario
+    if grep -q "CREATE TABLE public.checkpoints" "\$temp_sql" && grep -q "CREATE TABLE public.checkpoint_records" "\$temp_sql"; then
+        echo -e "${GREEN}\u2713 Control Horario${NC}"
+    else
+        echo -e "${YELLOW}\u26a0\ufe0f Control Horario (incompleto)${NC}"
+    fi
+    
+    # Verificar arqueos de caja
+    if grep -q "CREATE TABLE public.cash_registers" "\$temp_sql"; then
+        echo -e "${GREEN}\u2713 Arqueos de Caja${NC}"
+    else
+        echo -e "${RED}\u2717 Arqueos de Caja (no incluido)${NC}"
+    fi
+    
+    # Verificar gastos mensuales
+    if grep -q "CREATE TABLE public.monthly_expenses" "\$temp_sql"; then
+        echo -e "${GREEN}\u2713 Gastos Mensuales${NC}"
+    else
+        echo -e "${RED}\u2717 Gastos Mensuales (no incluido)${NC}"
+    fi
+
+    # Verificar funcionalidades especiales
+    echo -e "\n${BLUE}Funcionalidades adicionales:${NC}"
+    
+    # Verificar soporte de IVA
+    if grep -q "vat_percentage" "\$temp_sql"; then
+        echo -e "${GREEN}\u2713 Soporte para IVA${NC}"
+    else
+        echo -e "${RED}\u2717 Soporte para IVA (no incluido)${NC}"
+    fi
+    
+    # Verificar soporte de ventana horaria
+    if grep -q "operation_start_time" "\$temp_sql" && grep -q "operation_end_time" "\$temp_sql"; then
+        echo -e "${GREEN}\u2713 Ventana horaria para cierres automáticos${NC}"
+    else
+        echo -e "${RED}\u2717 Ventana horaria para cierres automáticos (no incluido)${NC}"
+    fi
+    
+    # Limpiar archivo temporal
+    rm -f "\$temp_sql"
+    
     echo
     echo -e "${YELLOW}Para restaurar este backup, ejecute:${NC}"
     echo -e "  $0 --restore [--db DB_NAME] [--host HOST] [--user USER]"

@@ -16,8 +16,7 @@ class CheckPointForm(FlaskForm):
     
     username = StringField('Usuario', validators=[DataRequired(), Length(min=4, max=64)])
     password = PasswordField('Contraseña', validators=[Length(min=6, max=64)])
-    confirm_password = PasswordField('Confirmar Contraseña', 
-                                    validators=[Optional(), Length(min=6, max=64)])
+    # Campo de confirmación de contraseña eliminado
     
     # El campo auto_checkout_time ha sido eliminado
     enforce_contract_hours = BooleanField('Aplicar límite horas contrato', default=False)
@@ -32,10 +31,7 @@ class CheckPointForm(FlaskForm):
     
     submit = SubmitField('Guardar')
     
-    def validate_password(self, field):
-        """Asegura que la contraseña y la confirmación coincidan"""
-        if self.password.data and self.password.data != self.confirm_password.data:
-            raise ValidationError('Las contraseñas no coinciden')
+    # La validación de la contraseña se realiza a través del validator Length en el campo
             
     def validate_operation_end_time(self, field):
         """Verifica que la hora de fin de cierre automático sea posterior a la de inicio"""

@@ -26,6 +26,7 @@
         <div class="help-tab" data-tab="tasks">Tareas y Etiquetas</div>
         <div class="help-tab" data-tab="cash-register">Arqueos de Caja</div>
         <div class="help-tab" data-tab="expenses">Gastos Mensuales</div>
+        <div class="help-tab" data-tab="interface">Interfaz y Navegación</div>
     </div>
     
     <!-- Contenido: Empresas -->
@@ -972,6 +973,165 @@
                     </div>
                     {% if current_user.is_admin() %}
                     <button class="help-edit-button" data-item="cash6">Editar</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Contenido: Interfaz y Navegación -->
+    <div id="helpContent-interface" class="help-tab-content">
+        <div class="help-section">
+            <h2>Interfaz y Navegación</h2>
+            <div class="help-content">
+                <p>Esta sección explica los elementos comunes de la interfaz de usuario y cómo navegar por las diferentes áreas de Productiva.</p>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cuáles son los botones y elementos principales de la interfaz?</div>
+                    <div class="help-answer" id="answer-interface1">
+                        <h4>Elementos generales de navegación</h4>
+                        <ul>
+                            <li><strong>Menú principal (barra lateral):</strong> Acceso a todas las secciones principales de la aplicación</li>
+                            <li><strong>Barra superior:</strong> Muestra el nombre del usuario actual, acceso a notificaciones y menú de usuario</li>
+                            <li><strong>Botón de Perfil:</strong> Accede a tu información personal y opciones de configuración</li>
+                            <li><strong>Icono de Notificaciones:</strong> Muestra alertas y mensajes pendientes</li>
+                            <li><strong>Botón de Cerrar Sesión:</strong> Situado en el menú desplegable del perfil</li>
+                            <li><strong>Botón de Ayuda:</strong> Ubicado en el pie de página, da acceso a este centro de ayuda</li>
+                            <li><strong>Indicator de Conexión:</strong> Muestra si estás conectado (Online) o sin conexión (Offline)</li>
+                        </ul>
+                        
+                        <h4>Botones de acción comunes</h4>
+                        <ul>
+                            <li><strong>Botón "+" o "Nuevo":</strong> Crea un nuevo elemento (empresa, empleado, etc.)</li>
+                            <li><strong>Icono de lápiz:</strong> Editar o modificar un elemento existente</li>
+                            <li><strong>Icono de papelera:</strong> Eliminar o dar de baja un elemento</li>
+                            <li><strong>Icono de ojo:</strong> Ver detalles completos de un elemento</li>
+                            <li><strong>Botón "Guardar":</strong> Guarda los cambios realizados en un formulario</li>
+                            <li><strong>Botón "Cancelar":</strong> Descarta los cambios y vuelve a la pantalla anterior</li>
+                            <li><strong>Botón "Volver":</strong> Regresa a la pantalla anterior sin guardar cambios</li>
+                            <li><strong>Interruptores:</strong> Activan o desactivan funciones (aparecen como botones deslizantes)</li>
+                        </ul>
+                        
+                        <h4>Elementos de filtrado y búsqueda</h4>
+                        <ul>
+                            <li><strong>Campo de búsqueda:</strong> Filtra elementos por texto (aparece en la parte superior de las listas)</li>
+                            <li><strong>Filtros desplegables:</strong> Permiten filtrar por estado, fecha, categoría, etc.</li>
+                            <li><strong>Selector de fechas:</strong> Para elegir un período de tiempo específico</li>
+                            <li><strong>Botón "Aplicar filtros":</strong> Actualiza los resultados según los filtros seleccionados</li>
+                            <li><strong>Botón "Limpiar filtros":</strong> Elimina todos los filtros aplicados</li>
+                        </ul>
+                        
+                        <h4>Elementos de las tablas</h4>
+                        <ul>
+                            <li><strong>Encabezados de columna:</strong> Haciendo clic puedes ordenar por esa columna</li>
+                            <li><strong>Selector de filas por página:</strong> Define cuántos elementos se muestran a la vez</li>
+                            <li><strong>Paginación:</strong> Botones para navegar entre páginas de resultados</li>
+                            <li><strong>Casillas de verificación:</strong> Selecciona múltiples elementos para acciones en lote</li>
+                        </ul>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="interface1">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo funciona la navegación entre secciones de la aplicación?</div>
+                    <div class="help-answer" id="answer-interface2">
+                        <p>Productiva está organizada en secciones principales a las que puedes acceder desde el menú lateral:</p>
+                        
+                        <h4>Menú Principal</h4>
+                        <ul>
+                            <li><strong>Dashboard:</strong> Resumen general y estadísticas de la aplicación</li>
+                            <li><strong>Empresas:</strong> Gestión de empresas, ubicaciones y usuarios</li>
+                            <li><strong>Empleados:</strong> Registro y gestión de personal</li>
+                            <li><strong>Puntos de Fichaje:</strong> Control de entradas y salidas de personal</li>
+                            <li><strong>Tareas Digitales:</strong> Creación y asignación de tareas y etiquetas</li>
+                            <li><strong>Arqueos de Caja:</strong> Control de movimientos de efectivo</li>
+                            <li><strong>Gastos Mensuales:</strong> Registro y seguimiento de gastos recurrentes</li>
+                            <li><strong>Informes:</strong> Generación de informes y análisis</li>
+                            <li><strong>Administración:</strong> Configuración general del sistema (solo administradores)</li>
+                        </ul>
+                        
+                        <h4>Navegación Jerárquica</h4>
+                        <p>La navegación en Productiva sigue una estructura jerárquica:</p>
+                        <ol>
+                            <li><strong>Primer nivel:</strong> Secciones principales (Menú lateral)</li>
+                            <li><strong>Segundo nivel:</strong> Listados o dashboards de elementos</li>
+                            <li><strong>Tercer nivel:</strong> Vista de detalle de un elemento</li>
+                            <li><strong>Cuarto nivel:</strong> Formularios de edición o creación</li>
+                        </ol>
+                        
+                        <h4>Migas de pan (Breadcrumbs)</h4>
+                        <p>En la parte superior de cada página encontrarás las "migas de pan" que te muestran la ruta de navegación actual y te permiten volver a niveles superiores rápidamente.</p>
+                        <p><em>Ejemplo: Dashboard &gt; Empresas &gt; Acme Inc. &gt; Ubicaciones &gt; Sede Central</em></p>
+                        
+                        <h4>Navegación con Teclado</h4>
+                        <p>También puedes utilizar atajos de teclado para navegar más rápidamente:</p>
+                        <ul>
+                            <li><strong>Alt + 1-9:</strong> Acceso rápido a las secciones principales</li>
+                            <li><strong>Esc:</strong> Cerrar ventanas emergentes o cancelar acciones</li>
+                            <li><strong>Enter:</strong> Confirmar acciones o enviar formularios</li>
+                            <li><strong>Tab:</strong> Navegar entre campos de formularios</li>
+                        </ul>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="interface2">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Qué significan los diferentes iconos y colores en la aplicación?</div>
+                    <div class="help-answer" id="answer-interface3">
+                        <h4>Iconos comunes</h4>
+                        <ul>
+                            <li><strong><i class="bi bi-plus-circle"></i> (Más):</strong> Crear nuevo elemento o añadir</li>
+                            <li><strong><i class="bi bi-pencil"></i> (Lápiz):</strong> Editar o modificar</li>
+                            <li><strong><i class="bi bi-trash"></i> (Papelera):</strong> Eliminar o dar de baja</li>
+                            <li><strong><i class="bi bi-eye"></i> (Ojo):</strong> Ver detalles</li>
+                            <li><strong><i class="bi bi-download"></i> (Descargar):</strong> Exportar o descargar datos</li>
+                            <li><strong><i class="bi bi-arrow-repeat"></i> (Flechas circulares):</strong> Actualizar o sincronizar</li>
+                            <li><strong><i class="bi bi-filter"></i> (Embudo):</strong> Filtrar resultados</li>
+                            <li><strong><i class="bi bi-search"></i> (Lupa):</strong> Buscar</li>
+                            <li><strong><i class="bi bi-calendar"></i> (Calendario):</strong> Seleccionar fecha</li>
+                            <li><strong><i class="bi bi-clock"></i> (Reloj):</strong> Horarios o tiempo</li>
+                            <li><strong><i class="bi bi-person"></i> (Persona):</strong> Usuarios o empleados</li>
+                            <li><strong><i class="bi bi-building"></i> (Edificio):</strong> Empresas o ubicaciones</li>
+                            <li><strong><i class="bi bi-cash"></i> (Dinero):</strong> Arqueos o movimientos de efectivo</li>
+                            <li><strong><i class="bi bi-check-circle"></i> (Marca de verificación):</strong> Completado o correcto</li>
+                            <li><strong><i class="bi bi-x-circle"></i> (Cruz):</strong> Cancelado, incorrecto o cerrar</li>
+                            <li><strong><i class="bi bi-exclamation-circle"></i> (Exclamación):</strong> Advertencia o atencion</li>
+                        </ul>
+                        
+                        <h4>Colores y su significado</h4>
+                        <ul>
+                            <li><strong>Verde:</strong> Activo, correcto, completado o positivo</li>
+                            <li><strong>Rojo:</strong> Error, eliminado, cancelado o negativo</li>
+                            <li><strong>Amarillo/Naranja:</strong> Advertencia, pendiente o en proceso</li>
+                            <li><strong>Azul:</strong> Información, en curso o elementos seleccionados</li>
+                            <li><strong>Gris:</strong> Inactivo, deshabilitado o histórico</li>
+                            <li><strong>Marrón/Terracota:</strong> Elementos de acción principales</li>
+                        </ul>
+                        
+                        <h4>Indicadores de estado</h4>
+                        <ul>
+                            <li><strong>Punto verde:</strong> Elemento activo o en línea</li>
+                            <li><strong>Punto rojo:</strong> Elemento inactivo o desconectado</li>
+                            <li><strong>Punto amarillo:</strong> Pendiente o requiere atención</li>
+                            <li><strong>Borde punteado:</strong> Elemento seleccionado temporalmente</li>
+                            <li><strong>Borde sólido:</strong> Elemento activo o en foco</li>
+                        </ul>
+                        
+                        <h4>Badges y etiquetas</h4>
+                        <ul>
+                            <li><strong>Etiqueta verde:</strong> Estados positivos (Activo, Completado, Aprobado)</li>
+                            <li><strong>Etiqueta roja:</strong> Estados negativos (Inactivo, Cancelado, Rechazado)</li>
+                            <li><strong>Etiqueta amarilla:</strong> Estados intermedios (Pendiente, En proceso)</li>
+                            <li><strong>Etiqueta azul:</strong> Informativo (Nuevo, Actualizado, Modificado)</li>
+                            <li><strong>Etiqueta gris:</strong> Estados neutros (Archivado, Histórico)</li>
+                        </ul>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="interface3">Editar</button>
                     {% endif %}
                 </div>
             </div>

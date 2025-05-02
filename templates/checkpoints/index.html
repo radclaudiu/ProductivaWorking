@@ -440,37 +440,13 @@
                                                         <i class="bi bi-pencil"></i>
                                                     </a>
                                                     {% if not incident.resolved %}
-                                                    <button type="button" class="btn btn-outline-success resolve-incident-btn" data-bs-target="#resolveModal{{ incident.id }}" title="Marcar como Resuelto">
-                                                        <i class="bi bi-check-circle"></i>
-                                                    </button>
-                                                    
-                                                    <!-- Modal de resolución para esta incidencia -->
-                                                    <div class="modal fade" id="resolveModal{{ incident.id }}" tabindex="-1" aria-labelledby="resolveModalLabel{{ incident.id }}" aria-hidden="true">
-                                                        <div class="modal-dialog">
-                                                            <div class="modal-content">
-                                                                <div class="modal-header">
-                                                                    <h5 class="modal-title" id="resolveModalLabel{{ incident.id }}">Resolver Incidencia</h5>
-                                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                                </div>
-                                                                <form action="{{ url_for('checkpoints.resolve_incident', id=incident.id) }}" method="POST">
-                                                                    <div class="modal-body">
-                                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                                        <div class="mb-3">
-                                                                            <label for="resolutionNotes{{ incident.id }}" class="form-label">Notas de resolución</label>
-                                                                            <textarea class="form-control" id="resolutionNotes{{ incident.id }}" name="resolution_notes" rows="3" required></textarea>
-                                                                        </div>
-                                                                        <div class="alert alert-info">
-                                                                            <i class="bi bi-info-circle"></i> Esta acción marcará la incidencia como resuelta. Por favor, incluya notas sobre cómo se resolvió el problema.
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="modal-footer">
-                                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                                                        <button type="submit" class="btn btn-success">Confirmar Resolución</button>
-                                                                    </div>
-                                                                </form>
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                                    <form action="{{ url_for('checkpoints.resolve_incident', id=incident.id) }}" method="POST" class="d-inline">
+                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                                        <input type="hidden" name="resolution_notes" value="Solucionado desde el dashboard de la empresa.">
+                                                        <button type="submit" class="btn btn-outline-success" title="Marcar como Resuelto">
+                                                            <i class="bi bi-check-circle"></i>
+                                                        </button>
+                                                    </form>
                                                     {% endif %}
                                                 </div>
                                             </td>
@@ -580,23 +556,6 @@
 <script>
     // Activar tooltips y configurar interacciones
     document.addEventListener('DOMContentLoaded', function() {
-        // Manejo personalizado para los botones de resolver incidencias
-        const resolveButtons = document.querySelectorAll('.resolve-incident-btn');
-        
-        // Añadir evento de clic a cada botón
-        resolveButtons.forEach(function(button) {
-            button.addEventListener('click', function(event) {
-                // Prevenir comportamiento por defecto
-                event.preventDefault();
-                
-                // Obtener el ID del modal objetivo
-                const targetModalId = this.getAttribute('data-bs-target');
-                
-                // Crear y mostrar el modal manualmente
-                const modal = new bootstrap.Modal(document.querySelector(targetModalId));
-                modal.show();
-            });
-        });
         
         // Activar tooltips
         const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));

@@ -342,6 +342,11 @@
                         <div class="tab-pane fade" id="incidentsTab" role="tabpanel" aria-labelledby="incidents-tab">
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h4>Incidencias de Control Horario</h4>
+                                <div>
+                                    <a href="{{ url_for('checkpoints.list_incidents') }}" class="btn" style="background-color: #8D6E63; color: white;">
+                                        <i class="bi bi-tools"></i> Resolución Masiva
+                                    </a>
+                                </div>
                             </div>
                             
                             <!-- Filtros de incidencias -->

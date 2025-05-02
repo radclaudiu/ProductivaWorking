@@ -30,14 +30,39 @@
     margin-bottom: 30px;
 }
 
+/* Contenedor de búsqueda para poder posicionar el contador de resultados */
+.help-search-container {
+    position: relative;
+    margin-bottom: 30px;
+}
+
 .help-search {
     width: 100%;
     padding: 15px;
     border: 2px solid #ddd;
     border-radius: 5px;
     font-size: 16px;
-    margin-bottom: 30px;
     background-color: #f9f7f5; /* Beige claro */
+    transition: border-color 0.3s ease;
+}
+
+.help-search:focus {
+    border-color: #8B4513; /* Marrón cuando está enfocado */
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(139, 69, 19, 0.2);
+}
+
+/* Contador de resultados */
+.help-results-counter {
+    position: absolute;
+    right: 10px;
+    top: -25px;
+    font-size: 14px;
+    color: #5F4B32; /* Marrón oscuro */
+    background-color: rgba(249, 247, 245, 0.8); /* Beige semi-transparente */
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 500;
 }
 
 .help-section {
@@ -161,4 +186,16 @@
 
 .help-tab-content.active {
     display: block;
+}
+
+/* Mensaje sin resultados */
+.help-no-results {
+    text-align: center;
+    color: #8B4513;
+    background-color: #f9f7f5;
+    padding: 15px;
+    border-radius: 5px;
+    margin: 20px 0;
+    border: 1px dashed #d9c9b9;
+    font-style: italic;
 }

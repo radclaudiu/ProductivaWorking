@@ -48,7 +48,22 @@ function initializeHelpPage() {
     // Inicializar buscador
     const searchInput = document.getElementById('helpSearch');
     if (searchInput) {
+        // Limpiar el campo de búsqueda al cargar la página
+        searchInput.value = '';
+        
+        // Enfocar el campo de búsqueda automáticamente para mejor experiencia de usuario
+        setTimeout(() => {
+            searchInput.focus();
+        }, 500);
+        
+        // Activar la búsqueda en tiempo real mientras se escribe
         searchInput.addEventListener('input', filterHelpContent);
+        
+        // También manejar el envío del formulario para evitar recargas
+        searchInput.form?.addEventListener('submit', function(e) {
+            e.preventDefault();
+            filterHelpContent();
+        });
     }
     
     // Inicializar pestañas
@@ -57,6 +72,12 @@ function initializeHelpPage() {
         tab.addEventListener('click', function() {
             const tabId = this.getAttribute('data-tab');
             activateTab(tabId);
+            
+            // Al cambiar de pestaña, reiniciar la búsqueda
+            if (searchInput) {
+                searchInput.value = '';
+                filterHelpContent();
+            }
         });
     });
     
@@ -98,23 +119,63 @@ function initializeHelpPage() {
     
     // Inicializar edición (solo para administradores)
     initializeEditButtons();
+    
+    // Forzar una primera ejecución del filtro para asegurar que todo es visible al inicio
+    filterHelpContent();
 }
 
 // Función para filtrar el contenido de ayuda
 function filterHelpContent() {
-    const searchText = document.getElementById('helpSearch').value.toLowerCase();
-    const helpItems = document.querySelectorAll('.help-item');
+    const searchInput = document.getElementById('helpSearch');
+    if (!searchInput) return;
     
+    const searchText = searchInput.value.toLowerCase().trim();
+    const helpItems = document.querySelectorAll('.help-item');
+    let totalVisibleItems = 0;
+    let totalMatchedItems = 0;
+    
+    // Expandir/colapsar respuestas según la búsqueda
     helpItems.forEach(item => {
         const question = item.querySelector('.help-question').textContent.toLowerCase();
-        const answer = item.querySelector('.help-answer').textContent.toLowerCase();
+        const answerElement = item.querySelector('.help-answer');
+        const answer = answerElement.textContent.toLowerCase();
         
-        if (question.includes(searchText) || answer.includes(searchText)) {
+        // Determina si este ítem coincide con la búsqueda
+        const questionMatches = question.includes(searchText);
+        const answerMatches = answer.includes(searchText);
+        const matches = questionMatches || answerMatches;
+        
+        // Determina cuál mostrar
+        if (searchText === '') {
+            // Sin búsqueda - mostrar todo
             item.style.display = 'block';
+            totalVisibleItems++;
+            // Mantener respuestas colapsadas por defecto
+            answerElement.classList.add('help-hidden');
+        } else if (matches) {
+            // Coincidencia encontrada - mostrar y expandir
+            item.style.display = 'block';
+            // Expandir respuestas automáticamente cuando hay coincidencia
+            answerElement.classList.remove('help-hidden');
+            totalVisibleItems++;
+            totalMatchedItems++;
+            
+            // Resaltar el texto coincidente si está implementada la función (implementación futura)
+            // highlightMatches(item, searchText);
         } else {
+            // Sin coincidencia - ocultar
             item.style.display = 'none';
         }
     });
+    
+    // Actualizar contador de resultados si existe
+    const resultsCounter = document.getElementById('helpResultsCounter');
+    if (resultsCounter && searchText !== '') {
+        resultsCounter.textContent = `${totalMatchedItems} resultados encontrados`;
+        resultsCounter.style.display = 'block';
+    } else if (resultsCounter) {
+        resultsCounter.style.display = 'none';
+    }
     
     // Mostrar mensajes si no hay resultados en las secciones visibles
     const activeSections = document.querySelectorAll('.help-tab-content.active');
@@ -130,9 +191,18 @@ function filterHelpContent() {
                 msg.className = 'help-no-results';
                 msg.textContent = 'No se encontraron resultados para "' + searchText + '"';
                 section.appendChild(msg);
+            } else {
+                // Actualizar mensaje existente
+                noResultsMsg.textContent = 'No se encontraron resultados para "' + searchText + '"';
+                noResultsMsg.style.display = 'block';
             }
         } else if (noResultsMsg) {
-            noResultsMsg.remove();
+            // Ocultar mensaje si hay resultados o no hay búsqueda
+            if (searchText === '') {
+                noResultsMsg.style.display = 'none';
+            } else {
+                noResultsMsg.remove();
+            }
         }
     });
 }

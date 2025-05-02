@@ -1504,6 +1504,11 @@ def weekly_schedule(employee_id):
                           employee=employee,
                           schedules=schedules_data)
 
+# Importar las clases y funciones necesarias para el formulario
+from flask_wtf import FlaskForm
+from wtforms import TimeField, BooleanField, SubmitField
+from wtforms.validators import DataRequired, ValidationError
+
 @schedule_bp.route('/employee/<int:employee_id>/day/<string:day>', methods=['POST'])
 @manager_required
 def update_day_schedule(employee_id, day):
@@ -1521,11 +1526,25 @@ def update_day_schedule(employee_id, day):
         flash('Día no válido.', 'danger')
         return redirect(url_for('schedule.weekly_schedule', employee_id=employee_id))
     
-    form = EmployeeScheduleForm()
+    # Crear un formulario simplificado sin día de la semana
+    class DayScheduleForm(FlaskForm):
+        # No incluimos day_of_week porque ya viene del URL
+        start_time = TimeField('Hora de Entrada', validators=[DataRequired()])
+        end_time = TimeField('Hora de Salida', validators=[DataRequired()])
+        is_working_day = BooleanField('Día Laborable', default=True)
+        submit = SubmitField('Guardar Horario')
+        
+        def validate_end_time(form, field):
+            if form.start_time.data and field.data and field.data <= form.start_time.data:
+                raise ValidationError('La hora de salida debe ser posterior a la hora de entrada.')
+    
+    # Inicializar con los datos recibidos
+    form = DayScheduleForm()
     
     if form.validate_on_submit():
         try:
             day_enum = WeekDay(day)  # Convertir nombre a enum
+            print(f"Procesando día {day} ({day_enum.value}) para empleado {employee_id}")
             
             # Buscar horario existente para este día
             schedule = EmployeeSchedule.query.filter_by(
@@ -1537,6 +1556,8 @@ def update_day_schedule(employee_id, day):
             start_time = form.start_time.data or time(9, 0)  # Valor predeterminado 9:00 AM
             end_time = form.end_time.data or time(18, 0)    # Valor predeterminado 6:00 PM
             is_working_day = form.is_working_day.data
+            
+            print(f"Valores del formulario: is_working_day={is_working_day}, start={start_time}, end={end_time}")
             
             # Si no existe, crear uno nuevo
             if not schedule:
@@ -1557,6 +1578,7 @@ def update_day_schedule(employee_id, day):
                 print(f"Actualizando horario existente para {day.upper()}: Laborable={is_working_day}")
             
             db.session.commit()
+            print(f"Guardado exitoso en base de datos")
             
             day_names = {
                 "lunes": "Lunes",
@@ -1578,6 +1600,7 @@ def update_day_schedule(employee_id, day):
             print(traceback.format_exc())
             flash(f'Error al guardar el horario: {str(e)}', 'danger')
     else:
+        print(f"Errores en el formulario: {form.errors}")
         for field, errors in form.errors.items():
             for error in errors:
                 flash(f'Error en campo {field}: {error}', 'danger')

@@ -84,11 +84,14 @@
                         
                         <div class="row mb-3">
                             <div class="col-12">
-                                <div class="form-check form-switch">
-                                    {{ form.allow_overtime(class="form-check-input") }}
-                                    <label class="form-check-label" for="{{ form.allow_overtime.id }}">
+                                <div class="form-check form-switch d-flex align-items-center">
+                                    {{ form.allow_overtime(class="form-check-input me-2") }}
+                                    <label class="form-check-label me-3" for="{{ form.allow_overtime.id }}">
                                         Permitir horas extra
                                     </label>
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle me-1"></i> Permite que el empleado exceda sus horas contractuales cuando sea necesario
+                                    </small>
                                     {% for error in form.allow_overtime.errors %}
                                     <div class="text-danger">{{ error }}</div>
                                     {% endfor %}
@@ -113,11 +116,14 @@
                         
                         <div class="row mb-3">
                             <div class="col-12">
-                                <div class="form-check form-switch">
-                                    {{ form.use_normal_schedule(class="form-check-input") }}
-                                    <label class="form-check-label" for="{{ form.use_normal_schedule.id }}">
+                                <div class="form-check form-switch d-flex align-items-center">
+                                    {{ form.use_normal_schedule(class="form-check-input me-2") }}
+                                    <label class="form-check-label me-3" for="{{ form.use_normal_schedule.id }}">
                                         Aplicar horario normal
                                     </label>
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle me-1"></i> Define un horario estándar de entrada y salida para calcular retrasos y salidas tempranas
+                                    </small>
                                     {% for error in form.use_normal_schedule.errors %}
                                     <div class="text-danger">{{ error }}</div>
                                     {% endfor %}
@@ -148,11 +154,14 @@
                         
                         <div class="row mb-3">
                             <div class="col-12">
-                                <div class="form-check form-switch">
-                                    {{ form.use_flexibility(class="form-check-input") }}
-                                    <label class="form-check-label" for="{{ form.use_flexibility.id }}">
+                                <div class="form-check form-switch d-flex align-items-center">
+                                    {{ form.use_flexibility(class="form-check-input me-2") }}
+                                    <label class="form-check-label me-3" for="{{ form.use_flexibility.id }}">
                                         Aplicar margen de flexibilidad
                                     </label>
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle me-1"></i> Establece un margen de tolerancia para entradas tardías y salidas tempranas
+                                    </small>
                                     {% for error in form.use_flexibility.errors %}
                                     <div class="text-danger">{{ error }}</div>
                                     {% endfor %}

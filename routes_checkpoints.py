@@ -390,9 +390,9 @@ def index_company(slug):
         except Exception as e:
             current_app.logger.error(f"Error al obtener puntos de fichaje: {e}")
         
-        # Obtener los empleados con sus horas de contrato para la empresa (sin filtrar por is_active para evitar problemas)
+        # Obtener los empleados activos con sus horas de contrato para la empresa
         try:
-            employees = Employee.query.filter_by(company_id=company.id).order_by(Employee.first_name).all()
+            employees = Employee.query.filter_by(company_id=company.id, is_active=True).order_by(Employee.first_name).all()
             
             # Cargar las horas de contrato para cada empleado de manera eficiente
             employee_ids = [emp.id for emp in employees]

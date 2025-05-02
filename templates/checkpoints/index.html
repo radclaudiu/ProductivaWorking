@@ -1,6 +1,6 @@
 {% extends 'layout.html' %}
 
-{% block title %}Centro de Control de Fichajes{% endblock %}
+{% block title %}Centro de Control Horario{% endblock %}
 
 {% block styles %}
 <style>
@@ -95,7 +95,7 @@
 <div class="container-fluid mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="mb-0">Centro de Control de Fichajes</h1>
+            <h1 class="mb-0">Centro de Control Horario</h1>
             <p class="text-muted">
                 Empresa: <strong>{{ company.name }}</strong> 
                 <a href="{{ url_for('checkpoints.select_company') }}" class="btn btn-sm btn-outline-primary ms-2">
@@ -128,7 +128,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs text-white-50 text-uppercase mb-1">Puntos de Fichaje Activos</div>
+                            <div class="text-xs text-white-50 text-uppercase mb-1">Puntos de Control Activos</div>
                             <div class="stat-value">{{ stats.active_checkpoints }}</div>
                         </div>
                         <div class="col-auto">
@@ -149,7 +149,7 @@
                 <div class="card-body">
                     <div class="row no-gutters align-items-center">
                         <div class="col mr-2">
-                            <div class="text-xs text-white-50 text-uppercase mb-1">Fichajes Hoy</div>
+                            <div class="text-xs text-white-50 text-uppercase mb-1">Registros Hoy</div>
                             <div class="stat-value">{{ stats.today_records }}</div>
                         </div>
                         <div class="col-auto">
@@ -213,7 +213,7 @@
         <div class="col-lg-8 mb-4">
             <div class="card h-100">
                 <div class="card-header text-white d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #5c4033, #894e34);">
-                    <h5 class="mb-0">Actividad de Fichajes (7 días)</h5>
+                    <h5 class="mb-0">Actividad de Control Horario (7 días)</h5>
                     <div>
                         <button class="btn btn-sm btn-outline-light" id="refreshChart">
                             <i class="bi bi-arrow-repeat"></i> Actualizar
@@ -283,7 +283,7 @@
                     <ul class="nav nav-pills card-header-pills" id="dashboard-tabs" role="tablist">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active" id="checkpoints-tab" data-bs-toggle="tab" data-bs-target="#checkpointsTab" type="button" role="tab" aria-controls="checkpointsTab" aria-selected="true">
-                                <i class="bi bi-tablet"></i> Puntos de Fichaje
+                                <i class="bi bi-tablet"></i> Puntos de Control
                             </button>
                         </li>
                         <li class="nav-item" role="presentation">
@@ -313,9 +313,9 @@
                         <!-- PESTAÑA: PUNTOS DE FICHAJE -->
                         <div class="tab-pane fade show active" id="checkpointsTab" role="tabpanel" aria-labelledby="checkpoints-tab">
                             <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h4>Puntos de Fichaje</h4>
+                                <h4>Puntos de Control</h4>
                                 <a href="{{ url_for('checkpoints.create_checkpoint') }}" class="btn btn-primary">
-                                    <i class="bi bi-plus-circle"></i> Nuevo Punto de Fichaje
+                                    <i class="bi bi-plus-circle"></i> Nuevo Punto de Control
                                 </a>
                             </div>
                             
@@ -391,8 +391,8 @@
                                 {% else %}
                                 <div class="col-12">
                                     <div class="alert alert-info">
-                                        <i class="bi bi-info-circle me-2"></i> No hay puntos de fichaje configurados. 
-                                        <a href="{{ url_for('checkpoints.create_checkpoint') }}" class="alert-link">Crear un nuevo punto de fichaje</a>.
+                                        <i class="bi bi-info-circle me-2"></i> No hay puntos de control configurados. 
+                                        <a href="{{ url_for('checkpoints.create_checkpoint') }}" class="alert-link">Crear un nuevo punto de control</a>.
                                     </div>
                                 </div>
                                 {% endfor %}
@@ -402,7 +402,7 @@
                         <!-- PESTAÑA: REGISTROS DE FICHAJE -->
                         <div class="tab-pane fade" id="recordsTab" role="tabpanel" aria-labelledby="records-tab">
                             <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h4>Registros de Fichaje</h4>
+                                <h4>Registros de Control Horario</h4>
                                 <a href="{{ url_for('checkpoints.export_records') }}" class="btn btn-primary">
                                     <i class="bi bi-file-earmark-pdf"></i> Exportar Registros
                                 </a>
@@ -423,7 +423,7 @@
                                             </select>
                                         </div>
                                         <div class="col-md-3">
-                                            <label for="filterCheckpoint" class="form-label">Punto de Fichaje</label>
+                                            <label for="filterCheckpoint" class="form-label">Punto de Control</label>
                                             <select class="form-select" id="filterCheckpoint">
                                                 <option value="0">Todos los puntos</option>
                                                 {% for checkpoint in checkpoints %}
@@ -530,7 +530,7 @@
                         <!-- PESTAÑA: INCIDENCIAS -->
                         <div class="tab-pane fade" id="incidentsTab" role="tabpanel" aria-labelledby="incidents-tab">
                             <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h4>Incidencias de Fichaje</h4>
+                                <h4>Incidencias de Control Horario</h4>
                             </div>
                             
                             <!-- Filtros de incidencias -->
@@ -685,7 +685,7 @@
                         <!-- PESTAÑA: CONFIGURACIÓN -->
                         <div class="tab-pane fade" id="configTab" role="tabpanel" aria-labelledby="config-tab">
                             <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h4>Configuración del Sistema de Fichajes</h4>
+                                <h4>Configuración del Sistema de Control Horario</h4>
                             </div>
                             
                             <div class="row">

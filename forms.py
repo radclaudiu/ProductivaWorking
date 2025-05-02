@@ -295,6 +295,13 @@ class EmployeeWeeklyScheduleForm(FlaskForm):
                     field = getattr(self, f"{day}_end_time")
                     field.errors = ["La hora de salida debe ser posterior a la hora de entrada."]
                     return False
+            else:
+                # Para días no laborables, establecer valores predeterminados
+                if not start_time:
+                    # Usar los atributos directamente ya que setattr no funciona con time() aquí
+                    getattr(self, f"{day}_start_time").data = datetime.time(9, 0)  # 9:00 AM
+                if not end_time:
+                    getattr(self, f"{day}_end_time").data = datetime.time(18, 0)  # 6:00 PM
         
         return True
 

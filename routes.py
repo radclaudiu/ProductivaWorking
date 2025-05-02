@@ -1480,11 +1480,24 @@ def weekly_schedule(employee_id):
             # Convertir el nombre del día a un WeekDay
             day_enum = WeekDay(day_name)
             
-            # Buscar un horario existente para este día
-            schedule = EmployeeSchedule.query.filter_by(
+            # Buscar TODOS los horarios existentes para este día (por si hay duplicados)
+            existing_schedules = EmployeeSchedule.query.filter_by(
                 employee_id=employee_id, 
                 day_of_week=day_enum
-            ).first()
+            ).all()
+            
+            # Si hay horarios duplicados, eliminarlos todos excepto el primero
+            if len(existing_schedules) > 1:
+                for schedule in existing_schedules[1:]:
+                    db.session.delete(schedule)
+                db.session.flush()  # Aplicar eliminaciones sin commit
+                schedule = existing_schedules[0]  # Usar el primer horario
+            # Si hay exactamente un horario, usarlo
+            elif len(existing_schedules) == 1:
+                schedule = existing_schedules[0]
+            # Si no hay horario, crear uno nuevo
+            else:
+                schedule = None
             
             # Si no existe horario para este día, crearlo independientemente de si es laborable o no
             if not schedule:

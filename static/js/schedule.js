@@ -12,9 +12,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const endTimeField = document.getElementById(`${dayName}_end_time`);
         
         if (checkbox && startTimeField && endTimeField) {
-            // Si el día no es laborable, deshabilitar campos de hora
-            startTimeField.disabled = !checkbox.checked;
-            endTimeField.disabled = !checkbox.checked;
+            // Si el día no es laborable, los campos aparecen deshabilitados visualmente
+            // pero NO usamos .disabled para que los valores se sigan enviando
+            // startTimeField.disabled = !checkbox.checked;
+            // endTimeField.disabled = !checkbox.checked;
             
             // Aplicar estilos visuales para mejorar la experiencia de usuario
             const timeFields = document.querySelectorAll(`.${dayName}-time-field`);

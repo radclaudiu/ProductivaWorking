@@ -3,212 +3,104 @@
 {% block styles %}
 {{ super() }}
 <style>
-    .day-row {
-        border-bottom: 1px solid #eee;
-        padding: 12px 0;
-    }
-    .day-row:last-child {
-        border-bottom: none;
-    }
-    .day-name {
-        font-weight: bold;
-        font-size: 1.1em;
-        color: #333;
-    }
-    .time-inputs {
-        transition: opacity 0.3s ease;
-    }
-    .time-inputs.disabled {
-        opacity: 0.5;
-    }
-    .schedule-table {
-        background-color: #fff;
-        border-radius: 5px;
-    }
-    .schedule-table .header-row {
+    .day-title {
         background-color: #f8f9fa;
         font-weight: bold;
+        padding: 10px 15px;
+        border-radius: 5px 5px 0 0;
+        border-bottom: 2px solid #ddd;
+        margin-bottom: 0;
+    }
+    .day-card {
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .working-day-badge {
+        font-size: 0.9em;
+        padding: 5px 10px;
+        border-radius: 20px;
+    }
+    .day-status {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .day-status .badge {
+        margin-left: 10px;
     }
 </style>
 {% endblock %}
 
-{% block scripts %}
-{{ super() }}
-<script src="{{ url_for('static', filename='js/schedule.js') }}"></script>
-{% endblock %}
-
 {% block content %}
 <div class="container-fluid py-4">
-    <h1 class="h3 mb-4">{{ title }}</h1>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h3 mb-0">{{ title }}</h1>
+        <a href="{{ url_for('schedule.list_schedules', employee_id=employee.id) }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Volver
+        </a>
+    </div>
+    
+    <div class="alert alert-info mb-4">
+        <i class="bi bi-info-circle me-2"></i> Para configurar el horario semanal, edite cada día individualmente y guarde los cambios.
+    </div>
     
     <div class="row">
-        <div class="col-md-12 mb-4">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="bi bi-calendar-week me-2"></i>Horario Semanal de {{ employee.first_name }} {{ employee.last_name }}
-                    </h5>
+        {% for day in schedules %}
+        <div class="col-md-6">
+            <div class="card day-card">
+                <div class="day-title d-flex justify-content-between align-items-center">
+                    <span>
+                        <i class="bi bi-calendar-day me-2"></i>
+                        {{ day.name }}
+                    </span>
+                    {% if day.schedule and day.schedule.is_working_day %}
+                        <span class="badge bg-success working-day-badge">Laborable</span>
+                    {% else %}
+                        <span class="badge bg-secondary working-day-badge">No Laborable</span>
+                    {% endif %}
                 </div>
                 <div class="card-body">
-                    <div class="alert alert-info mb-4">
-                        <i class="bi bi-info-circle me-2"></i> Configure el horario semanal marcando los días laborables y estableciendo las horas de entrada y salida para cada día.
-                    </div>
-                    
-                    <form method="POST" enctype="multipart/form-data">
-                        {{ form.hidden_tag() }}
+                    <form method="POST" action="{{ day.action_url }}">
+                        {{ day.form.hidden_tag() }}
                         
-                        <div class="schedule-table">
-                            <div class="header-row px-3 py-3 mb-2 d-flex">
-                                <div class="col-4">Día</div>
-                                <div class="col-3">¿Día Laborable?</div>
-                                <div class="col-2">Entrada</div>
-                                <div class="col-2">Salida</div>
+                        <input type="hidden" name="day" value="{{ day.value }}">
+                        
+                        <div class="day-status">
+                            <div class="form-check form-switch">
+                                {{ day.form.is_working_day(class="form-check-input") }}
+                                {{ day.form.is_working_day.label(class="form-check-label") }}
                             </div>
-                            
-                            <!-- Lunes -->
-                            <div class="day-row px-3 py-3 d-flex align-items-center">
-                                <div class="col-4 day-name">
-                                    <i class="bi bi-calendar-day me-2"></i>Lunes
-                                </div>
-                                <div class="col-3">
-                                    <div class="form-check">
-                                        {{ form.lunes_is_working_day(class="form-check-input", id="lunes_is_working_day") }}
-                                        {{ form.lunes_is_working_day.label(class="form-check-label") }}
-                                    </div>
-                                </div>
-                                <div class="col-2 lunes-time-field">
-                                    {{ form.lunes_start_time(class="form-control", type="time", id="lunes_start_time", placeholder="Hora entrada") }}
-                                </div>
-                                <div class="col-2 lunes-time-field">
-                                    {{ form.lunes_end_time(class="form-control", type="time", id="lunes_end_time", placeholder="Hora salida") }}
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ day.form.start_time.label(class="form-label") }}
+                                    {{ day.form.start_time(class="form-control", type="time") }}
                                 </div>
                             </div>
-                            
-                            <!-- Martes -->
-                            <div class="day-row px-3 py-3 d-flex align-items-center">
-                                <div class="col-4 day-name">
-                                    <i class="bi bi-calendar-day me-2"></i>Martes
-                                </div>
-                                <div class="col-3">
-                                    <div class="form-check">
-                                        {{ form.martes_is_working_day(class="form-check-input", id="martes_is_working_day") }}
-                                        {{ form.martes_is_working_day.label(class="form-check-label") }}
-                                    </div>
-                                </div>
-                                <div class="col-2 martes-time-field">
-                                    {{ form.martes_start_time(class="form-control", type="time", id="martes_start_time", placeholder="Hora entrada") }}
-                                </div>
-                                <div class="col-2 martes-time-field">
-                                    {{ form.martes_end_time(class="form-control", type="time", id="martes_end_time", placeholder="Hora salida") }}
-                                </div>
-                            </div>
-                            
-                            <!-- Miércoles -->
-                            <div class="day-row px-3 py-3 d-flex align-items-center">
-                                <div class="col-4 day-name">
-                                    <i class="bi bi-calendar-day me-2"></i>Miércoles
-                                </div>
-                                <div class="col-3">
-                                    <div class="form-check">
-                                        {{ form.miercoles_is_working_day(class="form-check-input", id="miercoles_is_working_day") }}
-                                        {{ form.miercoles_is_working_day.label(class="form-check-label") }}
-                                    </div>
-                                </div>
-                                <div class="col-2 miercoles-time-field">
-                                    {{ form.miercoles_start_time(class="form-control", type="time", id="miercoles_start_time", placeholder="Hora entrada") }}
-                                </div>
-                                <div class="col-2 miercoles-time-field">
-                                    {{ form.miercoles_end_time(class="form-control", type="time", id="miercoles_end_time", placeholder="Hora salida") }}
-                                </div>
-                            </div>
-                            
-                            <!-- Jueves -->
-                            <div class="day-row px-3 py-3 d-flex align-items-center">
-                                <div class="col-4 day-name">
-                                    <i class="bi bi-calendar-day me-2"></i>Jueves
-                                </div>
-                                <div class="col-3">
-                                    <div class="form-check">
-                                        {{ form.jueves_is_working_day(class="form-check-input", id="jueves_is_working_day") }}
-                                        {{ form.jueves_is_working_day.label(class="form-check-label") }}
-                                    </div>
-                                </div>
-                                <div class="col-2 jueves-time-field">
-                                    {{ form.jueves_start_time(class="form-control", type="time", id="jueves_start_time", placeholder="Hora entrada") }}
-                                </div>
-                                <div class="col-2 jueves-time-field">
-                                    {{ form.jueves_end_time(class="form-control", type="time", id="jueves_end_time", placeholder="Hora salida") }}
-                                </div>
-                            </div>
-                            
-                            <!-- Viernes -->
-                            <div class="day-row px-3 py-3 d-flex align-items-center">
-                                <div class="col-4 day-name">
-                                    <i class="bi bi-calendar-day me-2"></i>Viernes
-                                </div>
-                                <div class="col-3">
-                                    <div class="form-check">
-                                        {{ form.viernes_is_working_day(class="form-check-input", id="viernes_is_working_day") }}
-                                        {{ form.viernes_is_working_day.label(class="form-check-label") }}
-                                    </div>
-                                </div>
-                                <div class="col-2 viernes-time-field">
-                                    {{ form.viernes_start_time(class="form-control", type="time", id="viernes_start_time", placeholder="Hora entrada") }}
-                                </div>
-                                <div class="col-2 viernes-time-field">
-                                    {{ form.viernes_end_time(class="form-control", type="time", id="viernes_end_time", placeholder="Hora salida") }}
-                                </div>
-                            </div>
-                            
-                            <!-- Sábado -->
-                            <div class="day-row px-3 py-3 d-flex align-items-center">
-                                <div class="col-4 day-name">
-                                    <i class="bi bi-calendar-day me-2"></i>Sábado
-                                </div>
-                                <div class="col-3">
-                                    <div class="form-check">
-                                        {{ form.sabado_is_working_day(class="form-check-input", id="sabado_is_working_day") }}
-                                        {{ form.sabado_is_working_day.label(class="form-check-label") }}
-                                    </div>
-                                </div>
-                                <div class="col-2 sabado-time-field">
-                                    {{ form.sabado_start_time(class="form-control", type="time", id="sabado_start_time", placeholder="Hora entrada") }}
-                                </div>
-                                <div class="col-2 sabado-time-field">
-                                    {{ form.sabado_end_time(class="form-control", type="time", id="sabado_end_time", placeholder="Hora salida") }}
-                                </div>
-                            </div>
-                            
-                            <!-- Domingo -->
-                            <div class="day-row px-3 py-3 d-flex align-items-center">
-                                <div class="col-4 day-name">
-                                    <i class="bi bi-calendar-day me-2"></i>Domingo
-                                </div>
-                                <div class="col-3">
-                                    <div class="form-check">
-                                        {{ form.domingo_is_working_day(class="form-check-input", id="domingo_is_working_day") }}
-                                        {{ form.domingo_is_working_day.label(class="form-check-label") }}
-                                    </div>
-                                </div>
-                                <div class="col-2 domingo-time-field">
-                                    {{ form.domingo_start_time(class="form-control", type="time", id="domingo_start_time", placeholder="Hora entrada") }}
-                                </div>
-                                <div class="col-2 domingo-time-field">
-                                    {{ form.domingo_end_time(class="form-control", type="time", id="domingo_end_time", placeholder="Hora salida") }}
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ day.form.end_time.label(class="form-label") }}
+                                    {{ day.form.end_time(class="form-control", type="time") }}
                                 </div>
                             </div>
                         </div>
                         
-                        <div class="mt-4 d-flex justify-content-between">
-                            <a href="{{ url_for('schedule.list_schedules', employee_id=employee.id) }}" class="btn btn-secondary">
-                                <i class="bi bi-arrow-left"></i> Volver
-                            </a>
-                            {{ form.submit(class="btn btn-primary") }}
+                        <div class="mt-3">
+                            {{ day.form.submit(class="btn btn-primary w-100") }}
                         </div>
                     </form>
                 </div>
             </div>
         </div>
+        {% endfor %}
+    </div>
+    
+    <div class="mt-4">
+        <a href="{{ url_for('schedule.list_schedules', employee_id=employee.id) }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Volver a la lista de horarios
+        </a>
     </div>
 </div>
 {% endblock %}

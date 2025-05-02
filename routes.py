@@ -1436,9 +1436,10 @@ def create_schedule(employee_id):
                           form=form,
                           employee=employee)
 
-@schedule_bp.route('/employee/<int:employee_id>/weekly', methods=['GET', 'POST'])
+@schedule_bp.route('/employee/<int:employee_id>/weekly', methods=['GET'])
 @manager_required
 def weekly_schedule(employee_id):
+    """Muestra 7 formularios individuales para configurar el horario de cada día de la semana."""
     employee = Employee.query.get_or_404(employee_id)
     
     # Check if user has permission to manage this employee
@@ -1446,103 +1447,143 @@ def weekly_schedule(employee_id):
         flash('No tienes permiso para gestionar los horarios de este empleado.', 'danger')
         return redirect(url_for('employee.list_employees'))
     
-    form = EmployeeWeeklyScheduleForm()
-    
-    # Registrar el estado actual para depuración
+    # Obtener todos los horarios actuales
     current_schedules = EmployeeSchedule.query.filter_by(employee_id=employee_id).all()
-    print(f"\nHORARIOS ACTUALES PARA EMPLEADO {employee_id} (ANTES DEL PROCESAMIENTO):")
+    print(f"\nHORARIOS ACTUALES PARA EMPLEADO {employee_id}:")
     for schedule in current_schedules:
         print(f"ID: {schedule.id}, Día: {schedule.day_of_week.value}, Laborable: {schedule.is_working_day}")
     
-    # Si es una petición GET, cargar los horarios existentes
-    if request.method == 'GET':
-        try:
-            # Crear un diccionario con los horarios existentes por día
-            day_schedules = {}
-            for schedule in current_schedules:
-                day_schedules[schedule.day_of_week.value] = schedule
-            
-            # Cargar los datos en el formulario
-            for day in ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]:
-                if day in day_schedules:
-                    schedule = day_schedules[day]
-                    getattr(form, f"{day}_is_working_day").data = schedule.is_working_day
-                    getattr(form, f"{day}_start_time").data = schedule.start_time
-                    getattr(form, f"{day}_end_time").data = schedule.end_time
-        except Exception as e:
-            print(f"ERROR AL CARGAR HORARIOS: {str(e)}")
+    # Crear un diccionario con los horarios existentes por día
+    day_schedules = {}
+    for schedule in current_schedules:
+        day_schedules[schedule.day_of_week.value] = schedule
+    
+    # Lista de días a mostrar
+    days = [
+        {"value": "lunes", "name": "Lunes"},
+        {"value": "martes", "name": "Martes"},
+        {"value": "miercoles", "name": "Miércoles"},
+        {"value": "jueves", "name": "Jueves"},
+        {"value": "viernes", "name": "Viernes"},
+        {"value": "sabado", "name": "Sábado"},
+        {"value": "domingo", "name": "Domingo"}
+    ]
+    
+    # Preparar formularios para cada día
+    schedules_data = []
+    for day in days:
+        # Crear formulario para este día
+        form = EmployeeScheduleForm()
+        
+        # Si existe un horario para este día, cargarlo en el formulario
+        if day["value"] in day_schedules:
+            schedule = day_schedules[day["value"]]
+            form.is_working_day.data = schedule.is_working_day
+            form.start_time.data = schedule.start_time
+            form.end_time.data = schedule.end_time
+        else:
+            # Valores predeterminados para días sin horario configurado
+            form.is_working_day.data = day["value"] not in ["sabado", "domingo"]
+            form.start_time.data = time(9, 0)  # 9:00 AM
+            form.end_time.data = time(18, 0)  # 6:00 PM
+        
+        # URL para el formulario de este día
+        action_url = url_for('schedule.update_day_schedule', employee_id=employee_id, day=day["value"])
+        
+        # Agregar datos a la lista
+        schedules_data.append({
+            "value": day["value"],
+            "name": day["name"],
+            "form": form,
+            "schedule": day_schedules.get(day["value"]),
+            "action_url": action_url
+        })
+    
+    return render_template('weekly_schedule_form.html', 
+                          title=f'Horario Semanal de {employee.first_name} {employee.last_name}', 
+                          employee=employee,
+                          schedules=schedules_data)
+
+@schedule_bp.route('/employee/<int:employee_id>/day/<string:day>', methods=['POST'])
+@manager_required
+def update_day_schedule(employee_id, day):
+    """Actualiza el horario para un día específico de la semana."""
+    employee = Employee.query.get_or_404(employee_id)
+    
+    # Check if user has permission to manage this employee
+    if not can_manage_employee(employee):
+        flash('No tienes permiso para gestionar los horarios de este empleado.', 'danger')
+        return redirect(url_for('employee.list_employees'))
+    
+    # Validar que el día sea válido
+    valid_days = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]
+    if day not in valid_days:
+        flash('Día no válido.', 'danger')
+        return redirect(url_for('schedule.weekly_schedule', employee_id=employee_id))
+    
+    form = EmployeeScheduleForm()
     
     if form.validate_on_submit():
-        print(f"VALIDACIÓN EXITOSA DEL FORMULARIO")
         try:
-            print(f"INICIANDO PROCESO DE GUARDADO PARA EMPLEADO {employee_id}")
-            # PASO 1: Eliminar TODOS los horarios existentes
-            # Este enfoque resuelve definitivamente el problema de duplicados
-            print(f"\nELIMINANDO TODOS LOS HORARIOS ACTUALES PARA EMPLEADO {employee_id}")
-            deleted_count = EmployeeSchedule.query.filter_by(employee_id=employee_id).delete()
-            print(f"ELIMINADOS {deleted_count} HORARIOS")
-            db.session.flush()  # Aplicar las eliminaciones antes de crear los nuevos
+            day_enum = WeekDay(day)  # Convertir nombre a enum
             
-            # PASO 2: Crear horarios nuevos para cada día
-            for day_name in ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"]:
-                # Obtener los datos del formulario para este día
-                is_working_day = getattr(form, f"{day_name}_is_working_day").data
-                start_time = getattr(form, f"{day_name}_start_time").data
-                end_time = getattr(form, f"{day_name}_end_time").data
-                
-                print(f"PROCESANDO DÍA {day_name}: is_working_day={is_working_day}, start={start_time}, end={end_time}")
-                
-                # Valores por defecto seguros para evitar errores NULL
-                if not start_time:
-                    start_time = time(9, 0)  # 9:00 AM por defecto
-                    print(f"Asignando hora de inicio por defecto: 09:00")
-                
-                if not end_time:
-                    end_time = time(18, 0)  # 6:00 PM por defecto
-                    print(f"Asignando hora de fin por defecto: 18:00")
-                
-                # Convertir el nombre del día a un WeekDay
-                day_enum = WeekDay(day_name)
-                
-                # Crear un nuevo registro para este día
-                new_schedule = EmployeeSchedule(
+            # Buscar horario existente para este día
+            schedule = EmployeeSchedule.query.filter_by(
+                employee_id=employee_id, 
+                day_of_week=day_enum
+            ).first()
+            
+            # Verificar valores para prevenir problemas
+            start_time = form.start_time.data or time(9, 0)  # Valor predeterminado 9:00 AM
+            end_time = form.end_time.data or time(18, 0)    # Valor predeterminado 6:00 PM
+            is_working_day = form.is_working_day.data
+            
+            # Si no existe, crear uno nuevo
+            if not schedule:
+                schedule = EmployeeSchedule(
                     day_of_week=day_enum,
                     start_time=start_time,
                     end_time=end_time,
                     is_working_day=is_working_day,
                     employee_id=employee_id
                 )
-                print(f"CREANDO NUEVO HORARIO PARA {day_name.upper()}: is_working_day={is_working_day}")
-                db.session.add(new_schedule)
+                db.session.add(schedule)
+                print(f"Creando nuevo horario para {day.upper()}: Laborable={is_working_day}")
+            else:
+                # Actualizar el existente
+                schedule.start_time = start_time
+                schedule.end_time = end_time
+                schedule.is_working_day = is_working_day
+                print(f"Actualizando horario existente para {day.upper()}: Laborable={is_working_day}")
             
-            # PASO 3: Guardar los cambios
-            print("APLICANDO CAMBIOS A LA BASE DE DATOS...")
             db.session.commit()
-            print("COMMIT REALIZADO CORRECTAMENTE")
             
-            # Verificar el resultado
-            updated_schedules = EmployeeSchedule.query.filter_by(employee_id=employee_id).all()
-            print(f"\nHORARIOS ACTUALIZADOS PARA EMPLEADO {employee_id} (DESPUÉS DEL GUARDADO):")
-            for schedule in updated_schedules:
-                print(f"ID: {schedule.id}, Día: {schedule.day_of_week.value}, Laborable: {schedule.is_working_day}")
+            day_names = {
+                "lunes": "Lunes",
+                "martes": "Martes",
+                "miercoles": "Miércoles",
+                "jueves": "Jueves",
+                "viernes": "Viernes",
+                "sabado": "Sábado",
+                "domingo": "Domingo"
+            }
             
-            log_activity(f'Horarios semanales actualizados para {employee.first_name} {employee.last_name}')
-            flash('Horarios semanales actualizados correctamente.', 'success')
-            print(f"REDIRIGIENDO A LA LISTA DE HORARIOS")
+            log_activity(f'Horario de {day_names[day]} actualizado para {employee.first_name} {employee.last_name}')
+            flash(f'Horario de {day_names[day]} actualizado correctamente.', 'success')
             
-            # Usamos una ruta diferente para volver a la vista de detalles del empleado en lugar de la lista de horarios
-            return redirect(url_for('employee.view_employee', id=employee_id))
         except Exception as e:
             db.session.rollback()
-            print(f"ERROR AL GUARDAR HORARIOS: {str(e)}")
+            print(f"ERROR AL GUARDAR HORARIO: {str(e)}")
             import traceback
             print(traceback.format_exc())
-            flash(f'Error al guardar los horarios: {str(e)}', 'danger')
+            flash(f'Error al guardar el horario: {str(e)}', 'danger')
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'Error en campo {field}: {error}', 'danger')
     
-    return render_template('weekly_schedule_form.html', 
-                          title=f'Horario Semanal para {employee.first_name} {employee.last_name}', 
-                          form=form,
-                          employee=employee)
+    # Volver a la página de horario semanal
+    return redirect(url_for('schedule.weekly_schedule', employee_id=employee_id))
 
 @schedule_bp.route('/<int:id>/edit', methods=['GET', 'POST'])
 @manager_required

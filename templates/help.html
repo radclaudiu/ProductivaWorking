@@ -162,6 +162,53 @@
                 </div>
                 
                 <div class="help-item">
+                    <div class="help-question">¿No puedo acceder a todas las empresas que debería ver?</div>
+                    <div class="help-answer" id="answer-company7">
+                        <p>Si no puedes acceder a empresas a las que deberías tener acceso, prueba estas soluciones:</p>
+                        
+                        <h4>Problema 1: Problemas de permisos</h4>
+                        <ol>
+                            <li>Verifica tu rol de usuario:</li>
+                            <ul>
+                                <li>Los usuarios con rol de <strong>Administrador</strong> pueden ver todas las empresas</li>
+                                <li>Los <strong>Gerentes</strong> sólo pueden acceder a empresas específicamente asignadas</li>
+                                <li>Los usuarios básicos sólo pueden ver las empresas a las que están explícitamente asociados</li>
+                            </ul>
+                            <li>Solicita a un administrador que compruebe tus permisos</li>
+                        </ol>
+                        
+                        <h4>Problema 2: Empresas inactivas</h4>
+                        <p>Las empresas dadas de baja no aparecen en el listado principal:</p>
+                        <ol>
+                            <li>En la lista de empresas, activa la opción "Mostrar inactivas"</li>
+                            <li>Las empresas dadas de baja aparecerán en el listado marcadas como inactivas</li>
+                            <li>Para reactivar una empresa, un administrador debe acceder a ella y cambiar su estado</li>
+                        </ol>
+                        
+                        <h4>Problema 3: Filtros aplicados</h4>
+                        <p>Es posible que haya filtros aplicados que limiten las empresas visibles:</p>
+                        <ol>
+                            <li>Revisa la parte superior de la lista de empresas</li>
+                            <li>Comprueba si hay filtros activos (texto en campo de búsqueda, filtros por tipo, etc.)</li>
+                            <li>Haz clic en "Limpiar filtros" o elimina el texto de búsqueda</li>
+                        </ol>
+                        
+                        <h4>Problema 4: Problemas de sesión</h4>
+                        <p>En ocasiones, los problemas de acceso pueden deberse a la sesión:</p>
+                        <ol>
+                            <li>Cierra sesión y vuelve a iniciarla</li>
+                            <li>Limpia la caché del navegador</li>
+                            <li>Intenta con otro navegador si el problema persiste</li>
+                        </ol>
+                        
+                        <p>Si has intentado todas estas soluciones y sigues sin poder acceder, contacta con el administrador del sistema para revisar la configuración de tu cuenta.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="company7">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
                     <div class="help-question">¿Cómo configurar las credenciales del Portal para una ubicación?</div>
                     <div class="help-answer" id="answer-company4">
                         <p>Cada ubicación tiene credenciales únicas para acceder al Portal de empleados:</p>
@@ -330,6 +377,110 @@
                     </div>
                     {% if current_user.is_admin() %}
                     <button class="help-edit-button" data-item="checkpoint7">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Por qué no coinciden las horas registradas con las horas calculadas?</div>
+                    <div class="help-answer" id="answer-checkpoint8">
+                        <p>En ocasiones, pueden aparecer discrepancias entre las horas registradas y las horas calculadas por el sistema. Estas son las razones más comunes:</p>
+                        
+                        <h4>Causa 1: Redondeo y reglas de cálculo</h4>
+                        <ul>
+                            <li>El sistema puede aplicar reglas de redondeo configuradas para cada ubicación</li>
+                            <li>Por ejemplo: redondeo a la media hora o al cuarto de hora más cercano</li>
+                            <li>También puede existir un margen de cortesia (5-15 minutos) que no computa para entradas tardías o salidas tempranas</li>
+                            <li>Para verificar la configuración: Empresas > Ubicación > Configuración de fichajes</li>
+                        </ul>
+                        
+                        <h4>Causa 2: Jornadas nocturnas</h4>
+                        <ul>
+                            <li>Cuando un turno cruza la medianoche, las horas se asignan al día de inicio del turno</li>
+                            <li>Ejemplo: Entrada a las 22:00 y salida a las 06:00 del día siguiente = 8 horas trabajadas el primer día</li>
+                            <li>Esto puede causar confusión si se observan solo los registros de un día específico</li>
+                        </ul>
+                        
+                        <h4>Causa 3: Pausas y descansos</h4>
+                        <ul>
+                            <li>Si se han configurado pausas automáticas, el sistema las resta del tiempo total</li>
+                            <li>Ejemplo: Pausa para comida de 1 hora en turnos de 8 horas</li>
+                            <li>Estas pausas pueden configurarse por ubicación o por empleado</li>
+                        </ul>
+                        
+                        <h4>Causa 4: Límites de horas</h4>
+                        <ul>
+                            <li>El sistema puede tener configurado un máximo de horas a computar por día</li>
+                            <li>Las horas extra por encima de cierto umbral pueden no computarse o hacerlo de forma diferente</li>
+                            <li>Verifica la configuración en: Empresas > Configuración > Límites horarios</li>
+                        </ul>
+                        
+                        <h4>Solución: Revisar los cálculos detallados</h4>
+                        <ol>
+                            <li>Accede a "Informe detallado" para el empleado o período en cuestión</li>
+                            <li>Revisa la columna "Detalles de cálculo" que muestra cómo se calcularon las horas</li>
+                            <li>Si detectas un error real, puedes corregir manualmente el registro afectado</li>
+                        </ol>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="checkpoint8">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo resolver problemas con el PIN de un empleado?</div>
+                    <div class="help-answer" id="answer-checkpoint9">
+                        <p>Los problemas con el PIN de acceso de los empleados son relativamente comunes. Aquí tienes las soluciones a los problemas más frecuentes:</p>
+                        
+                        <h4>Problema 1: Empleado no recuerda su PIN</h4>
+                        <ol>
+                            <li>El PIN por defecto son los últimos 4 dígitos del DNI/NIE del empleado</li>
+                            <li>Si el empleado no lo recuerda, un administrador puede:</li>
+                            <ul>
+                                <li>Acceder a "Empleados" > Buscar el empleado > "Ver detalles"</li>
+                                <li>En la sección "Seguridad", ver el PIN actual o restablecerlo</li>
+                                <li>Comunicar el nuevo PIN al empleado</li>
+                            </ul>
+                        </ol>
+                        
+                        <h4>Problema 2: PIN no funciona correctamente</h4>
+                        <ul>
+                            <li>Verifica que el empleado esté utilizando el PIN correcto</li>
+                            <li>Comprueba que el empleado está activo en el sistema</li>
+                            <li>Asegúrate de que el empleado está asignado a la ubicación correcta</li>
+                            <li>Como solución, restablece el PIN:</li>
+                            <ul>
+                                <li>Ve a "Empleados" > Selecciona el empleado > "Editar"</li>
+                                <li>En la pestaña "Seguridad", haz clic en "Restablecer PIN"</li>
+                                <li>Guarda los cambios</li>
+                            </ul>
+                        </ul>
+                        
+                        <h4>Problema 3: Cambiar el formato del PIN</h4>
+                        <p>Si deseas cambiar la estructura del PIN para todos los empleados:</p>
+                        <ol>
+                            <li>Accede a "Administración" > "Configuración general"</li>
+                            <li>En la sección "Puntos de fichaje", busca "Formato de PIN"</li>
+                            <li>Puedes elegir entre diferentes opciones:</li>
+                            <ul>
+                                <li>Últimos 4 dígitos del DNI (por defecto)</li>
+                                <li>4 dígitos aleatorios</li>
+                                <li>Fecha de nacimiento (DDMM)</li>
+                                <li>PIN personalizado por empleado</li>
+                            </ul>
+                            <li>Si eliges un nuevo formato, puedes regenerar todos los PINs o mantener los existentes</li>
+                        </ol>
+                        
+                        <h4>Problema 4: Deshabilitar la solicitud de PIN</h4>
+                        <p>En algunas ubicaciones, puedes preferir no utilizar PIN:</p>
+                        <ol>
+                            <li>Ve a "Empresas" > Selecciona la empresa > Selecciona la ubicación</li>
+                            <li>En "Configuración del punto de fichaje", busca la opción "Requiere PIN"</li>
+                            <li>Desmarca la casilla y guarda los cambios</li>
+                            <li>Con esta configuración, los empleados sólo tendrán que seleccionar su nombre para fichar</li>
+                        </ol>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="checkpoint9">Editar</button>
                     {% endif %}
                 </div>
                 
@@ -599,11 +750,21 @@
                             </ul>
                         </ul>
                         
+                        <h4>Error: "No se puede conectar a la impresora"</h4>
+                        <ul>
+                            <li>Comprueba que el puerto especificado es correcto (9100 es el estándar para Brother)</li>
+                            <li>Intenta dejar el campo de puerto vacío para usar la configuración predeterminada</li>
+                            <li>Verifica que el dispositivo desde el que imprimes está en la misma red que la impresora</li>
+                            <li>Comprueba la conectividad con un ping desde otro dispositivo en la misma red</li>
+                            <li>Si la impresora tiene IP dinámica, configura una IP estática en el router</li>
+                        </ul>
+                        
                         <h4>Alternativa: servidor de impresión Raspberry Pi</h4>
                         <p>Si continuas con problemas de conectividad, considera configurar un servidor de impresión con Raspberry Pi:</p>
                         <ul>
                             <li>En "Ayuda" > "Configurar Raspberry Pi como servidor de impresión" encontrarás instrucciones detalladas</li>
                             <li>Esta solución ofrece mayor estabilidad y elimina dependencias del navegador</li>
+                            <li>La respuesta suele ser mucho más rápida (1-3 segundos desde que se pulsa imprimir)</li>
                         </ul>
                         
                         <p><strong>Nota:</strong> Si ninguna solución funciona, puedes generar las etiquetas en PDF y guardarlas para impresión posterior desde otro dispositivo.</p>

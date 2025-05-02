@@ -55,13 +55,7 @@
                                 {% endfor %}
                             </select>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Mostrar registros</label>
-                            <select name="show_all" class="form-control">
-                                <option value="true" {% if show_all == 'true' %}selected{% endif %}>Vista simplificada</option>
-                                <option value="false" {% if show_all == 'false' %}selected{% endif %}>Registros con cambios</option>
-                            </select>
-                        </div>
+                        <input type="hidden" name="show_all" value="true">
                         <div class="col-md-2 d-flex align-items-end">
                             <button type="submit" class="btn btn-primary mb-3">Filtrar</button>
                             {% if filters.start_date or filters.end_date or filters.employee_id %}

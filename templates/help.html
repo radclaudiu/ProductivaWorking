@@ -56,6 +56,55 @@
                 </div>
                 
                 <div class="help-item">
+                    <div class="help-question">¿Cómo puedo modificar los datos fiscales de una empresa ya creada?</div>
+                    <div class="help-answer" id="answer-company5">
+                        <p>Para modificar los datos fiscales de una empresa existente:</p>
+                        <ol>
+                            <li>Accede a "Empresas" en el menú principal</li>
+                            <li>Busca la empresa que deseas modificar en la lista</li>
+                            <li>Haz clic en el botón de "Editar" (icono de lápiz)</li>
+                            <li>En el formulario, modifica los campos necesarios:</li>
+                            <ul>
+                                <li>Nombre legal</li>
+                                <li>CIF/NIF</li>
+                                <li>Dirección fiscal</li>
+                                <li>Datos de contacto</li>
+                                <li>Representante legal</li>
+                            </ul>
+                            <li>Haz clic en "Guardar cambios" para actualizar la información</li>
+                        </ol>
+                        <p>Los cambios se aplicarán inmediatamente en todo el sistema y serán visibles en informes y documentos generados.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="company5">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Puedo dar de baja una empresa sin perder sus datos históricos?</div>
+                    <div class="help-answer" id="answer-company6">
+                        <p>Sí, es posible dar de baja una empresa manteniendo su historial:</p>
+                        <ol>
+                            <li>Accede a "Empresas" en el menú principal</li>
+                            <li>Localiza la empresa en la lista y haz clic en "Ver detalles"</li>
+                            <li>En la página de detalles, busca la opción "Dar de baja"</li>
+                            <li>Confirma la acción en el diálogo emergente</li>
+                            <li>Opcionalmente, puedes indicar un motivo de baja para referencia futura</li>
+                        </ol>
+                        <p>Al dar de baja una empresa:</p>
+                        <ul>
+                            <li>No aparecerá en las listas principales, pero podrás acceder a ella mediante el filtro "Mostrar inactivas"</li>
+                            <li>Se conservarán todos los datos históricos (fichajes, arqueos, gastos, etc.)</li>
+                            <li>Sus ubicaciones y empleados pasarán automáticamente a estado inactivo</li>
+                            <li>Podrás reactivarla en cualquier momento si es necesario</li>
+                        </ul>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="company6">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
                     <div class="help-question">¿Cómo agregar una ubicación a una empresa?</div>
                     <div class="help-answer" id="answer-company2">
                         <p>Las ubicaciones representan las distintas sedes o locales de una empresa. Para agregar una nueva ubicación:</p>
@@ -200,6 +249,83 @@
                     </div>
                     {% if current_user.is_admin() %}
                     <button class="help-edit-button" data-item="checkpoint2">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Qué hacer si un empleado olvidó fichar al salir?</div>
+                    <div class="help-answer" id="answer-checkpoint6">
+                        <p>Si un empleado olvida registrar su salida, hay varias formas de solucionarlo:</p>
+                        
+                        <h4>Opción 1: Cierre manual inmediato</h4>
+                        <ol>
+                            <li>Accede a "Fichajes" en el menú principal</li>
+                            <li>Busca el registro pendiente (aparecerá sin hora de salida)</li>
+                            <li>Haz clic en "Cerrar manualmente"</li>
+                            <li>Introduce la hora real de salida</li>
+                            <li>Añade un comentario explicando la situación</li>
+                            <li>Guarda los cambios</li>
+                        </ol>
+                        
+                        <h4>Opción 2: Esperar al cierre automático</h4>
+                        <p>Si la ubicación tiene configurado el cierre automático:</p>
+                        <ul>
+                            <li>El sistema cerrará automáticamente los fichajes pendientes durante la ventana horaria configurada</li>
+                            <li>Se registrará la hora máxima establecida (por defecto 23:59)</li>
+                            <li>Aparecerá marcado como "cierre automático" en los informes</li>
+                        </ul>
+                        
+                        <h4>Opción 3: Ajuste posterior</h4>
+                        <p>Después del cierre automático, si es necesario:</p>
+                        <ul>
+                            <li>Puedes editar el registro para ajustar la hora de salida a la hora real</li>
+                            <li>Documentar siempre el motivo del ajuste en los comentarios para auditoría</li>
+                        </ul>
+                        
+                        <p><strong>Importante:</strong> Es recomendable recordar a los empleados la importancia de registrar correctamente sus entradas y salidas para evitar problemas en el cálculo de horas trabajadas.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="checkpoint6">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo se calculan las horas extras en el sistema de fichaje?</div>
+                    <div class="help-answer" id="answer-checkpoint7">
+                        <p>El sistema de fichaje calcula automáticamente las horas extras trabajadas por cada empleado:</p>
+                        
+                        <h4>Base para el cálculo</h4>
+                        <ul>
+                            <li>Se toma como referencia las horas contratadas del empleado (configuradas en su perfil)</li>
+                            <li>El periodo de cálculo puede ser semanal o mensual, según la configuración de la empresa</li>
+                        </ul>
+                        
+                        <h4>Funcionamiento</h4>
+                        <ol>
+                            <li>El sistema suma todas las horas trabajadas en el periodo</li>
+                            <li>Resta las horas contratadas para ese mismo periodo</li>
+                            <li>Si el resultado es positivo, se consideran horas extras</li>
+                        </ol>
+                        
+                        <h4>Visualización</h4>
+                        <p>Las horas extras se pueden ver en:</p>
+                        <ul>
+                            <li>El resumen semanal/mensual de cada empleado</li>
+                            <li>Los informes detallados de horas trabajadas</li>
+                            <li>El panel de control para gerentes y administradores</li>
+                        </ul>
+                        
+                        <h4>Consideraciones especiales</h4>
+                        <ul>
+                            <li>Días festivos: Se pueden configurar para contar como horas extras automáticamente</li>
+                            <li>Horario nocturno: Puede tener un factor multiplicador configurable</li>
+                            <li>Límites: Es posible establecer límites máximos de horas extras permitidas</li>
+                        </ul>
+                        
+                        <p><strong>Nota:</strong> La configuración exacta del cálculo de horas extras puede personalizarse a nivel de empresa o ubicación en la sección de configuración avanzada.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="checkpoint7">Editar</button>
                     {% endif %}
                 </div>
                 
@@ -434,6 +560,110 @@
                 </div>
                 
                 <div class="help-item">
+                    <div class="help-question">¿Cómo solucionar problemas con la impresión de etiquetas?</div>
+                    <div class="help-answer" id="answer-task8">
+                        <p>Si tienes problemas con la impresión de etiquetas, sigue estos pasos de solución:</p>
+                        
+                        <h4>Problemas de conexión con la impresora</h4>
+                        <ol>
+                            <li>Verifica que la impresora está encendida y conectada a la red</li>
+                            <li>Comprueba que la dirección IP configurada es correcta:</li>
+                            <ul>
+                                <li>Ve a "Tareas" > "Etiquetas" > "Gestionar Impresoras"</li>
+                                <li>Revisa la IP de la impresora configurada</li>
+                                <li>Puedes usar el botón "Probar conexión" para verificar</li>
+                            </ul>
+                            <li>Si la impresora tiene un nombre DNS, prueba a usar ese nombre en lugar de la IP</li>
+                            <li>Asegúrate de que no hay firewalls bloqueando la conexión</li>
+                        </ol>
+                        
+                        <h4>Problemas con el material de impresión</h4>
+                        <ul>
+                            <li>Verifica que hay suficiente rollo de etiquetas en la impresora</li>
+                            <li>Comprueba que el tipo de etiqueta cargado coincide con el configurado en el sistema</li>
+                            <li>Asegúrate de que la cubierta está bien cerrada</li>
+                            <li>Revisa si hay atascos de papel y limpia el cabezal si es necesario</li>
+                        </ul>
+                        
+                        <h4>Problemas de formato de etiquetas</h4>
+                        <ul>
+                            <li>Si la etiqueta se imprime con texto cortado o mal alineado:</li>
+                            <ul>
+                                <li>Ve a "Tareas" > "Etiquetas" > "Plantillas"</li>
+                                <li>Ajusta el tamaño de fuente o el diseño según sea necesario</li>
+                                <li>Asegúrate de que el tamaño de etiqueta configurado coincide con el material usado</li>
+                            </ul>
+                        </ul>
+                        
+                        <h4>Alternativa: servidor de impresión Raspberry Pi</h4>
+                        <p>Si continuas con problemas de conectividad, considera configurar un servidor de impresión con Raspberry Pi:</p>
+                        <ul>
+                            <li>En "Ayuda" > "Configurar Raspberry Pi como servidor de impresión" encontrarás instrucciones detalladas</li>
+                            <li>Esta solución ofrece mayor estabilidad y elimina dependencias del navegador</li>
+                        </ul>
+                        
+                        <p><strong>Nota:</strong> Si ninguna solución funciona, puedes generar las etiquetas en PDF y guardarlas para impresión posterior desde otro dispositivo.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="task8">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Puedo personalizar las plantillas de etiquetas para diferentes tipos de productos?</div>
+                    <div class="help-answer" id="answer-task9">
+                        <p>Sí, el sistema permite crear y personalizar diferentes plantillas de etiquetas para adaptarse a tus necesidades:</p>
+                        
+                        <h4>Acceder al gestor de plantillas</h4>
+                        <ol>
+                            <li>Ve a "Tareas" > "Etiquetas" > "Plantillas de etiquetas"</li>
+                            <li>Aquí verás las plantillas existentes y podrás crear nuevas</li>
+                        </ol>
+                        
+                        <h4>Crear una nueva plantilla</h4>
+                        <ol>
+                            <li>Haz clic en "Nueva plantilla"</li>
+                            <li>Asigna un nombre descriptivo (ej. "Productos lácteos", "Carnes")</li>
+                            <li>Selecciona el tamaño de etiqueta (29mm, 62mm, etc.)</li>
+                            <li>En el editor visual, arrastra y suelta los elementos:</li>
+                            <ul>
+                                <li>Texto: Nombre del producto, preparado por, instrucciones...</li>
+                                <li>Fechas: Elaboración, caducidad, consumo preferente...</li>
+                                <li>Campos dinámicos: Temperatura recomendada, alergénos...</li>
+                                <li>Logotipo de la empresa</li>
+                                <li>Códigos QR o códigos de barras</li>
+                            </ul>
+                            <li>Configura el formato de cada elemento (tamaño, fuente, alineación)</li>
+                            <li>Utiliza la función "Vista previa" para comprobar el resultado</li>
+                            <li>Guarda la plantilla</li>
+                        </ol>
+                        
+                        <h4>Asociar plantillas a productos o categorías</h4>
+                        <ul>
+                            <li>Puedes asignar plantillas específicas a:</li>
+                            <ul>
+                                <li>Productos individuales</li>
+                                <li>Categorías de productos</li>
+                                <li>Tipos de conservación</li>
+                            </ul>
+                            <li>Esto permite que al seleccionar un producto, se use automáticamente la plantilla adecuada</li>
+                        </ul>
+                        
+                        <h4>Importar/Exportar plantillas</h4>
+                        <p>Para compartir plantillas entre diferentes ubicaciones:</p>
+                        <ul>
+                            <li>Usa la opción "Exportar" para guardar la plantilla como archivo</li>
+                            <li>En otra ubicación, usa "Importar" para cargar la plantilla</li>
+                        </ul>
+                        
+                        <p><strong>Nota:</strong> Las plantillas son específicas para cada tamaño de etiqueta, así que asegúrate de crear versiones para todos los tamaños que utilices.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="task9">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
                     <div class="help-question">¿Cómo visualizar el progreso de las tareas completadas?</div>
                     <div class="help-answer" id="answer-task5">
                         <p>Puedes monitorizar el cumplimiento de las tareas asignadas:</p>
@@ -629,6 +859,116 @@
                     </div>
                     {% if current_user.is_admin() %}
                     <button class="help-edit-button" data-item="cash4">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo puedo corregir un descuadre en el arqueo de caja?</div>
+                    <div class="help-answer" id="answer-cash5">
+                        <p>Si detectas un descuadre entre el saldo teórico y el efectivo contado:</p>
+                        
+                        <h4>Durante la creación del arqueo</h4>
+                        <ol>
+                            <li>Al realizar el conteo de efectivo, el sistema mostrará automáticamente si hay descuadre</li>
+                            <li>En la sección "Descuadre", tienes estas opciones:</li>
+                            <ul>
+                                <li><strong>Registrar descuadre:</strong></li>
+                                <ul>
+                                    <li>Introduce el motivo del descuadre (obligatorio)</li>
+                                    <li>Guarda el arqueo con el descuadre registrado</li>
+                                    <li>El sistema marcará este arqueo para revisión posterior</li>
+                                </ul>
+                                <li><strong>Ajustar movimientos:</strong></li>
+                                <ul>
+                                    <li>Vuelve a revisar todos los movimientos registrados</li>
+                                    <li>Verifica si falta alguna entrada o salida por registrar</li>
+                                    <li>Comprueba si hay errores en los importes introducidos</li>
+                                </ul>
+                                <li><strong>Repetir conteo:</strong></li>
+                                <ul>
+                                    <li>Realiza un nuevo conteo de efectivo físico</li>
+                                    <li>Introduce los nuevos valores en la pantalla de conteo</li>
+                                </ul>
+                            </ul>
+                        </ol>
+                        
+                        <h4>Corrección posterior de un arqueo guardado</h4>
+                        <ol>
+                            <li>Accede a "Arqueos de Caja" y busca el arqueo con descuadre</li>
+                            <li>Haz clic en "Ver detalles" y luego en "Editar"</li>
+                            <li>Puedes:</li>
+                            <ul>
+                                <li>Modificar los movimientos registrados (añadir, eliminar o corregir)</li>
+                                <li>Actualizar el conteo de efectivo</li>
+                                <li>Añadir una nota explicativa sobre la corrección</li>
+                            </ul>
+                            <li>Al guardar, el sistema registrará quién y cuándo realizó la corrección para auditoría</li>
+                        </ol>
+                        
+                        <h4>Buenas prácticas para evitar descuadres</h4>
+                        <ul>
+                            <li>Registra todos los movimientos en el momento que ocurren</li>
+                            <li>Realiza arqueos frecuentes (idealmente al inicio y cierre de cada turno)</li>
+                            <li>Asigna responsables claros para el manejo de la caja</li>
+                            <li>Establece procesos para operaciones especiales (devoluciones, cambios, etc.)</li>
+                        </ul>
+                        
+                        <p><strong>Nota:</strong> Todo descuadre queda registrado en el historial y aparece en los informes, incluso después de corregido, para mantener la trazabilidad de las operaciones.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="cash5">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo configurar los diferentes métodos de pago aceptados?</div>
+                    <div class="help-answer" id="answer-cash6">
+                        <p>El sistema permite personalizar los métodos de pago para adaptarse a las necesidades de cada negocio:</p>
+                        
+                        <h4>Configurar métodos de pago disponibles</h4>
+                        <ol>
+                            <li>Accede a "Arqueos de Caja" > "Configuración" > "Métodos de pago"</li>
+                            <li>Verás los métodos predeterminados:</li>
+                            <ul>
+                                <li>Efectivo (siempre disponible, no se puede eliminar)</li>
+                                <li>Tarjeta (débito/crédito)</li>
+                                <li>Transferencia bancaria</li>
+                                <li>Aplicaciones móviles (Bizum, etc.)</li>
+                            </ul>
+                            <li>Para añadir un nuevo método:</li>
+                            <ul>
+                                <li>Haz clic en "Añadir método de pago"</li>
+                                <li>Introduce un nombre descriptivo</li>
+                                <li>Configura opciones adicionales:</li>
+                                <ul>
+                                    <li>Comisión aplicable (porcentaje o fijo)</li>
+                                    <li>Requiere comprobante (sí/no)</li>
+                                    <li>Días de liquidación estimados</li>
+                                </ul>
+                                <li>Opcionalmente, asigna un icono para identificarlo</li>
+                                <li>Guarda el nuevo método</li>
+                            </ul>
+                            <li>Para editar o desactivar un método existente:</li>
+                            <ul>
+                                <li>Haz clic en el icono de edición junto al método</li>
+                                <li>Modifica los parámetros o desactívalo con el interruptor</li>
+                                <li>Los métodos desactivados no aparecerán en nuevos arqueos</li>
+                            </ul>
+                        </ol>
+                        
+                        <h4>Configuración por ubicación</h4>
+                        <p>Puedes personalizar qué métodos están disponibles en cada ubicación:</p>
+                        <ol>
+                            <li>Ve a "Empresas" > Selecciona una empresa > Selecciona una ubicación</li>
+                            <li>Haz clic en "Configuración de arqueos"</li>
+                            <li>En la sección "Métodos de pago", activa o desactiva los disponibles</li>
+                            <li>Opcionalmente, configura los valores predeterminados para comisiones específicas de esta ubicación</li>
+                        </ol>
+                        
+                        <p><strong>Nota:</strong> Al añadir nuevos métodos de pago, estos aparecerán en los informes como categorías separadas, permitiendo un análisis detallado de las ventas por método de pago.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="cash6">Editar</button>
                     {% endif %}
                 </div>
             </div>

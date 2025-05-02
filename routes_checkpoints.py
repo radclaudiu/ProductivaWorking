@@ -440,15 +440,20 @@ def index_company(slug):
         except Exception as e:
             current_app.logger.error(f"Error al obtener estadísticas semanales: {e}")
         
-        return render_template('checkpoints/index.html', 
-                              stats=stats, 
-                              latest_records=latest_records,
-                              latest_incidents=latest_incidents,
-                              company=company,
-                              checkpoints=checkpoints,
-                              employees=employees,
-                              incident_types=incident_types,
-                              week_stats=week_stats)
+        try:
+            return render_template('checkpoints/index.html', 
+                                 stats=stats, 
+                                 latest_records=latest_records,
+                                 latest_incidents=latest_incidents,
+                                 company=company,
+                                 checkpoints=checkpoints,
+                                 employees=employees,
+                                 incident_types=incident_types,
+                                 week_stats=week_stats)
+        except Exception as render_error:
+            current_app.logger.error(f"Error al renderizar template: {render_error}")
+            flash('Error al mostrar la página. Contacte con el administrador.', 'danger')
+            return redirect(url_for('checkpoints.select_company'))
                               
     except Exception as e:
         current_app.logger.error(f"Error general en index_company: {e}")

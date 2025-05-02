@@ -131,7 +131,12 @@
                         
                         <div class="mb-3">
                             {{ form.password.label(class="form-label") }}
-                            {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""), autocomplete="new-password") }}
+                            <div class="input-group">
+                                {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""), autocomplete="new-password", id="passwordField") }}
+                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                    <i class="bi bi-eye" id="toggleIcon"></i>
+                                </button>
+                            </div>
                             {% if form.password.errors %}
                                 <div class="invalid-feedback">
                                     {% for error in form.password.errors %}
@@ -146,18 +151,6 @@
                                     Contraseña para acceder al punto de fichaje (mínimo 6 caracteres).
                                 {% endif %}
                             </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            {{ form.confirm_password.label(class="form-label") }}
-                            {{ form.confirm_password(class="form-control" + (" is-invalid" if form.confirm_password.errors else ""), autocomplete="new-password") }}
-                            {% if form.confirm_password.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in form.confirm_password.errors %}
-                                        {{ error }}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
                         </div>
                         
                         <h4 class="mb-3 mt-4">Opciones Avanzadas</h4>
@@ -224,10 +217,10 @@
                 
                 <script>
                     document.addEventListener('DOMContentLoaded', function() {
+                        // Función para mostrar/ocultar contenedor de horas de operación
                         const enforceHoursCheckbox = document.getElementById('enforce_operation_hours');
                         const hoursContainer = document.getElementById('operation_hours_container');
                         
-                        // Función para mostrar/ocultar el contenedor de horas de operación
                         function toggleHoursVisibility() {
                             if (enforceHoursCheckbox.checked) {
                                 hoursContainer.style.display = 'block';
@@ -241,6 +234,25 @@
                         
                         // Agregar listener para cambios en el checkbox
                         enforceHoursCheckbox.addEventListener('change', toggleHoursVisibility);
+                        
+                        // Función para mostrar/ocultar contraseña
+                        const togglePasswordButton = document.getElementById('togglePassword');
+                        const passwordField = document.getElementById('passwordField');
+                        const toggleIcon = document.getElementById('toggleIcon');
+                        
+                        togglePasswordButton.addEventListener('click', function() {
+                            const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+                            passwordField.setAttribute('type', type);
+                            
+                            // Cambiar el icono
+                            if (type === 'password') {
+                                toggleIcon.classList.remove('bi-eye-slash');
+                                toggleIcon.classList.add('bi-eye');
+                            } else {
+                                toggleIcon.classList.remove('bi-eye');
+                                toggleIcon.classList.add('bi-eye-slash');
+                            }
+                        });
                     });
                 </script>
                 

@@ -121,42 +121,6 @@
         {% endif %}
     {% endwith %}
 
-    <!-- Pestañas del Dashboard -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header text-white" style="background: linear-gradient(135deg, #a06235, #c87f5d);">
-                    <ul class="nav nav-pills card-header-pills" id="dashboard-tabs" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link active" id="checkpoints-tab" data-bs-toggle="tab" data-bs-target="#checkpointsTab" type="button" role="tab" aria-controls="checkpointsTab" aria-selected="true">
-                                <i class="bi bi-tablet"></i> Puntos de Fichaje
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pendingTab" type="button" role="tab" aria-controls="pendingTab" aria-selected="false">
-                                <i class="bi bi-hourglass-split"></i> Pendientes
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="records-tab" data-bs-toggle="tab" data-bs-target="#recordsTab" type="button" role="tab" aria-controls="recordsTab" aria-selected="false">
-                                <i class="bi bi-clock-history"></i> Registros
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="incidents-tab" data-bs-toggle="tab" data-bs-target="#incidentsTab" type="button" role="tab" aria-controls="incidentsTab" aria-selected="false">
-                                <i class="bi bi-exclamation-triangle"></i> Incidencias
-                            </button>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <button class="nav-link" id="config-tab" data-bs-toggle="tab" data-bs-target="#configTab" type="button" role="tab" aria-controls="configTab" aria-selected="false">
-                                <i class="bi bi-gear"></i> Configuración
-                            </button>
-                        </li>
-                    </ul>
-                </div>
-                <div class="card-body">
-                    <div class="tab-content" id="dashboard-tabsContent">
-                        <!-- PESTAÑA: PUNTOS DE FICHAJE -->
     <!-- Estadísticas Generales -->
     <div class="row mb-4">
         <div class="col-xl-3 col-md-6 mb-4">
@@ -311,6 +275,42 @@
         </div>
     </div>
 
+    <!-- Pestañas del Dashboard -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header text-white" style="background: linear-gradient(135deg, #a06235, #c87f5d);">
+                    <ul class="nav nav-pills card-header-pills" id="dashboard-tabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="checkpoints-tab" data-bs-toggle="tab" data-bs-target="#checkpointsTab" type="button" role="tab" aria-controls="checkpointsTab" aria-selected="true">
+                                <i class="bi bi-tablet"></i> Puntos de Fichaje
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="pending-tab" data-bs-toggle="tab" data-bs-target="#pendingTab" type="button" role="tab" aria-controls="pendingTab" aria-selected="false">
+                                <i class="bi bi-hourglass-split"></i> Pendientes
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="records-tab" data-bs-toggle="tab" data-bs-target="#recordsTab" type="button" role="tab" aria-controls="recordsTab" aria-selected="false">
+                                <i class="bi bi-clock-history"></i> Registros
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="incidents-tab" data-bs-toggle="tab" data-bs-target="#incidentsTab" type="button" role="tab" aria-controls="incidentsTab" aria-selected="false">
+                                <i class="bi bi-exclamation-triangle"></i> Incidencias
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="config-tab" data-bs-toggle="tab" data-bs-target="#configTab" type="button" role="tab" aria-controls="configTab" aria-selected="false">
+                                <i class="bi bi-gear"></i> Configuración
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="dashboard-tabsContent">
+                        <!-- PESTAÑA: PUNTOS DE FICHAJE -->
                         <div class="tab-pane fade show active" id="checkpointsTab" role="tabpanel" aria-labelledby="checkpoints-tab">
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h4>Puntos de Fichaje</h4>
@@ -785,3 +785,134 @@
             </div>
         </div>
     </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Chart.js para los gráficos -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Activar tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Inicializar gráfico de actividad
+        const ctx = document.getElementById('checkinsChart').getContext('2d');
+        
+        // Datos de estadísticas semanales
+        const labels = [
+            {% for date in week_stats %}
+                '{{ date }}',
+            {% endfor %}
+        ];
+        
+        const data = [
+            {% for date, count in week_stats.items() %}
+                {{ count }},
+            {% endfor %}
+        ];
+        
+        const chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels.reverse(),  // Ordenar de más antiguo a más reciente
+                datasets: [{
+                    label: 'Número de fichajes',
+                    data: data.reverse(),  // Ordenar los datos igual que las etiquetas
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Botón de actualizar gráfico
+        document.getElementById('refreshChart').addEventListener('click', function() {
+            // Aquí se recargarían los datos del gráfico (en una implementación real)
+            // Por ahora, solo mostramos un efecto visual
+            this.disabled = true;
+            this.innerHTML = '<i class="bi bi-arrow-repeat"></i> Actualizando...';
+            
+            setTimeout(() => {
+                this.disabled = false;
+                this.innerHTML = '<i class="bi bi-arrow-repeat"></i> Actualizar';
+            }, 1000);
+        });
+        
+        // Simulación de carga de datos pendientes
+        setTimeout(() => {
+            const pendingList = document.getElementById('pendingCheckoutsList');
+            
+            // Si hay registros pendientes en la base de datos, se mostrarían aquí
+            if ({{ stats.pending_checkout }} > 0) {
+                pendingList.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center py-3">
+                            <div class="alert alert-info mb-0">
+                                Hay {{ stats.pending_checkout }} fichajes pendientes de salida. 
+                                <a href="{{ url_for('checkpoints.list_records_all') }}" class="alert-link">Ver todos los registros</a> para gestionarlos.
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                pendingList.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center py-3">
+                            <div class="alert alert-success mb-0">
+                                <i class="bi bi-check-circle me-2"></i> No hay fichajes pendientes de salida.
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }, 500);
+        
+        // Botón de procesar checkout automáticos
+        document.getElementById('processPendingCheckouts').addEventListener('click', function() {
+            this.disabled = true;
+            this.innerHTML = '<i class="bi bi-clock"></i> Procesando...';
+            
+            // Simulación del proceso
+            setTimeout(() => {
+                this.disabled = false;
+                this.innerHTML = '<i class="bi bi-clock"></i> Procesar Auto-Checkouts';
+                
+                // Mostrar mensaje de éxito
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-success alert-dismissible fade show mt-3';
+                alert.innerHTML = `
+                    <i class="bi bi-check-circle me-2"></i> Se han procesado los checkouts automáticos correctamente.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                
+                document.querySelector('#pendingTab').prepend(alert);
+            }, 1500);
+        });
+        
+        // Botones de mantenimiento y automatización (simulación)
+        document.getElementById('maintenanceButton').addEventListener('click', function() {
+            alert('Funcionalidad de mantenimiento en desarrollo');
+        });
+        
+        document.getElementById('automationButton').addEventListener('click', function() {
+            alert('Funcionalidad de automatización en desarrollo');
+        });
+    });
+</script>
+{% endblock %}

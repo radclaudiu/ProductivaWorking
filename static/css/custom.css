@@ -1,133 +1,31 @@
-/* Custom styles for the application */
+/* Estilos personalizados para tonos tierra */
 
-/* Utility classes */
-.cursor-pointer {
-    cursor: pointer;
+/* Navegación con pestañas */
+.nav-pills .nav-link.active {
+    background-color: #6D584B !important;
+    color: white !important;
+}
+.nav-pills .nav-link {
+    color: #8D6E63 !important;
+    border-radius: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    margin-right: 0.5rem;
+    font-weight: 500;
 }
 
-/* Sidebar styles */
-.sidebar {
-    position: fixed;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    z-index: 100;
-    padding: 48px 0 0;
-    box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+/* Botones */
+.btn-primary {
+    background-color: #8D6E63 !important;
+    border-color: #6D584B !important;
+    color: white !important;
 }
 
-.sidebar-sticky {
-    position: relative;
-    top: 0;
-    height: calc(100vh - 48px);
-    padding-top: .5rem;
-    overflow-x: hidden;
-    overflow-y: auto;
+.btn-outline-primary {
+    color: #8D6E63 !important;
+    border-color: #8D6E63 !important;
 }
 
-/* Main content area */
-.main-content {
-    margin-left: 240px;
-    padding: 20px;
-}
-
-@media (max-width: 767.98px) {
-    .main-content {
-        margin-left: 0;
-    }
-    .sidebar {
-        top: 5rem;
-    }
-}
-
-/* Dashboard cards */
-.dashboard-stat-card {
-    transition: transform 0.3s ease;
-}
-
-.dashboard-stat-card:hover {
-    transform: translateY(-5px);
-}
-
-/* Action buttons in tables */
-.table-action-buttons .btn {
-    margin-right: 5px;
-}
-
-.table-action-buttons .btn:last-child {
-    margin-right: 0;
-}
-
-/* Form enhancements */
-.form-label.required::after {
-    content: ' *';
-    color: var(--bs-danger);
-}
-
-/* File upload */
-.custom-file-upload {
-    display: inline-block;
-    padding: 6px 12px;
-    cursor: pointer;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-}
-
-/* Details view */
-.employee-details dt, .company-details dt {
-    font-weight: bold;
-}
-
-/* Activity logs */
-.activity-log-item {
-    border-left: 3px solid var(--bs-primary);
-    padding-left: 10px;
-    margin-bottom: 10px;
-}
-
-/* Notes */
-.note-card {
-    margin-bottom: 15px;
-}
-
-.note-timestamp {
-    font-size: 0.8rem;
-    color: var(--bs-secondary);
-}
-
-/* History timeline */
-.history-timeline {
-    position: relative;
-    padding-left: 30px;
-}
-
-.history-timeline::before {
-    content: '';
-    position: absolute;
-    left: 9px;
-    top: 0;
-    height: 100%;
-    width: 2px;
-    background-color: var(--bs-secondary);
-}
-
-.history-item {
-    position: relative;
-    margin-bottom: 20px;
-}
-
-.history-item::before {
-    content: '';
-    position: absolute;
-    left: -30px;
-    top: 5px;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background-color: var(--bs-primary);
-}
-
-.history-timestamp {
-    font-size: 0.8rem;
-    color: var(--bs-secondary);
+.btn-outline-primary:hover {
+    background-color: #8D6E63 !important;
+    color: white !important;
 }

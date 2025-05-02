@@ -732,7 +732,7 @@ def adjust_record(id):
     employee_company_id = record.employee.company_id
     if not current_user.is_admin() and employee_company_id not in [c.id for c in current_user.companies]:
         flash('No tiene permiso para ajustar este registro de fichaje.', 'danger')
-        return redirect(url_for('checkpoints.list_checkpoints'))
+        return redirect(url_for('checkpoints.select_company'))
     
     form = CheckPointRecordAdjustmentForm()
     
@@ -800,7 +800,7 @@ def adjust_record(id):
         try:
             db.session.commit()
             flash('Registro de fichaje ajustado con éxito.', 'success')
-            return redirect(url_for('checkpoints.list_checkpoint_records', id=record.checkpoint_id))
+            return redirect(url_for('checkpoints.select_company'))
         except Exception as e:
             db.session.rollback()
             flash(f'Error al ajustar el registro: {str(e)}', 'danger')
@@ -836,7 +836,7 @@ def record_signature(id):
             
             # Redireccionar según el tipo de usuario
             if is_admin_or_manager:
-                return redirect(url_for('checkpoints.list_checkpoint_records', id=record.checkpoint_id))
+                return redirect(url_for('checkpoints.select_company'))
             else:
                 return redirect(url_for('main.dashboard'))
         except Exception as e:
@@ -1056,7 +1056,6 @@ def resolve_incident(id):
     if request.method == 'POST':
         # Obtener las notas de resolución
         resolution_notes = request.form.get('resolution_notes', '')
-        return_url = request.form.get('return_url') or url_for('checkpoints.list_incidents')
         
         # Resolver la incidencia
         incident.resolve(current_user.id, resolution_notes)
@@ -1067,8 +1066,9 @@ def resolve_incident(id):
         except Exception as e:
             db.session.rollback()
             flash(f'Error al resolver la incidencia: {str(e)}', 'danger')
-            
-        return redirect(return_url)
+        
+        # Asegurarnos de redirigir a la lista de incidencias y no a una URL arbitraria
+        return redirect(url_for('checkpoints.list_incidents'))
         
     # Para peticiones GET, mostrar el formulario de resolución
     return_url = request.args.get('return_url') or request.referrer or url_for('checkpoints.list_incidents')

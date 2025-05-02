@@ -538,7 +538,7 @@ def create_checkpoint():
         try:
             db.session.commit()
             flash(f'Punto de fichaje "{checkpoint.name}" creado con éxito.', 'success')
-            return redirect(url_for('checkpoints.list_checkpoints'))
+            return redirect(url_for('checkpoints.select_company'))
         except Exception as e:
             db.session.rollback()
             flash(f'Error al crear el punto de fichaje: {str(e)}', 'danger')

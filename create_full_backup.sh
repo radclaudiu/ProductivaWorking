@@ -2,6 +2,7 @@
 
 # =============================================================================
 # Script para crear un backup completo de PostgreSQL con verificación de tamaño
+# Actualizado: 02/05/2025 - Soporta nuevas tablas y columnas
 # =============================================================================
 
 # Colores para mensajes

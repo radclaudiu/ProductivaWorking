@@ -1,0 +1,850 @@
+{% extends "layout.html" %}
+
+{% block title %}Centro de Ayuda - Productiva{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/help_system.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="help-container">
+    <div class="help-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>Centro de Ayuda de Productiva</h1>
+            <button id="helpBackButton" class="btn btn-light">Volver</button>
+        </div>
+        <p>Encuentra respuestas a todas tus preguntas sobre cómo usar Productiva</p>
+        <input type="text" id="helpSearch" class="help-search" placeholder="Busca ayuda sobre cualquier tema..." autocomplete="off">
+    </div>
+    
+    <div class="help-tabs">
+        <div class="help-tab" data-tab="companies">Empresas</div>
+        <div class="help-tab" data-tab="checkpoints">Puntos de Fichaje</div>
+        <div class="help-tab" data-tab="tasks">Tareas y Etiquetas</div>
+        <div class="help-tab" data-tab="cash-register">Arqueos de Caja</div>
+        <div class="help-tab" data-tab="expenses">Gastos Mensuales</div>
+    </div>
+    
+    <!-- Contenido: Empresas -->
+    <div id="helpContent-companies" class="help-tab-content">
+        <div class="help-section">
+            <h2>Gestión de Empresas</h2>
+            <div class="help-content">
+                <p>La sección de Empresas te permite gestionar las organizaciones que utilizan Productiva, sus datos, ubicaciones y usuarios.</p>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo crear una nueva empresa?</div>
+                    <div class="help-answer" id="answer-company1">
+                        <p>Para crear una nueva empresa en Productiva:</p>
+                        <ol>
+                            <li>Haz clic en "Empresas" en el menú principal</li>
+                            <li>Selecciona la opción "Nueva Empresa"</li>
+                            <li>Completa el formulario con los datos de la empresa:</li>
+                            <ul>
+                                <li><strong>Nombre:</strong> Nombre legal de la empresa</li>
+                                <li><strong>CIF/NIF:</strong> Número de identificación fiscal</li>
+                                <li><strong>Dirección:</strong> Dirección fiscal de la empresa</li>
+                                <li><strong>Teléfono/Email:</strong> Datos de contacto principales</li>
+                            </ul>
+                            <li>Haz clic en "Guardar" para crear la empresa</li>
+                        </ol>
+                        <p>Una vez creada la empresa, podrás agregar ubicaciones y usuarios.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="company1">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo agregar una ubicación a una empresa?</div>
+                    <div class="help-answer" id="answer-company2">
+                        <p>Las ubicaciones representan las distintas sedes o locales de una empresa. Para agregar una nueva ubicación:</p>
+                        <ol>
+                            <li>Accede a la empresa donde quieres crear la ubicación</li>
+                            <li>Haz clic en la pestaña "Ubicaciones"</li>
+                            <li>Selecciona "Añadir Nueva Ubicación"</li>
+                            <li>Completa el formulario con:</li>
+                            <ul>
+                                <li><strong>Nombre:</strong> Nombre del local o sede</li>
+                                <li><strong>Dirección:</strong> Dirección física de la ubicación</li>
+                                <li><strong>Código Postal:</strong> Código postal de la dirección</li>
+                                <li><strong>Ciudad:</strong> Ciudad donde se encuentra</li>
+                            </ul>
+                            <li>Configura las opciones adicionales como ventanas horarias para cierre automático</li>
+                            <li>Haz clic en "Guardar" para crear la ubicación</li>
+                        </ol>
+                        <p>Cada ubicación puede tener su propia configuración de empleados, puntos de fichaje y tareas.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="company2">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo gestionar los permisos de usuarios para cada empresa?</div>
+                    <div class="help-answer" id="answer-company3">
+                        <p>Los permisos de usuario determinan qué puede ver y hacer cada usuario dentro de Productiva:</p>
+                        <ol>
+                            <li>Ve a "Empresas" en el menú principal</li>
+                            <li>Selecciona la empresa donde quieres configurar permisos</li>
+                            <li>Haz clic en la pestaña "Usuarios"</li>
+                            <li>Para agregar un usuario nuevo a la empresa:</li>
+                            <ul>
+                                <li>Haz clic en "Añadir Usuario"</li>
+                                <li>Busca un usuario existente o crea uno nuevo</li>
+                                <li>Asigna el rol adecuado:</li>
+                                <ul>
+                                    <li><strong>Administrador:</strong> Acceso completo a todas las funciones</li>
+                                    <li><strong>Gerente:</strong> Puede gestionar empresas asignadas y sus datos</li>
+                                    <li><strong>Usuario:</strong> Acceso limitado solo a funciones específicas</li>
+                                </ul>
+                            </ul>
+                            <li>Haz clic en "Guardar" para actualizar los permisos</li>
+                        </ol>
+                        <p>Los usuarios con rol de administrador pueden gestionar todas las empresas, mientras que los gerentes solo pueden acceder a las empresas que tienen asignadas.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="company3">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo configurar las credenciales del Portal para una ubicación?</div>
+                    <div class="help-answer" id="answer-company4">
+                        <p>Cada ubicación tiene credenciales únicas para acceder al Portal de empleados:</p>
+                        <ol>
+                            <li>Accede a la empresa donde está la ubicación</li>
+                            <li>Selecciona la ubicación deseada</li>
+                            <li>En la vista de detalle, busca la sección "Credenciales de Portal"</li>
+                            <li>Configuración del nombre de usuario:</li>
+                            <ul>
+                                <li>Puedes usar el nombre predeterminado o establecer uno personalizado</li>
+                                <li>El nombre de usuario debe ser único en todo el sistema</li>
+                            </ul>
+                            <li>Configuración de contraseña:</li>
+                            <ul>
+                                <li>Puedes usar la contraseña predeterminada o establecer una personalizada</li>
+                                <li>Recomendamos contraseñas seguras pero fáciles de recordar</li>
+                            </ul>
+                            <li>Haz clic en "Guardar Credenciales" para actualizar</li>
+                        </ol>
+                        <p>Estas credenciales son las que usarán los empleados para acceder al portal de tareas y al punto de fichaje desde sus dispositivos.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="company4">Editar</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Contenido: Puntos de Fichaje -->
+    <div id="helpContent-checkpoints" class="help-tab-content">
+        <div class="help-section">
+            <h2>Puntos de Fichaje</h2>
+            <div class="help-content">
+                <p>El sistema de Puntos de Fichaje permite gestionar la entrada y salida de los empleados, registrar sus horas de trabajo y generar informes detallados.</p>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo crear un nuevo empleado?</div>
+                    <div class="help-answer" id="answer-checkpoint1">
+                        <p>Para crear un nuevo empleado en el sistema:</p>
+                        <ol>
+                            <li>Accede a "Empleados" en el menú principal</li>
+                            <li>Haz clic en "Nuevo Empleado"</li>
+                            <li>Completa el formulario con los datos personales:</li>
+                            <ul>
+                                <li><strong>Nombre y Apellidos:</strong> Datos identificativos del empleado</li>
+                                <li><strong>DNI/NIE:</strong> Documento de identidad (se utilizará para generar PIN)</li>
+                                <li><strong>Fecha de nacimiento:</strong> En formato DD-MM-AAAA</li>
+                                <li><strong>Teléfono/Email:</strong> Datos de contacto</li>
+                            </ul>
+                            <li>Configura los datos laborales:</li>
+                            <ul>
+                                <li><strong>Empresa/Ubicación:</strong> Dónde trabaja el empleado</li>
+                                <li><strong>Fecha de contratación:</strong> Cuándo comenzó a trabajar</li>
+                                <li><strong>Horas contratadas:</strong> Jornada laboral del empleado</li>
+                            </ul>
+                            <li>Haz clic en "Guardar" para crear el empleado</li>
+                        </ol>
+                        <p>Una vez creado el empleado, podrá fichar utilizando el punto de fichaje asociado a su ubicación.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="checkpoint1">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo acceder al punto de fichaje?</div>
+                    <div class="help-answer" id="answer-checkpoint2">
+                        <p>Los empleados pueden registrar su entrada y salida a través del punto de fichaje:</p>
+                        <ol>
+                            <li>Accede al Portal web utilizando las credenciales de la ubicación:</li>
+                            <ul>
+                                <li>URL: <code>[dominio]/tasks/local-portal/[id]</code></li>
+                                <li>Nombre de usuario y contraseña configurados para la ubicación</li>
+                            </ul>
+                            <li>En la pantalla principal del portal:</li>
+                            <ul>
+                                <li>Selecciona un empleado de la lista</li>
+                                <li>Si se requiere PIN, introdúcelo (por defecto, los últimos 4 dígitos del DNI)</li>
+                            </ul>
+                            <li>Uso del punto de fichaje:</li>
+                            <ul>
+                                <li>Para iniciar turno, pulsa "Entrada"</li>
+                                <li>Para finalizar turno, pulsa "Salida"</li>
+                                <li>El sistema registrará automáticamente la fecha y hora</li>
+                            </ul>
+                        </ol>
+                        <p>El sistema está diseñado para funcionar en tablets o dispositivos fijos en las ubicaciones, pero también es accesible desde cualquier dispositivo con navegador web.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="checkpoint2">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo corregir o ajustar fichajes?</div>
+                    <div class="help-answer" id="answer-checkpoint3">
+                        <p>A veces es necesario modificar los fichajes por olvidos o errores:</p>
+                        <ol>
+                            <li>Accede a "Fichajes" en el menú principal</li>
+                            <li>Utiliza los filtros para encontrar los registros que necesitas:</li>
+                            <ul>
+                                <li>Filtro por empresa/ubicación</li>
+                                <li>Filtro por empleado</li>
+                                <li>Filtro por fecha (día, semana, mes)</li>
+                            </ul>
+                            <li>Para editar un fichaje:</li>
+                            <ul>
+                                <li>Haz clic en el botón de edición (icono de lápiz)</li>
+                                <li>Modifica los valores de entrada/salida según sea necesario</li>
+                                <li>Añade un comentario explicando el motivo del ajuste</li>
+                                <li>Haz clic en "Guardar"</li>
+                            </ul>
+                            <li>Para crear un fichaje manual:</li>
+                            <ul>
+                                <li>Haz clic en "Nuevo Fichaje Manual"</li>
+                                <li>Selecciona el empleado</li>
+                                <li>Establece fecha/hora de entrada y salida</li>
+                                <li>Añade un comentario explicativo</li>
+                                <li>Haz clic en "Guardar"</li>
+                            </ul>
+                        </ol>
+                        <p>El sistema mantiene un registro de los cambios realizados, conservando los datos originales para auditoría.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="checkpoint3">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo configurar el cierre automático de fichajes?</div>
+                    <div class="help-answer" id="answer-checkpoint4">
+                        <p>El sistema puede cerrar automáticamente los fichajes olvidados:</p>
+                        <ol>
+                            <li>Accede a la configuración de la ubicación deseada</li>
+                            <li>Busca la sección "Configuración de Cierre Automático"</li>
+                            <li>Establece los parámetros:</li>
+                            <ul>
+                                <li><strong>Ventana horaria:</strong> Horario en que se ejecutará el cierre (ej. 04:00-05:00)</li>
+                                <li><strong>Hora máxima:</strong> Hora a la que se cerrarán los fichajes abiertos (ej. 23:59)</li>
+                                <li><strong>Días de la semana:</strong> Qué días se aplicará el cierre automático</li>
+                            </ul>
+                            <li>Activa la función con el interruptor "Habilitar cierre automático"</li>
+                            <li>Haz clic en "Guardar Configuración"</li>
+                        </ol>
+                        <p>Esta función es útil para evitar que los empleados olviden registrar su salida. El sistema cerrará automáticamente los fichajes abiertos durante la ventana horaria configurada.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="checkpoint4">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo generar informes de horas trabajadas?</div>
+                    <div class="help-answer" id="answer-checkpoint5">
+                        <p>Los informes te permiten analizar las horas trabajadas y exportar datos:</p>
+                        <ol>
+                            <li>Accede a "Fichajes" en el menú principal</li>
+                            <li>Utiliza los filtros para delimitar los datos:</li>
+                            <ul>
+                                <li>Selecciona empresa/ubicación</li>
+                                <li>Elige el período (día, semana, mes, rango personalizado)</li>
+                                <li>Filtra por empleado(s) si es necesario</li>
+                            </ul>
+                            <li>Una vez filtrados los datos, utiliza las opciones de exportación:</li>
+                            <ul>
+                                <li><strong>PDF:</strong> Informe detallado con formato para impresión</li>
+                                <li><strong>Excel:</strong> Hoja de cálculo con todos los registros y totales</li>
+                                <li><strong>CSV:</strong> Archivo de datos plano para importar en otros sistemas</li>
+                            </ul>
+                            <li>El informe incluirá:</li>
+                            <ul>
+                                <li>Detalle de cada fichaje</li>
+                                <li>Horas totales por empleado</li>
+                                <li>Horas totales por día/semana/mes</li>
+                                <li>Comentarios y ajustes realizados</li>
+                            </ul>
+                        </ol>
+                        <p>Los informes facilitan la gestión de nóminas y el control de horas trabajadas por empleado.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="checkpoint5">Editar</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Contenido: Tareas y Etiquetas -->
+    <div id="helpContent-tasks" class="help-tab-content">
+        <div class="help-section">
+            <h2>Tareas Digitales y Etiquetas</h2>
+            <div class="help-content">
+                <p>Este módulo permite gestionar tareas digitales para los empleados y generar etiquetas para productos, especialmente útil en hostelería y comercio.</p>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo crear y asignar tareas digitales?</div>
+                    <div class="help-answer" id="answer-task1">
+                        <p>Las tareas digitales ayudan a organizar el trabajo diario en cada ubicación:</p>
+                        <ol>
+                            <li>Accede a "Tareas" en el menú principal</li>
+                            <li>Selecciona la ubicación donde quieres crear tareas</li>
+                            <li>Haz clic en "Nueva Tarea"</li>
+                            <li>Completa la información de la tarea:</li>
+                            <ul>
+                                <li><strong>Título:</strong> Nombre descriptivo de la tarea</li>
+                                <li><strong>Descripción:</strong> Instrucciones detalladas</li>
+                                <li><strong>Prioridad:</strong> Baja, Media, Alta o Urgente</li>
+                                <li><strong>Frecuencia:</strong> Diaria, Semanal, Quincenal, Mensual o Personalizada</li>
+                            </ul>
+                            <li>Configura la programación:</li>
+                            <ul>
+                                <li>Selecciona días de la semana para tareas recurrentes</li>
+                                <li>Establece horarios específicos si es necesario</li>
+                                <li>Fija fecha de inicio y fecha de fin (opcional)</li>
+                            </ul>
+                            <li>Asigna un grupo (opcional) para categorizar tareas</li>
+                            <li>Haz clic en "Guardar" para crear la tarea</li>
+                        </ol>
+                        <p>Las tareas creadas aparecerán en el Portal de empleados según su programación, permitiendo a los trabajadores marcarlas como completadas.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="task1">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo gestionar grupos de tareas?</div>
+                    <div class="help-answer" id="answer-task2">
+                        <p>Los grupos de tareas permiten organizar las actividades por categorías:</p>
+                        <ol>
+                            <li>Accede a "Tareas" y selecciona la ubicación</li>
+                            <li>Haz clic en "Grupos" en la barra de navegación</li>
+                            <li>Para crear un nuevo grupo:</li>
+                            <ul>
+                                <li>Haz clic en "Nuevo Grupo"</li>
+                                <li>Asigna un nombre descriptivo (ej. "Limpieza", "Mantenimiento")</li>
+                                <li>Añade una descripción de las tareas que incluirá</li>
+                                <li>Elige un color para identificar visualmente el grupo</li>
+                                <li>Haz clic en "Guardar"</li>
+                            </ul>
+                            <li>Para editar o eliminar grupos existentes:</li>
+                            <ul>
+                                <li>Utiliza los botones de acciones junto a cada grupo</li>
+                                <li>Al eliminar un grupo, las tareas asociadas no se eliminan, solo pierden su agrupación</li>
+                            </ul>
+                        </ol>
+                        <p>Los grupos facilitan la visualización en el Portal de empleados, permitiendo filtrar tareas por categoría.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="task2">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo configurar usuarios locales para el portal de tareas?</div>
+                    <div class="help-answer" id="answer-task3">
+                        <p>Los usuarios locales son los empleados que acceden al Portal para completar tareas:</p>
+                        <ol>
+                            <li>Accede a "Tareas" y selecciona la ubicación</li>
+                            <li>Haz clic en "Gestionar Usuarios"</li>
+                            <li>Para crear un usuario local manualmente:</li>
+                            <ul>
+                                <li>Haz clic en "Nuevo Usuario Local"</li>
+                                <li>Completa los datos personales (nombre, apellidos)</li>
+                                <li>Asigna un PIN de acceso (4 dígitos)</li>
+                                <li>Opcionalmente, sube una foto del empleado</li>
+                                <li>Haz clic en "Guardar"</li>
+                            </ul>
+                            <li>Para importar empleados existentes como usuarios locales:</li>
+                            <ul>
+                                <li>Haz clic en "Sincronizar Empleados"</li>
+                                <li>Selecciona los empleados que quieres importar</li>
+                                <li>El sistema generará automáticamente usuarios locales con los datos existentes</li>
+                                <li>Los PINs se generan usando los últimos 4 dígitos del DNI</li>
+                            </ul>
+                        </ol>
+                        <p>Los usuarios locales pueden acceder al Portal usando su nombre y PIN, sin necesidad de crear cuentas completas en el sistema.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="task3">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo configurar y usar el sistema de etiquetas?</div>
+                    <div class="help-answer" id="answer-task4">
+                        <p>El sistema de etiquetas permite generar identificadores para productos con fechas de caducidad:</p>
+                        <ol>
+                            <li>Configuración inicial:</li>
+                            <ul>
+                                <li>Accede a "Tareas" y selecciona la ubicación</li>
+                                <li>Haz clic en "Etiquetas"</li>
+                                <li>Configura las impresoras de red disponibles:</li>
+                                <ul>
+                                    <li>Haz clic en "Gestionar Impresoras"</li>
+                                    <li>Añade la dirección IP de las impresoras Brother compatibles</li>
+                                    <li>Establece una impresora como predeterminada</li>
+                                </ul>
+                                <li>Personaliza el diseño de las etiquetas si lo deseas</li>
+                            </ul>
+                            <li>Crear productos para etiquetar:</li>
+                            <ul>
+                                <li>Haz clic en "Nuevo Producto"</li>
+                                <li>Asigna nombre y descripción</li>
+                                <li>Establece vida útil en días</li>
+                                <li>Configura tiempos de conservación según tipo (refrigeración, congelación, etc.)</li>
+                            </ul>
+                            <li>Generación de etiquetas (desde el Portal):</li>
+                            <ul>
+                                <li>El empleado accede al Portal con su usuario local</li>
+                                <li>Selecciona "Etiquetas" en el menú</li>
+                                <li>Elige el producto a etiquetar</li>
+                                <li>Selecciona el tipo de conservación</li>
+                                <li>Pulsa "Generar e Imprimir"</li>
+                            </ul>
+                        </ol>
+                        <p>Las etiquetas incluyen nombre del producto, quien lo preparó, fechas de elaboración y caducidad, y tipo de conservación, ayudando a mantener la trazabilidad alimentaria.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="task4">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo visualizar el progreso de las tareas completadas?</div>
+                    <div class="help-answer" id="answer-task5">
+                        <p>Puedes monitorizar el cumplimiento de las tareas asignadas:</p>
+                        <ol>
+                            <li>Accede a "Tareas" y selecciona la ubicación</li>
+                            <li>Haz clic en "Historial de Tareas"</li>
+                            <li>Utiliza los filtros disponibles:</li>
+                            <ul>
+                                <li>Filtro por fechas (día, semana, mes)</li>
+                                <li>Filtro por grupo de tareas</li>
+                                <li>Filtro por estado (pendientes, completadas, vencidas)</li>
+                                <li>Filtro por usuario local que las completó</li>
+                            </ul>
+                            <li>Visualiza las estadísticas:</li>
+                            <ul>
+                                <li>Gráfico de cumplimiento de tareas</li>
+                                <li>Porcentaje de tareas completadas a tiempo</li>
+                                <li>Tareas por empleado</li>
+                            </ul>
+                            <li>Opciones de exportación:</li>
+                            <ul>
+                                <li>Exporta a PDF para informes impresos</li>
+                                <li>Exporta a Excel para análisis detallado</li>
+                            </ul>
+                        </ol>
+                        <p>El seguimiento de tareas ayuda a mejorar la productividad y asegurar que todos los procesos necesarios se completan correctamente.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="task5">Editar</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Contenido: Arqueos de Caja -->
+    <div id="helpContent-cash-register" class="help-tab-content">
+        <div class="help-section">
+            <h2>Arqueos de Caja</h2>
+            <div class="help-content">
+                <p>El módulo de Arqueos de Caja permite gestionar el flujo de efectivo, realizar arqueos diarios y mantener un control preciso de los movimientos monetarios.</p>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo realizar un arqueo de caja?</div>
+                    <div class="help-answer" id="answer-cash1">
+                        <p>Los arqueos de caja ayudan a verificar que el efectivo físico coincide con los registros:</p>
+                        <ol>
+                            <li>Accede a "Arqueos de Caja" en el menú principal</li>
+                            <li>Selecciona la ubicación para la que quieres realizar el arqueo</li>
+                            <li>Haz clic en "Nuevo Arqueo"</li>
+                            <li>Completa los datos iniciales:</li>
+                            <ul>
+                                <li><strong>Fecha:</strong> Día del arqueo (por defecto el actual)</li>
+                                <li><strong>Hora:</strong> Momento en que se realiza</li>
+                                <li><strong>Caja inicial:</strong> Importe con el que se inició la caja</li>
+                                <li><strong>Incluir IVA:</strong> Activa esta opción si los importes incluyen IVA</li>
+                            </ul>
+                            <li>Registra los movimientos de caja:</li>
+                            <ul>
+                                <li>Añade entradas de efectivo con descripción</li>
+                                <li>Añade salidas de efectivo con descripción</li>
+                                <li>Registra pagos con tarjeta</li>
+                                <li>Añade otros métodos de pago si es necesario</li>
+                            </ul>
+                            <li>Realiza el conteo de efectivo físico:</li>
+                            <ul>
+                                <li>Introduce la cantidad de billetes y monedas de cada denominación</li>
+                                <li>El sistema calculará automáticamente el total</li>
+                            </ul>
+                            <li>Revisa el cuadre:</li>
+                            <ul>
+                                <li>Compara el saldo teórico con el efectivo contado</li>
+                                <li>Registra cualquier descuadre y su motivo</li>
+                            </ul>
+                            <li>Haz clic en "Guardar Arqueo" para finalizar</li>
+                        </ol>
+                        <p>Los arqueos pueden realizarse múltiples veces al día (inicio, cierre, cambio de turno) y ayudan a detectar errores o pérdidas de efectivo tempranamente.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="cash1">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo configurar el IVA en los arqueos de caja?</div>
+                    <div class="help-answer" id="answer-cash2">
+                        <p>El sistema permite trabajar con importes con o sin IVA incluido:</p>
+                        <ol>
+                            <li>Durante la creación del arqueo:</li>
+                            <ul>
+                                <li>Activa la opción "Incluir IVA" si los importes que registras tienen IVA</li>
+                                <li>Esto habilitará campos adicionales para cada movimiento</li>
+                            </ul>
+                            <li>Para cada entrada o salida de efectivo:</li>
+                            <ul>
+                                <li>Selecciona el porcentaje de IVA aplicable (4%, 10%, 21%)</li>
+                                <li>Introduce el importe total (con IVA incluido)</li>
+                                <li>El sistema calculará automáticamente:</li>
+                                <ul>
+                                    <li>Base imponible (importe sin IVA)</li>
+                                    <li>Cuota de IVA</li>
+                                    <li>Total con IVA</li>
+                                </ul>
+                            </ul>
+                            <li>En el resumen del arqueo:</li>
+                            <ul>
+                                <li>El sistema mostrará un desglose por tipos de IVA</li>
+                                <li>Se calculará el total de IVA recaudado</li>
+                                <li>Se mostrará la base imponible total</li>
+                            </ul>
+                        </ol>
+                        <p>Esta funcionalidad es especialmente útil para preparar declaraciones de IVA y para negocios que necesitan llevar un control detallado de los impuestos.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="cash2">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo utilizar el sistema de tokens para arqueos?</div>
+                    <div class="help-answer" id="answer-cash3">
+                        <p>Los tokens permiten a usuarios externos realizar arqueos sin necesidad de acceso completo al sistema:</p>
+                        <ol>
+                            <li>Configuración del sistema de tokens:</li>
+                            <ul>
+                                <li>Accede a "Arqueos de Caja" y selecciona la ubicación</li>
+                                <li>Haz clic en "Configurar Tokens"</li>
+                                <li>Genera un nuevo token especificando:</li>
+                                <ul>
+                                    <li>Nombre descriptivo (ej. "Arqueo Nocturno", "Cierre Fin de Semana")</li>
+                                    <li>Fecha de caducidad (opcional)</li>
+                                    <li>Número máximo de usos (opcional)</li>
+                                </ul>
+                            </ul>
+                            <li>Compartir el enlace de token:</li>
+                            <ul>
+                                <li>El sistema generará una URL única que incluye el token</li>
+                                <li>Copia y comparte este enlace con el personal autorizado</li>
+                                <li>El enlace puede enviarse por email, WhatsApp, etc.</li>
+                            </ul>
+                            <li>Uso del token por parte del empleado:</li>
+                            <ul>
+                                <li>El empleado accede a la URL desde cualquier dispositivo</li>
+                                <li>Completa el formulario simplificado de arqueo</li>
+                                <li>No necesita iniciar sesión ni conocer credenciales</li>
+                                <li>Al enviar el formulario, se registra en el sistema</li>
+                            </ul>
+                            <li>Seguimiento de los arqueos por token:</li>
+                            <ul>
+                                <li>En la sección "Historial de Tokens" puedes ver:</li>
+                                <li>Quién ha utilizado cada token</li>
+                                <li>Cuándo se utilizó</li>
+                                <li>Qué datos se registraron</li>
+                            </ul>
+                        </ol>
+                        <p>Los tokens son especialmente útiles para negocios con múltiples turnos o para permitir que empleados sin acceso al sistema completo puedan registrar arqueos de caja.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="cash3">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo generar informes de arqueos de caja?</div>
+                    <div class="help-answer" id="answer-cash4">
+                        <p>Los informes te permiten analizar los movimientos de caja a lo largo del tiempo:</p>
+                        <ol>
+                            <li>Accede a "Arqueos de Caja" en el menú principal</li>
+                            <li>Selecciona la ubicación deseada</li>
+                            <li>Haz clic en "Informes"</li>
+                            <li>Configura los parámetros del informe:</li>
+                            <ul>
+                                <li><strong>Período:</strong> Diario, semanal, mensual o rango personalizado</li>
+                                <li><strong>Tipo de informe:</strong> Resumido o detallado</li>
+                                <li><strong>Incluir desglose IVA:</strong> Para informes con información fiscal</li>
+                                <li><strong>Comparativa:</strong> Para comparar con períodos anteriores</li>
+                            </ul>
+                            <li>Visualiza los datos en pantalla:</li>
+                            <ul>
+                                <li>Gráficos de tendencias</li>
+                                <li>Tablas con ingresos y gastos</li>
+                                <li>Desglose por métodos de pago</li>
+                                <li>Análisis de descuadres</li>
+                            </ul>
+                            <li>Exporta el informe en varios formatos:</li>
+                            <ul>
+                                <li><strong>PDF:</strong> Para archivo o impresión</li>
+                                <li><strong>Excel:</strong> Para análisis adicional</li>
+                                <li><strong>CSV:</strong> Para importar a otros sistemas</li>
+                            </ul>
+                        </ol>
+                        <p>Los informes son fundamentales para la gestión financiera del negocio, permitiendo identificar tendencias, controlar gastos y verificar ingresos.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="cash4">Editar</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Contenido: Gastos Mensuales -->
+    <div id="helpContent-expenses" class="help-tab-content">
+        <div class="help-section">
+            <h2>Gastos Mensuales</h2>
+            <div class="help-content">
+                <p>El módulo de Gastos Mensuales permite registrar, categorizar y analizar los gastos recurrentes de cada ubicación.</p>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo registrar un nuevo gasto mensual?</div>
+                    <div class="help-answer" id="answer-expense1">
+                        <p>Registrar gastos mensuales ayuda a mantener un control presupuestario:</p>
+                        <ol>
+                            <li>Accede a "Gastos Mensuales" en el menú principal</li>
+                            <li>Selecciona la ubicación para la que quieres registrar el gasto</li>
+                            <li>Haz clic en "Nuevo Gasto"</li>
+                            <li>Completa la información básica:</li>
+                            <ul>
+                                <li><strong>Concepto:</strong> Descripción clara del gasto</li>
+                                <li><strong>Categoría:</strong> Tipo de gasto (suministros, alquiler, personal, etc.)</li>
+                                <li><strong>Importe:</strong> Cantidad del gasto</li>
+                                <li><strong>Fecha:</strong> Cuándo se realizó el pago</li>
+                            </ul>
+                            <li>Añade detalles fiscales:</li>
+                            <ul>
+                                <li><strong>Porcentaje IVA:</strong> Tipo impositivo aplicable</li>
+                                <li><strong>Número de factura:</strong> Referencia del documento</li>
+                                <li><strong>Proveedor:</strong> Quién emite la factura</li>
+                                <li><strong>Método de pago:</strong> Cómo se liquidó el gasto</li>
+                            </ul>
+                            <li>Opcionalmente, adjunta documentación:</li>
+                            <ul>
+                                <li>Sube una foto o escaneado de la factura</li>
+                                <li>Añade notas o comentarios adicionales</li>
+                            </ul>
+                            <li>Haz clic en "Guardar" para registrar el gasto</li>
+                        </ol>
+                        <p>El sistema organizará automáticamente los gastos por mes y categoría, facilitando su posterior análisis.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="expense1">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo gestionar las categorías de gastos?</div>
+                    <div class="help-answer" id="answer-expense2">
+                        <p>Las categorías permiten clasificar los gastos para un mejor análisis:</p>
+                        <ol>
+                            <li>Accede a "Gastos Mensuales" en el menú principal</li>
+                            <li>Haz clic en "Configuración" y luego en "Categorías"</li>
+                            <li>Gestiona las categorías existentes:</li>
+                            <ul>
+                                <li>El sistema incluye categorías predeterminadas como:</li>
+                                <ul>
+                                    <li>Alquiler</li>
+                                    <li>Suministros (luz, agua, gas)</li>
+                                    <li>Nóminas</li>
+                                    <li>Impuestos</li>
+                                    <li>Materias primas</li>
+                                    <li>Servicios externos</li>
+                                </ul>
+                                <li>Puedes editar estas categorías o cambiar su orden</li>
+                            </ul>
+                            <li>Para crear una nueva categoría:</li>
+                            <ul>
+                                <li>Haz clic en "Añadir Categoría"</li>
+                                <li>Asigna un nombre descriptivo</li>
+                                <li>Selecciona un color para identificarla visualmente</li>
+                                <li>Establece un orden de visualización</li>
+                                <li>Indica si es una categoría de gasto fijo o variable</li>
+                                <li>Haz clic en "Guardar"</li>
+                            </ul>
+                            <li>Para eliminar una categoría:</li>
+                            <ul>
+                                <li>Haz clic en el botón de eliminación junto a la categoría</li>
+                                <li>Confirma la acción (solo se permite si no hay gastos asociados)</li>
+                                <li>Alternativamente, puedes desactivar categorías sin eliminarlas</li>
+                            </ul>
+                        </ol>
+                        <p>Una buena estructura de categorías facilita la visualización de en qué se gasta el dinero y permite comparar entre períodos.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="expense2">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo ver el resumen mensual de gastos?</div>
+                    <div class="help-answer" id="answer-expense3">
+                        <p>El resumen mensual te permite visualizar todos los gastos de un periodo:</p>
+                        <ol>
+                            <li>Accede a "Gastos Mensuales" en el menú principal</li>
+                            <li>Selecciona la ubicación que quieres analizar</li>
+                            <li>Por defecto, verás el mes actual, pero puedes:</li>
+                            <ul>
+                                <li>Usar los botones de navegación para cambiar de mes</li>
+                                <li>Utilizar el selector de fecha para ir a un mes específico</li>
+                            </ul>
+                            <li>En la vista principal verás:</li>
+                            <ul>
+                                <li><strong>Gráfico circular:</strong> Distribución por categorías</li>
+                                <li><strong>Total de gastos:</strong> Suma de todos los gastos del mes</li>
+                                <li><strong>Comparativa:</strong> Relación con meses anteriores</li>
+                                <li><strong>Lista detallada:</strong> Todos los gastos registrados</li>
+                            </ul>
+                            <li>Opciones de filtrado:</li>
+                            <ul>
+                                <li>Filtra por categoría</li>
+                                <li>Filtra por método de pago</li>
+                                <li>Busca por proveedor o concepto</li>
+                            </ul>
+                            <li>Para ver el detalle de un gasto:</li>
+                            <ul>
+                                <li>Haz clic sobre él en la lista</li>
+                                <li>Verás toda la información y documentos adjuntos</li>
+                            </ul>
+                        </ol>
+                        <p>El resumen mensual es una herramienta fundamental para el control presupuestario y la toma de decisiones financieras.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="expense3">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo generar informes comparativos de gastos?</div>
+                    <div class="help-answer" id="answer-expense4">
+                        <p>Los informes comparativos ayudan a analizar tendencias y evoluciones de gasto:</p>
+                        <ol>
+                            <li>Accede a "Gastos Mensuales" en el menú principal</li>
+                            <li>Selecciona la ubicación deseada</li>
+                            <li>Haz clic en "Informes" y luego en "Comparativa"</li>
+                            <li>Configura los parámetros de la comparación:</li>
+                            <ul>
+                                <li><strong>Período 1:</strong> Primer rango de fechas a comparar</li>
+                                <li><strong>Período 2:</strong> Segundo rango de fechas a comparar</li>
+                                <li><strong>Nivel de detalle:</strong> Por día, semana o mes</li>
+                                <li><strong>Mostrar por:</strong> Categoría, proveedor o método de pago</li>
+                            </ul>
+                            <li>Visualiza los resultados:</li>
+                            <ul>
+                                <li>Gráfico de barras comparativo</li>
+                                <li>Tabla de datos con diferencias absolutas y porcentuales</li>
+                                <li>Identificación de incrementos y reducciones significativas</li>
+                            </ul>
+                            <li>Análisis adicionales disponibles:</li>
+                            <ul>
+                                <li>Tendencia anual por categoría</li>
+                                <li>Distribución de gastos fijos vs. variables</li>
+                                <li>Proyección de gastos futuros basada en tendencias</li>
+                            </ul>
+                            <li>Exporta los informes a varios formatos:</li>
+                            <ul>
+                                <li>PDF para presentaciones</li>
+                                <li>Excel para análisis adicional</li>
+                                <li>Imagen para incluir en otros documentos</li>
+                            </ul>
+                        </ol>
+                        <p>Las comparativas son esenciales para detectar desviaciones presupuestarias, identificar áreas de ahorro potencial y optimizar los recursos financieros del negocio.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="expense4">Editar</button>
+                    {% endif %}
+                </div>
+                
+                <div class="help-item">
+                    <div class="help-question">¿Cómo gestionar los recibos y facturas digitales?</div>
+                    <div class="help-answer" id="answer-expense5">
+                        <p>El sistema permite adjuntar y organizar documentos relacionados con los gastos:</p>
+                        <ol>
+                            <li>Al crear o editar un gasto mensual:</li>
+                            <ul>
+                                <li>Encuentra la sección "Documentación" en el formulario</li>
+                                <li>Haz clic en "Subir documento" o arrastra y suelta archivos</li>
+                                <li>Puedes subir imágenes o PDFs de facturas y recibos</li>
+                                <li>Opcionalmente, añade una descripción al documento</li>
+                            </ul>
+                            <li>Para gestionar documentos existentes:</li>
+                            <ul>
+                                <li>Accede al detalle del gasto</li>
+                                <li>Verás todos los documentos adjuntos</li>
+                                <li>Puedes previsualizar documentos sin descargarlos</li>
+                                <li>Opciones disponibles: descargar, reemplazar o eliminar</li>
+                            </ul>
+                            <li>Captura de documentos con dispositivo móvil:</li>
+                            <ul>
+                                <li>Desde un smartphone o tablet, accede a la aplicación web</li>
+                                <li>Al crear un gasto, usa la opción "Tomar foto"</li>
+                                <li>La cámara se activará para capturar el documento</li>
+                                <li>El sistema optimizará automáticamente la imagen para mejorar su legibilidad</li>
+                            </ul>
+                            <li>Organización de documentos:</li>
+                            <ul>
+                                <li>Todos los documentos se clasifican automáticamente por fecha y categoría</li>
+                                <li>Utiliza la función "Exportar todos" para descargar todos los documentos de un periodo</li>
+                                <li>El buscador permite encontrar documentos por texto en su descripción</li>
+                            </ul>
+                        </ol>
+                        <p>La gestión digital de recibos y facturas facilita el cumplimiento fiscal, simplifica las auditorías y elimina la necesidad de almacenar documentos físicos.</p>
+                    </div>
+                    {% if current_user.is_admin() %}
+                    <button class="help-edit-button" data-item="expense5">Editar</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/help_system.js') }}"></script>
+{% endblock %}

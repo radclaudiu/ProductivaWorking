@@ -1,0 +1,175 @@
+/* Estilos para el sistema de ayuda */
+
+/* Botón flotante de ayuda */
+.help-float-button {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    background-color: #8B4513; /* Marrón (tono tierra) */
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    z-index: 9999;
+    font-size: 24px;
+    transition: all 0.3s ease;
+}
+
+.help-float-button:hover {
+    background-color: #A0522D; /* Marrón más claro al pasar el mouse */
+    transform: scale(1.1);
+}
+
+/* Estilos para la página de ayuda */
+.help-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.help-header {
+    background-color: #8B4513; /* Marrón (tono tierra) */
+    color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 30px;
+}
+
+.help-search {
+    width: 100%;
+    padding: 15px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    margin-bottom: 30px;
+    background-color: #f9f7f5; /* Beige claro */
+}
+
+.help-section {
+    background-color: #f9f7f5; /* Beige claro */
+    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-left: 5px solid #8B4513; /* Borde izquierdo marrón */
+}
+
+.help-section h2 {
+    color: #8B4513; /* Marrón */
+    border-bottom: 1px solid #e0d8d0;
+    padding-bottom: 10px;
+    margin-bottom: 20px;
+}
+
+.help-section h3 {
+    color: #A0522D; /* Marrón claro */
+    margin-top: 25px;
+    margin-bottom: 15px;
+}
+
+.help-content {
+    line-height: 1.6;
+}
+
+.help-item {
+    margin-bottom: 30px;
+}
+
+.help-question {
+    font-weight: bold;
+    color: #5F4B32; /* Marrón oscuro */
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+
+.help-answer {
+    background-color: #fff;
+    padding: 15px;
+    border-radius: 5px;
+    border-left: 3px solid #8B4513;
+}
+
+.help-edit-button {
+    background-color: #8B4513;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    float: right;
+}
+
+.help-edit-button:hover {
+    background-color: #A0522D;
+}
+
+.help-hidden {
+    display: none;
+}
+
+.help-edit-form {
+    margin-top: 10px;
+}
+
+.help-edit-form textarea {
+    width: 100%;
+    min-height: 150px;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.help-save-button, .help-cancel-button {
+    padding: 5px 15px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.help-save-button {
+    background-color: #5F4B32;
+    color: white;
+}
+
+.help-cancel-button {
+    background-color: #ddd;
+    color: #333;
+}
+
+.help-tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+}
+
+.help-tab {
+    padding: 10px 20px;
+    cursor: pointer;
+    background-color: #f1e8e0;
+    border: 1px solid #ddd;
+    border-bottom: none;
+    border-radius: 5px 5px 0 0;
+    margin-right: 5px;
+}
+
+.help-tab.active {
+    background-color: #8B4513;
+    color: white;
+    border-color: #8B4513;
+}
+
+.help-tab-content {
+    display: none;
+}
+
+.help-tab-content.active {
+    display: block;
+}

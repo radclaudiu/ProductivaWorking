@@ -1,0 +1,22 @@
+Información del backup de Productiva
+===================================
+Fecha: 2025-05-02 15:08:15
+Archivo SQL: productiva_backup_20250502_150807.sql (5.6M)
+Archivo Ejecutable: productiva_backup_executable_20250502_150807_faltantes_task_templates.sh (5.6M)
+Tablas: 
+Registros: 
+
+Módulos encontrados:
+- Sistema Base: SÍ
+- Control Horario: SÍ
+- Arqueos de Caja: SÍ
+- Gastos Mensuales: SÍ
+- Sistema de Tareas: INCOMPLETO O AUSENTE
+
+Funcionalidades especiales:
+- Cálculo de IVA en Arqueos: SÍ
+- Ventana horaria para cierres automáticos: SÍ
+- Soporte para impresoras de red: SÍ
+
+Para restaurar, ejecute:
+  ./productiva_backup_executable_20250502_150807_faltantes_task_templates.sh --restore

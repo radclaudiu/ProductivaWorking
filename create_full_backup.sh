@@ -216,10 +216,8 @@ NC='\033[0m' # No Color
 # Función para mostrar información del backup
 show_info() {
     echo -e "${BLUE}================ INFORMACIÓN DEL BACKUP ================${NC}"
-    echo -e "${GREEN}Fecha de creación:${NC} $(grep "# Fecha de backup:" "$0" | cut -d: -f2-)"
-    echo -e "${GREEN}Tamaño del backup SQL:${NC} $(grep "# Tamaño del backup SQL:" "$0" | cut -d: -f2-)"
-    echo -e "${GREEN}Tablas:${NC} $(grep "# Tablas:" "$0" | cut -d: -f2-)"
-    echo -e "${GREEN}Registros:${NC} $(grep "# Registros:" "$0" | cut -d: -f2-)"
+    echo -e "${GREEN}Fecha de creación:${NC} $(date '+%Y-%m-%d %H:%M:%S')"
+    echo -e "${GREEN}Tamaño:${NC} $(du -h "$0" | cut -f1)"
     echo -e "${GREEN}Módulos actualizados:${NC} Arqueos de Caja, Gastos Mensuales, IVA y Ventana Horaria"
     echo
 

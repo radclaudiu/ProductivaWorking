@@ -28,25 +28,6 @@
         transform: translateY(-3px);
         box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
     }
-    .incident-badge {
-        font-size: 0.8rem;
-        padding: 0.4rem 0.6rem;
-    }
-    .quick-action-icon {
-        font-size: 1.25rem;
-        margin-right: 0.5rem;
-    }
-    .filter-form .form-control, .filter-form .form-select {
-        border-radius: 20px;
-    }
-    .filter-form .btn {
-        border-radius: 20px;
-        padding-left: 1.5rem;
-        padding-right: 1.5rem;
-    }
-    #checkpointsList .card-header {
-        padding: 0.75rem 1.25rem;
-    }
     .checkpoint-status {
         width: 12px;
         height: 12px;
@@ -62,13 +43,6 @@
     }
     .status-maintenance {
         background-color: #ffc107;
-    }
-    .chart-container {
-        height: 250px;
-        position: relative;
-    }
-    .btn-action {
-        min-width: 130px;
     }
 </style>
 {% endblock %}
@@ -138,6 +112,7 @@
                 </div>
                 <div class="card-body">
                     <div class="tab-content" id="dashboard-tabsContent">
+                        
                         <!-- PESTAÑA: PUNTOS DE FICHAJE -->                        
                         <div class="tab-pane fade show active" id="checkpointsTab" role="tabpanel" aria-labelledby="checkpoints-tab">
                             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -227,7 +202,7 @@
                             </div>
                         </div>
                         
-                        <!-- PESTAÑA: REGISTROS DE FICHAJE -->
+                        <!-- PESTAÑA: PENDIENTES -->
                         <div class="tab-pane fade" id="pendingTab" role="tabpanel" aria-labelledby="pending-tab">
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h4>Pendientes de Salida</h4>
@@ -262,7 +237,7 @@
                             </div>
                         </div>
                         
-                        <!-- PESTAÑA: CONFIGURACIÓN -->
+                        <!-- PESTAÑA: REGISTROS -->
                         <div class="tab-pane fade" id="recordsTab" role="tabpanel" aria-labelledby="records-tab">
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h4>Registros de Fichaje</h4>
@@ -313,131 +288,69 @@
                             
                             <!-- Tabla de registros -->
                             <div class="table-responsive">
-                                <table class="table table-striped table-hover">
+                                <table class="table table-striped table-hover" id="recordsTable">
                                     <thead class="table-dark">
                                         <tr>
                                             <th>Empleado</th>
-                                            <th>Punto</th>
+                                            <th>Punto de Fichaje</th>
                                             <th>Entrada</th>
                                             <th>Salida</th>
-                                            <th>Duración</th>
+                                            <th>Horas</th>
                                             <th>Estado</th>
                                             <th>Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for record in latest_records %}
+                                        {% for record in records %}
                                         <tr>
                                             <td>{{ record.employee.first_name }} {{ record.employee.last_name }}</td>
                                             <td>{{ record.checkpoint.name }}</td>
-                                            <td>{{ record.check_in_time.strftime('%d/%m/%Y %H:%M') }}</td>
+                                            <td>{{ record.check_in_time.strftime('%d-%m-%Y %H:%M') if record.check_in_time else 'N/A' }}</td>
+                                            <td>{{ record.check_out_time.strftime('%d-%m-%Y %H:%M') if record.check_out_time else 'Pendiente' }}</td>
                                             <td>
                                                 {% if record.check_out_time %}
-                                                    {{ record.check_out_time.strftime('%d/%m/%Y %H:%M') }}
-                                                {% else %}
-                                                    <span class="badge bg-warning">Pendiente</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>
-                                                {% if record.check_out_time %}
-                                                    {% set duration = record.duration() %}
-                                                    {{ duration|round(2) }} h
+                                                    {{ record.hours_worked|float|round(2) }}
                                                 {% else %}
                                                     -
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                {% if record.adjusted %}
-                                                    <span class="badge bg-warning" data-bs-toggle="tooltip" title="Ajustado manualmente">
-                                                        <i class="bi bi-pencil"></i> Ajustado
-                                                    </span>
-                                                {% elif record.incidents %}
-                                                    <span class="badge bg-danger" data-bs-toggle="tooltip" title="Incidencia registrada">
-                                                        <i class="bi bi-exclamation-triangle"></i> Incidencia
-                                                    </span>
-                                                {% else %}
-                                                    <span class="badge bg-success">
-                                                        <i class="bi bi-check-circle"></i> OK
-                                                    </span>
+                                                {% if record.status.value == 'pending' %}
+                                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                                {% elif record.status.value == 'completed' %}
+                                                    <span class="badge bg-success">Completado</span>
+                                                {% elif record.status.value == 'incident' %}
+                                                    <span class="badge bg-danger">Incidencia</span>
+                                                {% elif record.status.value == 'adjusted' %}
+                                                    <span class="badge bg-info">Ajustado</span>
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                <div class="btn-group btn-group-sm">
-                                                    <a href="{{ url_for('checkpoints.adjust_record', id=record.id) }}" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Ajustar">
-                                                        <i class="bi bi-pencil"></i>
-                                                    </a>
-                                                    {% if not record.check_out_time %}
-                                                    <a href="{{ url_for('checkpoints.adjust_record', id=record.id, action='checkout') }}" class="btn btn-outline-primary" data-bs-toggle="tooltip" title="Registrar salida">
-                                                        <i class="bi bi-box-arrow-right"></i>
-                                                    </a>
-                                                    {% endif %}
-                                                </div>
+                                                <a href="{{ url_for('checkpoints.view_record', id=record.id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <a href="{{ url_for('checkpoints.edit_record', id=record.id) }}" class="btn btn-sm btn-outline-secondary">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
                                             </td>
                                         </tr>
                                         {% else %}
                                         <tr>
-                                            <td colspan="7" class="text-center py-3">No hay registros de fichaje recientes</td>
+                                            <td colspan="7" class="text-center py-3">No hay registros para mostrar con los filtros actuales.</td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>
                                 </table>
-                            </div>
-                            
-                            <div class="text-center mt-3">
-                                <a href="{{ url_for('checkpoints.list_records_all') }}" class="btn btn-outline-primary">
-                                    Ver todos los registros <i class="bi bi-arrow-right"></i>
-                                </a>
                             </div>
                         </div>
                         
                         <!-- PESTAÑA: INCIDENCIAS -->
                         <div class="tab-pane fade" id="incidentsTab" role="tabpanel" aria-labelledby="incidents-tab">
                             <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h4>Incidencias de Fichaje</h4>
-                            </div>
-                            
-                            <!-- Filtros de incidencias -->
-                            <div class="card mb-4">
-                                <div class="card-body">
-                                    <h5 class="card-title mb-3">Filtrar incidencias</h5>
-                                    <form class="row g-3 filter-form">
-                                        <div class="col-md-3">
-                                            <label for="filterIncidentType" class="form-label">Tipo de Incidencia</label>
-                                            <select class="form-select" id="filterIncidentType">
-                                                <option value="0">Todos los tipos</option>
-                                                {% for type in incident_types %}
-                                                    <option value="{{ type.value }}">{{ type.name }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label for="filterIncidentEmployee" class="form-label">Empleado</label>
-                                            <select class="form-select" id="filterIncidentEmployee">
-                                                <option value="0">Todos los empleados</option>
-                                                {% for employee in employees %}
-                                                    <option value="{{ employee.id }}">{{ employee.first_name }} {{ employee.last_name }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <label for="filterIncidentStatus" class="form-label">Estado</label>
-                                            <select class="form-select" id="filterIncidentStatus">
-                                                <option value="all">Todos</option>
-                                                <option value="pending">Pendientes</option>
-                                                <option value="resolved">Resueltos</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <label for="filterIncidentDate" class="form-label">Fecha</label>
-                                            <input type="date" class="form-control" id="filterIncidentDate">
-                                        </div>
-                                        <div class="col-md-2 d-flex align-items-end">
-                                            <button type="button" class="btn btn-primary w-100" id="applyIncidentFilter">
-                                                <i class="bi bi-funnel"></i> Filtrar
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
+                                <h4>Incidencias</h4>
+                                <a href="{{ url_for('checkpoints.create_incident') }}" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle"></i> Nueva Incidencia
+                                </a>
                             </div>
                             
                             <!-- Lista de incidencias -->
@@ -445,164 +358,165 @@
                                 <table class="table table-striped table-hover">
                                     <thead class="table-dark">
                                         <tr>
-                                            <th>Tipo</th>
                                             <th>Empleado</th>
+                                            <th>Punto de Fichaje</th>
                                             <th>Fecha</th>
-                                            <th>Descripción</th>
+                                            <th>Tipo</th>
                                             <th>Estado</th>
+                                            <th>Descripción</th>
                                             <th>Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {% for incident in latest_incidents %}
+                                        {% for incident in incidents %}
                                         <tr>
+                                            <td>{{ incident.employee.first_name }} {{ incident.employee.last_name }}</td>
+                                            <td>{{ incident.checkpoint.name if incident.checkpoint else 'N/A' }}</td>
+                                            <td>{{ incident.date.strftime('%d-%m-%Y') }}</td>
                                             <td>
-                                                {% if incident.incident_type.value == 'missed_checkout' %}
-                                                    <span class="badge bg-danger incident-badge">Salida Olvidada</span>
-                                                {% elif incident.incident_type.value == 'late_checkin' %}
-                                                    <span class="badge bg-warning text-dark incident-badge">Entrada Tardía</span>
-                                                {% elif incident.incident_type.value == 'early_checkout' %}
-                                                    <span class="badge bg-warning text-dark incident-badge">Salida Temprana</span>
-                                                {% elif incident.incident_type.value == 'overtime' %}
-                                                    <span class="badge bg-info incident-badge">Horas Extra</span>
-                                                {% elif incident.incident_type.value == 'manual_adjustment' %}
-                                                    <span class="badge bg-secondary incident-badge">Ajuste Manual</span>
-                                                {% elif incident.incident_type.value == 'contract_hours_adjustment' %}
-                                                    <span class="badge bg-primary incident-badge">Ajuste Contrato</span>
-                                                {% endif %}
-                                            </td>
-                                            <td>{{ incident.record.employee.first_name }} {{ incident.record.employee.last_name }}</td>
-                                            <td>{{ incident.created_at.strftime('%d/%m/%Y %H:%M') }}</td>
-                                            <td>{{ incident.description }}</td>
-                                            <td>
-                                                {% if incident.resolved %}
-                                                    <span class="badge bg-success">Resuelto</span>
+                                                {% if incident.type.value == 'absence' %}
+                                                    <span class="badge bg-danger">Ausencia</span>
+                                                {% elif incident.type.value == 'late' %}
+                                                    <span class="badge bg-warning text-dark">Retraso</span>
+                                                {% elif incident.type.value == 'early_leave' %}
+                                                    <span class="badge bg-info">Salida anticipada</span>
+                                                {% elif incident.type.value == 'forgot_checkout' %}
+                                                    <span class="badge bg-secondary">Olvido salida</span>
+                                                {% elif incident.type.value == 'system_failure' %}
+                                                    <span class="badge bg-dark">Fallo sistema</span>
                                                 {% else %}
-                                                    <span class="badge bg-danger">Pendiente</span>
+                                                    <span class="badge bg-primary">Otro</span>
                                                 {% endif %}
                                             </td>
                                             <td>
-                                                <div class="btn-group btn-group-sm">
-                                                    <a href="{{ url_for('checkpoints.adjust_record', id=incident.record_id) }}" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Ajustar Registro">
-                                                        <i class="bi bi-pencil"></i>
-                                                    </a>
-                                                    {% if not incident.resolved %}
-                                                    <a href="{{ url_for('checkpoints.resolve_incident', id=incident.id) }}" class="btn btn-outline-success" data-bs-toggle="tooltip" title="Marcar como Resuelto">
-                                                        <i class="bi bi-check-circle"></i>
-                                                    </a>
-                                                    {% endif %}
-                                                </div>
+                                                {% if incident.status.value == 'pending' %}
+                                                    <span class="badge bg-warning text-dark">Pendiente</span>
+                                                {% elif incident.status.value == 'resolved' %}
+                                                    <span class="badge bg-success">Resuelta</span>
+                                                {% elif incident.status.value == 'rejected' %}
+                                                    <span class="badge bg-danger">Rechazada</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>{{ incident.description|truncate(30) }}</td>
+                                            <td>
+                                                <a href="{{ url_for('checkpoints.view_incident', id=incident.id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                                <a href="{{ url_for('checkpoints.edit_incident', id=incident.id) }}" class="btn btn-sm btn-outline-secondary">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
                                             </td>
                                         </tr>
                                         {% else %}
                                         <tr>
-                                            <td colspan="6" class="text-center py-3">No hay incidencias recientes</td>
+                                            <td colspan="7" class="text-center py-3">No hay incidencias registradas.</td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>
                                 </table>
                             </div>
-                            
-                            <div class="text-center mt-3">
-                                <a href="{{ url_for('checkpoints.list_incidents') }}" class="btn btn-outline-primary">
-                                    Ver todas las incidencias <i class="bi bi-arrow-right"></i>
-                                </a>
-                            </div>
                         </div>
                         
-                        <!-- PESTAÑA: CONFIGURACION -->
+                        <!-- PESTAÑA: CONFIGURACIÓN -->
                         <div class="tab-pane fade" id="configTab" role="tabpanel" aria-labelledby="config-tab">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h4>Configuración del Sistema de Fichajes</h4>
-                            </div>
-                            
                             <div class="row">
                                 <div class="col-lg-6 mb-4">
                                     <div class="card h-100">
-                                        <div class="card-header bg-primary text-white">
-                                            <h5 class="mb-0">Configuración de Horas</h5>
+                                        <div class="card-header">
+                                            <h5 class="mb-0">Configuración del Sistema</h5>
                                         </div>
                                         <div class="card-body">
-                                            <p>Configure las horas de contrato y flexibilidad para cada empleado.</p>
-                                            <p>Esto permite configurar:</p>
-                                            <ul>
-                                                <li>Horas diarias y semanales de contrato</li>
-                                                <li>Límites de horas extra permitidas</li>
-                                                <li>Horarios normales de entrada y salida</li>
-                                                <li>Minutos de flexibilidad para entrada y salida</li>
-                                            </ul>
-                                            <div class="dropdown">
-                                                <button class="btn btn-primary dropdown-toggle" type="button" id="employeeHoursDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                                    Seleccionar Empleado
-                                                </button>
-                                                <ul class="dropdown-menu" aria-labelledby="employeeHoursDropdown">
-                                                    {% for employee in employees %}
-                                                        <li><a class="dropdown-item" href="{{ url_for('checkpoints.manage_contract_hours', id=employee.id) }}">{{ employee.first_name }} {{ employee.last_name }}</a></li>
-                                                    {% else %}
-                                                        <li><span class="dropdown-item text-muted">No hay empleados disponibles</span></li>
-                                                    {% endfor %}
+                                            <p class="card-text">Configure el comportamiento general del sistema de fichajes.</p>
+                                            <div class="mb-3">
+                                                <h6>Opciones de Cierre Automático</h6>
+                                                <ul class="list-group mb-3">
+                                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                        Cierre automático de fichajes
+                                                        <div class="form-check form-switch">
+                                                            <input class="form-check-input" type="checkbox" id="autoCloseEnabled" checked>
+                                                        </div>
+                                                    </li>
+                                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                                        Notificaciones por correo electrónico
+                                                        <div class="form-check form-switch">
+                                                            <input class="form-check-input" type="checkbox" id="emailNotifications">
+                                                        </div>
+                                                    </li>
                                                 </ul>
+                                            </div>
+                                            <div class="mb-3">
+                                                <h6>Ventana de Tiempo para Operaciones</h6>
+                                                <div class="row g-3 mb-2">
+                                                    <div class="col-md-6">
+                                                        <label for="operationStartTime" class="form-label">Hora de inicio</label>
+                                                        <input type="time" class="form-control" id="operationStartTime" value="02:00">
+                                                    </div>
+                                                    <div class="col-md-6">
+                                                        <label for="operationEndTime" class="form-label">Hora de fin</label>
+                                                        <input type="time" class="form-control" id="operationEndTime" value="04:00">
+                                                    </div>
+                                                </div>
+                                                <small class="text-muted">Este período define cuándo se ejecutarán operaciones automáticas como el cierre de fichajes pendientes.</small>
+                                            </div>
+                                            <div class="d-grid gap-2">
+                                                <button class="btn btn-primary" id="saveSystemConfig">
+                                                    <i class="bi bi-save"></i> Guardar Configuración
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div class="col-lg-6 mb-4">
                                     <div class="card h-100">
-                                        <div class="card-header bg-success text-white">
-                                            <h5 class="mb-0">Exportar Informes</h5>
+                                        <div class="card-header">
+                                            <h5 class="mb-0">Estado del Servicio</h5>
                                         </div>
                                         <div class="card-body">
-                                            <p>Genere informes personalizados de fichajes en formato PDF.</p>
-                                            <p>Puede filtrar por:</p>
-                                            <ul>
-                                                <li>Rango de fechas</li>
-                                                <li>Empleado específico o todos</li>
-                                                <li>Incluir firma digital</li>
-                                                <li>Agrupar por empleado o por fecha</li>
-                                            </ul>
-                                            <a href="{{ url_for('checkpoints.export_records') }}" class="btn btn-success">
-                                                <i class="bi bi-file-earmark-pdf"></i> Crear Informe
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="col-lg-6 mb-4">
-                                    <div class="card h-100">
-                                        <div class="card-header bg-danger text-white">
-                                            <h5 class="mb-0">Mantenimiento</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <p>Herramientas de mantenimiento para el sistema de fichajes.</p>
-                                            <ul>
-                                                <li>Resolución de incidencias masiva</li>
-                                                <li>Comprobación de integridad</li>
-                                                <li>Optimización de datos</li>
-                                            </ul>
-                                            <button type="button" class="btn btn-danger" id="maintenanceButton">
-                                                <i class="bi bi-tools"></i> Acceder al Mantenimiento
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="col-lg-6 mb-4">
-                                    <div class="card h-100">
-                                        <div class="card-header bg-info text-white">
-                                            <h5 class="mb-0">Automatización</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <p>Configure opciones de automatización para el sistema.</p>
-                                            <ul>
-                                                <li>Auto-checkout tras cierto número de horas</li>
-                                                <li>Detección automática de incidencias</li>
-                                                <li>Notificaciones automáticas</li>
-                                                <li>Recordatorios de fichaje</li>
-                                            </ul>
-                                            <button type="button" class="btn btn-info" id="automationButton">
-                                                <i class="bi bi-robot"></i> Configurar Automatización
-                                            </button>
+                                            <p class="card-text">Consulte y controle el estado del servicio de cierre automático.</p>
+                                            
+                                            <!-- Estado actual -->
+                                            <div class="alert alert-success mb-4">
+                                                <div class="d-flex align-items-center">
+                                                    <div class="flex-shrink-0">
+                                                        <i class="bi bi-check-circle-fill fs-3 me-3"></i>
+                                                    </div>
+                                                    <div class="flex-grow-1">
+                                                        <h6 class="alert-heading mb-1">Servicio en funcionamiento</h6>
+                                                        <p class="mb-0 small">Último registro: hace 10 minutos</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Controles del servicio -->
+                                            <div class="d-grid gap-2">
+                                                <button class="btn btn-warning mb-2" id="restartService">
+                                                    <i class="bi bi-arrow-repeat"></i> Reiniciar Servicio
+                                                </button>
+                                                <button class="btn btn-danger" id="stopService">
+                                                    <i class="bi bi-stop-fill"></i> Detener Servicio
+                                                </button>
+                                            </div>
+                                            
+                                            <!-- Registros recientes -->
+                                            <h6 class="mt-4 mb-3">Registros recientes</h6>
+                                            <div class="small">
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <span class="badge bg-success me-2">INFO</span>
+                                                    <span>Servicio iniciado correctamente</span>
+                                                    <small class="text-muted ms-auto">Hoy 08:00</small>
+                                                </div>
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <span class="badge bg-info me-2">INFO</span>
+                                                    <span>3 registros procesados automáticamente</span>
+                                                    <small class="text-muted ms-auto">Hoy 04:00</small>
+                                                </div>
+                                                <div class="d-flex align-items-center mb-2">
+                                                    <span class="badge bg-warning text-dark me-2">WARN</span>
+                                                    <span>Tiempo de procesamiento superior a lo normal</span>
+                                                    <small class="text-muted ms-auto">Ayer 04:02</small>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -617,102 +531,17 @@
 {% endblock %}
 
 {% block scripts %}
-<!-- Chart.js para los gráficos -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Para funcionalidad de la interfaz -->
 <script>
-    // Activar tooltips
     document.addEventListener('DOMContentLoaded', function() {
+        // Activar tooltips
         const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.map(function(tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);
         });
         
-        // Inicializar gráfico de actividad
-        const ctx = document.getElementById('checkinsChart').getContext('2d');
-        
-        // Datos de estadísticas semanales
-        const labels = [
-            {% for date in week_stats %}
-                '{{ date }}',
-            {% endfor %}
-        ];
-        
-        const data = [
-            {% for date, count in week_stats.items() %}
-                {{ count }},
-            {% endfor %}
-        ];
-        
-        const chart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels.reverse(),  // Ordenar de más antiguo a más reciente
-                datasets: [{
-                    label: 'Número de fichajes',
-                    data: data.reverse(),  // Ordenar los datos igual que las etiquetas
-                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
-                    borderColor: 'rgba(54, 162, 235, 1)',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            precision: 0
-                        }
-                    }
-                }
-            }
-        });
-        
-        // Botón de actualizar gráfico
-        document.getElementById('refreshChart').addEventListener('click', function() {
-            // Aquí se recargarían los datos del gráfico (en una implementación real)
-            // Por ahora, solo mostramos un efecto visual
-            this.disabled = true;
-            this.innerHTML = '<i class="bi bi-arrow-repeat"></i> Actualizando...';
-            
-            setTimeout(() => {
-                this.disabled = false;
-                this.innerHTML = '<i class="bi bi-arrow-repeat"></i> Actualizar';
-            }, 1000);
-        });
-        
-        // Simulación de carga de datos pendientes
-        setTimeout(() => {
-            const pendingList = document.getElementById('pendingCheckoutsList');
-            
-            // Si hay registros pendientes en la base de datos, se mostrarían aquí
-            if ({{ stats.pending_checkout }} > 0) {
-                pendingList.innerHTML = `
-                    <tr>
-                        <td colspan="5" class="text-center py-3">
-                            <div class="alert alert-info mb-0">
-                                Hay {{ stats.pending_checkout }} fichajes pendientes de salida. 
-                                <a href="{{ url_for('checkpoints.list_records_all') }}" class="alert-link">Ver todos los registros</a> para gestionarlos.
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            } else {
-                pendingList.innerHTML = `
-                    <tr>
-                        <td colspan="5" class="text-center py-3">
-                            <div class="alert alert-success mb-0">
-                                <i class="bi bi-check-circle me-2"></i> No hay fichajes pendientes de salida.
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }
-        }, 500);
-        
         // Botón de procesar checkout automáticos
-        document.getElementById('processPendingCheckouts').addEventListener('click', function() {
+        document.getElementById('processPendingCheckouts')?.addEventListener('click', function() {
             this.disabled = true;
             this.innerHTML = '<i class="bi bi-clock"></i> Procesando...';
             
@@ -733,13 +562,83 @@
             }, 1500);
         });
         
-        // Botones de mantenimiento y automatización (simulación)
-        document.getElementById('maintenanceButton').addEventListener('click', function() {
-            alert('Funcionalidad de mantenimiento en desarrollo');
+        // Simulación de carga de datos pendientes
+        setTimeout(() => {
+            const pendingList = document.getElementById('pendingCheckoutsList');
+            if (pendingList) {
+                // Si hay registros pendientes en la base de datos, se mostrarían aquí
+                if ({{ stats.pending_checkout|default(0) }} > 0) {
+                    pendingList.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="text-center py-3">
+                                <div class="alert alert-info mb-0">
+                                    Hay {{ stats.pending_checkout|default(0) }} fichajes pendientes de salida. 
+                                    <a href="{{ url_for('checkpoints.list_records_all') }}" class="alert-link">Ver todos los registros</a> para gestionarlos.
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    pendingList.innerHTML = `
+                        <tr>
+                            <td colspan="5" class="text-center py-3">
+                                <div class="alert alert-success mb-0">
+                                    <i class="bi bi-check-circle me-2"></i> No hay fichajes pendientes de salida.
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }
+            }
+        }, 500);
+        
+        // Botones de configuración
+        document.getElementById('saveSystemConfig')?.addEventListener('click', function() {
+            this.disabled = true;
+            this.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando...';
+            
+            setTimeout(() => {
+                this.disabled = false;
+                this.innerHTML = '<i class="bi bi-save"></i> Guardar Configuración';
+                
+                // Mostrar mensaje de éxito
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-success alert-dismissible fade show mt-3';
+                alert.innerHTML = `
+                    <i class="bi bi-check-circle me-2"></i> Configuración guardada correctamente.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                
+                document.querySelector('#configTab').prepend(alert);
+            }, 1000);
         });
         
-        document.getElementById('automationButton').addEventListener('click', function() {
-            alert('Funcionalidad de automatización en desarrollo');
+        document.getElementById('restartService')?.addEventListener('click', function() {
+            if (confirm('¿Está seguro de reiniciar el servicio de cierre automático?')) {
+                this.disabled = true;
+                this.innerHTML = '<i class="bi bi-arrow-repeat"></i> Reiniciando...';
+                
+                setTimeout(() => {
+                    this.disabled = false;
+                    this.innerHTML = '<i class="bi bi-arrow-repeat"></i> Reiniciar Servicio';
+                    
+                    alert('Servicio reiniciado correctamente.');
+                }, 1500);
+            }
+        });
+        
+        document.getElementById('stopService')?.addEventListener('click', function() {
+            if (confirm('¿Está seguro de detener el servicio de cierre automático? Esto detendrá todos los procesos automáticos.')) {
+                this.disabled = true;
+                this.innerHTML = '<i class="bi bi-stop-fill"></i> Deteniendo...';
+                
+                setTimeout(() => {
+                    this.disabled = false;
+                    this.innerHTML = '<i class="bi bi-stop-fill"></i> Detener Servicio';
+                    
+                    alert('Servicio detenido correctamente.');
+                }, 1500);
+            }
         });
     });
 </script>

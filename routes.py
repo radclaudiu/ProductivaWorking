@@ -1473,7 +1473,9 @@ def weekly_schedule(employee_id):
             print(f"ERROR AL CARGAR HORARIOS: {str(e)}")
     
     if form.validate_on_submit():
+        print(f"VALIDACIÓN EXITOSA DEL FORMULARIO")
         try:
+            print(f"INICIANDO PROCESO DE GUARDADO PARA EMPLEADO {employee_id}")
             # PASO 1: Eliminar TODOS los horarios existentes
             # Este enfoque resuelve definitivamente el problema de duplicados
             print(f"\nELIMINANDO TODOS LOS HORARIOS ACTUALES PARA EMPLEADO {employee_id}")
@@ -1488,12 +1490,16 @@ def weekly_schedule(employee_id):
                 start_time = getattr(form, f"{day_name}_start_time").data
                 end_time = getattr(form, f"{day_name}_end_time").data
                 
+                print(f"PROCESANDO DÍA {day_name}: is_working_day={is_working_day}, start={start_time}, end={end_time}")
+                
                 # Valores por defecto seguros para evitar errores NULL
                 if not start_time:
                     start_time = time(9, 0)  # 9:00 AM por defecto
+                    print(f"Asignando hora de inicio por defecto: 09:00")
                 
                 if not end_time:
                     end_time = time(18, 0)  # 6:00 PM por defecto
+                    print(f"Asignando hora de fin por defecto: 18:00")
                 
                 # Convertir el nombre del día a un WeekDay
                 day_enum = WeekDay(day_name)
@@ -1510,7 +1516,9 @@ def weekly_schedule(employee_id):
                 db.session.add(new_schedule)
             
             # PASO 3: Guardar los cambios
+            print("APLICANDO CAMBIOS A LA BASE DE DATOS...")
             db.session.commit()
+            print("COMMIT REALIZADO CORRECTAMENTE")
             
             # Verificar el resultado
             updated_schedules = EmployeeSchedule.query.filter_by(employee_id=employee_id).all()
@@ -1520,10 +1528,15 @@ def weekly_schedule(employee_id):
             
             log_activity(f'Horarios semanales actualizados para {employee.first_name} {employee.last_name}')
             flash('Horarios semanales actualizados correctamente.', 'success')
-            return redirect(url_for('schedule.list_schedules', employee_id=employee_id))
+            print(f"REDIRIGIENDO A LA LISTA DE HORARIOS")
+            
+            # Usamos una ruta diferente para volver a la vista de detalles del empleado en lugar de la lista de horarios
+            return redirect(url_for('employee.view_employee', id=employee_id))
         except Exception as e:
             db.session.rollback()
             print(f"ERROR AL GUARDAR HORARIOS: {str(e)}")
+            import traceback
+            print(traceback.format_exc())
             flash(f'Error al guardar los horarios: {str(e)}', 'danger')
     
     return render_template('weekly_schedule_form.html', 

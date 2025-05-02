@@ -506,7 +506,7 @@
                             
                             <div class="row">
                                 <div class="col-lg-6 mb-4">
-                                    <div class="card h-100">
+                                    <div class="card">
                                         <div class="card-header text-white" style="background: linear-gradient(135deg, #a06235, #c87f5d);">
                                             <h5 class="mb-0">Configuración de Horas</h5>
                                         </div>
@@ -523,7 +523,7 @@
                                                 <button class="btn dropdown-toggle" type="button" id="employeeHoursDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: #8D6E63; color: white;">
                                                     Seleccionar Empleado
                                                 </button>
-                                                <ul class="dropdown-menu" aria-labelledby="employeeHoursDropdown">
+                                                <ul class="dropdown-menu" aria-labelledby="employeeHoursDropdown" style="max-height: 300px; overflow-y: auto;">
                                                     {% for employee in employees %}
                                                         <li><a class="dropdown-item" href="{{ url_for('checkpoints.manage_contract_hours', id=employee.id) }}">{{ employee.first_name }} {{ employee.last_name }}</a></li>
                                                     {% else %}

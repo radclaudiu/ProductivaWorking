@@ -1,47 +1,46 @@
 // Sistema de ayuda interactivo para Productiva
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Instalar el botón flotante si no estamos en la página de ayuda
-    if (!window.location.pathname.includes('/help')) {
-        installHelpButton();
-    } else {
+    // Ya no instalamos el botón flotante, está en el footer
+    if (window.location.pathname.includes('/help')) {
         initializeHelpPage();
+    } else {
+        // Configurar el botón de ayuda en el footer
+        setupHelpFooterButton();
     }
 });
 
-// Función para instalar el botón flotante de ayuda
-function installHelpButton() {
-    const button = document.createElement('div');
-    button.className = 'help-float-button';
-    button.innerHTML = '?';
-    button.title = 'Ayuda';
-    button.setAttribute('aria-label', 'Abrir ayuda');
+// Función para configurar el botón de ayuda en el footer
+function setupHelpFooterButton() {
+    const helpButton = document.querySelector('.help-footer-button');
     
-    button.addEventListener('click', function() {
-        // Guardar la página actual para poder volver
-        localStorage.setItem('helpReturnUrl', window.location.href);
-        
-        // Obtener el contexto de la página actual para mostrar ayuda relevante
-        const currentPath = window.location.pathname;
-        let contextParam = '';
-        
-        if (currentPath.includes('/companies')) {
-            contextParam = '?section=companies';
-        } else if (currentPath.includes('/employees') || currentPath.includes('/checkpoints')) {
-            contextParam = '?section=checkpoints';
-        } else if (currentPath.includes('/tasks')) {
-            contextParam = '?section=tasks';
-        } else if (currentPath.includes('/cash-register')) {
-            contextParam = '?section=cash-register';
-        } else if (currentPath.includes('/monthly-expenses')) {
-            contextParam = '?section=expenses';
-        }
-        
-        // Redirigir a la página de ayuda con el contexto
-        window.location.href = '/help' + contextParam;
-    });
-    
-    document.body.appendChild(button);
+    if (helpButton) {
+        helpButton.addEventListener('click', function(e) {
+            e.preventDefault(); // Prevenir el comportamiento de enlace por defecto
+            
+            // Guardar la página actual para poder volver
+            localStorage.setItem('helpReturnUrl', window.location.href);
+            
+            // Obtener el contexto de la página actual para mostrar ayuda relevante
+            const currentPath = window.location.pathname;
+            let contextParam = '';
+            
+            if (currentPath.includes('/companies')) {
+                contextParam = '?section=companies';
+            } else if (currentPath.includes('/employees') || currentPath.includes('/checkpoints')) {
+                contextParam = '?section=checkpoints';
+            } else if (currentPath.includes('/tasks')) {
+                contextParam = '?section=tasks';
+            } else if (currentPath.includes('/cash-register')) {
+                contextParam = '?section=cash-register';
+            } else if (currentPath.includes('/monthly-expenses')) {
+                contextParam = '?section=expenses';
+            }
+            
+            // Redirigir a la página de ayuda con el contexto
+            window.location.href = '/help' + contextParam;
+        });
+    }
 }
 
 // Función para inicializar la página de ayuda

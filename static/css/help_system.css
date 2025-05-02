@@ -1,28 +1,17 @@
 /* Estilos para el sistema de ayuda */
 
-/* Botón flotante de ayuda */
-.help-float-button {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    width: 60px;
-    height: 60px;
-    background-color: #8B4513; /* Marrón (tono tierra) */
+/* Botón de ayuda en el footer */
+.help-footer-button {
+    background-color: transparent;
+    border: 1px solid #fff;
     color: #fff;
-    border-radius: 50%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    cursor: pointer;
-    z-index: 9999;
-    font-size: 24px;
     transition: all 0.3s ease;
 }
 
-.help-float-button:hover {
-    background-color: #A0522D; /* Marrón más claro al pasar el mouse */
-    transform: scale(1.1);
+.help-footer-button:hover {
+    background-color: #5c4033; /* Marrón oscuro */
+    color: #fff;
+    transform: scale(1.05);
 }
 
 /* Estilos para la página de ayuda */

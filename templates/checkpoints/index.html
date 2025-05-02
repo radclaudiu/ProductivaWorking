@@ -440,7 +440,7 @@
                                                         <i class="bi bi-pencil"></i>
                                                     </a>
                                                     {% if not incident.resolved %}
-                                                    <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#resolveModal{{ incident.id }}" title="Marcar como Resuelto">
+                                                    <button type="button" class="btn btn-outline-success resolve-incident-btn" data-bs-target="#resolveModal{{ incident.id }}" title="Marcar como Resuelto">
                                                         <i class="bi bi-check-circle"></i>
                                                     </button>
                                                     
@@ -578,8 +578,27 @@
 <!-- Chart.js para los gráficos -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // Activar tooltips
+    // Activar tooltips y configurar interacciones
     document.addEventListener('DOMContentLoaded', function() {
+        // Manejo personalizado para los botones de resolver incidencias
+        const resolveButtons = document.querySelectorAll('.resolve-incident-btn');
+        
+        // Añadir evento de clic a cada botón
+        resolveButtons.forEach(function(button) {
+            button.addEventListener('click', function(event) {
+                // Prevenir comportamiento por defecto
+                event.preventDefault();
+                
+                // Obtener el ID del modal objetivo
+                const targetModalId = this.getAttribute('data-bs-target');
+                
+                // Crear y mostrar el modal manualmente
+                const modal = new bootstrap.Modal(document.querySelector(targetModalId));
+                modal.show();
+            });
+        });
+        
+        // Activar tooltips
         const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         tooltipTriggerList.map(function(tooltipTriggerEl) {
             return new bootstrap.Tooltip(tooltipTriggerEl);

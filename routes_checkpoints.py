@@ -556,7 +556,7 @@ def edit_checkpoint(id):
     # Verificar permiso (solo admin o gerente de la empresa)
     if not current_user.is_admin() and checkpoint.company_id not in [c.id for c in current_user.companies]:
         flash('No tiene permiso para editar este punto de fichaje.', 'danger')
-        return redirect(url_for('checkpoints.list_checkpoints'))
+        return redirect(url_for('checkpoints.select_company'))
     
     form = CheckPointForm(obj=checkpoint)
     
@@ -596,7 +596,7 @@ def edit_checkpoint(id):
         try:
             db.session.commit()
             flash(f'Punto de fichaje "{checkpoint.name}" actualizado con éxito.', 'success')
-            return redirect(url_for('checkpoints.list_checkpoints'))
+            return redirect(url_for('checkpoints.select_company'))
         except Exception as e:
             db.session.rollback()
             flash(f'Error al actualizar el punto de fichaje: {str(e)}', 'danger')
@@ -616,7 +616,7 @@ def delete_checkpoint(id):
         # Verificar permiso (solo admin o gerente de la empresa)
         if not current_user.is_admin() and checkpoint.company_id not in [c.id for c in current_user.companies]:
             flash('No tiene permiso para eliminar este punto de fichaje.', 'danger')
-            return redirect(url_for('checkpoints.list_checkpoints'))
+            return redirect(url_for('checkpoints.select_company'))
         
         # Contar registros asociados para el mensaje informativo
         records_count = CheckPointRecord.query.filter_by(checkpoint_id=id).count()
@@ -658,7 +658,7 @@ def delete_checkpoint(id):
         current_app.logger.error(f"Error general en delete_checkpoint: {e}")
         flash('Se produjo un error al procesar la solicitud. Por favor, inténtelo de nuevo.', 'danger')
     
-    return redirect(url_for('checkpoints.list_checkpoints'))
+    return redirect(url_for('checkpoints.select_company'))
 
 
 @checkpoints_bp.route('/checkpoints/<int:id>/records')
@@ -671,7 +671,7 @@ def list_checkpoint_records(id):
     # Verificar permiso (solo admin o gerente de la empresa)
     if not current_user.is_admin() and checkpoint.company_id not in [c.id for c in current_user.companies]:
         flash('No tiene permiso para ver los registros de este punto de fichaje.', 'danger')
-        return redirect(url_for('checkpoints.list_checkpoints'))
+        return redirect(url_for('checkpoints.select_company'))
     
     page = request.args.get('page', 1, type=int)
     records = CheckPointRecord.query.filter_by(checkpoint_id=id).order_by(

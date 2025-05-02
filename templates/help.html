@@ -54,7 +54,7 @@
                         </ol>
                         <p>Una vez creada la empresa, podrás agregar ubicaciones y usuarios.</p>
                     </div>
-                    {% if current_user.is_admin() %}
+                    {% if current_user.is_authenticated and current_user.is_admin() %}
                     <button class="help-edit-button" data-item="company1">Editar</button>
                     {% endif %}
                 </div>

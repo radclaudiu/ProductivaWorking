@@ -38,3 +38,5 @@ jinja2
 qrcode
 trafilatura
 flask-session
+openai
+anthropic

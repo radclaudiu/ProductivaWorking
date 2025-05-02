@@ -524,12 +524,14 @@
                                                         {% for employee in employees %}
                                                             <tr>
                                                                 <td>
-                                                                    <strong>{{ employee.first_name }} {{ employee.last_name }}</strong>
-                                                                    {% if employee.contract_hours %}
-                                                                        <span class="badge bg-success ms-2">Configurado</span>
-                                                                    {% else %}
-                                                                        <span class="badge bg-warning text-dark ms-2">Sin configurar</span>
-                                                                    {% endif %}
+                                                                    <div class="d-flex align-items-center">
+                                                                        <strong>{{ employee.first_name }} {{ employee.last_name }}</strong>
+                                                                        {% if employee.contract_hours %}
+                                                                            <span class="badge bg-success ms-2">Configurado</span>
+                                                                        {% else %}
+                                                                            <span class="badge bg-warning text-dark ms-2">Sin configurar</span>
+                                                                        {% endif %}
+                                                                    </div>
                                                                 </td>
                                                                 <td>
                                                                     {% if employee.contract_hours %}

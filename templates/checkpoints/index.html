@@ -505,31 +505,65 @@
                             </div>
                             
                             <div class="row">
-                                <div class="col-lg-6 mb-4">
+                                <div class="col-12 mb-4">
                                     <div class="card">
                                         <div class="card-header text-white" style="background: linear-gradient(135deg, #a06235, #c87f5d);">
-                                            <h5 class="mb-0">Configuración de Horas</h5>
+                                            <h5 class="mb-0">Configuración de Horas por Empleado</h5>
                                         </div>
                                         <div class="card-body">
-                                            <p>Configure las horas de contrato y flexibilidad para cada empleado.</p>
-                                            <p>Esto permite configurar:</p>
-                                            <ul>
-                                                <li>Horas diarias y semanales de contrato</li>
-                                                <li>Límites de horas extra permitidas</li>
-                                                <li>Horarios normales de entrada y salida</li>
-                                                <li>Minutos de flexibilidad para entrada y salida</li>
-                                            </ul>
-                                            <div class="dropdown">
-                                                <button class="btn dropdown-toggle" type="button" id="employeeHoursDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="background-color: #8D6E63; color: white;">
-                                                    Seleccionar Empleado
-                                                </button>
-                                                <ul class="dropdown-menu" aria-labelledby="employeeHoursDropdown" style="max-height: 300px; overflow-y: auto;">
-                                                    {% for employee in employees %}
-                                                        <li><a class="dropdown-item" href="{{ url_for('checkpoints.manage_contract_hours', id=employee.id) }}">{{ employee.first_name }} {{ employee.last_name }}</a></li>
-                                                    {% else %}
-                                                        <li><span class="dropdown-item text-muted">No hay empleados disponibles</span></li>
-                                                    {% endfor %}
-                                                </ul>
+                                            <div class="table-responsive">
+                                                <table class="table table-hover align-middle">
+                                                    <thead class="table-light">
+                                                        <tr>
+                                                            <th>Empleado</th>
+                                                            <th>Horas Contrato</th>
+                                                            <th>Acciones</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for employee in employees %}
+                                                            <tr>
+                                                                <td>
+                                                                    <strong>{{ employee.first_name }} {{ employee.last_name }}</strong>
+                                                                    {% if employee.contract_hours %}
+                                                                        <span class="badge bg-success ms-2">Configurado</span>
+                                                                    {% else %}
+                                                                        <span class="badge bg-warning text-dark ms-2">Sin configurar</span>
+                                                                    {% endif %}
+                                                                </td>
+                                                                <td>
+                                                                    {% if employee.contract_hours %}
+                                                                        <div class="row g-2">
+                                                                            <div class="col-md-6">
+                                                                                <small class="text-muted d-block">Diarias:</small>
+                                                                                {{ employee.contract_hours.daily_hours|default('--', true) }} h
+                                                                            </div>
+                                                                            <div class="col-md-6">
+                                                                                <small class="text-muted d-block">Semanales:</small>
+                                                                                {{ employee.contract_hours.weekly_hours|default('--', true) }} h
+                                                                            </div>
+                                                                        </div>
+                                                                    {% else %}
+                                                                        <em class="text-muted">No configurado</em>
+                                                                    {% endif %}
+                                                                </td>
+                                                                <td>
+                                                                    <a href="{{ url_for('checkpoints.manage_contract_hours', id=employee.id) }}" class="btn btn-sm" style="background-color: #8D6E63; color: white;">
+                                                                        <i class="bi bi-gear-fill"></i> Configurar
+                                                                    </a>
+                                                                </td>
+                                                            </tr>
+                                                        {% else %}
+                                                            <tr>
+                                                                <td colspan="3" class="text-center py-3">
+                                                                    <div class="alert alert-info mb-0">
+                                                                        <i class="bi bi-info-circle me-2"></i> No hay empleados disponibles para esta empresa
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
                                             </div>
                                         </div>
                                     </div>

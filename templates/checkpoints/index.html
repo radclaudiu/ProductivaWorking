@@ -785,3 +785,134 @@
             </div>
         </div>
     </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- Chart.js para los gráficos -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Activar tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        tooltipTriggerList.map(function(tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        // Inicializar gráfico de actividad
+        const ctx = document.getElementById('checkinsChart').getContext('2d');
+        
+        // Datos de estadísticas semanales
+        const labels = [
+            {% for date in week_stats %}
+                '{{ date }}',
+            {% endfor %}
+        ];
+        
+        const data = [
+            {% for date, count in week_stats.items() %}
+                {{ count }},
+            {% endfor %}
+        ];
+        
+        const chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels.reverse(),  // Ordenar de más antiguo a más reciente
+                datasets: [{
+                    label: 'Número de fichajes',
+                    data: data.reverse(),  // Ordenar los datos igual que las etiquetas
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            precision: 0
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Botón de actualizar gráfico
+        document.getElementById('refreshChart').addEventListener('click', function() {
+            // Aquí se recargarían los datos del gráfico (en una implementación real)
+            // Por ahora, solo mostramos un efecto visual
+            this.disabled = true;
+            this.innerHTML = '<i class="bi bi-arrow-repeat"></i> Actualizando...';
+            
+            setTimeout(() => {
+                this.disabled = false;
+                this.innerHTML = '<i class="bi bi-arrow-repeat"></i> Actualizar';
+            }, 1000);
+        });
+        
+        // Simulación de carga de datos pendientes
+        setTimeout(() => {
+            const pendingList = document.getElementById('pendingCheckoutsList');
+            
+            // Si hay registros pendientes en la base de datos, se mostrarían aquí
+            if ({{ stats.pending_checkout }} > 0) {
+                pendingList.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center py-3">
+                            <div class="alert alert-info mb-0">
+                                Hay {{ stats.pending_checkout }} fichajes pendientes de salida. 
+                                <a href="{{ url_for('checkpoints.list_records_all') }}" class="alert-link">Ver todos los registros</a> para gestionarlos.
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                pendingList.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center py-3">
+                            <div class="alert alert-success mb-0">
+                                <i class="bi bi-check-circle me-2"></i> No hay fichajes pendientes de salida.
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }
+        }, 500);
+        
+        // Botón de procesar checkout automáticos
+        document.getElementById('processPendingCheckouts').addEventListener('click', function() {
+            this.disabled = true;
+            this.innerHTML = '<i class="bi bi-clock"></i> Procesando...';
+            
+            // Simulación del proceso
+            setTimeout(() => {
+                this.disabled = false;
+                this.innerHTML = '<i class="bi bi-clock"></i> Procesar Auto-Checkouts';
+                
+                // Mostrar mensaje de éxito
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-success alert-dismissible fade show mt-3';
+                alert.innerHTML = `
+                    <i class="bi bi-check-circle me-2"></i> Se han procesado los checkouts automáticos correctamente.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                `;
+                
+                document.querySelector('#pendingTab').prepend(alert);
+            }, 1500);
+        });
+        
+        // Botones de mantenimiento y automatización (simulación)
+        document.getElementById('maintenanceButton').addEventListener('click', function() {
+            alert('Funcionalidad de mantenimiento en desarrollo');
+        });
+        
+        document.getElementById('automationButton').addEventListener('click', function() {
+            alert('Funcionalidad de automatización en desarrollo');
+        });
+    });
+</script>
+{% endblock %}

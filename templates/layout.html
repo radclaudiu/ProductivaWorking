@@ -64,41 +64,41 @@
                 {% if current_user.is_authenticated %}
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item mx-1 my-0 d-flex align-items-center">
-                        <a class="btn btn-primary btn-sm fw-bold" href="{{ url_for('company.list_companies') }}">
+                        <a class="btn btn-primary fw-bold px-3 py-2" href="{{ url_for('company.list_companies') }}">
                             <i class="bi bi-building"></i> Empresas
                         </a>
                     </li>
                     <li class="nav-item mx-1 my-0 d-flex align-items-center">
-                        <a class="btn btn-success btn-sm fw-bold" href="{{ url_for('checkpoints.select_company') }}">
+                        <a class="btn btn-success fw-bold px-3 py-2" href="{{ url_for('checkpoints.select_company') }}">
                             <i class="bi bi-clock-history"></i> Fichaje
                         </a>
                     </li>
                     <li class="nav-item mx-1 my-0 d-flex align-items-center">
-                        <a class="btn btn-info btn-sm fw-bold" href="{{ url_for('tasks.index') }}">
+                        <a class="btn btn-info fw-bold px-3 py-2" href="{{ url_for('tasks.index') }}">
                             <i class="bi bi-list-check"></i> Tareas
                         </a>
                     </li>
                     <li class="nav-item mx-1 my-0 d-flex align-items-center">
-                        <a class="btn btn-warning btn-sm fw-bold" href="{{ url_for('cash_register.dashboard') }}">
+                        <a class="btn btn-warning fw-bold px-3 py-2" href="{{ url_for('cash_register.dashboard') }}">
                             <i class="bi bi-cash-coin"></i> Arqueos
                         </a>
                     </li>
                     <li class="nav-item mx-1 my-0 d-flex align-items-center">
-                        <a class="btn btn-danger btn-sm fw-bold" href="{{ url_for('monthly_expenses.select_company') }}">
+                        <a class="btn btn-danger fw-bold px-3 py-2" href="{{ url_for('monthly_expenses.select_company') }}">
                             <i class="bi bi-receipt"></i> Gastos
                         </a>
                     </li>
                     <li class="nav-item mx-1 my-0 d-flex align-items-center">
-                        <a class="btn btn-secondary btn-sm fw-bold" href="https://horarios.gestemps.es" target="_blank">
+                        <a class="btn btn-secondary fw-bold px-3 py-2" href="https://horarios.gestemps.es" target="_blank">
                             <i class="bi bi-calendar-week"></i> Horarios
                         </a>
                     </li>
                 </ul>
                 
                 <form class="d-flex ms-auto align-items-center" id="searchForm" action="{{ url_for('main.search') }}" method="get">
-                    <div class="input-group input-group-sm">
-                        <input type="text" class="form-control form-control-sm" placeholder="Buscar..." name="query">
-                        <button class="btn btn-outline-light btn-sm" type="submit">
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Buscar..." name="query">
+                        <button class="btn btn-outline-light px-3 py-2" type="submit">
                             <i class="bi bi-search"></i>
                         </button>
                     </div>
@@ -106,14 +106,14 @@
                 
                 <!-- Botón de instalación PWA (inicialmente oculto, se muestra con JavaScript) -->
                 <div class="nav-item ms-2 d-none d-flex align-items-center" id="install-button-container">
-                    <button id="install-button" class="btn btn-outline-info btn-sm" style="display:none;">
+                    <button id="install-button" class="btn btn-outline-info px-3 py-2" style="display:none;">
                         <i class="bi bi-download"></i> Instalar App
                     </button>
                 </div>
                 
                 <ul class="navbar-nav ms-3 d-flex align-items-center">
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle py-0" href="#" id="navbarDropdown" role="button" 
+                        <a class="nav-link dropdown-toggle py-2 px-3" href="#" id="navbarDropdown" role="button" 
                            data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-person-circle"></i> 
                             {{ current_user.username }}
@@ -193,7 +193,7 @@
                         <span class="badge bg-success online-status"><i class="bi bi-wifi"></i> Online</span>
                         <span class="badge bg-danger offline-status" style="display:none;"><i class="bi bi-wifi-off"></i> Offline</span>
                     </div>
-                    <a href="/help" class="btn btn-sm btn-outline-light help-footer-button" title="Centro de ayuda">
+                    <a href="/help" class="btn btn-outline-light px-3 py-2 help-footer-button" title="Centro de ayuda">
                         <i class="bi bi-question-circle"></i> Ayuda
                     </a>
                 </div>

@@ -99,6 +99,14 @@ def create_app(config_class='config.Config'):
     except ImportError as e:
         monthly_expenses_bp = None
         logger.warning(f"No se pudo importar el blueprint de gastos mensuales: {str(e)}")
+        
+    # Importar blueprint de sistema de ayuda
+    try:
+        from routes_help import help_bp
+        logger.info("Blueprint de sistema de ayuda importado correctamente")
+    except ImportError as e:
+        help_bp = None
+        logger.warning(f"No se pudo importar el blueprint de sistema de ayuda: {str(e)}")
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -123,6 +131,11 @@ def create_app(config_class='config.Config'):
     if monthly_expenses_bp is not None:
         app.register_blueprint(monthly_expenses_bp)
         logger.info("Blueprint de gastos mensuales registrado correctamente")
+        
+    # Registrar el blueprint de sistema de ayuda
+    if help_bp is not None:
+        app.register_blueprint(help_bp)
+        logger.info("Blueprint de sistema de ayuda registrado correctamente")
     
     # Inicializar el sistema de puntos de fichaje
     init_checkpoints_app(app)

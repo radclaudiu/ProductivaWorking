@@ -3,7 +3,22 @@ from flask_login import login_required, current_user
 import json
 import os
 from utils import log_activity
-from decorators import admin_required
+try:
+    from decorators import admin_required
+except ImportError:
+    # Definimos un decorator de fallback si no existe el módulo
+    def admin_required(f):
+        from functools import wraps
+        from flask import abort, flash
+        from flask_login import current_user
+        
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if not current_user.is_authenticated or not current_user.is_admin():
+                flash('Se requieren permisos de administrador para acceder a esta página.', 'danger')
+                return abort(403)
+            return f(*args, **kwargs)
+        return decorated_function
 
 # Crear el blueprint para el módulo de ayuda
 help_bp = Blueprint('help', __name__, url_prefix='/help')

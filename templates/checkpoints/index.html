@@ -524,12 +524,16 @@
                                                         {% for employee in employees %}
                                                             <tr>
                                                                 <td>
-                                                                    <strong>{{ employee.first_name }} {{ employee.last_name }}</strong>
-                                                                    {% if employee.contract_hours %}
-                                                                        <span class="badge bg-success ms-2">Configurado</span>
-                                                                    {% else %}
-                                                                        <span class="badge bg-warning text-dark ms-2">Sin configurar</span>
-                                                                    {% endif %}
+                                                                    <div class="d-flex align-items-center">
+                                                                        <strong>{{ employee.first_name }} {{ employee.last_name }}</strong>
+                                                                        <div class="ms-auto" style="width: 100px; text-align: center;">
+                                                                            {% if employee.contract_hours %}
+                                                                                <span class="badge bg-success">Configurado</span>
+                                                                            {% else %}
+                                                                                <span class="badge bg-warning text-dark">Sin configurar</span>
+                                                                            {% endif %}
+                                                                        </div>
+                                                                    </div>
                                                                 </td>
                                                                 <td>
                                                                     {% if employee.contract_hours %}

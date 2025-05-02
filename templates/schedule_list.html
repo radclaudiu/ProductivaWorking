@@ -40,8 +40,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% set days_order = {'lunes': 1, 'martes': 2, 'miercoles': 3, 'jueves': 4, 'viernes': 5, 'sabado': 6, 'domingo': 7} %}
-                                {% for schedule in schedules|sort(attribute='day_of_week.value', key=lambda x: days_order.get(x, 99)) %}
+                                {% for schedule in schedules %}
                                 <tr>
                                     <td><strong>{{ schedule.day_of_week.name.capitalize() }}</strong></td>
                                     <td>{{ schedule.start_time.strftime('%H:%M') }}</td>

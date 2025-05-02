@@ -1397,7 +1397,10 @@ def list_schedules(employee_id):
         flash('No tienes permiso para ver los horarios de este empleado.', 'danger')
         return redirect(url_for('employee.list_employees'))
     
+    # Obtener todos los horarios y ordenarlos por día de la semana (lunes a domingo)
+    day_order = {'lunes': 1, 'martes': 2, 'miercoles': 3, 'jueves': 4, 'viernes': 5, 'sabado': 6, 'domingo': 7}
     schedules = EmployeeSchedule.query.filter_by(employee_id=employee_id).all()
+    schedules.sort(key=lambda x: day_order.get(x.day_of_week.value, 99))
     
     return render_template('schedule_list.html', 
                           title=f'Horarios de {employee.first_name} {employee.last_name}', 

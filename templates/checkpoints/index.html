@@ -516,6 +516,7 @@
                                                     <thead class="table-light">
                                                         <tr>
                                                             <th>Empleado</th>
+                                                            <th>Estado</th>
                                                             <th>Horas Contrato</th>
                                                             <th>Acciones</th>
                                                         </tr>
@@ -524,16 +525,14 @@
                                                         {% for employee in employees %}
                                                             <tr>
                                                                 <td>
-                                                                    <div class="d-flex align-items-center">
-                                                                        <strong>{{ employee.first_name }} {{ employee.last_name }}</strong>
-                                                                        <div class="ms-auto" style="width: 100px; text-align: center;">
-                                                                            {% if employee.contract_hours %}
-                                                                                <span class="badge bg-success">Configurado</span>
-                                                                            {% else %}
-                                                                                <span class="badge bg-warning text-dark">Sin configurar</span>
-                                                                            {% endif %}
-                                                                        </div>
-                                                                    </div>
+                                                                    <strong>{{ employee.first_name }} {{ employee.last_name }}</strong>
+                                                                </td>
+                                                                <td>
+                                                                    {% if employee.contract_hours %}
+                                                                        <span class="badge bg-success">Configurado</span>
+                                                                    {% else %}
+                                                                        <span class="badge bg-warning text-dark">Sin configurar</span>
+                                                                    {% endif %}
                                                                 </td>
                                                                 <td>
                                                                     {% if employee.contract_hours %}
@@ -559,7 +558,7 @@
                                                             </tr>
                                                         {% else %}
                                                             <tr>
-                                                                <td colspan="3" class="text-center py-3">
+                                                                <td colspan="4" class="text-center py-3">
                                                                     <div class="alert alert-info mb-0">
                                                                         <i class="bi bi-info-circle me-2"></i> No hay empleados disponibles para esta empresa
                                                                     </div>

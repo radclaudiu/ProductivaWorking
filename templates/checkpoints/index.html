@@ -516,7 +516,6 @@
                                                     <thead class="table-light">
                                                         <tr>
                                                             <th>Empleado</th>
-                                                            <th>Estado</th>
                                                             <th>Horas Contrato</th>
                                                             <th>Acciones</th>
                                                         </tr>
@@ -526,12 +525,10 @@
                                                             <tr>
                                                                 <td>
                                                                     <strong>{{ employee.first_name }} {{ employee.last_name }}</strong>
-                                                                </td>
-                                                                <td>
                                                                     {% if employee.contract_hours %}
-                                                                        <span class="badge bg-success">Configurado</span>
+                                                                        <span class="badge bg-success ms-2">Configurado</span>
                                                                     {% else %}
-                                                                        <span class="badge bg-warning text-dark">Sin configurar</span>
+                                                                        <span class="badge bg-warning text-dark ms-2">Sin configurar</span>
                                                                     {% endif %}
                                                                 </td>
                                                                 <td>
@@ -558,7 +555,7 @@
                                                             </tr>
                                                         {% else %}
                                                             <tr>
-                                                                <td colspan="4" class="text-center py-3">
+                                                                <td colspan="3" class="text-center py-3">
                                                                     <div class="alert alert-info mb-0">
                                                                         <i class="bi bi-info-circle me-2"></i> No hay empleados disponibles para esta empresa
                                                                     </div>

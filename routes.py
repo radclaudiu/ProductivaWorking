@@ -1458,7 +1458,7 @@ def weekly_schedule(employee_id):
     for schedule in current_schedules:
         day_schedules[schedule.day_of_week.value] = schedule
     
-    # Lista de días a mostrar
+    # Lista de días a mostrar (ordenados de lunes a domingo)
     days = [
         {"value": "lunes", "name": "Lunes"},
         {"value": "martes", "name": "Martes"},

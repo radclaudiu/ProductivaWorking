@@ -98,12 +98,25 @@ function initializeHelpPage() {
     // Inicializar expandibles de preguntas
     const questions = document.querySelectorAll('.help-question');
     questions.forEach(question => {
+        // Asegurar que todas las respuestas estén inicialmente ocultas
+        const answer = question.nextElementSibling;
+        if (answer && answer.classList.contains('help-answer')) {
+            answer.classList.add('help-hidden');
+        }
+        
+        // Añadir el evento de clic para expandir/colapsar
         question.addEventListener('click', function() {
             const answer = this.nextElementSibling;
-            if (answer.classList.contains('help-hidden')) {
-                answer.classList.remove('help-hidden');
-            } else {
-                answer.classList.add('help-hidden');
+            if (answer && answer.classList.contains('help-answer')) {
+                if (answer.classList.contains('help-hidden')) {
+                    // Expandir respuesta
+                    answer.classList.remove('help-hidden');
+                    this.classList.add('active');
+                } else {
+                    // Contraer respuesta
+                    answer.classList.add('help-hidden');
+                    this.classList.remove('active');
+                }
             }
         });
     });
@@ -152,11 +165,14 @@ function filterHelpContent() {
             totalVisibleItems++;
             // Mantener respuestas colapsadas por defecto
             answerElement.classList.add('help-hidden');
+            item.querySelector('.help-question').classList.remove('active');
         } else if (matches) {
             // Coincidencia encontrada - mostrar y expandir
             item.style.display = 'block';
             // Expandir respuestas automáticamente cuando hay coincidencia
             answerElement.classList.remove('help-hidden');
+            // Actualizar estado visual de la pregunta para mostrar que está expandida
+            item.querySelector('.help-question').classList.add('active');
             totalVisibleItems++;
             totalMatchedItems++;
             

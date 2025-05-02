@@ -10,6 +10,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Agregar una alternativa en caso de que DOMContentLoaded ya haya ocurrido
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    if (window.location.pathname.includes('/help')) {
+        setTimeout(initializeHelpPage, 100);
+    } else {
+        setTimeout(setupHelpFooterButton, 100);
+    }
+}
+
 // Función para configurar el botón de ayuda en el footer
 function setupHelpFooterButton() {
     const helpButton = document.querySelector('.help-footer-button');
@@ -104,8 +113,32 @@ function initializeHelpPage() {
             answer.classList.add('help-hidden');
         }
         
-        // Añadir el evento de clic para expandir/colapsar
-        question.addEventListener('click', function() {
+        // Definir un manejador global para los clics de preguntas si no existe
+        if (!window.questionClickHandler) {
+            window.questionClickHandler = function(e) {
+                console.log('Clic en pregunta (manejador global)');
+                const question = this;
+                const answer = question.nextElementSibling;
+                if (answer && answer.classList.contains('help-answer')) {
+                    if (answer.classList.contains('help-hidden')) {
+                        // Expandir respuesta
+                        answer.classList.remove('help-hidden');
+                        question.classList.add('active');
+                    } else {
+                        // Contraer respuesta
+                        answer.classList.add('help-hidden');
+                        question.classList.remove('active');
+                    }
+                }
+            };
+        }
+        
+        // Eliminar eventos de clic existentes para evitar duplicados
+        question.removeEventListener('click', window.questionClickHandler);
+        
+        // Función para manejar el clic en preguntas
+        function handleQuestionClick() {
+            console.log('Clic en pregunta');
             const answer = this.nextElementSibling;
             if (answer && answer.classList.contains('help-answer')) {
                 if (answer.classList.contains('help-hidden')) {
@@ -118,8 +151,23 @@ function initializeHelpPage() {
                     this.classList.remove('active');
                 }
             }
-        });
+        }
+        
+        // Quitar el manejador local y usar el manejador global
+        question.removeEventListener('click', handleQuestionClick);
+        
+        // Añadir el evento de clic para expandir/colapsar usando el manejador global
+        question.addEventListener('click', window.questionClickHandler);
     });
+    
+    // Hacer clic una vez en cada pregunta para asegurar que el evento esté registrado
+    setTimeout(() => {
+        console.log('Inicializando eventos de clic para preguntas');
+        questions.forEach(question => {
+            question.click();
+            question.click(); // Hacemos doble clic para volver al estado inicial
+        });
+    }, 500);
     
     // Inicializar botón de volver
     const backButton = document.getElementById('helpBackButton');

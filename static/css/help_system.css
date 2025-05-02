@@ -145,7 +145,7 @@
 }
 
 .help-hidden {
-    display: none;
+    display: none !important;
 }
 
 .help-edit-form {

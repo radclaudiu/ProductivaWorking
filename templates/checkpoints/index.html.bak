@@ -254,7 +254,7 @@
                                 <a href="{{ url_for('checkpoints.export_records') }}" class="btn" style="background-color: #8D6E63; color: white;">
                                     <i class="bi bi-file-earmark-pdf"></i> Exportar Registros
                                 </a>
-                                <a href="{{ url_for('checkpoints.list_records_all') }}" class="btn btn-outline-secondary" style="color: #8D6E63; border-color: #8D6E63;">
+                                <a href="{{ url_for('checkpoints.list_records_all') }}" class="btn btn-outline-primary">
                                     Ver todos los registros <i class="bi bi-arrow-right"></i>
                                 </a>
                             </div>
@@ -332,7 +332,7 @@
                             </div>
                             
                             <div class="text-center mt-3">
-                                <a href="{{ url_for('checkpoints.list_records_all') }}" class="btn btn-outline-secondary" style="color: #8D6E63; border-color: #8D6E63;">
+                                <a href="{{ url_for('checkpoints.list_records_all') }}" class="btn btn-outline-primary">
                                     Ver todos los registros <i class="bi bi-arrow-right"></i>
                                 </a>
                             </div>

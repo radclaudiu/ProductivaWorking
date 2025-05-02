@@ -213,10 +213,7 @@
                                                 <a href="{{ url_for('checkpoints_slug.edit_original_record', slug=company.get_slug(), id=original.id) }}" class="btn btn-sm btn-info" title="Editar registro original">
                                                     <i class="bi bi-pencil"></i> Editar
                                                 </a>
-                                                <a href="{{ url_for('checkpoints_slug.restore_original_record', slug=company.get_slug(), id=original.id) }}" class="btn btn-sm btn-warning mx-1" title="Restaurar valores originales">
-                                                    <i class="bi bi-arrow-repeat"></i> Restaurar
-                                                </a>
-                                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ original.id }}" title="Eliminar registro">
+                                                <button type="button" class="btn btn-sm btn-danger mx-1" data-bs-toggle="modal" data-bs-target="#deleteModal{{ original.id }}" title="Eliminar registro">
                                                     <i class="bi bi-trash"></i> Eliminar
                                                 </button>
                                             </div>

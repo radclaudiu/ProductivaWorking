@@ -75,7 +75,7 @@
         </div>
         
         <div class="card checkpoint-card bg-dark text-light">
-            <div class="card-header bg-primary text-center py-3">
+            <div class="card-header text-center py-3" style="background-color: #8D6E63; color: white;">
                 {% if checkpoint %}
                     <h3 class="mb-0">Acceder al Punto</h3>
                 {% else %}
@@ -95,7 +95,7 @@
                 {% endwith %}
                 
                 {% if checkpoint %}
-                    <div class="alert alert-info mb-4">
+                    <div class="alert mb-4" style="background-color: #EFEBE9; color: #5D4037; border-color: #D7CCC8;">
                         <i class="bi bi-info-circle me-2"></i> Por favor, introduzca la contraseña para acceder a este punto de fichaje.
                     </div>
                 {% endif %}
@@ -128,7 +128,7 @@
                     </div>
                     
                     <div class="d-grid gap-2">
-                        {{ form.submit(class="btn btn-primary btn-lg") }}
+                        {{ form.submit(class="btn btn-lg", style="background-color: #8D6E63; color: white;") }}
                     </div>
                 </form>
             </div>

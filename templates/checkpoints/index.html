@@ -203,7 +203,7 @@
                                                 {% if checkpoint.status.value == 'active' %}
                                                     <span class="badge bg-success">Activo</span>
                                                 {% elif checkpoint.status.value == 'maintenance' %}
-                                                    <span class="badge bg-warning text-dark">Mantenimiento</span>
+                                                    <span class="badge" style="background-color: #D9A566; color: black;">Mantenimiento</span>
                                                 {% else %}
                                                     <span class="badge bg-danger">Desactivado</span>
                                                 {% endif %}
@@ -216,15 +216,15 @@
                                                 <small class="text-muted d-block">Configuraciones:</small>
                                                 <div class="mt-1">
                                                     {% if checkpoint.auto_checkout_time %}
-                                                        <span class="badge bg-info text-white">Auto-checkout: {{ checkpoint.auto_checkout_time.strftime('%H:%M') }}</span>
+                                                        <span class="badge" style="background-color: #8D6E63; color: white;">Auto-checkout: {{ checkpoint.auto_checkout_time.strftime('%H:%M') }}</span>
                                                     {% endif %}
                                                     
                                                     {% if checkpoint.enforce_contract_hours %}
-                                                        <span class="badge bg-primary">Límite horas contrato</span>
+                                                        <span class="badge" style="background-color: #A5866E; color: white;">Límite horas contrato</span>
                                                     {% endif %}
                                                     
                                                     {% if checkpoint.auto_adjust_overtime %}
-                                                        <span class="badge bg-secondary">Ajuste automático</span>
+                                                        <span class="badge" style="background-color: #6D584B; color: white;">Ajuste automático</span>
                                                     {% endif %}
                                                 </div>
                                             </div>
@@ -283,7 +283,7 @@
                                                 {% if record.check_out_time %}
                                                     {{ record.check_out_time.strftime('%d/%m/%Y %H:%M') }}
                                                 {% else %}
-                                                    <span class="badge bg-warning">Pendiente</span>
+                                                    <span class="badge" style="background-color: #D9A566; color: black;">Pendiente</span>
                                                 {% endif %}
                                             </td>
                                             <td>
@@ -296,7 +296,7 @@
                                             </td>
                                             <td>
                                                 {% if record.adjusted %}
-                                                    <span class="badge bg-warning" data-bs-toggle="tooltip" title="Ajustado manualmente">
+                                                    <span class="badge" style="background-color: #D9A566; color: black;" data-bs-toggle="tooltip" title="Ajustado manualmente">
                                                         <i class="bi bi-pencil"></i> Ajustado
                                                     </span>
                                                 {% elif record.incidents %}
@@ -408,15 +408,15 @@
                                                 {% if incident.incident_type.value == 'missed_checkout' %}
                                                     <span class="badge bg-danger incident-badge">Salida Olvidada</span>
                                                 {% elif incident.incident_type.value == 'late_checkin' %}
-                                                    <span class="badge bg-warning text-dark incident-badge">Entrada Tardía</span>
+                                                    <span class="badge" style="background-color: #D9A566; color: black; incident-badge">Entrada Tardía</span>
                                                 {% elif incident.incident_type.value == 'early_checkout' %}
-                                                    <span class="badge bg-warning text-dark incident-badge">Salida Temprana</span>
+                                                    <span class="badge" style="background-color: #D9A566; color: black; incident-badge">Salida Temprana</span>
                                                 {% elif incident.incident_type.value == 'overtime' %}
-                                                    <span class="badge bg-info incident-badge">Horas Extra</span>
+                                                    <span class="badge" style="background-color: #8D6E63; color: white; incident-badge">Horas Extra</span>
                                                 {% elif incident.incident_type.value == 'manual_adjustment' %}
-                                                    <span class="badge bg-secondary incident-badge">Ajuste Manual</span>
+                                                    <span class="badge" style="background-color: #6D584B; color: white; incident-badge">Ajuste Manual</span>
                                                 {% elif incident.incident_type.value == 'contract_hours_adjustment' %}
-                                                    <span class="badge bg-primary incident-badge">Ajuste Contrato</span>
+                                                    <span class="badge" style="background-color: #A5866E; color: white; incident-badge">Ajuste Contrato</span>
                                                 {% endif %}
                                             </td>
                                             <td>{{ incident.record.employee.first_name }} {{ incident.record.employee.last_name }}</td>
@@ -502,7 +502,7 @@
                             <div class="row">
                                 <div class="col-lg-6 mb-4">
                                     <div class="card h-100">
-                                        <div class="card-header bg-primary text-white">
+                                        <div class="card-header text-white" style="background: linear-gradient(135deg, #a06235, #c87f5d);">
                                             <h5 class="mb-0">Configuración de Horas</h5>
                                         </div>
                                         <div class="card-body">

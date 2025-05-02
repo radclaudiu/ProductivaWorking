@@ -440,13 +440,9 @@
                                                         <i class="bi bi-pencil"></i>
                                                     </a>
                                                     {% if not incident.resolved %}
-                                                    <form action="{{ url_for('checkpoints.resolve_incident', id=incident.id) }}" method="POST" class="d-inline">
-                                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                        <input type="hidden" name="resolution_notes" value="Solucionado desde el dashboard de la empresa.">
-                                                        <button type="submit" class="btn btn-outline-success" title="Marcar como Resuelto">
-                                                            <i class="bi bi-check-circle"></i>
-                                                        </button>
-                                                    </form>
+                                                    <a href="{{ url_for('checkpoints.resolve_incident', id=incident.id, return_url=url_for('checkpoints.index_company', slug=company.slug)) }}" class="btn btn-outline-success" title="Marcar como Resuelto">
+                                                        <i class="bi bi-check-circle"></i>
+                                                    </a>
                                                     {% endif %}
                                                 </div>
                                             </td>

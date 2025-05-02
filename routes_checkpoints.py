@@ -1031,11 +1031,11 @@ def list_incidents():
     )
 
 
-@checkpoints_bp.route('/incidents/<int:id>/resolve', methods=['POST'])
+@checkpoints_bp.route('/incidents/<int:id>/resolve', methods=['GET', 'POST'])
 @login_required
 @manager_required
 def resolve_incident(id):
-    """Marca una incidencia como resuelta"""
+    """Marca una incidencia como resuelta o muestra el formulario de resolución"""
     incident = CheckPointIncident.query.get_or_404(id)
     
     # Verificar permisos
@@ -1046,22 +1046,36 @@ def resolve_incident(id):
         flash('No tiene permiso para resolver esta incidencia.', 'danger')
         return redirect(url_for('checkpoints.list_incidents'))
     
-    # Obtener las notas de resolución
-    resolution_notes = request.form.get('resolution_notes', '')
+    # Si la incidencia ya está resuelta, mostrar un mensaje y redirigir
+    if incident.resolved:
+        flash('Esta incidencia ya fue resuelta.', 'warning')
+        return_url = request.args.get('return_url') or request.referrer or url_for('checkpoints.list_incidents')
+        return redirect(return_url)
     
-    # Resolver la incidencia
-    incident.resolve(current_user.id, resolution_notes)
+    # Si es POST, procesar la resolución
+    if request.method == 'POST':
+        # Obtener las notas de resolución
+        resolution_notes = request.form.get('resolution_notes', '')
+        return_url = request.form.get('return_url') or url_for('checkpoints.list_incidents')
+        
+        # Resolver la incidencia
+        incident.resolve(current_user.id, resolution_notes)
+        
+        try:
+            db.session.commit()
+            flash('Incidencia marcada como resuelta con éxito.', 'success')
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al resolver la incidencia: {str(e)}', 'danger')
+            
+        return redirect(return_url)
+        
+    # Para peticiones GET, mostrar el formulario de resolución
+    return_url = request.args.get('return_url') or request.referrer or url_for('checkpoints.list_incidents')
     
-    try:
-        db.session.commit()
-        flash('Incidencia marcada como resuelta con éxito.', 'success')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'Error al resolver la incidencia: {str(e)}', 'danger')
-    
-    # Redirigir a la página anterior o a la lista de incidencias
-    next_page = request.args.get('next') or url_for('checkpoints.list_incidents')
-    return redirect(next_page)
+    return render_template('checkpoints/resolve_incident_form.html', 
+                          incident=incident, 
+                          return_url=return_url)
 
 
 # Se ha eliminado la ruta secreta '/company/<slug>/rrrrrr'

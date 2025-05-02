@@ -1,0 +1,50 @@
+{% extends 'layout.html' %}
+
+{% block title %}Resolver Incidencia{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header text-white" style="background: linear-gradient(135deg, #8D6E63, #6D4C41);">
+                    <h4 class="mb-0">Resolver Incidencia</h4>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <h5 class="alert-heading">Detalles de la Incidencia</h5>
+                        <p><strong>Empleado:</strong> {{ incident.record.employee.first_name }} {{ incident.record.employee.last_name }}</p>
+                        <p><strong>Fecha:</strong> {{ incident.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+                        <p><strong>Descripción:</strong> {{ incident.description }}</p>
+                        <p><strong>Registro Asociado:</strong> Entrada: {{ incident.record.check_in_time.strftime('%d/%m/%Y %H:%M') }}
+                        {% if incident.record.check_out_time %}
+                            - Salida: {{ incident.record.check_out_time.strftime('%d/%m/%Y %H:%M') }}
+                        {% endif %}
+                        </p>
+                    </div>
+                    
+                    <form action="{{ url_for('checkpoints.resolve_incident', id=incident.id) }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="return_url" value="{{ return_url }}">
+                        
+                        <div class="mb-3">
+                            <label for="resolution_notes" class="form-label">Notas de Resolución</label>
+                            <textarea class="form-control" id="resolution_notes" name="resolution_notes" rows="4" required></textarea>
+                            <div class="form-text">Por favor, describa cómo se resolvió esta incidencia.</div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ return_url }}" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left"></i> Volver
+                            </a>
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-check-circle"></i> Confirmar Resolución
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

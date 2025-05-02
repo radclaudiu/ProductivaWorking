@@ -25,7 +25,7 @@
                                 end_date=filters.end_date, 
                                 employee_id=filters.employee_id) }}" 
                            class="btn btn-sm btn-info">
-                            <i class="fas fa-file-pdf"></i> Exportar a PDF
+                            <i class="bi bi-file-earmark-pdf"></i> Exportar a PDF
                         </a>
                     </div>
                 </div>
@@ -125,15 +125,15 @@
                                         </td>
                                         <td>
                                             <div class="d-flex">
-                                                <a href="{{ url_for('checkpoints_slug.edit_original_record', slug=company.get_slug(), id=item[0].id) }}" class="btn btn-link text-info px-1 mb-0" title="Editar registro">
-                                                    <i class="fas fa-edit"></i>
+                                                <a href="{{ url_for('checkpoints_slug.edit_original_record', slug=company.get_slug(), id=item[0].id) }}" class="btn btn-sm btn-info" title="Editar registro">
+                                                    <i class="bi bi-pencil"></i> Editar
                                                 </a>
-                                                <button type="button" class="btn btn-link text-danger px-1 mb-0" data-bs-toggle="modal" data-bs-target="#deleteModal{{ item[0].id }}" title="Eliminar registro">
-                                                    <i class="fas fa-trash"></i>
+                                                <button type="button" class="btn btn-sm btn-danger mx-1" data-bs-toggle="modal" data-bs-target="#deleteModal{{ item[0].id }}" title="Eliminar registro">
+                                                    <i class="bi bi-trash"></i> Eliminar
                                                 </button>
                                                 {% if record.has_original_record %}
-                                                <a href="{{ url_for('checkpoints_slug.view_original_records', slug=company.get_slug(), show_all='false', employee_id=employee.id, start_date=record.original_check_in_time.strftime('%Y-%m-%d') if record.original_check_in_time else '', end_date=record.original_check_in_time.strftime('%Y-%m-%d') if record.original_check_in_time else '') }}" class="btn btn-link text-warning px-1 mb-0" title="Ver registro original">
-                                                    <i class="fas fa-exclamation-triangle"></i>
+                                                <a href="{{ url_for('checkpoints_slug.view_original_records', slug=company.get_slug(), show_all='false', employee_id=employee.id, start_date=record.original_check_in_time.strftime('%Y-%m-%d') if record.original_check_in_time else '', end_date=record.original_check_in_time.strftime('%Y-%m-%d') if record.original_check_in_time else '') }}" class="btn btn-sm btn-warning" title="Ver registro original">
+                                                    <i class="bi bi-exclamation-triangle"></i> Ver original
                                                 </a>
                                                 {% endif %}
                                             </div>
@@ -210,14 +210,14 @@
                                         </td>
                                         <td>
                                             <div class="d-flex">
-                                                <a href="{{ url_for('checkpoints_slug.edit_original_record', slug=company.get_slug(), id=original.id) }}" class="btn btn-link text-info px-1 mb-0" title="Editar registro original">
-                                                    <i class="fas fa-edit"></i>
+                                                <a href="{{ url_for('checkpoints_slug.edit_original_record', slug=company.get_slug(), id=original.id) }}" class="btn btn-sm btn-info" title="Editar registro original">
+                                                    <i class="bi bi-pencil"></i> Editar
                                                 </a>
-                                                <a href="{{ url_for('checkpoints_slug.restore_original_record', slug=company.get_slug(), id=original.id) }}" class="btn btn-link text-warning px-1 mb-0" title="Restaurar valores originales">
-                                                    <i class="fas fa-sync"></i>
+                                                <a href="{{ url_for('checkpoints_slug.restore_original_record', slug=company.get_slug(), id=original.id) }}" class="btn btn-sm btn-warning mx-1" title="Restaurar valores originales">
+                                                    <i class="bi bi-arrow-repeat"></i> Restaurar
                                                 </a>
-                                                <button type="button" class="btn btn-link text-danger px-1 mb-0" data-bs-toggle="modal" data-bs-target="#deleteModal{{ original.id }}" title="Eliminar registro">
-                                                    <i class="fas fa-trash"></i>
+                                                <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ original.id }}" title="Eliminar registro">
+                                                    <i class="bi bi-trash"></i> Eliminar
                                                 </button>
                                             </div>
                                             

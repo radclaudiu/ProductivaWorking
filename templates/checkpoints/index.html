@@ -250,50 +250,13 @@
                         <!-- PESTAÑA: REGISTROS DE FICHAJE -->
                         <div class="tab-pane fade" id="recordsTab" role="tabpanel" aria-labelledby="records-tab">
                             <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h4>Registros de Control Horario</h4>
+                                <h4>Registros de Fichajes</h4>
                                 <a href="{{ url_for('checkpoints.export_records') }}" class="btn btn-primary">
                                     <i class="bi bi-file-earmark-pdf"></i> Exportar Registros
                                 </a>
-                            </div>
-                            
-                            <!-- Formulario de filtrado -->
-                            <div class="card mb-4">
-                                <div class="card-body">
-                                    <h5 class="card-title mb-3">Filtrar registros</h5>
-                                    <form class="row g-3 filter-form">
-                                        <div class="col-md-3">
-                                            <label for="filterEmployee" class="form-label">Empleado</label>
-                                            <select class="form-select" id="filterEmployee">
-                                                <option value="0">Todos los empleados</option>
-                                                {% for employee in employees %}
-                                                    <option value="{{ employee.id }}">{{ employee.first_name }} {{ employee.last_name }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <label for="filterCheckpoint" class="form-label">Punto de Control</label>
-                                            <select class="form-select" id="filterCheckpoint">
-                                                <option value="0">Todos los puntos</option>
-                                                {% for checkpoint in checkpoints %}
-                                                    <option value="{{ checkpoint.id }}">{{ checkpoint.name }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
-                                            <label for="filterDateFrom" class="form-label">Desde</label>
-                                            <input type="date" class="form-control" id="filterDateFrom">
-                                        </div>
-                                        <div class="col-md-2">
-                                            <label for="filterDateTo" class="form-label">Hasta</label>
-                                            <input type="date" class="form-control" id="filterDateTo">
-                                        </div>
-                                        <div class="col-md-2 d-flex align-items-end">
-                                            <button type="button" class="btn btn-primary w-100" id="applyFilter">
-                                                <i class="bi bi-funnel"></i> Filtrar
-                                            </button>
-                                        </div>
-                                    </form>
-                                </div>
+                                <a href="{{ url_for('checkpoints.list_records_all') }}" class="btn btn-outline-primary">
+                                    Ver todos los registros <i class="bi bi-arrow-right"></i>
+                                </a>
                             </div>
                             
                             <!-- Tabla de registros -->
@@ -567,65 +530,7 @@
                                     </div>
                                 </div>
                                 
-                                <div class="col-lg-6 mb-4">
-                                    <div class="card h-100">
-                                        <div class="card-header bg-success text-white">
-                                            <h5 class="mb-0">Exportar Informes</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <p>Genere informes personalizados de fichajes en formato PDF.</p>
-                                            <p>Puede filtrar por:</p>
-                                            <ul>
-                                                <li>Rango de fechas</li>
-                                                <li>Empleado específico o todos</li>
-                                                <li>Incluir firma digital</li>
-                                                <li>Agrupar por empleado o por fecha</li>
-                                            </ul>
-                                            <a href="{{ url_for('checkpoints.export_records') }}" class="btn btn-success">
-                                                <i class="bi bi-file-earmark-pdf"></i> Crear Informe
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="col-lg-6 mb-4">
-                                    <div class="card h-100">
-                                        <div class="card-header bg-danger text-white">
-                                            <h5 class="mb-0">Mantenimiento</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <p>Herramientas de mantenimiento para el sistema de fichajes.</p>
-                                            <ul>
-                                                <li>Resolución de incidencias masiva</li>
-                                                <li>Comprobación de integridad</li>
-                                                <li>Optimización de datos</li>
-                                            </ul>
-                                            <button type="button" class="btn btn-danger" id="maintenanceButton">
-                                                <i class="bi bi-tools"></i> Acceder al Mantenimiento
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="col-lg-6 mb-4">
-                                    <div class="card h-100">
-                                        <div class="card-header bg-info text-white">
-                                            <h5 class="mb-0">Automatización</h5>
-                                        </div>
-                                        <div class="card-body">
-                                            <p>Configure opciones de automatización para el sistema.</p>
-                                            <ul>
-                                                <li>Auto-checkout tras cierto número de horas</li>
-                                                <li>Detección automática de incidencias</li>
-                                                <li>Notificaciones automáticas</li>
-                                                <li>Recordatorios de fichaje</li>
-                                            </ul>
-                                            <button type="button" class="btn btn-info" id="automationButton">
-                                                <i class="bi bi-robot"></i> Configurar Automatización
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                               
                             </div>
                         </div>
                     </div>

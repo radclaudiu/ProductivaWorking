@@ -105,6 +105,72 @@ fi
 # Paso 2: Crear un backup ejecutable
 echo -e "${BLUE}Creando backup ejecutable $EXECUTABLE_BACKUP_FILE...${NC}"
 
+# Verificar que existan todas las tablas críticas
+echo -e "${BLUE}Verificando tablas en el backup...${NC}"
+
+# Lista de tablas críticas del sistema que deben estar presentes
+CRITICAL_TABLES=(
+  "users" "companies" "employees" "locations" 
+  "checkpoints" "checkpoint_records" "checkpoint_incidents" "checkpoint_original_records" "employee_contract_hours"
+  "cash_registers" "cash_register_summaries" "cash_register_tokens"
+  "expense_categories" "fixed_expenses" "monthly_expenses" "monthly_expense_summaries" "monthly_expense_tokens"
+  "task_templates" "task_instances" "network_printers"
+)
+
+# Verificar cada tabla crítica
+MISSING_TABLES=()
+for table in "${CRITICAL_TABLES[@]}"; do
+  if ! grep -q "CREATE TABLE public.${table}" "$SQL_BACKUP_FILE"; then
+    MISSING_TABLES+=("$table")
+    echo -e "${YELLOW}⚠️ Advertencia: No se encontró la tabla '${table}' en el backup${NC}"
+  fi
+done
+
+# Informar sobre las tablas encontradas
+FOUND_TABLES=$(grep -c "CREATE TABLE public" "$SQL_BACKUP_FILE")
+echo -e "${GREEN}✓ Se encontraron $FOUND_TABLES tablas en el backup${NC}"
+
+# Advertir si faltan tablas críticas
+if [ ${#MISSING_TABLES[@]} -gt 0 ]; then
+  echo -e "${YELLOW}⚠️ Atención: Faltan ${#MISSING_TABLES[@]} tablas críticas en el backup${NC}"
+  echo -e "${YELLOW}  Esto puede indicar que el esquema de la base de datos está incompleto${NC}"
+  echo -e "${YELLOW}  o que las tablas fueron agregadas después de este script.${NC}"
+fi
+
+# Verificar columnas para tablas críticas
+
+# Verificar que la tabla 'companies' tenga el campo 'hourly_employee_cost'
+if grep -q "CREATE TABLE public.companies" "$SQL_BACKUP_FILE"; then
+  if ! grep -q "hourly_employee_cost" "$SQL_BACKUP_FILE"; then
+    echo -e "${YELLOW}⚠️ Advertencia: No se encontró la columna 'hourly_employee_cost' en la tabla 'companies'${NC}"
+    echo -e "${YELLOW}  Esta columna es necesaria para el módulo de Arqueos de Caja${NC}"
+  fi
+fi
+
+# Verificar campos del módulo de IVA en la tabla 'cash_registers'
+if grep -q "CREATE TABLE public.cash_registers" "$SQL_BACKUP_FILE"; then
+  if ! grep -q "vat_percentage" "$SQL_BACKUP_FILE"; then
+    echo -e "${YELLOW}⚠️ Advertencia: No se encontró la columna 'vat_percentage' en la tabla 'cash_registers'${NC}"
+    echo -e "${YELLOW}  Esta columna es necesaria para el cálculo de IVA en Arqueos de Caja${NC}"
+  fi
+fi
+
+# Verificar campos para la ventana horaria de cierre en la tabla 'checkpoints'
+if grep -q "CREATE TABLE public.checkpoints" "$SQL_BACKUP_FILE"; then
+  if ! grep -q "operation_start_time" "$SQL_BACKUP_FILE" || ! grep -q "operation_end_time" "$SQL_BACKUP_FILE"; then
+    echo -e "${YELLOW}⚠️ Advertencia: No se encontraron las columnas de ventana horaria en la tabla 'checkpoints'${NC}"
+    echo -e "${YELLOW}  Estas columnas son necesarias para el cierre automático programado${NC}"
+  fi
+fi
+
+# Actualizar nombre del script ejecutable para incluir información sobre las tablas
+if [ ${#MISSING_TABLES[@]} -gt 0 ]; then
+  MISSING_SUFFIX="_faltantes_$(echo ${MISSING_TABLES[@]} | tr ' ' '_' | cut -c1-50)"
+  NEW_EXECUTABLE_BACKUP_FILE="productiva_backup_executable_${DATE_STAMP}${MISSING_SUFFIX}.sh"
+  echo -e "${YELLOW}Cambiando nombre del archivo de backup para indicar tablas faltantes: ${NEW_EXECUTABLE_BACKUP_FILE}${NC}"
+  EXECUTABLE_BACKUP_FILE="$NEW_EXECUTABLE_BACKUP_FILE"
+fi
+
 # Crear el script ejecutable con el SQL incrustado
 cat > "$EXECUTABLE_BACKUP_FILE" << HEADER
 #!/bin/bash
@@ -137,6 +203,7 @@ cat > "$EXECUTABLE_BACKUP_FILE" << HEADER
 # Tamaño del backup SQL: $FILE_SIZE
 # Tablas: $TABLE_COUNT
 # Registros: $RECORD_COUNT
+# Actualizado para módulos: Arqueos de Caja, Gastos Mensuales, IVA y Ventana Horaria
 # ============================================================================
 
 # Colores para los mensajes
@@ -393,17 +460,87 @@ echo ""
 echo -e "${YELLOW}Para extraer el SQL sin ejecutarlo:${NC}"
 echo "  ./$EXECUTABLE_BACKUP_FILE --extract [archivo_salida.sql]"
 
-# Crear un archivo informativo
+# Crear un archivo informativo detallado
 INFO_FILE="backup_info_${DATE_STAMP}.txt"
-echo "Información del backup" > "$INFO_FILE"
-echo "====================" >> "$INFO_FILE"
+echo "Información del backup de Productiva" > "$INFO_FILE"
+echo "===================================" >> "$INFO_FILE"
 echo "Fecha: $(date '+%Y-%m-%d %H:%M:%S')" >> "$INFO_FILE"
 echo "Archivo SQL: $SQL_BACKUP_FILE ($(du -h "$SQL_BACKUP_FILE" | cut -f1))" >> "$INFO_FILE"
 echo "Archivo Ejecutable: $EXECUTABLE_BACKUP_FILE ($(du -h "$EXECUTABLE_BACKUP_FILE" | cut -f1))" >> "$INFO_FILE"
 echo "Tablas: $TABLE_COUNT" >> "$INFO_FILE"
 echo "Registros: $RECORD_COUNT" >> "$INFO_FILE"
 echo "" >> "$INFO_FILE"
+
+# Añadir información sobre tablas críticas encontradas/faltantes
+echo "Módulos encontrados:" >> "$INFO_FILE"
+
+# Verificar módulo base
+if grep -q "CREATE TABLE public.users" "$SQL_BACKUP_FILE" && \
+   grep -q "CREATE TABLE public.companies" "$SQL_BACKUP_FILE" && \
+   grep -q "CREATE TABLE public.employees" "$SQL_BACKUP_FILE"; then
+   echo "- Sistema Base: SÍ" >> "$INFO_FILE"
+else
+   echo "- Sistema Base: INCOMPLETO" >> "$INFO_FILE"
+fi
+
+# Verificar módulo de Control Horario
+if grep -q "CREATE TABLE public.checkpoints" "$SQL_BACKUP_FILE" && \
+   grep -q "CREATE TABLE public.checkpoint_records" "$SQL_BACKUP_FILE"; then
+   echo "- Control Horario: SÍ" >> "$INFO_FILE"
+else
+   echo "- Control Horario: INCOMPLETO" >> "$INFO_FILE"
+fi
+
+# Verificar módulo de Arqueos de Caja
+if grep -q "CREATE TABLE public.cash_registers" "$SQL_BACKUP_FILE"; then
+   echo "- Arqueos de Caja: SÍ" >> "$INFO_FILE"
+else
+   echo "- Arqueos de Caja: NO" >> "$INFO_FILE"
+fi
+
+# Verificar módulo de Gastos Mensuales
+if grep -q "CREATE TABLE public.expense_categories" "$SQL_BACKUP_FILE" && \
+   grep -q "CREATE TABLE public.monthly_expenses" "$SQL_BACKUP_FILE"; then
+   echo "- Gastos Mensuales: SÍ" >> "$INFO_FILE"
+else
+   echo "- Gastos Mensuales: INCOMPLETO O AUSENTE" >> "$INFO_FILE"
+fi
+
+# Verificar módulo de Tareas
+if grep -q "CREATE TABLE public.task_templates" "$SQL_BACKUP_FILE" && \
+   grep -q "CREATE TABLE public.task_instances" "$SQL_BACKUP_FILE"; then
+   echo "- Sistema de Tareas: SÍ" >> "$INFO_FILE"
+else
+   echo "- Sistema de Tareas: INCOMPLETO O AUSENTE" >> "$INFO_FILE"
+fi
+
+# Añadir funcionalidades especiales
+echo "" >> "$INFO_FILE"
+echo "Funcionalidades especiales:" >> "$INFO_FILE"
+
+# Verificar soporte de IVA en arqueos
+if grep -q "vat_percentage" "$SQL_BACKUP_FILE"; then
+   echo "- Cálculo de IVA en Arqueos: SÍ" >> "$INFO_FILE"
+else
+   echo "- Cálculo de IVA en Arqueos: NO" >> "$INFO_FILE"
+fi
+
+# Verificar soporte de ventana horaria para cierres automáticos
+if grep -q "operation_start_time" "$SQL_BACKUP_FILE" && grep -q "operation_end_time" "$SQL_BACKUP_FILE"; then
+   echo "- Ventana horaria para cierres automáticos: SÍ" >> "$INFO_FILE"
+else
+   echo "- Ventana horaria para cierres automáticos: NO" >> "$INFO_FILE"
+fi
+
+# Verificar soporte de impresoras de red
+if grep -q "CREATE TABLE public.network_printers" "$SQL_BACKUP_FILE"; then
+   echo "- Soporte para impresoras de red: SÍ" >> "$INFO_FILE"
+else
+   echo "- Soporte para impresoras de red: NO" >> "$INFO_FILE"
+fi
+
+echo "" >> "$INFO_FILE"
 echo "Para restaurar, ejecute:" >> "$INFO_FILE"
 echo "  ./$EXECUTABLE_BACKUP_FILE --restore" >> "$INFO_FILE"
 
-echo -e "${BLUE}Se ha creado un archivo informativo: ${INFO_FILE}${NC}"
+echo -e "${BLUE}Se ha creado un archivo informativo detallado: ${INFO_FILE}${NC}"

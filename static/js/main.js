@@ -11,6 +11,36 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// Función para determinar la sección activa basada en la URL actual
+function setActiveNavItem() {
+  const path = window.location.pathname;
+  
+  // Limpiar cualquier elemento activo
+  document.querySelectorAll('.navbar-nav .btn').forEach(btn => {
+    btn.classList.remove('active');
+  });
+  
+  // Establecer el elemento activo según la URL
+  if (path.includes('/checkpoints')) {
+    document.querySelector('a[href*="/checkpoints"]')?.classList.add('active');
+  } else if (path.includes('/companies') || path.includes('/company')) {
+    document.querySelector('a[href*="/companies"]')?.classList.add('active');
+  } else if (path.includes('/tasks')) {
+    document.querySelector('a[href*="/tasks"]')?.classList.add('active');
+  } else if (path.includes('/cash_register')) {
+    document.querySelector('a[href*="/cash_register"]')?.classList.add('active');
+  } else if (path.includes('/monthly_expenses')) {
+    document.querySelector('a[href*="/monthly_expenses"]')?.classList.add('active');
+  }
+}
+
+// Ejecutar cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+  // Establecer el elemento de navegación activo
+  setActiveNavItem();
+});
+
+
 // Deshabilitar pantallas de carga adicionales durante la navegación
 window.addEventListener('DOMContentLoaded', () => {
   // Asegurarse de que no se muestre ninguna pantalla de carga durante la navegación normal

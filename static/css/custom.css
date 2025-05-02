@@ -34,3 +34,10 @@
     background-color: #8D6E63 !important;
     color: white !important;
 }
+
+/* Botones de navegación activos */
+.navbar-nav .btn.active {
+    box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.3) !important;
+    font-weight: bold !important;
+    transform: translateY(2px);
+}

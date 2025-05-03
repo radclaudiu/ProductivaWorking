@@ -1886,6 +1886,22 @@ def local_user_labels():
     
     # Obtener los productos disponibles para este local
     products = Product.query.filter_by(location_id=location.id, is_active=True).order_by(Product.name).all()
+    
+    # Obtener impresoras configuradas
+    printers = NetworkPrinter.query.filter_by(location_id=location.id).all()
+    
+    # Filtro de búsqueda (si existe)
+    search_query = request.args.get('q', '')
+    if search_query:
+        products = [p for p in products if search_query.lower() in p.name.lower()]
+    
+    return render_template('tasks/local_user_labels.html', 
+                           title='Selección de Producto',
+                           user=user, 
+                           location=location, 
+                           products=products, 
+                           printers=printers,
+                           search_query=search_query)
 
 
 @tasks_bp.route('/local-user/raspberry-pi-setup')
@@ -1897,18 +1913,6 @@ def raspberry_pi_setup():
     location = user.location
     
     return render_template('tasks/raspberry_pi_setup.html', user=user, location=location)
-    
-    # Filtro de búsqueda (si existe)
-    search_query = request.args.get('q', '')
-    if search_query:
-        products = [p for p in products if search_query.lower() in p.name.lower()]
-    
-    return render_template('tasks/local_user_labels.html',
-                          title='Selección de Producto',
-                          user=user,
-                          location=location,
-                          products=products,
-                          search_query=search_query)
 
 # Página de selección de conservación para un producto específico
 @tasks_bp.route('/local-user/labels/<int:product_id>')

@@ -1988,6 +1988,7 @@ def create_printer(location_id):
     form.location_id.data = location.id
     
     if form.validate_on_submit():
+        # Crear la instancia de la impresora con todos los campos
         printer = NetworkPrinter(
             name=form.name.data,
             ip_address=form.ip_address.data,
@@ -1999,7 +2000,9 @@ def create_printer(location_id):
             password=form.password.data if form.requires_auth.data else None,
             is_default=form.is_default.data,
             location_id=form.location_id.data,
-            is_active=True
+            is_active=True,
+            printer_type=form.printer_type.data,
+            usb_port=form.usb_port.data if form.printer_type.data == 'raspberry_pi' else None
         )
         
         # Si es la impresora predeterminada, desmarcar otras como predeterminadas
@@ -2052,6 +2055,10 @@ def edit_printer(id):
         printer.port = form.port.data if form.port.data else None
         printer.api_path = form.api_path.data
         printer.requires_auth = form.requires_auth.data
+        
+        # Actualizar los campos de tipo de impresora y puerto USB
+        printer.printer_type = form.printer_type.data
+        printer.usb_port = form.usb_port.data if form.printer_type.data == 'raspberry_pi' else None
         
         # Solo actualizar credenciales si se requiere autenticación
         if printer.requires_auth:
@@ -2170,7 +2177,11 @@ def set_default_printer(id):
 @tasks_bp.route('/api/printers/<int:location_id>')
 @login_required
 def api_get_printers(location_id):
-    """API para obtener la lista de impresoras disponibles para una ubicación"""
+    """API para obtener la lista de impresoras disponibles para una ubicación
+    
+    Parámetros Query:
+    - type: Filtrar por tipo de impresora (direct_network, raspberry_pi)
+    """
     # Verificar acceso
     if not current_user.is_admin() and current_user.is_gerente():
         company_ids = [c.id for c in current_user.companies]
@@ -2179,13 +2190,22 @@ def api_get_printers(location_id):
         if location.company_id not in company_ids:
             return jsonify({'error': 'Acceso denegado'}), 403
     
+    # Obtener tipo de impresora del query string si existe
+    printer_type = request.args.get('type', None)
+    
     # Obtener impresoras activas
-    printers = NetworkPrinter.query.filter_by(location_id=location_id, is_active=True).all()
+    query = NetworkPrinter.query.filter_by(location_id=location_id, is_active=True)
+    
+    # Filtrar por tipo si se especifica
+    if printer_type:
+        query = query.filter_by(printer_type=printer_type)
+    
+    printers = query.all()
     
     # Formatear respuesta
     printer_list = []
     for printer in printers:
-        printer_list.append({
+        printer_data = {
             'id': printer.id,
             'name': printer.name,
             'ip_address': printer.ip_address,
@@ -2198,11 +2218,70 @@ def api_get_printers(location_id):
             'is_default': printer.is_default,
             'last_status': printer.last_status,
             'last_status_check': printer.last_status_check.isoformat() if printer.last_status_check else None
-        })
+        }
+        
+        # Añadir campos específicos para Raspberry Pi si existen
+        if hasattr(printer, 'printer_type'):
+            printer_data['printer_type'] = printer.printer_type.value
+        else:
+            printer_data['printer_type'] = 'direct_network'  # Valor por defecto para compatibilidad
+            
+        if hasattr(printer, 'usb_port'):
+            printer_data['usb_port'] = printer.usb_port
+        
+        printer_list.append(printer_data)
     
     return jsonify({
+        'success': True,
         'location_id': location_id,
         'printers': printer_list
+    })
+
+
+@tasks_bp.route('/api/printer/<int:printer_id>')
+@login_required
+def api_get_printer(printer_id):
+    """API para obtener información detallada de una impresora específica"""
+    # Obtener la impresora
+    printer = NetworkPrinter.query.get_or_404(printer_id)
+    
+    # Verificar acceso
+    if not current_user.is_admin() and current_user.is_gerente():
+        company_ids = [c.id for c in current_user.companies]
+        location = printer.location
+        
+        if location.company_id not in company_ids:
+            return jsonify({'error': 'Acceso denegado'}), 403
+    
+    # Formatear respuesta
+    printer_data = {
+        'id': printer.id,
+        'name': printer.name,
+        'ip_address': printer.ip_address,
+        'port': printer.port,
+        'model': printer.model,
+        'api_path': printer.api_path,
+        'requires_auth': printer.requires_auth,
+        'username': printer.username if printer.requires_auth else None,
+        'password': printer.password if printer.requires_auth else None,
+        'is_default': printer.is_default,
+        'last_status': printer.last_status,
+        'last_status_check': printer.last_status_check.isoformat() if printer.last_status_check else None,
+        'location_id': printer.location_id
+    }
+    
+    # Añadir campos específicos para Raspberry Pi si existen
+    if hasattr(printer, 'printer_type'):
+        printer_data['printer_type'] = printer.printer_type.value
+    else:
+        printer_data['printer_type'] = 'direct_network'  # Valor por defecto para compatibilidad
+        
+    if hasattr(printer, 'usb_port'):
+        printer_data['usb_port'] = printer.usb_port
+    
+    return jsonify({
+        'success': True,
+        'printer': printer_data
     })
 
 # Gestor de etiquetas en la página de tareas

@@ -232,9 +232,15 @@ class NetworkPrinterForm(FlaskForm):
     model = StringField('Modelo de impresora', validators=[Optional(), Length(max=100)], 
                       description="Ejemplo: QL-800, QL-820NWB, etc.")
     port = IntegerField('Puerto', validators=[Optional(), NumberRange(min=1, max=65535)], default=80,
-                    description="Dejar vacío si la impresora no utiliza un puerto específico")
+                    description="Puerto de la API/servicio (80 para Brother, 5000 para Raspberry Pi)")
     api_path = StringField('Ruta de la API', validators=[Optional()], default="/brother_d/printer/print",
-                         description="La ruta de la API para enviar trabajos de impresión")
+                         description="La ruta de la API para enviar trabajos de impresión (/print para Raspberry Pi)")
+    printer_type = SelectField('Tipo de conexión', validators=[DataRequired()],
+                           choices=[('direct_network', 'Directa (Brother)'), ('raspberry_pi', 'Raspberry Pi')],
+                           default='direct_network',
+                           description="Seleccione el tipo de conexión con la impresora")
+    usb_port = StringField('Puerto USB (Raspberry Pi)', validators=[Optional()], default="/dev/usb/lp0",
+                        description="Ruta al dispositivo USB en Raspberry Pi (ej: /dev/usb/lp0)")
     requires_auth = BooleanField('Requiere autenticación', default=False)
     username = StringField('Usuario', validators=[Optional(), Length(max=100)])
     password = PasswordField('Contraseña', validators=[Optional(), Length(max=100)])

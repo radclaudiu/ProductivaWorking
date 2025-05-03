@@ -175,9 +175,9 @@
 <body>
     <!-- Controles de impresión optimizados para tablets y ordenadores -->
     <div class="print-controls" style="background-color: var(--olive-green); border-radius: 12px; padding: 15px; margin: 15px auto; max-width: 90%; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
-        <h5 class="text-white mb-2">Impresión de Etiqueta Brother</h5>
+        <h5 class="text-white mb-2">Impresión de Etiqueta</h5>
         
-        <div class="row g-2 justify-content-center align-items-center">
+        <div class="row g-2 justify-content-center align-items-center mb-2">
             <div class="col-auto">
                 <select id="quantity-selector" class="form-select me-2" style="min-width: 60px; font-weight: bold;">
                     <option value="1" selected>1</option>
@@ -189,16 +189,27 @@
                 </select>
             </div>
             <div class="col-auto">
-                <button id="bluetooth-print-btn" class="btn" style="background-color: #EFEFEF; color: var(--chocolate-brown); font-weight: bold; min-height: 40px; min-width: 200px;">
-                    <i class="bi bi-printer"></i> Imprimir Etiqueta
-                </button>
+                <div class="btn-group" role="group" aria-label="Métodos de impresión">
+                    <button type="button" id="bluetooth-print-btn" class="btn" style="background-color: #EFEFEF; color: var(--chocolate-brown); font-weight: bold; min-height: 40px;">
+                        <i class="bi bi-bluetooth"></i> Bluetooth
+                    </button>
+                    <button type="button" id="raspberry-print-btn" class="btn" style="background-color: #EFEFEF; color: var(--chocolate-brown); font-weight: bold; min-height: 40px;">
+                        <i class="bi bi-wifi"></i> Raspberry Pi
+                    </button>
+                </div>
             </div>
+        </div>
+        
+        <div id="raspberry-printers-container" style="display: none; margin-bottom: 10px;" class="text-center">
+            <select id="raspberry-printer-select" class="form-select" style="max-width: 300px; margin: 0 auto;">
+                <option value="">Seleccione una impresora...</option>
+            </select>
         </div>
         
         <div id="print-message" class="alert alert-info mt-2 mb-0" style="display: none; font-size: 14px;"></div>
         
         <p class="text-white-50 text-center mt-1 mb-0 small">
-            <i class="bi bi-info-circle-fill me-1"></i> Pulse el botón para conectarse a la impresora Brother
+            <i class="bi bi-info-circle-fill me-1"></i> Seleccione el método de impresión que desee utilizar
         </p>
     </div>
     
@@ -289,6 +300,8 @@
     <script src="/static/js/brother-bluetooth.js"></script>
     <!-- Script optimizado para tablets/PWA con Web Bluetooth API mejorado -->
     <script src="/static/js/brother-label-pwa.js"></script>
+    <!-- Script para Raspberry Pi Print Server -->
+    <script src="/static/js/raspberry-print-server.js"></script>
     
     <!-- Script para mejorar rendimiento táctil en tablets -->
     <script>

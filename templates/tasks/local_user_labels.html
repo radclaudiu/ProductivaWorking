@@ -46,9 +46,24 @@
                     </div>
                     
                     <div class="mb-3">
+                        <label for="printerType" class="form-label">Tipo de conexión</label>
+                        <select class="form-select" id="printerType" name="printer_type">
+                            <option value="direct_network" selected>Directa (Brother)</option>
+                            <option value="raspberry_pi">Raspberry Pi</option>
+                        </select>
+                        <div class="form-text">Seleccione cómo se conecta la impresora a la red</div>
+                    </div>
+
+                    <div class="mb-3">
                         <label for="apiPath" class="form-label">Ruta de la API</label>
                         <input type="text" class="form-control" id="apiPath" name="api_path" value="/brother_d/printer/print">
                         <div class="form-text">Normalmente no es necesario cambiar este valor</div>
+                    </div>
+                    
+                    <div class="mb-3" id="usbPortContainer" style="display: none;">
+                        <label for="usbPort" class="form-label">Puerto USB (Raspberry Pi)</label>
+                        <input type="text" class="form-control" id="usbPort" name="usb_port" value="/dev/usb/lp0">
+                        <div class="form-text">Ruta al dispositivo USB en Raspberry Pi (ej: /dev/usb/lp0)</div>
                     </div>
                     
                     <div class="mb-3 form-check">
@@ -346,6 +361,48 @@
             requiresAuthCheckbox.addEventListener('change', function() {
                 authFields.style.display = this.checked ? 'block' : 'none';
             });
+        }
+        
+        // Gestión del tipo de impresora
+        const printerTypeSelect = document.getElementById('printerType');
+        const usbPortContainer = document.getElementById('usbPortContainer');
+        const apiPathField = document.getElementById('apiPath');
+        const portField = document.getElementById('printerPort');
+        
+        // Función para actualizar los campos según el tipo de impresora
+        function updatePrinterFields() {
+            if (!printerTypeSelect || !usbPortContainer) return;
+            
+            // Determinar si es tipo Raspberry Pi
+            const isRaspberryPi = printerTypeSelect.value === 'raspberry_pi';
+            
+            // Mostrar/ocultar el campo de puerto USB
+            usbPortContainer.style.display = isRaspberryPi ? 'block' : 'none';
+            
+            // Actualizar valores por defecto según el tipo
+            if (isRaspberryPi) {
+                // Defaults para Raspberry Pi
+                if (apiPathField && (!apiPathField.value || apiPathField.value === '/brother_d/printer/print')) {
+                    apiPathField.value = '/print';
+                }
+                if (portField && (!portField.value || portField.value == '80')) {
+                    portField.value = '5000';
+                }
+            } else {
+                // Defaults para Brother directo
+                if (apiPathField && (!apiPathField.value || apiPathField.value === '/print')) {
+                    apiPathField.value = '/brother_d/printer/print';
+                }
+                if (portField && (!portField.value || portField.value == '5000')) {
+                    portField.value = '80';
+                }
+            }
+        }
+        
+        // Inicializar y configurar el evento de cambio
+        if (printerTypeSelect) {
+            updatePrinterFields(); // Estado inicial
+            printerTypeSelect.addEventListener('change', updatePrinterFields);
         }
         
         // Cargar configuración de impresora al abrir la página

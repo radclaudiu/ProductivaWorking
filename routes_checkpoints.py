@@ -761,23 +761,8 @@ def adjust_record(id):
             form.check_out_time.data = record.check_out_time.time()
     
     if form.validate_on_submit():
-        # Guardar una copia del registro original en la nueva tabla
-        from models_checkpoints import CheckPointOriginalRecord
-        
-        # Crear un registro del estado original antes del ajuste
-        original_record = CheckPointOriginalRecord(
-            record_id=record.id,
-            original_check_in_time=record.check_in_time,
-            original_check_out_time=record.check_out_time,
-            original_signature_data=record.signature_data,
-            original_has_signature=record.has_signature,
-            original_notes=record.notes,
-            adjusted_by_id=current_user.id,
-            adjustment_reason=form.adjustment_reason.data
-        )
-        db.session.add(original_record)
-        
-        # Ya no guardamos valores originales en los campos original_* del registro principal
+        # NO interactuar con CheckPointOriginalRecord al editar un fichaje
+        # No se debe agregar, eliminar ni modificar NADA en CheckPointOriginalRecord durante ediciones manuales
         
         # Actualizar con los nuevos valores
         check_in_date = datetime.strptime(form.check_in_date.data, '%Y-%m-%d').date()

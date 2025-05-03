@@ -186,8 +186,7 @@ class EmployeeForm(FlaskForm):
     end_date = StringField('Fecha de Fin', validators=[Optional()])
     company_id = SelectField('Empresa', coerce=int, validators=[DataRequired()])
     is_active = BooleanField('Empleado Activo')
-    status = SelectField('Estado', choices=[(status.value, status.name.capitalize()) for status in EmployeeStatus], 
-                        default=EmployeeStatus.ACTIVO.value)
+    status = SelectField('Estado', choices=[(status.value, status.name.capitalize()) for status in EmployeeStatus])
     submit = SubmitField('Guardar')
     
     def validate_end_date(form, field):

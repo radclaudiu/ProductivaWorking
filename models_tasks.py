@@ -608,7 +608,7 @@ class NetworkPrinter(db.Model):
             s.settimeout(2.0)  # Timeout de 2 segundos
             
             # Si no hay puerto especificado, usar el puerto predeterminado según el tipo
-            if self.printer_type == PrinterType.RASPBERRY_PI:
+            if self.printer_type == "RASPBERRY_PI":
                 port_to_check = self.port if self.port else 5000  # Puerto predeterminado para Flask en Raspberry Pi
             else:  # DIRECT_NETWORK
                 port_to_check = self.port if self.port else 80    # Puerto predeterminado para impresoras Brother

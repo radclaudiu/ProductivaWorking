@@ -41,7 +41,21 @@
                         </div>
                         
                         <div class="row mb-3">
-                            <div class="col-md-4">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.printer_type.label(class="form-label") }}
+                                    {{ form.printer_type(class="form-select", id="printerType") }}
+                                    {% if form.printer_type.errors %}
+                                        {% for error in form.printer_type.errors %}
+                                            <span class="text-danger">{{ error }}</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if form.printer_type.description %}
+                                        <small class="form-text text-muted">{{ form.printer_type.description }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
                                 <div class="form-group">
                                     {{ form.model.label(class="form-label") }}
                                     {{ form.model(class="form-control", placeholder="QL-820NWB") }}
@@ -55,6 +69,9 @@
                                     {% endif %}
                                 </div>
                             </div>
+                        </div>
+                        
+                        <div class="row mb-3">
                             <div class="col-md-4">
                                 <div class="form-group">
                                     {{ form.port.label(class="form-label") }}
@@ -63,6 +80,21 @@
                                         {% for error in form.port.errors %}
                                             <span class="text-danger">{{ error }}</span>
                                         {% endfor %}
+                                    {% endif %}
+                                    <small class="form-text text-muted">80 para Brother, 5000 para Raspberry Pi</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4" id="usbPortContainer">
+                                <div class="form-group">
+                                    {{ form.usb_port.label(class="form-label") }}
+                                    {{ form.usb_port(class="form-control") }}
+                                    {% if form.usb_port.errors %}
+                                        {% for error in form.usb_port.errors %}
+                                            <span class="text-danger">{{ error }}</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                    {% if form.usb_port.description %}
+                                        <small class="form-text text-muted">{{ form.usb_port.description }}</small>
                                     {% endif %}
                                 </div>
                             </div>
@@ -165,6 +197,7 @@
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // 1. Manejo de la autenticación
         const requiresAuthCheckbox = document.getElementById('requiresAuth');
         const authSection = document.getElementById('authSection');
         
@@ -176,11 +209,46 @@
             }
         }
         
-        // Inicialización
+        // Inicialización de autenticación
         toggleAuthSection();
-        
-        // Evento de cambio
         requiresAuthCheckbox.addEventListener('change', toggleAuthSection);
+        
+        // 2. Manejo del tipo de impresora
+        const printerTypeSelect = document.getElementById('printerType');
+        const usbPortContainer = document.getElementById('usbPortContainer');
+        const apiPathField = document.getElementById('{{ form.api_path.id }}');
+        const portField = document.getElementById('{{ form.port.id }}');
+        
+        function updatePrinterFields() {
+            // Determinar el tipo de impresora seleccionado
+            const isPrinterRaspberryPi = printerTypeSelect.value === 'raspberry_pi';
+            
+            // Mostrar/ocultar el campo de puerto USB según el tipo de impresora
+            usbPortContainer.style.display = isPrinterRaspberryPi ? 'block' : 'none';
+            
+            // Actualizar valores por defecto según el tipo de impresora
+            if (isPrinterRaspberryPi) {
+                // Valores por defecto para Raspberry Pi
+                if (!apiPathField.value || apiPathField.value === '/brother_d/printer/print') {
+                    apiPathField.value = '/print';
+                }
+                if (!portField.value || portField.value == '80') {
+                    portField.value = '5000';
+                }
+            } else {
+                // Valores por defecto para impresora directa (Brother)
+                if (!apiPathField.value || apiPathField.value === '/print') {
+                    apiPathField.value = '/brother_d/printer/print';
+                }
+                if (!portField.value || portField.value == '5000') {
+                    portField.value = '80';
+                }
+            }
+        }
+        
+        // Inicialización de tipo de impresora
+        updatePrinterFields();
+        printerTypeSelect.addEventListener('change', updatePrinterFields);
     });
 </script>
 {% endblock %}

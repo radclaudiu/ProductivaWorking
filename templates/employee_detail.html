@@ -160,72 +160,9 @@
             </div>
         </div>
 
-        <!-- Quick Actions -->
-        <div class="col-lg-4 mb-4">
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold">Acciones Rápidas</h6>
-                </div>
-                <div class="card-body">
-                    <div class="list-group">
-                        <a href="{{ url_for('employee.list_documents', id=employee.id) }}" class="list-group-item list-group-item-action">
-                            <i class="bi bi-file-earmark"></i> Ver Documentos
-                        </a>
-                        
-                        <a href="{{ url_for('employee.upload_document', id=employee.id) }}" class="list-group-item list-group-item-action">
-                            <i class="bi bi-upload"></i> Subir Documento
-                        </a>
-                        
-                        <a href="{{ url_for('employee.manage_notes', id=employee.id) }}" class="list-group-item list-group-item-action">
-                            <i class="bi bi-journal-text"></i> Gestionar Notas
-                        </a>
-                        
-                        <a href="{{ url_for('employee.view_history', id=employee.id) }}" class="list-group-item list-group-item-action">
-                            <i class="bi bi-clock-history"></i> Ver Historial de Cambios
-                        </a>
-                        
-                        {% if can_manage_activation %}
-                        <a href="{{ url_for('employee.manage_status', id=employee.id) }}" class="list-group-item list-group-item-action">
-                            <i class="bi bi-arrow-repeat"></i> Gestionar Estado
-                        </a>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Recent Documents -->
-            <div class="card shadow mb-4">
-                <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold">Documentos Recientes</h6>
-                </div>
-                <div class="card-body">
-                    {% if employee.documents %}
-                        <div class="list-group">
-                            {% for document in employee.documents[:3] %}
-                                <a href="{{ url_for('employee.download_document', doc_id=document.id) }}" class="list-group-item list-group-item-action">
-                                    <div class="d-flex w-100 justify-content-between">
-                                        <h6 class="mb-1">{{ document.original_filename }}</h6>
-                                        <small>{{ document.uploaded_at.strftime('%d/%m/%Y') if document.uploaded_at else 'No disponible' }}</small>
-                                    </div>
-                                    <small>{{ document.description or 'Sin descripción' }}</small>
-                                </a>
-                            {% endfor %}
-                        </div>
-                        {% if employee.documents|length > 3 %}
-                            <div class="text-center mt-3">
-                                <a href="{{ url_for('employee.list_documents', id=employee.id) }}" class="btn btn-sm btn-secondary">
-                                    Ver todos los documentos ({{ employee.documents|length }})
-                                </a>
-                            </div>
-                        {% endif %}
-                    {% else %}
-                        <div class="text-center py-3">
-                            <i class="bi bi-file-earmark-x fa-2x text-muted mb-2"></i>
-                            <p class="text-muted">No hay documentos disponibles</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
+        <!-- Quick Actions y Recent Documents ocultos a petición del cliente -->
+        <div class="col-lg-4 mb-4" style="display: none;">
+            <!-- Contenido oculto pero preservado en el código para futura referencia -->
         </div>
     </div>
 

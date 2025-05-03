@@ -563,7 +563,7 @@ class NetworkPrinter(db.Model):
     model = db.Column(db.String(100))
     api_path = db.Column(db.String(255), default='/print')
     port = db.Column(db.Integer, default=5000, nullable=True)  # Cambiado a 5000 por defecto para Raspberry Pi
-    printer_type = db.Column(Enum(PrinterType), default=PrinterType.DIRECT_NETWORK)
+    printer_type = db.Column(db.String(20), default="DIRECT_NETWORK")
     usb_port = db.Column(db.String(100))  # Puerto USB para Raspberry Pi (e.g., /dev/usb/lp0)
     requires_auth = db.Column(db.Boolean, default=False)
     username = db.Column(db.String(100))
@@ -585,13 +585,13 @@ class NetworkPrinter(db.Model):
     def get_full_url(self):
         """Retorna la URL completa de la API de la impresora"""
         # Determinar el puerto por defecto según el tipo de impresora
-        default_port = 5000 if self.printer_type == PrinterType.RASPBERRY_PI else 80
+        default_port = 5000 if self.printer_type == "RASPBERRY_PI" else 80
         
         # Si hay un puerto especificado, usarlo; de lo contrario, usar el predeterminado
         port_to_use = self.port if self.port else default_port
         
         # Para impresoras Raspberry Pi, usar el endpoint específico para imprimir etiquetas
-        if self.printer_type == PrinterType.RASPBERRY_PI:
+        if self.printer_type == "RASPBERRY_PI":
             # El endpoint predeterminado para Raspberry Pi es /print
             path = self.api_path if self.api_path else '/print'
             return f"http://{self.ip_address}:{port_to_use}{path}"
@@ -618,7 +618,7 @@ class NetworkPrinter(db.Model):
             
             if result == 0:
                 # Para impresoras Raspberry Pi, verificar también el endpoint específico
-                if self.printer_type == PrinterType.RASPBERRY_PI:
+                if self.printer_type == "RASPBERRY_PI":
                     import requests
                     try:
                         # Verificar que el servicio está respondiendo correctamente
@@ -657,7 +657,7 @@ class NetworkPrinter(db.Model):
             'model': self.model,
             'api_path': self.api_path,
             'port': self.port,
-            'printer_type': self.printer_type.value if self.printer_type else PrinterType.DIRECT_NETWORK.value,
+            'printer_type': self.printer_type if self.printer_type else "DIRECT_NETWORK",
             'usb_port': self.usb_port,
             'requires_auth': self.requires_auth,
             'username': self.username if self.requires_auth else None,

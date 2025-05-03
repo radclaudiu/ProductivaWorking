@@ -549,6 +549,10 @@ class ProductConservation(db.Model):
         # Retornar el datetime completo con hora exacta
         return from_date + timedelta(hours=self.hours_valid)
         
+class PrinterType(enum.Enum):
+    DIRECT_NETWORK = "direct_network"     # Conexión directa a impresora en red (Brother, etc)
+    RASPBERRY_PI = "raspberry_pi"        # Conexión a Raspberry Pi que controla la impresora
+
 class NetworkPrinter(db.Model):
     """Modelo para almacenar las impresoras de red para imprimir etiquetas"""
     __tablename__ = 'network_printers'
@@ -557,8 +561,10 @@ class NetworkPrinter(db.Model):
     name = db.Column(db.String(100), nullable=False)
     ip_address = db.Column(db.String(50), nullable=False)
     model = db.Column(db.String(100))
-    api_path = db.Column(db.String(255), default='/brother_d/printer/print')
-    port = db.Column(db.Integer, default=80, nullable=True)
+    api_path = db.Column(db.String(255), default='/print')
+    port = db.Column(db.Integer, default=5000, nullable=True)  # Cambiado a 5000 por defecto para Raspberry Pi
+    printer_type = db.Column(Enum(PrinterType), default=PrinterType.DIRECT_NETWORK)
+    usb_port = db.Column(db.String(100))  # Puerto USB para Raspberry Pi (e.g., /dev/usb/lp0)
     requires_auth = db.Column(db.Boolean, default=False)
     username = db.Column(db.String(100))
     password = db.Column(db.String(100))
@@ -578,11 +584,21 @@ class NetworkPrinter(db.Model):
     
     def get_full_url(self):
         """Retorna la URL completa de la API de la impresora"""
-        # Si hay un puerto especificado, incluirlo en la URL
-        if self.port:
-            return f"http://{self.ip_address}:{self.port}{self.api_path}"
-        # Si no hay puerto, omitirlo en la URL
-        return f"http://{self.ip_address}{self.api_path}"
+        # Determinar el puerto por defecto según el tipo de impresora
+        default_port = 5000 if self.printer_type == PrinterType.RASPBERRY_PI else 80
+        
+        # Si hay un puerto especificado, usarlo; de lo contrario, usar el predeterminado
+        port_to_use = self.port if self.port else default_port
+        
+        # Para impresoras Raspberry Pi, usar el endpoint específico para imprimir etiquetas
+        if self.printer_type == PrinterType.RASPBERRY_PI:
+            # El endpoint predeterminado para Raspberry Pi es /print
+            path = self.api_path if self.api_path else '/print'
+            return f"http://{self.ip_address}:{port_to_use}{path}"
+        else:  # Para impresoras de red directas (Brother, etc.)
+            # El endpoint predeterminado para Brother es /brother_d/printer/print
+            path = self.api_path if self.api_path else '/brother_d/printer/print'
+            return f"http://{self.ip_address}:{port_to_use}{path}"
     
     def check_status(self):
         """Verifica si la impresora está en línea"""
@@ -591,13 +607,36 @@ class NetworkPrinter(db.Model):
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(2.0)  # Timeout de 2 segundos
             
-            # Si no hay puerto especificado, usar el puerto 80 para la comprobación
-            port_to_check = self.port if self.port else 80
+            # Si no hay puerto especificado, usar el puerto predeterminado según el tipo
+            if self.printer_type == PrinterType.RASPBERRY_PI:
+                port_to_check = self.port if self.port else 5000  # Puerto predeterminado para Flask en Raspberry Pi
+            else:  # DIRECT_NETWORK
+                port_to_check = self.port if self.port else 80    # Puerto predeterminado para impresoras Brother
             
             result = s.connect_ex((self.ip_address, port_to_check))
             s.close()
             
             if result == 0:
+                # Para impresoras Raspberry Pi, verificar también el endpoint específico
+                if self.printer_type == PrinterType.RASPBERRY_PI:
+                    import requests
+                    try:
+                        # Verificar que el servicio está respondiendo correctamente
+                        check_url = f"http://{self.ip_address}:{port_to_check}/status"
+                        response = requests.get(check_url, timeout=3.0)
+                        if response.status_code == 200:
+                            status_data = response.json()
+                            if status_data.get('success'):
+                                self.last_status = "online: " + status_data.get('printer_status', 'ready')
+                                self.last_status_check = datetime.utcnow()
+                                return True
+                    except Exception as inner_e:
+                        # La conexión TCP funciona pero el servicio no responde correctamente
+                        self.last_status = f"error in service: {str(inner_e)}"
+                        self.last_status_check = datetime.utcnow()
+                        return False
+                
+                # Para impresoras de red directas, basta con la conexión TCP
                 self.last_status = "online"
                 self.last_status_check = datetime.utcnow()
                 return True
@@ -616,8 +655,12 @@ class NetworkPrinter(db.Model):
             'name': self.name,
             'ip_address': self.ip_address,
             'model': self.model,
+            'api_path': self.api_path,
             'port': self.port,
+            'printer_type': self.printer_type.value if self.printer_type else PrinterType.DIRECT_NETWORK.value,
+            'usb_port': self.usb_port,
             'requires_auth': self.requires_auth,
+            'username': self.username if self.requires_auth else None,
             'is_default': self.is_default,
             'is_active': self.is_active,
             'last_status': self.last_status,

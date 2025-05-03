@@ -656,7 +656,7 @@
                     }
                     
                     // Hacer petición al servidor para obtener las impresoras de tipo Raspberry Pi
-                    const response = await fetch(`/api/printers/${locationId}?type=raspberry_pi`);
+                    const response = await fetch(`/tasks/api/printers/${locationId}?type=raspberry_pi`);
                     
                     if (!response.ok) {
                         throw new Error(`Error ${response.status}: ${response.statusText}`);

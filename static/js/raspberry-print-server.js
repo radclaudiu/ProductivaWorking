@@ -5,12 +5,10 @@
  * a un servidor Raspberry Pi que actúa como intermediario entre
  * la aplicación web y la impresora de etiquetas conectada por USB.
  */
+
 const RaspberryPrintServer = (function() {
-    'use strict';
-    
-    // Estado
+    // Variable para almacenar la impresora predeterminada
     let defaultPrinter = null;
-    let printerList = [];
     
     /**
      * Configura la impresora predeterminada
@@ -18,7 +16,8 @@ const RaspberryPrintServer = (function() {
      */
     function setDefaultPrinter(printer) {
         defaultPrinter = printer;
-        console.log('Impresora Raspberry Pi predeterminada configurada:', printer.name);
+        console.log(`Impresora Raspberry Pi predeterminada configurada: ${printer.name}`);
+        return defaultPrinter;
     }
     
     /**
@@ -27,29 +26,25 @@ const RaspberryPrintServer = (function() {
      * @returns {Promise} - Promesa con la lista de impresoras
      */
     function loadRaspberryPrinters(locationId) {
-        return fetch(`/api/printers/${locationId}?type=raspberry_pi`)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Error al cargar las impresoras Raspberry Pi');
-                }
-                return response.json();
-            })
+        return fetch(`/tasks/api/printers/${locationId}?type=raspberry_pi`)
+            .then(response => response.json())
             .then(data => {
-                printerList = data.printers.filter(p => p.printer_type === 'raspberry_pi');
-                
-                // Configurar la impresora predeterminada
-                const defaultFound = printerList.find(p => p.is_default);
-                if (defaultFound) {
-                    setDefaultPrinter(defaultFound);
-                } else if (printerList.length > 0) {
-                    setDefaultPrinter(printerList[0]);
+                if (data.success && data.printers.length > 0) {
+                    // Establecer la primera impresora por defecto si existe
+                    const defaultPrinters = data.printers.filter(p => p.is_default);
+                    if (defaultPrinters.length > 0) {
+                        setDefaultPrinter(defaultPrinters[0]);
+                    } else {
+                        setDefaultPrinter(data.printers[0]);
+                    }
+                    return data.printers;
+                } else {
+                    return [];
                 }
-                
-                return printerList;
             })
             .catch(error => {
-                console.error('Error cargando impresoras Raspberry Pi:', error);
-                throw error;
+                console.error('Error al cargar las impresoras Raspberry Pi:', error);
+                return [];
             });
     }
     
@@ -59,35 +54,24 @@ const RaspberryPrintServer = (function() {
      * @returns {Promise} - Promesa con el estado de la impresora
      */
     function checkPrinterStatus(printer) {
-        const url = `http://${printer.ip_address}:${printer.port || 5000}/status`;
+        const printerToCheck = printer || defaultPrinter;
         
-        return fetch(url, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Error de conexión: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            return {
-                success: data.success,
-                message: data.message || 'Conexión establecida',
-                printerStatus: data.printer_status || 'ready'
-            };
-        })
-        .catch(error => {
-            console.error('Error verificando estado de impresora:', error);
-            return {
-                success: false,
-                message: `Error: ${error.message || 'No se pudo conectar con el servidor'}`,
-                printerStatus: 'offline'
-            };
-        });
+        if (!printerToCheck) {
+            return Promise.reject('No hay impresora configurada');
+        }
+        
+        const url = `http://${printerToCheck.ip_address}:${printerToCheck.port || 5000}/status`;
+        
+        return fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                console.log('Estado de la impresora:', data);
+                return data;
+            })
+            .catch(error => {
+                console.error('Error al verificar el estado de la impresora:', error);
+                return { status: 'offline', error: error.message };
+            });
     }
     
     /**
@@ -97,71 +81,57 @@ const RaspberryPrintServer = (function() {
      * @returns {Promise} - Promesa con el resultado de la impresión
      */
     function printLabel(printer, data) {
-        const url = `http://${printer.ip_address}:${printer.port || 5000}${printer.api_path || '/print'}`;
+        const printerToUse = printer || defaultPrinter;
         
-        // Preparar los datos de la etiqueta
+        if (!printerToUse) {
+            return Promise.reject('No hay impresora configurada');
+        }
+        
+        const url = `http://${printerToUse.ip_address}:${printerToUse.port || 5000}${printerToUse.api_path || '/print'}`;
+        
+        // Agregar información del puerto USB a los datos
         const printData = {
-            label_data: data,
-            printer_settings: {
-                usb_port: printer.usb_port || '/dev/usb/lp0',
-                model: printer.model || 'generic',
-                width: 35,  // 35mm de ancho
-                height: 40,  // 40mm de alto
-                quantity: data.quantity || 1
-            }
+            ...data,
+            usb_port: printerToUse.usb_port || '/dev/usb/lp0',
+            printer_model: printerToUse.model || 'QL-800'
         };
         
-        // Configurar las opciones de la solicitud
-        const requestOptions = {
+        return fetch(url, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify(printData)
-        };
-        
-        // Si la impresora requiere autenticación, agregar credenciales
-        if (printer.requires_auth && printer.username) {
-            requestOptions.headers['Authorization'] = 'Basic ' + btoa(`${printer.username}:${printer.password || ''}`);
-        }
-        
-        // Enviar la solicitud
-        return fetch(url, requestOptions)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Error en la impresión: ${response.status}`);
-                }
-                return response.json();
-            })
+        })
+        .then(response => response.json())
+        .then(result => {
+            console.log('Resultado de la impresión:', result);
+            return result;
+        })
+        .catch(error => {
+            console.error('Error al imprimir la etiqueta:', error);
+            return { success: false, error: error.message };
+        });
+    }
+    
+    // Método para obtener una impresora específica por ID
+    function getPrinterById(printerId) {
+        return fetch(`/tasks/api/printer/${printerId}`)
+            .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    return {
-                        success: true,
-                        message: data.message || 'Etiqueta enviada correctamente'
-                    };
+                    return data.printer;
                 } else {
-                    throw new Error(data.message || 'Error desconocido en el servidor');
+                    throw new Error('No se pudo obtener la impresora');
                 }
-            })
-            .catch(error => {
-                console.error('Error enviando etiqueta:', error);
-                return {
-                    success: false,
-                    message: `Error: ${error.message || 'No se pudo enviar la etiqueta'}`
-                };
             });
     }
     
-    // API pública
     return {
         setDefaultPrinter,
         loadRaspberryPrinters,
         checkPrinterStatus,
-        printLabel
+        printLabel,
+        getPrinterById
     };
 })();
-
-// Inicialización cuando se carga la página
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Raspberry Pi Print Server API inicializada');
-});

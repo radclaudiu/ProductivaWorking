@@ -472,7 +472,9 @@
                         'printerIp': printer.ip_address || '',
                         'printerPort': printer.port || 80,
                         'printerModel': printer.model || '',
+                        'printerType': printer.printer_type || 'direct_network',
                         'apiPath': printer.api_path || '/brother_d/printer/print',
+                        'usbPort': printer.usb_port || '/dev/usb/lp0',
                         'requiresAuth': printer.requires_auth || false,
                         'printerUsername': printer.username || '',
                         'printerPassword': '', // No mostrar la contraseña por seguridad
@@ -624,7 +626,9 @@
             'printerIp': '',
             'printerPort': 80,
             'printerModel': '',
+            'printerType': 'direct_network',
             'apiPath': '/brother_d/printer/print',
+            'usbPort': '/dev/usb/lp0',
             'requiresAuth': false,
             'printerUsername': '',
             'printerPassword': '',
@@ -649,7 +653,9 @@
             ip_address: elements.printerIp,
             port: parseInt(elements.printerPort) || 80,
             model: elements.printerModel,
+            printer_type: elements.printerType,
             api_path: elements.apiPath,
+            usb_port: elements.usbPort,
             requires_auth: elements.requiresAuth,
             username: elements.printerUsername,
             password: elements.printerPassword,
@@ -740,6 +746,10 @@
                 <div class="table-responsive">
                     <table class="table table-sm">
                         <tr>
+                            <th style="width: 30%">Tipo:</th>
+                            <td>${printer.printer_type === 'raspberry_pi' ? 'Raspberry Pi' : 'Conexión directa'}</td>
+                        </tr>
+                        <tr>
                             <th style="width: 30%">Dirección IP:</th>
                             <td>${printer.ip_address}:${printer.port}</td>
                         </tr>
@@ -747,6 +757,11 @@
                             <th>Modelo:</th>
                             <td>${printer.model || 'No especificado'}</td>
                         </tr>
+                        ${printer.printer_type === 'raspberry_pi' ? `
+                        <tr>
+                            <th>Puerto USB:</th>
+                            <td>${printer.usb_port || '/dev/usb/lp0'}</td>
+                        </tr>` : ''}
                         <tr>
                             <th>Estado:</th>
                             <td><span class="badge bg-${statusClass}">${statusText}</span></td>

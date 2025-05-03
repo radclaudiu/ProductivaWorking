@@ -14,7 +14,7 @@
                 <div class="row mb-3">
                     <div class="col-12">
                         <div class="alert alert-info">
-                            <i class="bi bi-info-circle-fill me-2"></i>Configure su impresora Brother conectada a Raspberry Pi para imprimir etiquetas.
+                            <i class="bi bi-info-circle-fill me-2"></i>Configure su impresora Brother conectada a un servidor Raspberry Pi para imprimir etiquetas. Esta configuración utiliza exclusivamente servidores Raspberry Pi como intermediarios para la impresión.
                         </div>
                     </div>
                 </div>
@@ -47,18 +47,18 @@
                                 <label for="printerIp" class="form-label">Dirección IP</label>
                                 <input type="text" class="form-control" id="printerIp" name="ip_address" placeholder="Ej: 192.168.1.100" required 
                                        pattern="^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$">
-                                <div class="form-text" id="ipAddressHelp">Dirección IP del Raspberry Pi donde está conectada la impresora</div>
+                                <div class="form-text" id="ipAddressHelp">Dirección IP del servidor Raspberry Pi que gestiona la impresora Brother</div>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label for="printerPort" class="form-label">Puerto</label>
-                                <input type="number" class="form-control" id="printerPort" name="port" placeholder="80" min="1" max="65535" value="80" required>
+                                <input type="number" class="form-control" id="printerPort" name="port" placeholder="5000" min="1" max="65535" value="5000" required>
                             </div>
                         </div>
                         
                         <div class="mb-3">
                             <label for="apiPath" class="form-label">Ruta de la API</label>
-                            <input type="text" class="form-control" id="apiPath" name="api_path" value="/brother_d/printer/print">
-                            <div class="form-text" id="apiPathHelp">Ruta API en el Raspberry Pi para enviar trabajos de impresión</div>
+                            <input type="text" class="form-control" id="apiPath" name="api_path" value="/print">
+                            <div class="form-text" id="apiPathHelp">Ruta API en el Raspberry Pi para enviar trabajos de impresión (por defecto: /print)</div>
                         </div>
                     </div>
                     
@@ -389,6 +389,12 @@
             if (portField && (!portField.value || portField.value == '80')) {
                 portField.value = '5000';
             }
+            
+            // Asegurar que el campo oculto de tipo siempre sea raspberry_pi
+            const printerTypeField = document.getElementById('printerType');
+            if (printerTypeField) {
+                printerTypeField.value = 'raspberry_pi';
+            }
         }
         
         // Establecer valores predeterminados al cargar
@@ -459,10 +465,10 @@
                     const elements = {
                         'printerName': printer.name || '',
                         'printerIp': printer.ip_address || '',
-                        'printerPort': printer.port || 80,
+                        'printerPort': printer.port || 5000,
                         'printerModel': printer.model || '',
-                        'printerType': printer.printer_type || 'direct_network',
-                        'apiPath': printer.api_path || '/brother_d/printer/print',
+                        'printerType': 'raspberry_pi', // Siempre usar Raspberry Pi
+                        'apiPath': printer.api_path || '/print',
                         'usbPort': printer.usb_port || '/dev/usb/lp0',
                         'requiresAuth': printer.requires_auth || false,
                         'printerUsername': printer.username || '',
@@ -558,7 +564,7 @@
         }
         
         const ipAddress = ipAddressElement.value;
-        const port = portElement ? portElement.value : '80';
+        const port = portElement ? portElement.value : '5000';
         
         if (!ipAddress) {
             alert('Por favor, introduzca una dirección IP válida.');
@@ -572,7 +578,7 @@
             },
             body: JSON.stringify({
                 ip_address: ipAddress,
-                port: parseInt(port) || 80
+                port: parseInt(port) || 5000
             }),
         })
         .then(response => {
@@ -613,7 +619,7 @@
         const elements = {
             'printerName': '',
             'printerIp': '',
-            'printerPort': 80,
+            'printerPort': 5000,
             'printerModel': '',
             'apiPath': '/print',
             'usbPort': '/dev/usb/lp0',

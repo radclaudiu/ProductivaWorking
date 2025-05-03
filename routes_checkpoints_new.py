@@ -430,9 +430,10 @@ def export_original_records(slug):
     end_date = request.args.get('end_date')
     employee_id = request.args.get('employee_id', type=int)
     
-    # Construir la consulta directamente con la tabla CheckPointOriginalRecord y Employee
+    # Construir la consulta con las tres tablas necesarias
     query = db.session.query(
         CheckPointOriginalRecord, 
+        CheckPointRecord,
         Employee
     ).join(
         CheckPointRecord, 
@@ -554,7 +555,7 @@ def export_original_records_pdf(records, start_date=None, end_date=None, company
         
         # Agrupar registros por empleado
         employee_records = {}
-        for original, employee in records:
+        for original, record, employee in records:
             if not original.original_check_in_time:
                 continue  # Omitir registros sin hora de entrada original
                 

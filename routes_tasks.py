@@ -1886,6 +1886,17 @@ def local_user_labels():
     
     # Obtener los productos disponibles para este local
     products = Product.query.filter_by(location_id=location.id, is_active=True).order_by(Product.name).all()
+
+
+@tasks_bp.route('/local-user/raspberry-pi-setup')
+@local_user_required
+def raspberry_pi_setup():
+    """Página con instrucciones para configurar Raspberry Pi como servidor de impresión"""
+    user_id = session['local_user_id']
+    user = LocalUser.query.get_or_404(user_id)
+    location = user.location
+    
+    return render_template('tasks/raspberry_pi_setup.html', user=user, location=location)
     
     # Filtro de búsqueda (si existe)
     search_query = request.args.get('q', '')

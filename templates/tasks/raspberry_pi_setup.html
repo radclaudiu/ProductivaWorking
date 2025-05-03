@@ -1,0 +1,357 @@
+{% extends 'tasks/portal_layout.html' %}
+
+{% block title %}Configuración de Raspberry Pi para Impresión{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .step-container {
+        padding: 20px;
+        margin-bottom: 20px;
+        border-radius: 8px;
+        background-color: #f9f7f4;
+        border-left: 5px solid #8D6E63;
+    }
+    
+    .step-number {
+        display: inline-block;
+        width: 30px;
+        height: 30px;
+        line-height: 30px;
+        text-align: center;
+        background-color: #8D6E63;
+        color: white;
+        border-radius: 50%;
+        margin-right: 10px;
+    }
+    
+    .code-block {
+        background-color: #f1f1f1;
+        border-left: 4px solid #8D6E63;
+        padding: 12px;
+        margin-bottom: 20px;
+        font-family: monospace;
+        overflow-x: auto;
+    }
+    
+    .alert-raspberry {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+    }
+    
+    .highlight {
+        background-color: #ffffcc;
+        padding: 2px 4px;
+        border-radius: 3px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-earth-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-raspberry-pi me-2"></i>Configuración de Raspberry Pi para Impresión</h5>
+                    <div>
+                        <a href="{{ url_for('tasks.local_user_labels') }}" class="btn btn-light btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i> Volver a Etiquetas
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        Esta guía le ayudará a configurar una Raspberry Pi como servidor de impresión para conectar impresoras Brother a su red.
+                    </div>
+                    
+                    <h4 class="mb-4">Guía Paso a Paso</h4>
+                    
+                    <div class="step-container">
+                        <h5><span class="step-number">1</span> Requisitos Previos</h5>
+                        <p>Antes de comenzar, asegúrese de tener:</p>
+                        <ul>
+                            <li>Una Raspberry Pi (modelo 3 o superior recomendado)</li>
+                            <li>Una tarjeta microSD (mínimo 8GB)</li>
+                            <li>Una impresora Brother compatible con USB</li>
+                            <li>Cable de alimentación para la Raspberry Pi</li>
+                            <li>Cable USB para conectar la impresora a la Raspberry Pi</li>
+                            <li>Conexión a Internet (preferiblemente por cable Ethernet)</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="step-container">
+                        <h5><span class="step-number">2</span> Instalar Raspberry Pi OS</h5>
+                        <p>Descargue e instale Raspberry Pi OS Lite (sin escritorio) en su tarjeta microSD:</p>
+                        <ol>
+                            <li>Descargue el <a href="https://www.raspberrypi.org/software/" target="_blank">Raspberry Pi Imager</a> en su ordenador</li>
+                            <li>Ejecute el programa y seleccione "Raspberry Pi OS Lite (64-bit)"</li>
+                            <li>Seleccione su tarjeta microSD como destino</li>
+                            <li>Haga clic en el icono de engranaje (configuración avanzada) y:
+                                <ul>
+                                    <li>Active "Habilitar SSH"</li>
+                                    <li>Establezca un nombre de usuario y contraseña</li>
+                                    <li>Configure su red WiFi si no usará Ethernet</li>
+                                </ul>
+                            </li>
+                            <li>Haga clic en "Escribir" y espere a que finalice el proceso</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="step-container">
+                        <h5><span class="step-number">3</span> Configuración Básica</h5>
+                        <p>Una vez que su Raspberry Pi esté funcionando:</p>
+                        <ol>
+                            <li>Inserte la tarjeta microSD en la Raspberry Pi</li>
+                            <li>Conecte la impresora Brother al puerto USB de la Raspberry Pi</li>
+                            <li>Conecte la Raspberry Pi a la red (mediante Ethernet o WiFi configurado)</li>
+                            <li>Conecte la alimentación a la Raspberry Pi</li>
+                            <li>Espere unos minutos a que el sistema arranque completamente</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="step-container">
+                        <h5><span class="step-number">4</span> Acceder a la Raspberry Pi</h5>
+                        <p>Conéctese a su Raspberry Pi mediante SSH:</p>
+                        <div class="alert alert-raspberry">
+                            <strong>Nota:</strong> Necesitará encontrar la dirección IP de su Raspberry Pi. Puede hacerlo accediendo a la configuración de su router y buscando el dispositivo, o utilizando una aplicación como "Advanced IP Scanner".
+                        </div>
+                        <p>En Windows, use PuTTY o Terminal (PowerShell):</p>
+                        <div class="code-block">
+                            ssh usuario@192.168.1.X
+                        </div>
+                        <p>Donde <code>usuario</code> es el nombre de usuario configurado y <code>192.168.1.X</code> es la dirección IP de su Raspberry Pi.</p>
+                    </div>
+                    
+                    <div class="step-container">
+                        <h5><span class="step-number">5</span> Actualizar el Sistema</h5>
+                        <p>Una vez conectado, actualice el sistema con los siguientes comandos:</p>
+                        <div class="code-block">
+                            sudo apt update<br>
+                            sudo apt upgrade -y
+                        </div>
+                    </div>
+                    
+                    <div class="step-container">
+                        <h5><span class="step-number">6</span> Instalar Dependencias</h5>
+                        <p>Instale las herramientas necesarias para el servidor de impresión:</p>
+                        <div class="code-block">
+                            sudo apt install -y python3 python3-pip python3-venv nginx cups
+                        </div>
+                    </div>
+                    
+                    <div class="step-container">
+                        <h5><span class="step-number">7</span> Verificar la Conexión de la Impresora</h5>
+                        <p>Verifique que la Raspberry Pi detecta la impresora Brother:</p>
+                        <div class="code-block">
+                            lsusb
+                        </div>
+                        <p>Debe ver una entrada que mencione su impresora Brother. También verifique el dispositivo USB:</p>
+                        <div class="code-block">
+                            ls -la /dev/usb/
+                        </div>
+                        <p>Debería ver dispositivos como <code>lp0</code>. Tome nota de la ruta completa (por ejemplo, <code>/dev/usb/lp0</code>).</p>
+                    </div>
+                    
+                    <div class="step-container">
+                        <h5><span class="step-number">8</span> Instalar y Configurar el Servidor de Impresión</h5>
+                        <p>Cree un directorio para la aplicación y configure un entorno virtual:</p>
+                        <div class="code-block">
+                            mkdir -p ~/printer_server<br>
+                            cd ~/printer_server<br>
+                            python3 -m venv env<br>
+                            source env/bin/activate
+                        </div>
+                        <p>Instale las bibliotecas necesarias:</p>
+                        <div class="code-block">
+                            pip install flask gunicorn brother_ql
+                        </div>
+                        <p>Cree el archivo de la aplicación:</p>
+                        <div class="code-block">
+                            nano ~/printer_server/app.py
+                        </div>
+                        <p>Copie el siguiente código en el editor:</p>
+                        <div class="code-block">
+import os
+from flask import Flask, request, jsonify
+import subprocess
+import logging
+from logging.handlers import RotatingFileHandler
+import tempfile
+import base64
+
+app = Flask(__name__)
+
+# Configuración de logging
+if not os.path.exists('logs'):
+    os.mkdir('logs')
+file_handler = RotatingFileHandler('logs/printer_server.log', maxBytes=10240, backupCount=10)
+file_handler.setFormatter(logging.Formatter(
+    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+))
+file_handler.setLevel(logging.INFO)
+app.logger.addHandler(file_handler)
+app.logger.setLevel(logging.INFO)
+app.logger.info('Servidor de impresión iniciado')
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({'status': 'online'})
+
+@app.route('/print', methods=['POST'])
+def print_label():
+    data = request.json
+    usb_port = data.get('usb_port', '/dev/usb/lp0')
+    printer_model = data.get('printer_model', 'QL-800')
+    label_size = data.get('label_size', '62')
+    content = data.get('content')
+    orientation = data.get('orientation', 'standard')
+    
+    if not content:
+        return jsonify({'success': False, 'message': 'No se proporcionó contenido para imprimir'})
+    
+    try:
+        # Crear archivo temporal con el contenido base64
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp:
+            temp_filename = temp.name
+            try:
+                # Decodificar la imagen base64
+                imgdata = base64.b64decode(content.split(',')[1] if ',' in content else content)
+                temp.write(imgdata)
+                temp.flush()
+                
+                app.logger.info(f'Archivo temporal creado: {temp_filename}')
+                
+                # Preparar comando de brother_ql
+                cmd = [
+                    'brother_ql',
+                    'print',
+                    '--printer', usb_port,
+                    '--model', printer_model,
+                    '--label', label_size,
+                    temp_filename
+                ]
+                
+                if orientation == 'rotated':
+                    cmd.insert(3, '--rotate')
+                
+                app.logger.info(f'Ejecutando comando: {" ".join(cmd)}')
+                process = subprocess.run(cmd, capture_output=True, text=True)
+                
+                if process.returncode == 0:
+                    app.logger.info('Impresión exitosa')
+                    return jsonify({'success': True, 'message': 'Etiqueta enviada a la impresora correctamente'})
+                else:
+                    app.logger.error(f'Error al imprimir: {process.stderr}')
+                    return jsonify({'success': False, 'message': f'Error al imprimir: {process.stderr}'})
+                
+            except Exception as e:
+                app.logger.error(f'Error al procesar la imagen: {str(e)}')
+                return jsonify({'success': False, 'message': f'Error al procesar la imagen: {str(e)}'})
+            finally:
+                # Limpiar archivo temporal
+                try:
+                    os.unlink(temp_filename)
+                except:
+                    pass
+    except Exception as e:
+        app.logger.error(f'Error en el servidor: {str(e)}')
+        return jsonify({'success': False, 'message': f'Error en el servidor: {str(e)}'})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
+                        </div>
+                        <p>Guarde el archivo (Ctrl+O, Enter, Ctrl+X)</p>
+                    </div>
+                    
+                    <div class="step-container">
+                        <h5><span class="step-number">9</span> Crear Servicio Systemd</h5>
+                        <p>Para que el servidor de impresión se inicie automáticamente:</p>
+                        <div class="code-block">
+                            sudo nano /etc/systemd/system/printer-server.service
+                        </div>
+                        <p>Copie el siguiente contenido (ajuste el nombre de usuario si es diferente a 'pi'):</p>
+                        <div class="code-block">
+[Unit]
+Description=Servidor de impresión Brother
+After=network.target
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/printer_server
+Environment="PATH=/home/pi/printer_server/env/bin"
+ExecStart=/home/pi/printer_server/env/bin/gunicorn --bind 0.0.0.0:5000 app:app
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+                        </div>
+                        <p>Guarde el archivo y habilite el servicio:</p>
+                        <div class="code-block">
+                            sudo systemctl enable printer-server.service<br>
+                            sudo systemctl start printer-server.service<br>
+                            sudo systemctl status printer-server.service
+                        </div>
+                    </div>
+                    
+                    <div class="step-container">
+                        <h5><span class="step-number">10</span> Configurar en la Aplicación Web</h5>
+                        <p>Ahora puede configurar la impresora en la aplicación web:</p>
+                        <ol>
+                            <li>Dirección IP: IP de su Raspberry Pi (ej: 192.168.1.X)</li>
+                            <li>Puerto: 5000</li>
+                            <li>Ruta API: /print</li>
+                            <li>Puerto USB: La ruta que anotó anteriormente (ej: /dev/usb/lp0)</li>
+                        </ol>
+                        <p class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong>Importante:</strong> Asegúrese de que la Raspberry Pi tiene una IP estática o una reserva DHCP en su router para que no cambie después de los reinicios.
+                        </p>
+                    </div>
+                    
+                    <div class="step-container">
+                        <h5><span class="step-number">11</span> Solución de Problemas</h5>
+                        <p>Si tiene problemas con la impresión:</p>
+                        <ul>
+                            <li>Verifique los logs del servidor:
+                                <div class="code-block">
+                                    sudo journalctl -u printer-server.service -f
+                                </div>
+                            </li>
+                            <li>Verifique que la impresora esté conectada y encendida</li>
+                            <li>Asegúrese de que la ruta del dispositivo USB es correcta</li>
+                            <li>Pruebe la conexión desde la aplicación web con el botón "Probar Conexión"</li>
+                            <li>Reinicie el servicio si es necesario:
+                                <div class="code-block">
+                                    sudo systemctl restart printer-server.service
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="step-container">
+                        <h5><span class="step-number">12</span> Mantenimiento</h5>
+                        <p>Para mantener su servidor de impresión en buen estado:</p>
+                        <ul>
+                            <li>Actualice regularmente el sistema:
+                                <div class="code-block">
+                                    sudo apt update<br>
+                                    sudo apt upgrade -y
+                                </div>
+                            </li>
+                            <li>Revise el espacio en disco periódicamente:
+                                <div class="code-block">
+                                    df -h
+                                </div>
+                            </li>
+                            <li>Realice copias de seguridad de la configuración en caso de necesitar reinstalar el servidor</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

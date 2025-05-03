@@ -704,7 +704,7 @@
                     const locationId = {{ user.location_id|default(0) }};
                     
                     // Obtener información de la impresora seleccionada
-                    const response = await fetch(`/api/printer/${printerId}`);
+                    const response = await fetch(`/tasks/api/printer/${printerId}`);
                     
                     if (!response.ok) {
                         throw new Error(`Error ${response.status}: ${response.statusText}`);

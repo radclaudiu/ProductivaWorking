@@ -2220,13 +2220,11 @@ def api_get_printers(location_id):
             'last_status_check': printer.last_status_check.isoformat() if printer.last_status_check else None
         }
         
-        # Añadir campos específicos para Raspberry Pi si existen
-        if hasattr(printer, 'printer_type'):
-            printer_data['printer_type'] = printer.printer_type.value
-        else:
-            printer_data['printer_type'] = 'direct_network'  # Valor por defecto para compatibilidad
-            
-        if hasattr(printer, 'usb_port'):
+        # Añadir campos específicos para cada tipo de impresora
+        printer_data['printer_type'] = printer.printer_type.value
+        
+        # Añadir el puerto USB si es una impresora Raspberry Pi
+        if printer.printer_type.value == 'raspberry_pi':
             printer_data['usb_port'] = printer.usb_port
         
         printer_list.append(printer_data)
@@ -2270,13 +2268,11 @@ def api_get_printer(printer_id):
         'location_id': printer.location_id
     }
     
-    # Añadir campos específicos para Raspberry Pi si existen
-    if hasattr(printer, 'printer_type'):
-        printer_data['printer_type'] = printer.printer_type.value
-    else:
-        printer_data['printer_type'] = 'direct_network'  # Valor por defecto para compatibilidad
-        
-    if hasattr(printer, 'usb_port'):
+    # Añadir campos específicos para cada tipo de impresora
+    printer_data['printer_type'] = printer.printer_type.value
+    
+    # Añadir el puerto USB si es una impresora Raspberry Pi
+    if printer.printer_type.value == 'raspberry_pi':
         printer_data['usb_port'] = printer.usb_port
     
     return jsonify({

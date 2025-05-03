@@ -593,21 +593,196 @@
             };
             
             // Configurar botón para impresión directa con Bluetooth
-            const printBtn = document.getElementById('bluetooth-print-btn');
-            if (printBtn) {
+            const bluetoothPrintBtn = document.getElementById('bluetooth-print-btn');
+            if (bluetoothPrintBtn) {
                 // Limpiar cualquier evento existente
-                const newPrintBtn = printBtn.cloneNode(true);
-                printBtn.parentNode.replaceChild(newPrintBtn, printBtn);
+                const newBluetoothBtn = bluetoothPrintBtn.cloneNode(true);
+                bluetoothPrintBtn.parentNode.replaceChild(newBluetoothBtn, bluetoothPrintBtn);
                 
-                // Configurar evento para impresión directa
-                newPrintBtn.addEventListener('click', function(e) {
+                // Configurar evento para impresión directa con Bluetooth
+                newBluetoothBtn.addEventListener('click', function(e) {
                     e.preventDefault();
+                    // Ocultar selector de impresoras Raspberry
+                    document.getElementById('raspberry-printers-container').style.display = 'none';
+                    // Mostrar mensaje
+                    showMessage('Conectando con impresora Bluetooth...');
                     printWithBluetooth();
                 });
             }
             
+            // Configurar botón para impresión con Raspberry Pi
+            const raspberryPrintBtn = document.getElementById('raspberry-print-btn');
+            const raspberryContainer = document.getElementById('raspberry-printers-container');
+            const printerSelect = document.getElementById('raspberry-printer-select');
+            
+            if (raspberryPrintBtn && raspberryContainer && printerSelect) {
+                // Limpiar cualquier evento existente
+                const newRaspberryBtn = raspberryPrintBtn.cloneNode(true);
+                raspberryPrintBtn.parentNode.replaceChild(newRaspberryBtn, raspberryPrintBtn);
+                
+                // Configurar evento para mostrar las opciones de Raspberry Pi
+                newRaspberryBtn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    // Mostrar u ocultar el contenedor de impresoras Raspberry Pi
+                    if (raspberryContainer.style.display === 'none' || !raspberryContainer.style.display) {
+                        // Cargar las impresoras disponibles
+                        showMessage('Cargando impresoras disponibles...');
+                        // Cargar impresoras de tipo Raspberry Pi desde el servidor
+                        loadRaspberryPrinters();
+                        raspberryContainer.style.display = 'block';
+                    } else {
+                        raspberryContainer.style.display = 'none';
+                    }
+                });
+                
+                // Configurar evento para cuando se selecciona una impresora
+                printerSelect.addEventListener('change', function() {
+                    const selectedPrinter = this.value;
+                    if (selectedPrinter) {
+                        printWithRaspberryPi(parseInt(selectedPrinter));
+                    }
+                });
+            }
+            
+            // Función para cargar las impresoras Raspberry Pi disponibles
+            const loadRaspberryPrinters = async () => {
+                try {
+                    // Obtener el ID de la ubicación desde la URL
+                    const locationId = {{ user.location_id|default(0) }};
+                    
+                    if (!locationId) {
+                        throw new Error('No se pudo determinar la ubicación');
+                    }
+                    
+                    // Hacer petición al servidor para obtener las impresoras de tipo Raspberry Pi
+                    const response = await fetch(`/api/printers/${locationId}?type=raspberry_pi`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Error ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Filtrar solo impresoras Raspberry Pi
+                    const raspberryPrinters = data.printers.filter(p => p.printer_type === 'raspberry_pi');
+                    
+                    // Limpiar selector
+                    const select = document.getElementById('raspberry-printer-select');
+                    select.innerHTML = '<option value="">Seleccione una impresora...</option>';
+                    
+                    // Agregar las impresoras al selector
+                    if (raspberryPrinters.length > 0) {
+                        raspberryPrinters.forEach(printer => {
+                            const option = document.createElement('option');
+                            option.value = printer.id;
+                            option.textContent = printer.name;
+                            select.appendChild(option);
+                        });
+                        showMessage(`${raspberryPrinters.length} impresora(s) encontrada(s)`);
+                    } else {
+                        showMessage('No se encontraron impresoras Raspberry Pi configuradas', true);
+                    }
+                    
+                    return raspberryPrinters;
+                } catch (error) {
+                    console.error('Error cargando impresoras:', error);
+                    showMessage(`Error: ${error.message}`, true);
+                    return [];
+                }
+            };
+            
+            // Función para imprimir usando una Raspberry Pi
+            const printWithRaspberryPi = async (printerId) => {
+                try {
+                    showMessage('Conectando con servidor de impresión Raspberry Pi...');
+                    
+                    // Obtener datos para la impresión
+                    const printData = getPrintData();
+                    
+                    // Obtener la ubicación
+                    const locationId = {{ user.location_id|default(0) }};
+                    
+                    // Obtener información de la impresora seleccionada
+                    const response = await fetch(`/api/printer/${printerId}`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`Error ${response.status}: ${response.statusText}`);
+                    }
+                    
+                    const printerData = await response.json();
+                    const printer = printerData.printer;
+                    
+                    if (!printer) {
+                        throw new Error('No se encontró la impresora seleccionada');
+                    }
+                    
+                    // Verificar que sea una impresora Raspberry Pi
+                    if (printer.printer_type !== 'raspberry_pi') {
+                        throw new Error('La impresora seleccionada no es de tipo Raspberry Pi');
+                    }
+                    
+                    // Construir la URL del servidor de impresión
+                    const url = `http://${printer.ip_address}:${printer.port || 5000}${printer.api_path || '/print'}`;
+                    
+                    // Construir los datos para enviar al servidor de impresión
+                    const requestData = {
+                        label_data: {
+                            productName: printData.productName,
+                            conservationType: printData.conservationType,
+                            preparedBy: printData.preparedBy,
+                            startDate: printData.startDate,
+                            expiryDate: printData.expiryDate,
+                            secondaryExpiryDate: printData.secondaryExpiryDate,
+                        },
+                        printer_settings: {
+                            usb_port: printer.usb_port || '/dev/usb/lp0',
+                            model: printer.model || 'generic',
+                            width: 35,  // 35mm de ancho
+                            height: 40,  // 40mm de alto
+                            quantity: printData.quantity || 1
+                        }
+                    };
+                    
+                    // Configurar opciones de la petición
+                    const requestOptions = {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestData)
+                    };
+                    
+                    // Si la impresora requiere autenticación, agregar las credenciales
+                    if (printer.requires_auth && printer.username) {
+                        requestOptions.headers['Authorization'] = `Basic ${btoa(`${printer.username}:${printer.password || ''}`)}`;
+                    }
+                    
+                    // Enviar la petición
+                    showMessage(`Enviando etiqueta a ${printer.name}...`);
+                    const printResponse = await fetch(url, requestOptions);
+                    
+                    if (!printResponse.ok) {
+                        throw new Error(`Error ${printResponse.status}: ${printResponse.statusText}`);
+                    }
+                    
+                    const result = await printResponse.json();
+                    
+                    if (result.success) {
+                        showMessage(`¡Impresión completada! ${printData.quantity} etiqueta(s) enviada(s) a la impresora`);
+                        return true;
+                    } else {
+                        throw new Error(result.message || 'Error desconocido en el servidor de impresión');
+                    }
+                } catch (error) {
+                    console.error('Error de impresión:', error);
+                    showMessage(`Error: ${error.message}`, true);
+                    return false;
+                }
+            };
+            
             // Mostrar mensaje inicial
-            showMessage("Toca el botón para imprimir la etiqueta con Bluetooth");
+            showMessage("Selecciona el método de impresión que desees utilizar");
         });
     </script>
 </body>

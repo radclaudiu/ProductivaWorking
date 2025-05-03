@@ -49,9 +49,9 @@ def run_migration():
         # Añadir columna usb_port si no existe
         if 'usb_port' not in column_names:
             logger.info("Añadiendo columna usb_port a la tabla network_printers")
-            session.execute(
-                'ALTER TABLE network_printers ADD COLUMN usb_port VARCHAR(100)'
-            )
+            session.execute(sa.text(
+                "ALTER TABLE network_printers ADD COLUMN usb_port VARCHAR(100)"
+            ))
             changes.append("Añadida columna usb_port")
 
         # Comprobar si se realizaron cambios

@@ -14,79 +14,92 @@
                 <div class="row mb-3">
                     <div class="col-12">
                         <div class="alert alert-info">
-                            <i class="bi bi-info-circle-fill me-2"></i>Configure su impresora Brother conectada a la red WiFi para imprimir etiquetas.
+                            <i class="bi bi-info-circle-fill me-2"></i>Configure su impresora Brother conectada a Raspberry Pi para imprimir etiquetas.
                         </div>
                     </div>
                 </div>
                 
                 <!-- Formulario de Configuración -->
                 <form id="printerSettingsForm">
-                    <div class="mb-3">
-                        <label for="printerName" class="form-label">Nombre de la impresora</label>
-                        <input type="text" class="form-control" id="printerName" name="name" placeholder="Ej: Impresora Brother QL-820NWB" required>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-8 mb-3">
-                            <label for="printerIp" class="form-label">Dirección IP</label>
-                            <input type="text" class="form-control" id="printerIp" name="ip_address" placeholder="Ej: 192.168.1.100" required 
-                                   pattern="^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$">
-                            <div class="form-text">Dirección IP de la impresora en su red local</div>
+                    <!-- Información general de la impresora -->
+                    <div class="mb-4">
+                        <h6 class="border-bottom pb-2 mb-3">Información General</h6>
+                        <div class="mb-3">
+                            <label for="printerName" class="form-label">Nombre de la impresora</label>
+                            <input type="text" class="form-control" id="printerName" name="name" placeholder="Ej: Impresora Brother QL-820NWB" required>
                         </div>
-                        <div class="col-md-4 mb-3">
-                            <label for="printerPort" class="form-label">Puerto</label>
-                            <input type="number" class="form-control" id="printerPort" name="port" placeholder="80" min="1" max="65535" value="80" required>
+                        
+                        <div class="mb-3">
+                            <label for="printerModel" class="form-label">Modelo de impresora</label>
+                            <input type="text" class="form-control" id="printerModel" name="model" placeholder="Ej: QL-820NWB">
+                            <div class="form-text">Opcional: Ayuda a identificar el tipo de impresora</div>
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label for="printerModel" class="form-label">Modelo de impresora</label>
-                        <input type="text" class="form-control" id="printerModel" name="model" placeholder="Ej: QL-820NWB">
-                        <div class="form-text">Opcional: Ayuda a identificar el tipo de impresora</div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="printerType" class="form-label">Tipo de conexión</label>
-                        <select class="form-select" id="printerType" name="printer_type">
-                            <option value="direct_network" selected>Directa (Brother)</option>
-                            <option value="raspberry_pi">Raspberry Pi</option>
-                        </select>
-                        <div class="form-text">Seleccione cómo se conecta la impresora a la red</div>
-                    </div>
+                    <!-- Tipo de conexión -->
+                    <input type="hidden" id="printerType" name="printer_type" value="raspberry_pi">
 
-                    <div class="mb-3">
-                        <label for="apiPath" class="form-label">Ruta de la API</label>
-                        <input type="text" class="form-control" id="apiPath" name="api_path" value="/brother_d/printer/print">
-                        <div class="form-text">Normalmente no es necesario cambiar este valor</div>
-                    </div>
-                    
-                    <div class="mb-3" id="usbPortContainer" style="display: none;">
-                        <label for="usbPort" class="form-label">Puerto USB (Raspberry Pi)</label>
-                        <input type="text" class="form-control" id="usbPort" name="usb_port" value="/dev/usb/lp0">
-                        <div class="form-text">Ruta al dispositivo USB en Raspberry Pi (ej: /dev/usb/lp0)</div>
-                    </div>
-                    
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="requiresAuth" name="requires_auth">
-                        <label class="form-check-label" for="requiresAuth">La impresora requiere autenticación</label>
-                    </div>
-                    
-                    <div id="authFields" style="display: none;">
+                    <!-- Configuración de red común -->
+                    <div class="mb-4">
+                        <h6 class="border-bottom pb-2 mb-3">Configuración de Red</h6>
                         <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="printerUsername" class="form-label">Usuario</label>
-                                <input type="text" class="form-control" id="printerUsername" name="username">
+                            <div class="col-md-8 mb-3">
+                                <label for="printerIp" class="form-label">Dirección IP</label>
+                                <input type="text" class="form-control" id="printerIp" name="ip_address" placeholder="Ej: 192.168.1.100" required 
+                                       pattern="^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$">
+                                <div class="form-text" id="ipAddressHelp">Dirección IP del Raspberry Pi donde está conectada la impresora</div>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="printerPassword" class="form-label">Contraseña</label>
-                                <input type="password" class="form-control" id="printerPassword" name="password">
+                            <div class="col-md-4 mb-3">
+                                <label for="printerPort" class="form-label">Puerto</label>
+                                <input type="number" class="form-control" id="printerPort" name="port" placeholder="80" min="1" max="65535" value="80" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="apiPath" class="form-label">Ruta de la API</label>
+                            <input type="text" class="form-control" id="apiPath" name="api_path" value="/brother_d/printer/print">
+                            <div class="form-text" id="apiPathHelp">Ruta API en el Raspberry Pi para enviar trabajos de impresión</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Configuración específica de Raspberry Pi -->
+                    <div class="mb-4" id="usbPortContainer">
+                        <h6 class="border-bottom pb-2 mb-3">Configuración Raspberry Pi</h6>
+                        <div class="mb-3">
+                            <label for="usbPort" class="form-label">Puerto USB</label>
+                            <input type="text" class="form-control" id="usbPort" name="usb_port" value="/dev/usb/lp0">
+                            <div class="form-text">Ruta al dispositivo USB en Raspberry Pi (ej: /dev/usb/lp0)</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Autenticación -->
+                    <div class="mb-4">
+                        <h6 class="border-bottom pb-2 mb-3">Seguridad</h6>
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="requiresAuth" name="requires_auth">
+                            <label class="form-check-label" for="requiresAuth">La impresora requiere autenticación</label>
+                        </div>
+                        
+                        <div id="authFields" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="printerUsername" class="form-label">Usuario</label>
+                                    <input type="text" class="form-control" id="printerUsername" name="username">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="printerPassword" class="form-label">Contraseña</label>
+                                    <input type="password" class="form-control" id="printerPassword" name="password">
+                                </div>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="mb-3 form-check">
-                        <input type="checkbox" class="form-check-input" id="isDefault" name="is_default" checked>
-                        <label class="form-check-label" for="isDefault">Establecer como impresora predeterminada</label>
+                    <!-- Opciones adicionales -->
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input" id="isDefault" name="is_default" checked>
+                            <label class="form-check-label" for="isDefault">Establecer como impresora predeterminada</label>
+                        </div>
                     </div>
                 </form>
                 
@@ -363,47 +376,23 @@
             });
         }
         
-        // Gestión del tipo de impresora
-        const printerTypeSelect = document.getElementById('printerType');
-        const usbPortContainer = document.getElementById('usbPortContainer');
+        // Configuración predeterminada para impresora Raspberry Pi
         const apiPathField = document.getElementById('apiPath');
         const portField = document.getElementById('printerPort');
         
-        // Función para actualizar los campos según el tipo de impresora
-        function updatePrinterFields() {
-            if (!printerTypeSelect || !usbPortContainer) return;
-            
-            // Determinar si es tipo Raspberry Pi
-            const isRaspberryPi = printerTypeSelect.value === 'raspberry_pi';
-            
-            // Mostrar/ocultar el campo de puerto USB
-            usbPortContainer.style.display = isRaspberryPi ? 'block' : 'none';
-            
-            // Actualizar valores por defecto según el tipo
-            if (isRaspberryPi) {
-                // Defaults para Raspberry Pi
-                if (apiPathField && (!apiPathField.value || apiPathField.value === '/brother_d/printer/print')) {
-                    apiPathField.value = '/print';
-                }
-                if (portField && (!portField.value || portField.value == '80')) {
-                    portField.value = '5000';
-                }
-            } else {
-                // Defaults para Brother directo
-                if (apiPathField && (!apiPathField.value || apiPathField.value === '/print')) {
-                    apiPathField.value = '/brother_d/printer/print';
-                }
-                if (portField && (!portField.value || portField.value == '5000')) {
-                    portField.value = '80';
-                }
+        // Establecer valores predeterminados para Raspberry Pi
+        function setDefaultRaspberryValues() {
+            // Defaults para Raspberry Pi
+            if (apiPathField && (!apiPathField.value || apiPathField.value === '/brother_d/printer/print')) {
+                apiPathField.value = '/print';
+            }
+            if (portField && (!portField.value || portField.value == '80')) {
+                portField.value = '5000';
             }
         }
         
-        // Inicializar y configurar el evento de cambio
-        if (printerTypeSelect) {
-            updatePrinterFields(); // Estado inicial
-            printerTypeSelect.addEventListener('change', updatePrinterFields);
-        }
+        // Establecer valores predeterminados al cargar
+        setDefaultRaspberryValues();
         
         // Cargar configuración de impresora al abrir la página
         loadPrinterConfig();
@@ -626,8 +615,7 @@
             'printerIp': '',
             'printerPort': 80,
             'printerModel': '',
-            'printerType': 'direct_network',
-            'apiPath': '/brother_d/printer/print',
+            'apiPath': '/print',
             'usbPort': '/dev/usb/lp0',
             'requiresAuth': false,
             'printerUsername': '',
@@ -651,9 +639,9 @@
         const printerData = {
             name: elements.printerName,
             ip_address: elements.printerIp,
-            port: parseInt(elements.printerPort) || 80,
+            port: parseInt(elements.printerPort) || 5000,
             model: elements.printerModel,
-            printer_type: elements.printerType,
+            printer_type: 'raspberry_pi', // Siempre usar Raspberry Pi
             api_path: elements.apiPath,
             usb_port: elements.usbPort,
             requires_auth: elements.requiresAuth,
@@ -747,7 +735,7 @@
                     <table class="table table-sm">
                         <tr>
                             <th style="width: 30%">Tipo:</th>
-                            <td>${printer.printer_type === 'raspberry_pi' ? 'Raspberry Pi' : 'Conexión directa'}</td>
+                            <td>Raspberry Pi</td>
                         </tr>
                         <tr>
                             <th style="width: 30%">Dirección IP:</th>
@@ -757,11 +745,10 @@
                             <th>Modelo:</th>
                             <td>${printer.model || 'No especificado'}</td>
                         </tr>
-                        ${printer.printer_type === 'raspberry_pi' ? `
                         <tr>
                             <th>Puerto USB:</th>
                             <td>${printer.usb_port || '/dev/usb/lp0'}</td>
-                        </tr>` : ''}
+                        </tr>
                         <tr>
                             <th>Estado:</th>
                             <td><span class="badge bg-${statusClass}">${statusText}</span></td>

@@ -151,6 +151,7 @@ class ContractType(enum.Enum):
     OBRA = "OBRA"
 
 class EmployeeStatus(enum.Enum):
+    ACTIVO = "activo"
     BAJA_MEDICA = "baja_medica"
     EXCEDENCIA = "excedencia"
     VACACIONES = "vacaciones"
@@ -188,7 +189,7 @@ class Employee(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     is_active = db.Column(db.Boolean, default=True)
-    status = db.Column(Enum(EmployeeStatus))
+    status = db.Column(Enum(EmployeeStatus), default=EmployeeStatus.ACTIVO)
     status_start_date = db.Column(db.String(20))  # Cambiado de Date a String para mayor flexibilidad
     status_end_date = db.Column(db.String(20))    # Cambiado de Date a String para mayor flexibilidad
     status_notes = db.Column(db.Text)
@@ -227,7 +228,7 @@ class Employee(db.Model):
             'end_date': self.end_date if self.end_date else None,
             'is_active': self.is_active,
             'is_on_shift': self.is_on_shift,  # Agregar estado de jornada
-            'status': self.status.value if self.status else None,
+            'status': self.status.value if self.status else 'activo',
             'status_start_date': self.status_start_date if self.status_start_date else None,
             'status_end_date': self.status_end_date if self.status_end_date else None,
             'company_id': self.company_id,

@@ -328,7 +328,7 @@ BEGIN
     END IF;
     
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'employee_status') THEN
-        CREATE TYPE employee_status AS ENUM ('baja_medica', 'excedencia', 'vacaciones', 'inactivo');
+        CREATE TYPE employee_status AS ENUM ('activo', 'baja_medica', 'excedencia', 'vacaciones', 'inactivo');
     END IF;
     
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'week_day') THEN
@@ -418,7 +418,7 @@ CREATE TABLE IF NOT EXISTS employees (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_active BOOLEAN DEFAULT TRUE,
-    status VARCHAR(20),
+    status VARCHAR(20) DEFAULT 'activo',
     company_id INTEGER REFERENCES companies(id) NOT NULL,
     user_id INTEGER REFERENCES users(id) UNIQUE,
     is_on_shift BOOLEAN DEFAULT FALSE,

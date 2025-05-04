@@ -9,6 +9,11 @@
                 <a href="{{ url_for('main.dashboard') }}" class="btn btn-sm btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Volver al Dashboard Principal
                 </a>
+                {% if current_user.is_admin() %}
+                <a href="{{ url_for('tasks.run_scheduler_manually') }}" class="btn btn-sm btn-primary">
+                    <i class="bi bi-clock-history"></i> Ejecutar Programador de Tareas
+                </a>
+                {% endif %}
             </div>
         </div>
     </div>

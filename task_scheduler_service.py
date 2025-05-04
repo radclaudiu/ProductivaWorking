@@ -380,9 +380,12 @@ def service_loop():
             time.sleep(sleep_time)
             
             # Ejecutar el programador de tareas
-            with app.app_context():
-                logger.info("Ejecutando programador de tareas programado")
+            logger.info("Ejecutando programador de tareas programado")
+            try:
                 run_task_scheduler()
+            except Exception as e:
+                logger.error(f"Error al ejecutar programador de tareas programado: {str(e)}")
+                print(f"Error en programador programado: {str(e)}")
         
         except Exception as e:
             logger.error(f"Error en el bucle del servicio: {str(e)}")
@@ -429,13 +432,25 @@ def stop_service():
 if __name__ == "__main__":
     # Este bloque se ejecuta cuando se inicia el script directamente
     import sys
+    from flask import Flask
+    from flask_sqlalchemy import SQLAlchemy
+    
+    # Crear una aplicación Flask mínima para pruebas en modo standalone
+    app = Flask(__name__)
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get("DATABASE_URL")
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_recycle": 300,
+        "pool_pre_ping": True,
+    }
     
     if len(sys.argv) > 1 and sys.argv[1] == "--run-once":
         # Ejecutar una sola vez y salir
         print("Ejecutando programador de tareas una sola vez...")
-        with app.app_context():
+        try:
             run_task_scheduler()
-        print("Programador de tareas completado.")
+            print("Programador de tareas completado.")
+        except Exception as e:
+            print(f"Error al ejecutar programador: {str(e)}")
     else:
         # Iniciar como servicio
         print("Iniciando servicio de programación de tareas...")

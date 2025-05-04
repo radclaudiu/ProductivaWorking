@@ -138,12 +138,25 @@
                         <h5><span class="step-number">6</span> Instalar Dependencias</h5>
                         <p>Instale las herramientas necesarias para el servidor de impresión:</p>
                         <div class="code-block">
-                            sudo apt install -y python3 python3-pip python3-venv nginx cups
+                            sudo apt install -y python3 python3-pip python3-venv nginx cups libusb-1.0-0-dev
                         </div>
                     </div>
                     
                     <div class="step-container">
-                        <h5><span class="step-number">7</span> Verificar la Conexión de la Impresora</h5>
+                        <h5><span class="step-number">7</span> Instalar Software de Brother</h5>
+                        <p>Instale la biblioteca <code>brother_ql</code> que permite usar las impresoras de etiquetas Brother:</p>
+                        <div class="code-block">
+                            sudo pip3 install brother_ql
+                        </div>
+                        <p class="mb-3">Verifique que la instalación fue correcta:</p>
+                        <div class="code-block">
+                            brother_ql --version
+                        </div>
+                        <p class="alert alert-info">Esta biblioteca soporta varios modelos de impresoras Brother, incluyendo: QL-500, QL-550, QL-560, QL-570, QL-580N, QL-650TD, QL-700, QL-710W, QL-720NW, QL-800, QL-810W, QL-820NWB, entre otros.</p>
+                    </div>
+                    
+                    <div class="step-container">
+                        <h5><span class="step-number">8</span> Verificar la Conexión de la Impresora</h5>
                         <p>Verifique que la Raspberry Pi detecta la impresora Brother:</p>
                         <div class="code-block">
                             lsusb
@@ -153,10 +166,15 @@
                             ls -la /dev/usb/
                         </div>
                         <p>Debería ver dispositivos como <code>lp0</code>. Tome nota de la ruta completa (por ejemplo, <code>/dev/usb/lp0</code>).</p>
+                        <p class="mt-3">Puede probar la impresora directamente con el comando:</p>
+                        <div class="code-block">
+                            brother_ql info usb://
+                        </div>
+                        <p>Si la impresora es detectada correctamente, verá información sobre su modelo y estado.</p>
                     </div>
                     
                     <div class="step-container">
-                        <h5><span class="step-number">8</span> Instalar y Configurar el Servidor de Impresión</h5>
+                        <h5><span class="step-number">9</span> Instalar y Configurar el Servidor de Impresión</h5>
                         <p>Cree un directorio para la aplicación y configure un entorno virtual:</p>
                         <div class="code-block">
                             mkdir -p ~/printer_server<br>
@@ -267,7 +285,7 @@ if __name__ == '__main__':
                     </div>
                     
                     <div class="step-container">
-                        <h5><span class="step-number">9</span> Crear Servicio Systemd</h5>
+                        <h5><span class="step-number">10</span> Crear Servicio Systemd</h5>
                         <p>Para que el servidor de impresión se inicie automáticamente:</p>
                         <div class="code-block">
                             sudo nano /etc/systemd/system/printer-server.service
@@ -297,7 +315,7 @@ WantedBy=multi-user.target
                     </div>
                     
                     <div class="step-container">
-                        <h5><span class="step-number">10</span> Configurar en la Aplicación Web</h5>
+                        <h5><span class="step-number">11</span> Configurar en la Aplicación Web</h5>
                         <p>Ahora puede configurar la impresora en la aplicación web:</p>
                         <ol>
                             <li>Dirección IP: IP de su Raspberry Pi (ej: 192.168.1.X)</li>
@@ -312,7 +330,7 @@ WantedBy=multi-user.target
                     </div>
                     
                     <div class="step-container">
-                        <h5><span class="step-number">11</span> Solución de Problemas</h5>
+                        <h5><span class="step-number">12</span> Solución de Problemas</h5>
                         <p>Si tiene problemas con la impresión:</p>
                         <ul>
                             <li>Verifique los logs del servidor:
@@ -332,7 +350,7 @@ WantedBy=multi-user.target
                     </div>
 
                     <div class="step-container">
-                        <h5><span class="step-number">12</span> Mantenimiento</h5>
+                        <h5><span class="step-number">13</span> Mantenimiento</h5>
                         <p>Para mantener su servidor de impresión en buen estado:</p>
                         <ul>
                             <li>Actualice regularmente el sistema:

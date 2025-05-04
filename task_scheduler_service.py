@@ -58,12 +58,20 @@ def create_task_instance(task, scheduled_date):
         return True
     return False
 
-def process_tasks_for_location(location):
-    """Procesa todas las tareas de una ubicación"""
+def process_tasks_for_location(location, target_date=None):
+    """Procesa todas las tareas de una ubicación para una fecha específica
+    
+    Args:
+        location: Objeto Location a procesar
+        target_date: Fecha objetivo para la que generar instancias (por defecto, hoy)
+    """
     location_id = location.id
     location_name = location.name
-    today = date.today()
-    logger.info(f"Procesando ubicación: {location_name} (ID: {location_id})")
+    
+    # Si no se especifica fecha, usamos la fecha actual
+    process_date = target_date if target_date else date.today()
+    
+    logger.info(f"Procesando ubicación: {location_name} (ID: {location_id}) para fecha {process_date}")
     
     # Contador para cada tipo de tarea
     counters = {
@@ -77,21 +85,21 @@ def process_tasks_for_location(location):
     try:
         # Procesar tareas diarias
         daily_tasks = Task.query.filter_by(frequency=TaskFrequency.DIARIA, location_id=location_id).filter(
-            (Task.end_date.is_(None)) | (Task.end_date >= today)
-        ).filter(Task.start_date <= today).all()
+            (Task.end_date.is_(None)) | (Task.end_date >= process_date)
+        ).filter(Task.start_date <= process_date).all()
         
         for task in daily_tasks:
-            if create_task_instance(task, today):
+            if create_task_instance(task, process_date):
                 counters['daily'] += 1
         
         # Procesar tareas semanales
         weekly_tasks = Task.query.filter_by(frequency=TaskFrequency.SEMANAL, location_id=location_id).filter(
-            (Task.end_date.is_(None)) | (Task.end_date >= today)
-        ).filter(Task.start_date <= today).all()
+            (Task.end_date.is_(None)) | (Task.end_date >= process_date)
+        ).filter(Task.start_date <= process_date).all()
         
         for task in weekly_tasks:
             # Calcular el lunes y domingo de la semana actual
-            monday_of_week = today - timedelta(days=today.weekday())
+            monday_of_week = process_date - timedelta(days=process_date.weekday())
             sunday_of_week = monday_of_week + timedelta(days=6)
             
             # Verificar si ya existe una instancia activa para esta semana
@@ -119,25 +127,25 @@ def process_tasks_for_location(location):
                     if last_monday < monday_of_week:
                         should_create_instance = True
                 
-                if should_create_instance and create_task_instance(task, today):
+                if should_create_instance and create_task_instance(task, process_date):
                     counters['weekly'] += 1
         
         # Procesar tareas quincenales
         biweekly_tasks = Task.query.filter_by(frequency=TaskFrequency.QUINCENAL, location_id=location_id).filter(
-            (Task.end_date.is_(None)) | (Task.end_date >= today)
-        ).filter(Task.start_date <= today).all()
+            (Task.end_date.is_(None)) | (Task.end_date >= process_date)
+        ).filter(Task.start_date <= process_date).all()
         
         for task in biweekly_tasks:
             # Determinar la quincena actual
-            if today.day < 16:
+            if process_date.day < 16:
                 # Primera quincena (1-15)
-                fortnight_start = date(today.year, today.month, 1)
-                fortnight_end = date(today.year, today.month, 15)
+                fortnight_start = date(process_date.year, process_date.month, 1)
+                fortnight_end = date(process_date.year, process_date.month, 15)
             else:
                 # Segunda quincena (16-fin)
-                fortnight_start = date(today.year, today.month, 16)
-                last_day = monthrange(today.year, today.month)[1]
-                fortnight_end = date(today.year, today.month, last_day)
+                fortnight_start = date(process_date.year, process_date.month, 16)
+                last_day = monthrange(process_date.year, process_date.month)[1]
+                fortnight_end = date(process_date.year, process_date.month, last_day)
             
             # Verificar si ya existe una instancia activa para esta quincena
             existing_this_fortnight = TaskInstance.query.filter_by(task_id=task.id).filter(
@@ -251,7 +259,12 @@ def process_tasks_for_location(location):
         return counters
 
 def run_task_scheduler():
-    """Función principal que ejecuta el programador de tareas"""
+    """Función principal que ejecuta el programador de tareas
+    
+    Esta función genera instancias de tareas para:
+    1. El día actual
+    2. Los próximos 7 días
+    """
     start_time = datetime.now()
     logger.info(f"Iniciando programador de tareas: {start_time}")
     
@@ -263,7 +276,8 @@ def run_task_scheduler():
         'monthly': 0,
         'custom': 0,
         'locations_processed': 0,
-        'locations_with_errors': 0
+        'locations_with_errors': 0,
+        'future_dates_processed': 0
     }
     
     try:
@@ -271,14 +285,19 @@ def run_task_scheduler():
         locations = Location.query.filter_by(is_active=True).all()
         logger.info(f"Se encontraron {len(locations)} ubicaciones activas")
         
-        # Procesar cada ubicación
+        # Fechas para las que generar tareas
+        today = date.today()
+        future_dates = [today + timedelta(days=i) for i in range(1, 8)]  # Próximos 7 días
+        
+        # Procesar cada ubicación para el día actual
+        logger.info(f"Procesando tareas para el día actual: {today}")
         for location in locations:
             try:
                 # Añadir una pequeña espera aleatoria para evitar concurrencia
                 time.sleep(random.uniform(0.1, 0.5))
                 
-                # Procesar tareas para esta ubicación
-                counters = process_tasks_for_location(location)
+                # Procesar tareas para esta ubicación (día actual)
+                counters = process_tasks_for_location(location, today)
                 
                 # Actualizar contadores globales
                 total_counters['daily'] += counters['daily']
@@ -292,6 +311,27 @@ def run_task_scheduler():
                 logger.error(f"Error procesando ubicación {location.name} (ID: {location.id}): {str(e)}")
                 total_counters['locations_with_errors'] += 1
                 continue
+        
+        # Procesar cada ubicación para los próximos 7 días
+        logger.info(f"Procesando tareas para los próximos 7 días ({future_dates[0]} - {future_dates[-1]})")
+        for future_date in future_dates:
+            logger.info(f"Procesando tareas para fecha futura: {future_date}")
+            total_counters['future_dates_processed'] += 1
+            
+            for location in locations:
+                try:
+                    # Añadir una pequeña espera aleatoria para evitar concurrencia
+                    time.sleep(random.uniform(0.1, 0.5))
+                    
+                    # Procesar tareas para esta ubicación (fecha futura)
+                    future_counters = process_tasks_for_location(location, future_date)
+                    
+                    # Actualizar contadores globales (no sumamos al total principal)
+                    logger.info(f"Creadas {sum(future_counters.values())} instancias para fecha {future_date}")
+                    
+                except Exception as e:
+                    logger.error(f"Error procesando ubicación {location.name} para fecha futura {future_date}: {str(e)}")
+                    continue
         
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()

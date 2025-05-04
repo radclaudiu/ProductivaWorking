@@ -1379,8 +1379,8 @@ def local_user_tasks(date_str=None, group_id=None):
     prev_date = selected_date - timedelta(days=1)
     next_date = selected_date + timedelta(days=1)
     
-    # Determinar los nombres de los días en español
-    days_map = {
+    # Determinar los nombres de los días en español (abreviado para mostrar)
+    days_map_short = {
         0: 'LUN',
         1: 'MAR',
         2: 'MIÉ',
@@ -1388,6 +1388,17 @@ def local_user_tasks(date_str=None, group_id=None):
         4: 'VIE', 
         5: 'SÁB',
         6: 'DOM'
+    }
+    
+    # Mapeo de día de la semana a valor de enum WeekDay
+    days_map_enum = {
+        0: WeekDay.LUNES,
+        1: WeekDay.MARTES,
+        2: WeekDay.MIERCOLES,
+        3: WeekDay.JUEVES,
+        4: WeekDay.VIERNES,
+        5: WeekDay.SABADO,
+        6: WeekDay.DOMINGO
     }
     
     # Configurar el carrusel de fechas, preservando el filtro de grupo si existe
@@ -1398,21 +1409,21 @@ def local_user_tasks(date_str=None, group_id=None):
     date_carousel = [
         {
             'date': prev_date,
-            'day_name': days_map[prev_date.weekday()],
+            'day_name': days_map_short[prev_date.weekday()],
             'day': prev_date.day,
             'url': url_for('tasks.local_user_tasks', date_str=prev_date.strftime('%Y-%m-%d'), **base_url_params),
             'active': False
         },
         {
             'date': selected_date,
-            'day_name': days_map[selected_date.weekday()],
+            'day_name': days_map_short[selected_date.weekday()],
             'day': selected_date.day,
             'url': url_for('tasks.local_user_tasks', date_str=selected_date.strftime('%Y-%m-%d'), **base_url_params),
             'active': True
         },
         {
             'date': next_date, 
-            'day_name': days_map[next_date.weekday()],
+            'day_name': days_map_short[next_date.weekday()],
             'day': next_date.day,
             'url': url_for('tasks.local_user_tasks', date_str=next_date.strftime('%Y-%m-%d'), **base_url_params),
             'active': False
@@ -1497,7 +1508,7 @@ def local_user_tasks(date_str=None, group_id=None):
             if task.current_week_completed and check_date.weekday() < 7:  # cualquier día de la semana
                 return False
                 
-            weekday_name = WeekDay(days_map[check_date.weekday()].lower())
+            weekday_name = days_map_enum[check_date.weekday()]
             for schedule in task.schedule_details:
                 if schedule.day_of_week and schedule.day_of_week.value == weekday_name.value:
                     return True
@@ -1522,7 +1533,7 @@ def local_user_tasks(date_str=None, group_id=None):
         # Para tareas personalizadas, verificar días específicos
         if task.frequency == TaskFrequency.PERSONALIZADA:
             # Verificar si alguno de los días de la semana coincide
-            weekday_value = days_map[check_date.weekday()].lower()
+            weekday_value = days_map_enum[check_date.weekday()].value
             for weekday in task.weekdays:
                 if weekday.day_of_week.value == weekday_value:
                     return True

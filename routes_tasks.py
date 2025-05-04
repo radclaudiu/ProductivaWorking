@@ -1704,10 +1704,21 @@ def local_user_tasks(date_str=None, group_id=None):
         
         # Para tareas mensuales, verificar día del mes
         if task.frequency == TaskFrequency.MENSUAL:
-            # Si hay horario mensual definido, verificar día del mes
+            # Si la tarea ya está completada para el mes actual, no mostrarla
+            if task.current_month_completed:
+                return False
+                
+            # Si hay días específicos configurados con el nuevo modelo
+            if task.monthdays:
+                # Verificar si el día actual coincide con alguno de los días configurados
+                return any(monthday.day_of_month == check_date.day for monthday in task.monthdays)
+                
+            # Si no hay días específicos configurados con el nuevo modelo,
+            # intentar con el modelo antiguo (TaskSchedule)
             schedules = [s for s in task.schedule_details if s.day_of_month]
             if schedules:
                 return any(s.day_of_month == check_date.day for s in schedules)
+                
             # Si no hay horario específico, usar el día de inicio como referencia
             start_date = task.start_date or task.created_at.date()
             return start_date.day == check_date.day

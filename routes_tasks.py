@@ -1183,9 +1183,16 @@ def run_scheduler_manually():
 
 
 @tasks_bp.route('/run-scheduler-for-location/<int:location_id>', methods=['POST'])
-@login_required
 def run_scheduler_for_location(location_id):
     """Ejecuta el programador de tareas para una ubicación específica desde el portal"""
+    # Verificar si el usuario está autenticado (admin o usuario local)
+    is_admin = current_user.is_authenticated if hasattr(current_user, 'is_authenticated') else False
+    is_local_user = 'local_user_id' in session
+    
+    if not (is_admin or is_local_user):
+        flash('No tiene permisos para ejecutar esta acción.', 'danger')
+        return redirect(url_for('tasks.index'))
+    
     location = Location.query.get_or_404(location_id)
     
     try:

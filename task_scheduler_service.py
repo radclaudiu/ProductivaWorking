@@ -102,13 +102,13 @@ def process_tasks_for_location(location, target_date=None):
             monday_of_week = process_date - timedelta(days=process_date.weekday())
             sunday_of_week = monday_of_week + timedelta(days=6)
             
-            # Verificar si ya existe una instancia activa para esta semana
-            existing_this_week = TaskInstance.query.filter_by(task_id=task.id).filter(
-                TaskInstance.scheduled_date >= monday_of_week,
-                TaskInstance.scheduled_date <= sunday_of_week
+            # Verificar si ya existe una instancia para este día especifico de la semana
+            existing_for_this_date = TaskInstance.query.filter_by(
+                task_id=task.id, 
+                scheduled_date=process_date
             ).first()
             
-            if not existing_this_week:
+            if not existing_for_this_date:
                 # Obtener la última completación
                 last_completion = TaskCompletion.query.filter_by(task_id=task.id).order_by(
                     TaskCompletion.completion_date.desc()
@@ -147,13 +147,13 @@ def process_tasks_for_location(location, target_date=None):
                 last_day = monthrange(process_date.year, process_date.month)[1]
                 fortnight_end = date(process_date.year, process_date.month, last_day)
             
-            # Verificar si ya existe una instancia activa para esta quincena
-            existing_this_fortnight = TaskInstance.query.filter_by(task_id=task.id).filter(
-                TaskInstance.scheduled_date >= fortnight_start,
-                TaskInstance.scheduled_date <= fortnight_end
+            # Verificar si ya existe una instancia para este día especifico de la quincena
+            existing_for_this_date = TaskInstance.query.filter_by(
+                task_id=task.id, 
+                scheduled_date=process_date
             ).first()
             
-            if not existing_this_fortnight:
+            if not existing_for_this_date:
                 # Obtener la última completación
                 last_completion = TaskCompletion.query.filter_by(task_id=task.id).order_by(
                     TaskCompletion.completion_date.desc()
@@ -190,13 +190,13 @@ def process_tasks_for_location(location, target_date=None):
             last_day = monthrange(process_date.year, process_date.month)[1]
             month_end = date(process_date.year, process_date.month, last_day)
             
-            # Verificar si ya existe una instancia activa para este mes
-            existing_this_month = TaskInstance.query.filter_by(task_id=task.id).filter(
-                TaskInstance.scheduled_date >= month_start,
-                TaskInstance.scheduled_date <= month_end
+            # Verificar si ya existe una instancia para este día especifico del mes
+            existing_for_this_date = TaskInstance.query.filter_by(
+                task_id=task.id, 
+                scheduled_date=process_date
             ).first()
             
-            if not existing_this_month:
+            if not existing_for_this_date:
                 # Obtener la última completación
                 last_completion = TaskCompletion.query.filter_by(task_id=task.id).order_by(
                     TaskCompletion.completion_date.desc()

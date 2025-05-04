@@ -112,8 +112,11 @@ def process_tasks_for_location(location, target_date=None):
             # IMPORTANTE: No verificamos completaciones porque queremos que
             # las tareas aparezcan todos los días hasta que se completen
             # INDIVIDUALMENTE para cada día, no para la semana completa
-            if not existing_for_this_date and create_task_instance(task, process_date):
-                counters['weekly'] += 1
+            if not existing_for_this_date:
+                # Garantizar que se crea la instancia independientemente de completaciones previas
+                logger.info(f"Creando instancia de tarea semanal '{task.title}' para {process_date}")
+                if create_task_instance(task, process_date):
+                    counters['weekly'] += 1
         
         # Procesar tareas quincenales
         biweekly_tasks = Task.query.filter_by(frequency=TaskFrequency.QUINCENAL, location_id=location_id).filter(
@@ -142,8 +145,11 @@ def process_tasks_for_location(location, target_date=None):
             # IMPORTANTE: No verificamos completaciones porque queremos que
             # las tareas aparezcan todos los días hasta que se completen
             # INDIVIDUALMENTE para cada día, no para la quincena completa
-            if not existing_for_this_date and create_task_instance(task, process_date):
-                counters['biweekly'] += 1
+            if not existing_for_this_date:
+                # Garantizar que se crea la instancia independientemente de completaciones previas
+                logger.info(f"Creando instancia de tarea quincenal '{task.title}' para {process_date}")
+                if create_task_instance(task, process_date):
+                    counters['biweekly'] += 1
         
         # Procesar tareas mensuales
         monthly_tasks = Task.query.filter_by(frequency=TaskFrequency.MENSUAL, location_id=location_id).filter(
@@ -166,8 +172,11 @@ def process_tasks_for_location(location, target_date=None):
             # IMPORTANTE: No verificamos completaciones porque queremos que
             # las tareas aparezcan todos los días hasta que se completen
             # INDIVIDUALMENTE para cada día, no para el mes completo
-            if not existing_for_this_date and create_task_instance(task, process_date):
-                counters['monthly'] += 1
+            if not existing_for_this_date:
+                # Garantizar que se crea la instancia independientemente de completaciones previas
+                logger.info(f"Creando instancia de tarea mensual '{task.title}' para {process_date}")
+                if create_task_instance(task, process_date):
+                    counters['monthly'] += 1
         
         # Procesar tareas personalizadas
         custom_tasks = Task.query.filter_by(frequency=TaskFrequency.PERSONALIZADA, location_id=location_id).filter(
@@ -190,8 +199,18 @@ def process_tasks_for_location(location, target_date=None):
             for weekday in task.weekdays:
                 weekday_value = weekday.day_of_week.value.lower()
                 if day_map.get(weekday_value) == process_date_weekday:
-                    if create_task_instance(task, process_date):
-                        counters['custom'] += 1
+                    # Verificar si ya existe una instancia para este día específico
+                    existing_for_this_date = TaskInstance.query.filter_by(
+                        task_id=task.id, 
+                        scheduled_date=process_date
+                    ).first()
+                    
+                    # Si no existe una instancia para este día, crearla
+                    if not existing_for_this_date:
+                        # Garantizar que se crea la instancia independientemente de completaciones previas
+                        logger.info(f"Creando instancia de tarea personalizada '{task.title}' para {process_date}")
+                        if create_task_instance(task, process_date):
+                            counters['custom'] += 1
                     break
         
         # Mostrar resultados de procesamiento

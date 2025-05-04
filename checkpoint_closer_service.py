@@ -28,47 +28,7 @@ service_running = False
 last_run_time = None
 checkpoint_closer_active = False
 
-def reset_weekly_tasks():
-    """
-    Reinicia el estado de las tareas semanales en los lunes.
-    Modifica el campo 'current_week_completed' a False para todas las tareas semanales.
-    
-    Returns:
-        int: Número de tareas actualizadas
-    """
-    try:
-        # Comprobar si hoy es lunes (weekday() devuelve 0 para lunes)
-        today = datetime.now().date()
-        if today.weekday() != 0:  # No es lunes
-            logger.debug("Hoy no es lunes - no se reiniciará el estado de tareas semanales")
-            return 0
-            
-        # Obtener todas las tareas semanales marcadas como completadas
-        tasks = Task.query.filter_by(
-            frequency=TaskFrequency.SEMANAL,
-            current_week_completed=True
-        ).all()
-        
-        if not tasks:
-            logger.info("No hay tareas semanales completadas para reiniciar")
-            return 0
-            
-        count = 0
-        # Reiniciar el estado de cada tarea
-        for task in tasks:
-            task.current_week_completed = False
-            count += 1
-            
-        # Guardar los cambios
-        db.session.commit()
-        
-        logger.info(f"Se reiniciaron {count} tareas semanales para la nueva semana")
-        return count
-        
-    except Exception as e:
-        logger.error(f"Error al reiniciar tareas semanales: {str(e)}")
-        db.session.rollback()
-        return 0
+# La funcionalidad de reinicio de tareas semanales se ha movido a weekly_tasks_reset_service.py
 
 def checkpoint_closer_worker():
     """
@@ -99,11 +59,6 @@ def checkpoint_closer_worker():
                 with app.app_context():
                     # Realizar el cierre automático de fichajes
                     success = auto_close_pending_records()
-                    
-                    # Reiniciar tareas semanales los lunes
-                    reset_count = reset_weekly_tasks()
-                    if reset_count > 0:
-                        logger.info(f"Reinicio de tareas semanales completado: {reset_count} tareas actualizadas")
                 
                 if success is not None:
                     if success:

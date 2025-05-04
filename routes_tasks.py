@@ -1702,12 +1702,12 @@ def complete_task(task_id):
         ).first()
         
         if task_instance:
-            # Actualizar el estado de la instancia específica a completada
+            # Actualizar SOLO el estado de la instancia específica a completada
             task_instance.status = TaskStatus.COMPLETADA
             task_instance.completed_by_id = user_id
         
-        # También actualizamos el estado general de la tarea
-        task.status = TaskStatus.COMPLETADA
+        # IMPORTANTE: Ya no actualizamos el estado general de la tarea
+        # para permitir que aparezca en días siguientes
         
         db.session.add(completion)
         db.session.commit()
@@ -1769,12 +1769,12 @@ def ajax_complete_task(task_id):
     ).first()
     
     if task_instance:
-        # Actualizar el estado de la instancia específica a completada
+        # Actualizar SOLO el estado de la instancia específica a completada
         task_instance.status = TaskStatus.COMPLETADA
         task_instance.completed_by_id = user_id
     
-    # También actualizamos el estado general de la tarea
-    task.status = TaskStatus.COMPLETADA
+    # IMPORTANTE: Ya no actualizamos el estado general de la tarea
+    # para permitir que aparezca en días siguientes
     
     db.session.add(completion)
     db.session.commit()

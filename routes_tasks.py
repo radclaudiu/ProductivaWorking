@@ -1879,6 +1879,10 @@ def ajax_complete_task(task_id):
     # Si es una tarea semanal, marcar como completada para esta semana
     if task.frequency == TaskFrequency.SEMANAL:
         task.current_week_completed = True
+        
+    # Si es una tarea mensual, marcar como completada para este mes
+    elif task.frequency == TaskFrequency.MENSUAL:
+        task.current_month_completed = True
     
     db.session.add(completion)
     db.session.commit()

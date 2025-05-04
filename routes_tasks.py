@@ -1181,6 +1181,31 @@ def run_scheduler_manually():
         log_activity(f'Error en ejecución manual del programador de tareas: {str(e)}', level='error')
     return redirect(url_for('tasks.index'))
 
+
+@tasks_bp.route('/run-scheduler-for-location/<int:location_id>', methods=['POST'])
+@login_required
+def run_scheduler_for_location(location_id):
+    """Ejecuta el programador de tareas para una ubicación específica desde el portal"""
+    location = Location.query.get_or_404(location_id)
+    
+    try:
+        log_activity(f'Ejecución manual del programador de tareas para ubicación: {location.name} (ID: {location_id})')
+        # Ejecutar el programador de tareas para la ubicación especificada
+        with current_app.app_context():
+            # Ejecutar en modo no bloqueante para no retrasar la respuesta al usuario
+            threading.Thread(
+                target=run_task_scheduler_for_location,
+                args=(location_id,),
+                daemon=True
+            ).start()
+        flash(f'Programador de tareas iniciado para la ubicación {location.name}. Este proceso puede tardar unos segundos.', 'success')
+    except Exception as e:
+        flash(f'Error al ejecutar el programador de tareas: {str(e)}', 'danger')
+        log_activity(f'Error en ejecución manual del programador de tareas para ubicación {location.name}: {str(e)}', level='error')
+    
+    # Redirigir al usuario a la página del portal
+    return redirect(url_for('tasks.local_portal', location_id=location_id))
+
 @tasks_bp.route('/portal-test')
 def portal_test():
     """Ruta de prueba para diagnóstico"""

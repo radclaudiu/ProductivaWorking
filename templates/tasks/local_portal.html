@@ -57,6 +57,18 @@
                     <i class="bi bi-box-arrow-right"></i> Cerrar Sesión
                 </a>
             </div>
+            
+            <!-- Botón temporal para ejecutar el programador de tareas (solo visible para el usuario del portal) -->
+            {% if session.get('portal_authenticated') %}
+            <div class="col-12 mt-4">
+                <form action="{{ url_for('tasks.run_scheduler_for_location', location_id=location.id) }}" method="post">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-clock-history"></i> Ejecutar Programador de Tareas (TEST)
+                    </button>
+                </form>
+                <small class="text-muted mt-2">Este botón es temporal para pruebas. Ejecuta el programador para este portal.</small>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>

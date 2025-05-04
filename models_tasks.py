@@ -286,13 +286,12 @@ class Task(db.Model):
                 return True
                 
             # Para tareas semanales, verificamos si ya han sido completadas esta semana
-            # Si no han sido completadas, permitimos que se muestren
+            # Si no han sido completadas, permitimos que se muestren todos los días
             elif self.frequency == TaskFrequency.SEMANAL and self.start_date:
-                # Si es una fecha de inicio en el pasado y no está completada, mostramos la tarea
+                # Si es una fecha de inicio en el pasado y no está completada, mostramos la tarea todos los días
                 if today >= self.start_date and not self.current_week_completed:
-                    # Para tareas semanales sin horario específico, solo mostramos el día original
-                    # en que se creó (como comportamiento heredado)
-                    return today.weekday() == self.start_date.weekday()
+                    return True
+                return False
                 
             # Para tareas mensuales, verificamos si today es el mismo día del mes que start_date
             elif self.frequency == TaskFrequency.MENSUAL and self.start_date:
@@ -342,23 +341,14 @@ class TaskSchedule(db.Model):
         if self.task.frequency == TaskFrequency.DIARIA:
             return True
             
-        # Para tareas semanales, comprobamos el día de la semana
-        if self.task.frequency == TaskFrequency.SEMANAL and self.day_of_week:
+        # Para tareas semanales, mostramos todos los días hasta que se completen
+        if self.task.frequency == TaskFrequency.SEMANAL:
             # Si la tarea ya está completada para la semana actual, no está activa
             if self.task.current_week_completed:
                 return False
                 
-            day_map = {
-                WeekDay.LUNES: 0,
-                WeekDay.MARTES: 1,
-                WeekDay.MIERCOLES: 2,
-                WeekDay.JUEVES: 3,
-                WeekDay.VIERNES: 4,
-                WeekDay.SABADO: 5,
-                WeekDay.DOMINGO: 6
-            }
-            # Verificar si el día de la semana coincide con este horario
-            return check_date.weekday() == day_map[self.day_of_week]
+            # Mostrar la tarea todos los días de la semana si no está completada
+            return True
             
         # Para tareas mensuales, comprobamos el día del mes
         if self.task.frequency == TaskFrequency.MENSUAL and self.day_of_month:

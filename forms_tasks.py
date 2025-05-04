@@ -121,8 +121,9 @@ class WeeklyScheduleForm(FlaskForm):
         if field.data and form.start_time.data and field.data < form.start_time.data:
             raise ValidationError('La hora de fin debe ser posterior a la hora de inicio')
     
-    def validate(self):
-        if not super().validate():
+    def validate(self, **kwargs):
+        # Aseguramos que pasamos los argumentos adicionales como extra_validators a la clase padre
+        if not super().validate(**kwargs):
             return False
             
         if not any([self.monday.data, self.tuesday.data, self.wednesday.data, 

@@ -183,7 +183,7 @@
                                         Horarios
                                     </h5>
                                     <p class="card-text mb-4">
-                                        Configuración de los horarios laborales del empleado
+                                        Configuración de los horarios laborales para fichajes manuales del empleado
                                     </p>
                                     <div class="d-grid gap-2">
                                         {% if current_user.is_admin() or current_user.is_gerente() %}
@@ -205,14 +205,14 @@
                                 <div class="card-body d-flex flex-column">
                                     <h5 class="card-title">
                                         <i class="fas fa-clock fa-2x mb-3 text-info"></i><br>
-                                        Fichajes
+                                        Generador de fichajes
                                     </h5>
                                     <p class="card-text mb-4">
-                                        Registro de entradas y salidas del empleado
+                                        Herramienta para crear fichajes manualmente para este empleado
                                     </p>
                                     <div class="d-grid gap-2">
                                         <a href="{{ url_for('checkin.list_checkins', employee_id=employee.id) }}" class="btn btn-info mt-auto">
-                                            <i class="fas fa-user-clock"></i> Ver Fichajes
+                                            <i class="fas fa-user-clock"></i> Generador de fichajes
                                         </a>
                                     </div>
                                 </div>
@@ -227,7 +227,7 @@
                                         Vacaciones
                                     </h5>
                                     <p class="card-text mb-4">
-                                        Gestión de períodos de vacaciones y ausencias
+                                        Gestión de períodos de vacaciones y ausencias. Cuando se crean fichajes manuales, se saltarán los días de vacaciones.
                                     </p>
                                     <div class="d-grid gap-2">
                                         {% if current_user.is_admin() or current_user.is_gerente() %}

@@ -176,19 +176,19 @@ def process_tasks_for_location(location, target_date=None):
                     if last_fortnight_start < fortnight_start:
                         should_create_instance = True
                 
-                if should_create_instance and create_task_instance(task, today):
+                if should_create_instance and create_task_instance(task, process_date):
                     counters['biweekly'] += 1
         
         # Procesar tareas mensuales
         monthly_tasks = Task.query.filter_by(frequency=TaskFrequency.MENSUAL, location_id=location_id).filter(
-            (Task.end_date.is_(None)) | (Task.end_date >= today)
-        ).filter(Task.start_date <= today).all()
+            (Task.end_date.is_(None)) | (Task.end_date >= process_date)
+        ).filter(Task.start_date <= process_date).all()
         
         for task in monthly_tasks:
             # Determinar el mes actual
-            month_start = date(today.year, today.month, 1)
-            last_day = monthrange(today.year, today.month)[1]
-            month_end = date(today.year, today.month, last_day)
+            month_start = date(process_date.year, process_date.month, 1)
+            last_day = monthrange(process_date.year, process_date.month)[1]
+            month_end = date(process_date.year, process_date.month, last_day)
             
             # Verificar si ya existe una instancia activa para este mes
             existing_this_month = TaskInstance.query.filter_by(task_id=task.id).filter(
@@ -216,20 +216,20 @@ def process_tasks_for_location(location, target_date=None):
                     if last_month_start < month_start:
                         should_create_instance = True
                 
-                if should_create_instance and create_task_instance(task, today):
+                if should_create_instance and create_task_instance(task, process_date):
                     counters['monthly'] += 1
         
         # Procesar tareas personalizadas
         custom_tasks = Task.query.filter_by(frequency=TaskFrequency.PERSONALIZADA, location_id=location_id).filter(
-            (Task.end_date.is_(None)) | (Task.end_date >= today)
-        ).filter(Task.start_date <= today).all()
+            (Task.end_date.is_(None)) | (Task.end_date >= process_date)
+        ).filter(Task.start_date <= process_date).all()
         
         for task in custom_tasks:
             if not task.weekdays:
                 continue
                 
-            # Verificar si alguno de los días configurados coincide con hoy
-            today_weekday = today.weekday()  # 0=Lunes, 6=Domingo
+            # Verificar si alguno de los días configurados coincide con la fecha de proceso
+            process_date_weekday = process_date.weekday()  # 0=Lunes, 6=Domingo
             
             # Crear mapeo de nombres de días a números
             day_map = {
@@ -239,8 +239,8 @@ def process_tasks_for_location(location, target_date=None):
             
             for weekday in task.weekdays:
                 weekday_value = weekday.day_of_week.value.lower()
-                if day_map.get(weekday_value) == today_weekday:
-                    if create_task_instance(task, today):
+                if day_map.get(weekday_value) == process_date_weekday:
+                    if create_task_instance(task, process_date):
                         counters['custom'] += 1
                     break
         

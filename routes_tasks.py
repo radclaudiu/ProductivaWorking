@@ -1491,13 +1491,30 @@ def local_user_tasks(date_str=None, group_id=None):
         if task.frequency == TaskFrequency.DIARIA:
             return True
         
-        # Para tareas semanales, verificar día de la semana
+        # Para tareas semanales, implementar la nueva lógica:
+        # 1. Si es lunes, la tarea siempre debe aparecer
+        # 2. En otros días, verificar si ya ha sido completada esta semana
         if task.frequency == TaskFrequency.SEMANAL:
-            weekday_name = WeekDay(days_map[check_date.weekday()].lower())
-            for schedule in task.schedule_details:
-                if schedule.day_of_week and schedule.day_of_week.value == weekday_name.value:
-                    return True
-            return False
+            # Las tareas semanales deben aparecer si estamos viendo el día en que fueron configuradas
+            # O si estamos viendo otro día pero no ha sido completada aún en la semana actual
+            
+            # Si es lunes (weekday=0), siempre mostrar la tarea
+            if check_date.weekday() == 0:  # 0 = Lunes
+                return True
+                
+            # Para cualquier otro día de la semana, verificar si la tarea ya fue completada esta semana
+            # Calculamos el lunes de la semana actual (para días de martes a domingo)
+            monday_of_week = check_date - timedelta(days=check_date.weekday())
+            
+            # Verificar si hay alguna completación de esta tarea desde el lunes hasta la fecha actual
+            # (Solo comprobamos hasta el día anterior, ya que las completados de hoy ya se tienen en cuenta)
+            completions_this_week = TaskCompletion.query.filter_by(task_id=task.id).filter(
+                TaskCompletion.completion_date >= monday_of_week,
+                TaskCompletion.completion_date < check_date
+            ).first()
+            
+            # Si no hay completaciones esta semana, la tarea debe aparecer
+            return completions_this_week is None
         
         # Para tareas quincenales, verificar quincena
         if task.frequency == TaskFrequency.QUINCENAL:

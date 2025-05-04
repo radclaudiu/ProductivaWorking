@@ -183,7 +183,7 @@ def process_custom_tasks_for_week():
 def should_run_reset():
     """
     Determina si es momento de ejecutar el reinicio de tareas semanales.
-    El reinicio debe ejecutarse si es lunes y la hora actual es igual o posterior a RESET_HOUR:RESET_MINUTE.
+    El reinicio debe ejecutarse todos los días a las RESET_HOUR:RESET_MINUTE.
     Además, se verifica que no se haya ejecutado ya hoy.
     
     Returns:
@@ -196,40 +196,29 @@ def should_run_reset():
     if last_reset_date == today:
         return False
     
-    # Solo los lunes (0 = lunes en Python)
-    if today.weekday() != 0:
-        return False
-    
     # Solo a partir de la hora configurada
     target_time = now.replace(hour=RESET_HOUR, minute=RESET_MINUTE, second=0, microsecond=0)
     return now >= target_time
 
 def calculate_sleep_time():
     """
-    Calcula el tiempo exacto que debe dormir el servicio hasta el próximo lunes a las 04:00 AM.
+    Calcula el tiempo exacto que debe dormir el servicio hasta las RESET_HOUR:RESET_MINUTE del día siguiente.
     
     Returns:
-        float: Tiempo en segundos hasta el próximo lunes a las 04:00 AM
+        float: Tiempo en segundos hasta la próxima ejecución
     """
     now = datetime.now()
-    today = now.date()
     
-    # Si hoy es lunes y aún no llega la hora de reinicio
-    if today.weekday() == 0 and now.hour < RESET_HOUR:
+    # Si aún no ha llegado la hora de reinicio hoy
+    if now.hour < RESET_HOUR or (now.hour == RESET_HOUR and now.minute < RESET_MINUTE):
+        # Configurar para hoy a las RESET_HOUR:RESET_MINUTE
         target_time = now.replace(hour=RESET_HOUR, minute=RESET_MINUTE, second=0, microsecond=0)
-        return (target_time - now).total_seconds()
-    
-    # En cualquier otro caso, calcular días hasta el próximo lunes
-    days_until_monday = (7 - today.weekday()) % 7
-    if days_until_monday == 0:  # Hoy es lunes pero ya pasó la hora de reinicio
-        days_until_monday = 7
-    
-    # Calcular el próximo lunes a las 04:00 AM
-    next_reset = now + timedelta(days=days_until_monday)
-    next_reset = next_reset.replace(hour=RESET_HOUR, minute=RESET_MINUTE, second=0, microsecond=0)
+    else:
+        # Configurar para mañana a las RESET_HOUR:RESET_MINUTE
+        target_time = (now + timedelta(days=1)).replace(hour=RESET_HOUR, minute=RESET_MINUTE, second=0, microsecond=0)
     
     # Devolver el tiempo exacto en segundos
-    return (next_reset - now).total_seconds()
+    return (target_time - now).total_seconds()
 
 def weekly_tasks_reset_worker():
     """

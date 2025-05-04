@@ -155,6 +155,17 @@
             </div>
         </div>
     </div>
+    
+    <!-- Botón temporal para ejecutar el programador de tareas -->
+    <div class="alert alert-warning p-3 mb-4 text-center">
+        <h4 class="alert-heading">Botón de prueba (PROGRAMADOR DE TAREAS)</h4>
+        <form action="{{ url_for('tasks.run_scheduler_for_location', location_id=location.id) }}" method="post">
+            <button type="submit" class="btn btn-lg btn-danger my-2">
+                <i class="bi bi-clock-history"></i> Ejecutar Programador de Tareas (TEST)
+            </button>
+        </form>
+        <p class="mb-0">Este botón es temporal para pruebas. Ejecuta el programador para este local.</p>
+    </div>
 
     <!-- Carrusel de Fechas -->
     <div class="row mb-4">

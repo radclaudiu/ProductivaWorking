@@ -183,7 +183,7 @@ def process_custom_tasks_for_week():
 def should_run_reset():
     """
     Determina si es momento de ejecutar el reinicio de tareas semanales.
-    El reinicio debe ejecutarse todos los días a las RESET_HOUR:RESET_MINUTE.
+    El reinicio debe ejecutarse si es lunes y la hora actual es igual o posterior a RESET_HOUR:RESET_MINUTE.
     Además, se verifica que no se haya ejecutado ya hoy.
     
     Returns:
@@ -196,33 +196,44 @@ def should_run_reset():
     if last_reset_date == today:
         return False
     
+    # Solo los lunes (0 = lunes en Python)
+    if today.weekday() != 0:
+        return False
+    
     # Solo a partir de la hora configurada
     target_time = now.replace(hour=RESET_HOUR, minute=RESET_MINUTE, second=0, microsecond=0)
     return now >= target_time
 
 def calculate_sleep_time():
     """
-    Calcula el tiempo exacto que debe dormir el servicio hasta las RESET_HOUR:RESET_MINUTE del día siguiente.
+    Calcula el tiempo exacto que debe dormir el servicio hasta el próximo lunes a las 04:00 AM.
     
     Returns:
-        float: Tiempo en segundos hasta la próxima ejecución
+        float: Tiempo en segundos hasta el próximo lunes a las 04:00 AM
     """
     now = datetime.now()
+    today = now.date()
     
-    # Si aún no ha llegado la hora de reinicio hoy
-    if now.hour < RESET_HOUR or (now.hour == RESET_HOUR and now.minute < RESET_MINUTE):
-        # Configurar para hoy a las RESET_HOUR:RESET_MINUTE
+    # Si hoy es lunes y aún no llega la hora de reinicio
+    if today.weekday() == 0 and now.hour < RESET_HOUR:
         target_time = now.replace(hour=RESET_HOUR, minute=RESET_MINUTE, second=0, microsecond=0)
-    else:
-        # Configurar para mañana a las RESET_HOUR:RESET_MINUTE
-        target_time = (now + timedelta(days=1)).replace(hour=RESET_HOUR, minute=RESET_MINUTE, second=0, microsecond=0)
+        return (target_time - now).total_seconds()
+    
+    # En cualquier otro caso, calcular días hasta el próximo lunes
+    days_until_monday = (7 - today.weekday()) % 7
+    if days_until_monday == 0:  # Hoy es lunes pero ya pasó la hora de reinicio
+        days_until_monday = 7
+    
+    # Calcular el próximo lunes a las 04:00 AM
+    next_reset = now + timedelta(days=days_until_monday)
+    next_reset = next_reset.replace(hour=RESET_HOUR, minute=RESET_MINUTE, second=0, microsecond=0)
     
     # Devolver el tiempo exacto en segundos
-    return (target_time - now).total_seconds()
+    return (next_reset - now).total_seconds()
 
 def weekly_tasks_reset_worker():
     """
-    Función que ejecuta el reinicio de tareas semanales todos los días a las RESET_HOUR:RESET_MINUTE.
+    Función que ejecuta el reinicio de tareas semanales los lunes.
     """
     global service_running, last_run_time, service_active, lock_file_handle
     
@@ -238,7 +249,7 @@ def weekly_tasks_reset_worker():
             try:
                 # Verificar si es momento de ejecutar el reinicio
                 if should_run_reset():
-                    logger.info(f"Ejecutando reinicio de tareas a las {RESET_HOUR}:{RESET_MINUTE}")
+                    logger.info(f"Es lunes después de las {RESET_HOUR}:{RESET_MINUTE} - Ejecutando reinicio de tareas semanales")
                     
                     # Usar el contexto de la aplicación para operaciones de base de datos
                     with app.app_context():
@@ -256,7 +267,7 @@ def weekly_tasks_reset_worker():
                         else:
                             logger.info("No se crearon instancias de tareas personalizadas para esta semana")
                 else:
-                    logger.debug("No es momento de ejecutar el reinicio diario de tareas")
+                    logger.debug("No es momento de ejecutar el reinicio de tareas semanales")
                 
                 # Actualizar el tiempo de la última ejecución
                 last_run_time = datetime.now()
@@ -420,17 +431,14 @@ def get_service_status():
     formatted_last_run = "No ejecutado aún" if last_run_time is None else last_run_time.strftime('%Y-%m-%d %H:%M:%S')
     formatted_last_reset = "No reiniciado aún" if last_reset_date is None else last_reset_date.strftime('%Y-%m-%d')
     
-    # Calcular la próxima ejecución a las RESET_HOUR:RESET_MINUTE
+    # Calcular el próximo lunes 04:00
     now = datetime.now()
+    days_until_monday = (7 - now.weekday()) % 7
+    if days_until_monday == 0 and now.hour >= RESET_HOUR:  # Es lunes y ya pasó la hora
+        days_until_monday = 7
     
-    # Si aún no ha llegado la hora de reinicio hoy
-    if now.hour < RESET_HOUR or (now.hour == RESET_HOUR and now.minute < RESET_MINUTE):
-        # Configurar para hoy a las RESET_HOUR:RESET_MINUTE
-        next_reset = now.replace(hour=RESET_HOUR, minute=RESET_MINUTE, second=0, microsecond=0)
-    else:
-        # Configurar para mañana a las RESET_HOUR:RESET_MINUTE
-        next_reset = (now + timedelta(days=1)).replace(hour=RESET_HOUR, minute=RESET_MINUTE, second=0, microsecond=0)
-    
+    next_reset = now + timedelta(days=days_until_monday)
+    next_reset = next_reset.replace(hour=RESET_HOUR, minute=RESET_MINUTE, second=0, microsecond=0)
     formatted_next_reset = next_reset.strftime('%Y-%m-%d %H:%M:%S')
     
     return {

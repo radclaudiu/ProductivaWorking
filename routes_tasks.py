@@ -1403,21 +1403,54 @@ def portal_logout():
     flash('Has cerrado sesión del portal correctamente.', 'success')
     return redirect(url_for('tasks.index'))
 
+import fcntl
+import os
+
+# Archivo de bloqueo para evitar ejecuciones simulátenas del test_reset_tasks
+TEST_RESET_LOCK_FILE = "/tmp/test_reset_tasks.lock"
+
 @tasks_bp.route('/local-user/test-reset-tasks', methods=['POST'])
 @local_user_required
 def test_reset_tasks():
     """Ejecuta manualmente el reinicio de tareas semanales (solo para pruebas)"""
+    # Usar un archivo de bloqueo para evitar ejecuciones simultáneas
+    lock_file = None
     try:
-        # Ejecutar manualmente el reinicio de tareas semanales
-        tasks_reset_count = reset_weekly_tasks()
-        
-        # Procesar tareas personalizadas para la semana
-        custom_tasks_count = process_custom_tasks_for_week()
-        
-        log_activity(f'Reinicio manual de tareas ejecutado: {tasks_reset_count} tareas reiniciadas, {custom_tasks_count} instancias creadas')
-        flash('¡Reinicio de tareas ejecutado correctamente!', 'success')
+        # Intentar obtener un bloqueo exclusivo (no bloqueante)
+        lock_file = open(TEST_RESET_LOCK_FILE, 'w')
+        try:
+            fcntl.lockf(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            
+            # Escribir información en el archivo de bloqueo
+            pid = os.getpid()
+            lock_info = f"{pid} {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            lock_file.write(lock_info)
+            lock_file.flush()
+            
+            # Si llegamos aquí, tenemos el bloqueo exclusivo
+            # Ejecutar manualmente el reinicio de tareas semanales
+            tasks_reset_count = reset_weekly_tasks()
+            
+            # Procesar tareas personalizadas para la semana
+            custom_tasks_count = process_custom_tasks_for_week()
+            
+            log_activity(f'Reinicio manual de tareas ejecutado: {tasks_reset_count} tareas reiniciadas, {custom_tasks_count} instancias creadas')
+            flash('¡Reinicio de tareas ejecutado correctamente!', 'success')
+            
+        except IOError:
+            # No se pudo obtener el bloqueo, otro proceso ya lo tiene
+            flash('Ya se está ejecutando un reinicio de tareas. Por favor, espera unos segundos antes de intentarlo de nuevo.', 'warning')
+            
     except Exception as e:
         flash(f'Error al ejecutar el reinicio de tareas: {str(e)}', 'danger')
+    finally:
+        # Liberar el bloqueo si lo conseguimos
+        if lock_file:
+            try:
+                fcntl.lockf(lock_file, fcntl.LOCK_UN)
+                lock_file.close()
+            except:
+                pass
     
     # Redirigir a la página de tareas
     return redirect(url_for('tasks.local_user_tasks'))

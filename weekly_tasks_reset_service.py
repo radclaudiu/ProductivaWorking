@@ -235,7 +235,7 @@ def weekly_tasks_reset_worker():
     """
     Función que ejecuta el reinicio de tareas semanales los lunes.
     """
-    global service_running, last_run_time, service_active
+    global service_running, last_run_time, service_active, lock_file_handle
     
     # Importar la aplicación Flask
     from app import create_app
@@ -287,6 +287,17 @@ def weekly_tasks_reset_worker():
         logger.error(f"Error fatal en el servicio de reinicio de tareas: {str(e)}")
     finally:
         service_active = False
+        
+        # Liberar el archivo de bloqueo al finalizar
+        if lock_file_handle:
+            try:
+                logger.info("Liberando archivo de bloqueo al finalizar worker")
+                fcntl.lockf(lock_file_handle, fcntl.LOCK_UN)
+                lock_file_handle.close()
+                lock_file_handle = None
+            except Exception as e:
+                logger.error(f"Error al liberar bloqueo en worker: {str(e)}")
+                
         logger.info("Servicio de reinicio de tareas semanales detenido")
 
 
@@ -355,16 +366,27 @@ def start_weekly_tasks_reset_service():
 def stop_weekly_tasks_reset_service():
     """
     Detiene el servicio de reinicio de tareas semanales.
+    Libera el archivo de bloqueo si está en uso.
     
     Returns:
         bool: True si el servicio se detuvo correctamente, False en caso contrario.
     """
-    global service_thread, service_running, service_active
+    global service_thread, service_running, service_active, lock_file_handle
     
     if service_thread is None or not service_thread.is_alive():
         logger.info("El servicio de reinicio de tareas no está en ejecución")
         service_running = False
         service_active = False
+        
+        # Liberar el bloqueo si está activo
+        if lock_file_handle:
+            try:
+                logger.info("Liberando archivo de bloqueo")
+                fcntl.lockf(lock_file_handle, fcntl.LOCK_UN)
+                lock_file_handle.close()
+                lock_file_handle = None
+            except Exception as e:
+                logger.error(f"Error al liberar bloqueo: {str(e)}")
         return False
     
     # Detener el hilo
@@ -376,6 +398,16 @@ def stop_weekly_tasks_reset_service():
     while service_active and time.time() - start_time < timeout:
         time.sleep(0.1)
     
+    # Liberar el bloqueo si está activo
+    if lock_file_handle:
+        try:
+            logger.info("Liberando archivo de bloqueo")
+            fcntl.lockf(lock_file_handle, fcntl.LOCK_UN)
+            lock_file_handle.close()
+            lock_file_handle = None
+        except Exception as e:
+            logger.error(f"Error al liberar bloqueo: {str(e)}")
+            
     if not service_active:
         logger.info("Servicio de reinicio de tareas detenido correctamente")
         return True

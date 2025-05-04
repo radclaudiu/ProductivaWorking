@@ -14,11 +14,18 @@ class TaskPriority(enum.Enum):
     URGENTE = "urgente"
 
 class TaskFrequency(enum.Enum):
-    DIARIA = "diaria"
-    SEMANAL = "semanal"
-    QUINCENAL = "quincenal"
-    MENSUAL = "mensual"
-    PERSONALIZADA = "personalizada"
+    DIARIA = "diaria"            # Tareas que se realizan todos los días
+    DIA_LUNES = "dia_lunes"      # Tareas específicas para los lunes
+    DIA_MARTES = "dia_martes"    # Tareas específicas para los martes
+    DIA_MIERCOLES = "dia_miercoles" # Tareas específicas para los miércoles
+    DIA_JUEVES = "dia_jueves"    # Tareas específicas para los jueves
+    DIA_VIERNES = "dia_viernes"  # Tareas específicas para los viernes
+    DIA_SABADO = "dia_sabado"    # Tareas específicas para los sábados
+    DIA_DOMINGO = "dia_domingo"  # Tareas específicas para los domingos
+    SEMANAL = "semanal"          # Tareas que se hacen una vez a la semana
+    QUINCENAL = "quincenal"      # Tareas que se hacen dos veces al mes (1-15 y 16-fin)
+    MENSUAL = "mensual"          # Tareas que se hacen una vez al mes
+    PERSONALIZADA = "personalizada" # Para configuraciones más complejas (legado)
 
 class TaskStatus(enum.Enum):
     PENDIENTE = "pendiente"
@@ -289,11 +296,36 @@ class Task(db.Model):
             # Si la instancia no está completada, mostrar la tarea
             return True
         
-        # PARTE 3: Para tareas semanales, quincenales o mensuales, verificar si ya se completó en el periodo actual
+        # PARTE 3: Para tareas por frecuencia, verificar si ya se completó en el periodo actual
         
         # Las tareas diarias deben aparecer todos los días
         if self.frequency == TaskFrequency.DIARIA:
             return True
+            
+        # Verificar tareas para días específicos de la semana
+        today_weekday = today.weekday()  # 0 es lunes, 6 es domingo
+        
+        # Tareas para días específicos solo aparecen en sus días correspondientes
+        if self.frequency == TaskFrequency.DIA_LUNES and today_weekday == 0:
+            return True
+        elif self.frequency == TaskFrequency.DIA_MARTES and today_weekday == 1:
+            return True
+        elif self.frequency == TaskFrequency.DIA_MIERCOLES and today_weekday == 2:
+            return True
+        elif self.frequency == TaskFrequency.DIA_JUEVES and today_weekday == 3:
+            return True
+        elif self.frequency == TaskFrequency.DIA_VIERNES and today_weekday == 4:
+            return True
+        elif self.frequency == TaskFrequency.DIA_SABADO and today_weekday == 5:
+            return True
+        elif self.frequency == TaskFrequency.DIA_DOMINGO and today_weekday == 6:
+            return True
+        elif self.frequency in [TaskFrequency.DIA_LUNES, TaskFrequency.DIA_MARTES, 
+                               TaskFrequency.DIA_MIERCOLES, TaskFrequency.DIA_JUEVES, 
+                               TaskFrequency.DIA_VIERNES, TaskFrequency.DIA_SABADO, 
+                               TaskFrequency.DIA_DOMINGO]:
+            # Si es tarea de día específico pero no es el día correcto, no mostrar
+            return False
             
         # Las tareas semanales sólo deben aparecer hasta que se completen en la semana actual
         elif self.frequency == TaskFrequency.SEMANAL:

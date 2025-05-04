@@ -1555,69 +1555,44 @@ def local_user_tasks(date_str=None, group_id=None):
         if task.end_date and check_date > task.end_date:
             return False
         
-        # NUEVO ENFOQUE UNIFICADO: Mismo algoritmo para fechas actuales y futuras
-        # Verificar por tipo de frecuencia
+        # ENFOQUE UNIFICADO: Primero verificar si existe una instancia para esta fecha
+        # Si existe una instancia, la tarea debería mostrarse para esta fecha
+        instance = TaskInstance.query.filter_by(
+            task_id=task.id,
+            scheduled_date=check_date
+        ).first()
+        
+        if instance:
+            # Si existe instancia para esta fecha, verificar si ya hay completación
+            # solo en esta fecha específica (no en toda la semana/quincena/mes)
+            completion = TaskCompletion.query.filter_by(task_id=task.id).filter(
+                db.func.date(TaskCompletion.completion_date) == check_date
+            ).first()
+            
+            # Si hay completación en esta fecha específica, no mostrar
+            if completion:
+                return False
+            # Si no hay completación en esta fecha específica pero existe la instancia,
+            # mostrar la tarea
+            return True
+        
+        # Si no existe instancia, verificar por frecuencia y reglas específicas
         if task.frequency == TaskFrequency.DIARIA:
             return True
             
         elif task.frequency == TaskFrequency.SEMANAL:
-            # 1. Calcular el lunes y domingo de la semana de check_date
-            monday_of_week = check_date - timedelta(days=check_date.weekday())
-            sunday_of_week = monday_of_week + timedelta(days=6)
-            
-            # 2. Comprobar si hay alguna completación en ESA semana específica
-            completions = TaskCompletion.query.filter_by(task_id=task.id).all()
-            
-            for completion in completions:
-                completion_date = completion.completion_date.date()
-                # Si hay completación en esta semana (lunes a domingo), no mostrar la tarea
-                if monday_of_week <= completion_date <= sunday_of_week:
-                    return False
-            
-            # Si no hay completaciones en esta semana, mostrar la tarea
+            # Si no hay instancia pero es una tarea semanal, probablemente es porque
+            # aún no se ejecutó el programador. Verificar por día de la semana.
             return True
             
         elif task.frequency == TaskFrequency.QUINCENAL:
-            # 1. Determinar la quincena actual (1-15 o 16-fin)
-            if check_date.day < 16:
-                # Primera quincena
-                first_day = date(check_date.year, check_date.month, 1)
-                last_day_of_month = monthrange(check_date.year, check_date.month)[1]
-                last_day = date(check_date.year, check_date.month, min(15, last_day_of_month))
-            else:
-                # Segunda quincena
-                first_day = date(check_date.year, check_date.month, 16)
-                last_day_of_month = monthrange(check_date.year, check_date.month)[1]
-                last_day = date(check_date.year, check_date.month, last_day_of_month)
-            
-            # 2. Comprobar si hay alguna completación en ESTA quincena específica
-            completions = TaskCompletion.query.filter_by(task_id=task.id).all()
-            
-            for completion in completions:
-                completion_date = completion.completion_date.date()
-                # Si hay completación en esta quincena, no mostrar la tarea
-                if first_day <= completion_date <= last_day:
-                    return False
-            
-            # Si no hay completaciones en esta quincena, mostrar la tarea
+            # Si no hay instancia pero es quincenal, probablemente es porque
+            # aún no se ejecutó el programador.
             return True
             
         elif task.frequency == TaskFrequency.MENSUAL:
-            # 1. Determinar el primer y último día del mes actual
-            first_day = date(check_date.year, check_date.month, 1)
-            last_day_of_month = monthrange(check_date.year, check_date.month)[1]
-            last_day = date(check_date.year, check_date.month, last_day_of_month)
-            
-            # 2. Comprobar si hay alguna completación en ESTE mes específico
-            completions = TaskCompletion.query.filter_by(task_id=task.id).all()
-            
-            for completion in completions:
-                completion_date = completion.completion_date.date()
-                # Si hay completación en este mes, no mostrar la tarea
-                if first_day <= completion_date <= last_day:
-                    return False
-            
-            # Si no hay completaciones en este mes, mostrar la tarea
+            # Si no hay instancia pero es mensual, probablemente es porque
+            # aún no se ejecutó el programador.
             return True
             
         elif task.frequency == TaskFrequency.PERSONALIZADA:

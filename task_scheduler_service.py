@@ -447,6 +447,11 @@ def service_loop():
 def start_service():
     """Inicia el servicio en un hilo separado"""
     try:
+        # Banner de inicio del servicio
+        logger.info("*" * 80)
+        logger.info("*" + " " * 20 + "INICIANDO SERVICIO DE PROGRAMADOR DE TAREAS" + " " * 20 + "*")
+        logger.info("*" * 80)
+        
         logger.info("Iniciando servicio de programación de tareas")
         
         # Crear y arrancar el hilo del servicio
@@ -473,12 +478,24 @@ def start_service():
 def stop_service():
     """Detiene el servicio"""
     global keep_running
+    
+    # Banner de detención del servicio
+    logger.info("*" * 80)
+    logger.info("*" + " " * 20 + "DETENIENDO SERVICIO DE PROGRAMADOR DE TAREAS" + " " * 20 + "*")
+    logger.info("*" * 80)
+    
     logger.info("Deteniendo servicio de programación de tareas")
     keep_running = False
     # Eliminar el archivo de inicio si existe
     if os.path.exists(STARTUP_FILE):
         os.remove(STARTUP_FILE)
+    
     logger.info("Servicio de programación de tareas detenido")
+    
+    # Banner de confirmación
+    logger.info("*" * 80)
+    logger.info("*" + " " * 21 + "SERVICIO DE PROGRAMADOR DE TAREAS DETENIDO" + " " * 21 + "*")
+    logger.info("*" * 80)
 
 # Código para ejecutar el servicio directamente
 if __name__ == "__main__":

@@ -155,10 +155,10 @@
                         <i class="bi bi-arrow-repeat"></i> <span>Reiniciar semanales</span>
                     </button>
                 </form>
-                <form action="{{ url_for('tasks.test_reset_daily_tasks') }}" method="post" class="d-inline me-2" onsubmit="return confirm('¿Estás seguro de que quieres reiniciar TODAS las tareas DIARIAS? Esto establecerá todas las tareas diarias como pendientes.');">
+                <form action="{{ url_for('tasks.test_reset_daily_tasks') }}" method="post" class="d-inline me-2" onsubmit="return confirm('¿Estás seguro de que quieres reiniciar las tareas DIARIAS y MENSUALES? Esto establecerá todas estas tareas como pendientes.');">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-info" title="Reinicia todas las tareas diarias (prueba)">
-                        <i class="bi bi-arrow-repeat"></i> <span>Reiniciar diarias</span>
+                    <button type="submit" class="btn btn-info" title="Reinicia todas las tareas diarias y mensuales (prueba)">
+                        <i class="bi bi-arrow-repeat"></i> <span>Reiniciar diarias/mensuales</span>
                     </button>
                 </form>
                 <a href="{{ url_for('tasks.local_logout') }}" class="btn btn-lg" style="border: 2px solid black; color: black; font-weight: bold;">

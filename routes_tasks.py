@@ -1459,9 +1459,9 @@ def test_reset_weekly_tasks():
 @tasks_bp.route('/local-user/test-reset-daily-tasks', methods=['POST'])
 @local_user_required
 def test_reset_daily_tasks():
-    """Ejecuta manualmente el reinicio de tareas diarias (solo para pruebas)"""
-    # Importar la función de reinicio de tareas diarias
-    from daily_tasks_reset_service import reset_daily_tasks
+    """Ejecuta manualmente el reinicio de tareas diarias y mensuales (solo para pruebas)"""
+    # Importar las funciones de reinicio de tareas
+    from daily_tasks_reset_service import reset_daily_tasks, reset_monthly_tasks
     
     # Usar un archivo de bloqueo para evitar ejecuciones simultáneas
     lock_file = None
@@ -1479,10 +1479,14 @@ def test_reset_daily_tasks():
             
             # Si llegamos aquí, tenemos el bloqueo exclusivo
             # Ejecutar manualmente el reinicio de tareas diarias
-            tasks_reset_count = reset_daily_tasks()
+            daily_tasks_count = reset_daily_tasks()
             
-            log_activity(f'Reinicio manual de tareas diarias ejecutado: {tasks_reset_count} tareas diarias actualizadas')
-            flash('¡Reinicio de tareas diarias ejecutado correctamente!', 'success')
+            # Ejecutar manualmente el reinicio de tareas mensuales
+            monthly_tasks_count = reset_monthly_tasks()
+            
+            # Registrar la actividad en el log y mostrar mensaje
+            log_activity(f'Reinicio manual ejecutado: {daily_tasks_count} tareas diarias y {monthly_tasks_count} tareas mensuales actualizadas')
+            flash(f'¡Reinicio de tareas ejecutado correctamente! ({daily_tasks_count} tareas diarias, {monthly_tasks_count} tareas mensuales)', 'success')
             
         except IOError:
             # No se pudo obtener el bloqueo, otro proceso ya lo tiene

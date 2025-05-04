@@ -89,6 +89,7 @@ def process_tasks_for_location(location, target_date=None):
         ).filter(Task.start_date <= process_date).all()
         
         for task in daily_tasks:
+            # Siempre creamos una instancia para tareas diarias
             if create_task_instance(task, process_date):
                 counters['daily'] += 1
         
@@ -108,15 +109,24 @@ def process_tasks_for_location(location, target_date=None):
                 scheduled_date=process_date
             ).first()
             
-            # Si no existe una instancia para este día, crearla
-            # IMPORTANTE: No verificamos completaciones porque queremos que
-            # las tareas aparezcan todos los días hasta que se completen
-            # INDIVIDUALMENTE para cada día, no para la semana completa
+            # 1. Si no existe una instancia, siempre crear una nueva
             if not existing_for_this_date:
-                # Garantizar que se crea la instancia independientemente de completaciones previas
                 logger.info(f"Creando instancia de tarea semanal '{task.title}' para {process_date}")
                 if create_task_instance(task, process_date):
                     counters['weekly'] += 1
+            # 2. Si existe una instancia pero está completada y estamos creando para una nueva semana, crear de nuevo
+            elif existing_for_this_date.status == TaskStatus.COMPLETADA:
+                # Determinar si la fecha actual es un lunes y estamos induciendo la regeneración semanal
+                # Si es lunes (process_date.weekday() == 0) y la instancia existente está completada,
+                # debemos recrearla para la nueva semana
+                if process_date.weekday() == 0:  # Es lunes
+                    # Borrar la instancia existente si está completada
+                    logger.info(f"Regenerando instancia de tarea semanal '{task.title}' para nueva semana {process_date}")
+                    db.session.delete(existing_for_this_date)
+                    db.session.commit()
+                    # Crear una nueva instancia
+                    if create_task_instance(task, process_date):
+                        counters['weekly'] += 1
         
         # Procesar tareas quincenales
         biweekly_tasks = Task.query.filter_by(frequency=TaskFrequency.QUINCENAL, location_id=location_id).filter(
@@ -141,15 +151,24 @@ def process_tasks_for_location(location, target_date=None):
                 scheduled_date=process_date
             ).first()
             
-            # Si no existe una instancia para este día, crearla
-            # IMPORTANTE: No verificamos completaciones porque queremos que
-            # las tareas aparezcan todos los días hasta que se completen
-            # INDIVIDUALMENTE para cada día, no para la quincena completa
+            # 1. Si no existe una instancia, crear una nueva
             if not existing_for_this_date:
-                # Garantizar que se crea la instancia independientemente de completaciones previas
                 logger.info(f"Creando instancia de tarea quincenal '{task.title}' para {process_date}")
                 if create_task_instance(task, process_date):
                     counters['biweekly'] += 1
+            # 2. Si existe una instancia pero está completada y estamos creando para una nueva quincena, crear de nuevo
+            elif existing_for_this_date.status == TaskStatus.COMPLETADA:
+                # Determinar si es el primer día de una quincena (1 o 16) y hay que regenerar
+                # Si es día 1 o 16 y la instancia existente está completada,
+                # debemos recrearla para la nueva quincena
+                if process_date.day == 1 or process_date.day == 16:  # Primer día de quincena
+                    # Borrar la instancia existente si está completada
+                    logger.info(f"Regenerando instancia de tarea quincenal '{task.title}' para nueva quincena {process_date}")
+                    db.session.delete(existing_for_this_date)
+                    db.session.commit()
+                    # Crear una nueva instancia
+                    if create_task_instance(task, process_date):
+                        counters['biweekly'] += 1
         
         # Procesar tareas mensuales
         monthly_tasks = Task.query.filter_by(frequency=TaskFrequency.MENSUAL, location_id=location_id).filter(
@@ -168,15 +187,24 @@ def process_tasks_for_location(location, target_date=None):
                 scheduled_date=process_date
             ).first()
             
-            # Si no existe una instancia para este día, crearla
-            # IMPORTANTE: No verificamos completaciones porque queremos que
-            # las tareas aparezcan todos los días hasta que se completen
-            # INDIVIDUALMENTE para cada día, no para el mes completo
+            # 1. Si no existe una instancia, crear una nueva
             if not existing_for_this_date:
-                # Garantizar que se crea la instancia independientemente de completaciones previas
                 logger.info(f"Creando instancia de tarea mensual '{task.title}' para {process_date}")
                 if create_task_instance(task, process_date):
                     counters['monthly'] += 1
+            # 2. Si existe una instancia pero está completada y estamos creando para un nuevo mes, crear de nuevo
+            elif existing_for_this_date.status == TaskStatus.COMPLETADA:
+                # Determinar si es el primer día del mes (día 1) y hay que regenerar
+                # Si es día 1 y la instancia existente está completada,
+                # debemos recrearla para el nuevo mes
+                if process_date.day == 1:  # Primer día del mes
+                    # Borrar la instancia existente si está completada
+                    logger.info(f"Regenerando instancia de tarea mensual '{task.title}' para nuevo mes {process_date}")
+                    db.session.delete(existing_for_this_date)
+                    db.session.commit()
+                    # Crear una nueva instancia
+                    if create_task_instance(task, process_date):
+                        counters['monthly'] += 1
         
         # Procesar tareas personalizadas
         custom_tasks = Task.query.filter_by(frequency=TaskFrequency.PERSONALIZADA, location_id=location_id).filter(
@@ -205,12 +233,30 @@ def process_tasks_for_location(location, target_date=None):
                         scheduled_date=process_date
                     ).first()
                     
-                    # Si no existe una instancia para este día, crearla
+                    # 1. Si no existe una instancia, crear una nueva
                     if not existing_for_this_date:
-                        # Garantizar que se crea la instancia independientemente de completaciones previas
                         logger.info(f"Creando instancia de tarea personalizada '{task.title}' para {process_date}")
                         if create_task_instance(task, process_date):
                             counters['custom'] += 1
+                    # 2. Si existe una instancia pero está completada y estamos creando para un nuevo periodo, crear de nuevo
+                    elif existing_for_this_date.status == TaskStatus.COMPLETADA:
+                        # Obtener la fecha de una semana atrás
+                        one_week_ago = process_date - timedelta(days=7)
+                        # Verificar si hay una instancia completada para la semana anterior
+                        prev_instance = TaskInstance.query.filter_by(
+                            task_id=task.id, 
+                            scheduled_date=one_week_ago
+                        ).first()
+                        
+                        # Si hay una instancia anterior completada y la fecha actual es un nuevo día de la semana
+                        # que coincide con la configuración, regeneramos la tarea
+                        if prev_instance:
+                            logger.info(f"Regenerando instancia de tarea personalizada '{task.title}' para nueva semana {process_date}")
+                            db.session.delete(existing_for_this_date)
+                            db.session.commit()
+                            # Crear una nueva instancia
+                            if create_task_instance(task, process_date):
+                                counters['custom'] += 1
                     break
         
         # Mostrar resultados de procesamiento

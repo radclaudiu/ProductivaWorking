@@ -217,6 +217,7 @@ class Task(db.Model):
     end_date = db.Column(db.Date)  # Fecha final para tareas recurrentes, NULL si no caduca
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    current_week_completed = db.Column(db.Boolean, default=False)  # Para tareas semanales con rango lunes-domingo
     
     # Relaciones
     location_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=False)
@@ -264,6 +265,10 @@ class Task(db.Model):
         # Si la tarea tiene fecha de inicio y aún no ha llegado, no está activa
         if self.start_date and today < self.start_date:
             return False
+            
+        # Para tareas semanales, verificar si ya han sido completadas esta semana
+        if self.frequency == TaskFrequency.SEMANAL and self.current_week_completed:
+            return False
         
         # Para tareas personalizadas con múltiples días, verificamos los días configurados
         if self.frequency == TaskFrequency.PERSONALIZADA and self.weekdays:
@@ -280,8 +285,12 @@ class Task(db.Model):
             if self.frequency == TaskFrequency.DIARIA:
                 return True
                 
-            # Para tareas semanales, verificamos si today es el mismo día de la semana que start_date
+            # Para tareas semanales, ahora mostramos de lunes a domingo a menos que estén completadas
             elif self.frequency == TaskFrequency.SEMANAL and self.start_date:
+                # Si es una fecha de inicio en el pasado, la tarea está disponible todos los días de la semana
+                # hasta que se complete
+                if today >= self.start_date and not self.current_week_completed:
+                    return True
                 return today.weekday() == self.start_date.weekday()
                 
             # Para tareas mensuales, verificamos si today es el mismo día del mes que start_date

@@ -10,12 +10,15 @@
         border-radius: 8px 8px 0 0; /* Bordes más redondeados */
         border-bottom: 2px solid #ddd;
         margin-bottom: 0;
+        overflow: visible; /* Asegura que el contenido no se recorte */
     }
     .day-card {
         margin-bottom: 30px; /* Más espacio entre tarjetas */
         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12); /* Sombra más prominente */
         border-radius: 8px; /* Bordes más redondeados */
         border: 1px solid #e9ecef; /* Borde sutil para mejor definición */
+        overflow: visible !important; /* Asegura que el contenido no se recorte */
+        z-index: 1; /* Asegura que la tarjeta esté por encima de otras */
     }
     .card-body {
         padding: 30px 35px; /* Más padding interno */
@@ -61,15 +64,15 @@
         {% for day in schedules %}
         <div class="col-md-6">
             <div class="card day-card">
-                <div class="day-title d-flex justify-content-between align-items-center">
-                    <span>
+                <div class="day-title d-flex justify-content-between align-items-center position-relative">
+                    <span class="position-relative" style="z-index: 10;">
                         <i class="bi bi-calendar-day me-2"></i>
                         {{ day.name }}
                     </span>
                     {% if day.schedule and day.schedule.is_working_day %}
-                        <span class="badge bg-success working-day-badge">Laborable</span>
+                        <span class="badge bg-success working-day-badge position-relative" style="z-index: 10;">Laborable</span>
                     {% else %}
-                        <span class="badge bg-secondary working-day-badge">No Laborable</span>
+                        <span class="badge bg-secondary working-day-badge position-relative" style="z-index: 10;">No Laborable</span>
                     {% endif %}
                 </div>
                 <div class="card-body">

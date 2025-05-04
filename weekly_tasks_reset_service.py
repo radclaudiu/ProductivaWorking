@@ -7,7 +7,7 @@ import threading
 import time
 import logging
 from datetime import datetime, timedelta
-from models_tasks import Task, TaskFrequency
+from models_tasks import Task, TaskFrequency, TaskStatus, TaskInstance, WeekDay
 from app import db
 
 # Configuración de logging
@@ -69,6 +69,104 @@ def reset_weekly_tasks():
         
     except Exception as e:
         logger.error(f"Error al reiniciar tareas semanales: {str(e)}")
+        db.session.rollback()
+        return 0
+
+def process_custom_tasks_for_week():
+    """
+    Procesa las tareas personalizadas para la semana entrante.
+    Crea instancias de tareas para los días correspondientes de la semana.
+    
+    Returns:
+        int: Número de instancias de tareas creadas
+    """
+    try:
+        # Obtener la fecha actual y fechas de la semana
+        today = datetime.now().date()
+        # Si hoy es lunes, start_of_week es hoy
+        # Si no, calculamos la fecha del lunes de esta semana
+        if today.weekday() == 0:  # 0 = lunes
+            start_of_week = today
+        else:
+            # No debería ocurrir porque solo ejecutamos los lunes, pero por si acaso
+            days_since_monday = today.weekday()
+            start_of_week = today - timedelta(days=days_since_monday)
+        
+        # Calcular las fechas para cada día de la semana
+        week_dates = {
+            0: start_of_week,                       # Lunes
+            1: start_of_week + timedelta(days=1),   # Martes
+            2: start_of_week + timedelta(days=2),   # Miércoles
+            3: start_of_week + timedelta(days=3),   # Jueves
+            4: start_of_week + timedelta(days=4),   # Viernes
+            5: start_of_week + timedelta(days=5),   # Sábado
+            6: start_of_week + timedelta(days=6)    # Domingo
+        }
+        
+        # Obtener todas las tareas personalizadas activas
+        custom_tasks = Task.query.filter_by(
+            frequency=TaskFrequency.PERSONALIZADA,
+            status=TaskStatus.PENDIENTE
+        ).filter(
+            (Task.end_date.is_(None)) | (Task.end_date >= today)
+        ).filter(
+            Task.start_date <= today
+        ).all()
+        
+        if not custom_tasks:
+            logger.info("No hay tareas personalizadas para procesar esta semana")
+            return 0
+        
+        instances_created = 0
+        # Para cada tarea personalizada
+        for task in custom_tasks:
+            # Obtener los días configurados
+            weekdays = task.weekdays
+            if not weekdays:
+                continue
+                
+            # Para cada día configurado
+            for weekday_entry in weekdays:
+                # Obtener el índice del día de la semana (0-6 donde 0 es lunes)
+                day_index = {
+                    WeekDay.LUNES: 0,
+                    WeekDay.MARTES: 1,
+                    WeekDay.MIERCOLES: 2,
+                    WeekDay.JUEVES: 3,
+                    WeekDay.VIERNES: 4,
+                    WeekDay.SABADO: 5,
+                    WeekDay.DOMINGO: 6
+                }[weekday_entry.day_of_week]
+                
+                # Obtener la fecha correspondiente
+                target_date = week_dates[day_index]
+                
+                # Verificar si ya existe una instancia para esta tarea en esta fecha
+                existing_instance = TaskInstance.query.filter_by(
+                    task_id=task.id,
+                    scheduled_date=target_date
+                ).first()
+                
+                # Si no existe, crear una nueva instancia
+                if not existing_instance:
+                    new_instance = TaskInstance(
+                        task_id=task.id,
+                        scheduled_date=target_date,
+                        status=TaskStatus.PENDIENTE
+                    )
+                    db.session.add(new_instance)
+                    instances_created += 1
+                    logger.debug(f"Creada instancia de tarea '{task.title}' para {target_date}")
+        
+        # Guardar todos los cambios
+        if instances_created > 0:
+            db.session.commit()
+            logger.info(f"Se crearon {instances_created} instancias de tareas personalizadas para esta semana")
+        
+        return instances_created
+        
+    except Exception as e:
+        logger.error(f"Error al procesar tareas personalizadas: {str(e)}")
         db.session.rollback()
         return 0
 
@@ -141,16 +239,23 @@ def weekly_tasks_reset_worker():
             try:
                 # Verificar si es momento de ejecutar el reinicio
                 if should_run_reset():
-                    logger.info("Es lunes después de las {RESET_HOUR}:{RESET_MINUTE} - Ejecutando reinicio de tareas semanales")
+                    logger.info(f"Es lunes después de las {RESET_HOUR}:{RESET_MINUTE} - Ejecutando reinicio de tareas semanales")
                     
                     # Usar el contexto de la aplicación para operaciones de base de datos
                     with app.app_context():
-                        # Realizar el reinicio
-                        count = reset_weekly_tasks()
-                        if count > 0:
-                            logger.info(f"Reinicio exitoso: {count} tareas semanales actualizadas")
+                        # Realizar el reinicio de tareas semanales
+                        tasks_reset_count = reset_weekly_tasks()
+                        if tasks_reset_count > 0:
+                            logger.info(f"Reinicio exitoso: {tasks_reset_count} tareas semanales actualizadas")
                         else:
                             logger.info("No se reiniciaron tareas (no hay tareas completadas o ya se hizo hoy)")
+                        
+                        # Procesar tareas personalizadas para la semana
+                        custom_tasks_count = process_custom_tasks_for_week()
+                        if custom_tasks_count > 0:
+                            logger.info(f"Procesamiento exitoso: {custom_tasks_count} instancias de tareas personalizadas creadas")
+                        else:
+                            logger.info("No se crearon instancias de tareas personalizadas para esta semana")
                 else:
                     logger.debug("No es momento de ejecutar el reinicio de tareas semanales")
                 

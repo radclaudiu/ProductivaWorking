@@ -289,9 +289,9 @@ def process_tasks_for_location(location, target_date=None):
             logger.info(f"✅ UBICACIÓN PROCESADA: {location_name} (ID: {location_id}) - Creadas {total_instances} instancias:")
             logger.info(f"   ○ Diarias: {counters['diaria']}")
             logger.info(f"   ○ Semanales: {counters['semanal']}")
-            logger.info(f"   ○ Quincenales: {counters['biweekly']}")
-            logger.info(f"   ○ Mensuales: {counters['monthly']}")
-            logger.info(f"   ○ Personalizadas: {counters['custom']}")
+            logger.info(f"   ○ Quincenales: {counters['quincenal']}")
+            logger.info(f"   ○ Mensuales: {counters['mensual']}")
+            logger.info(f"   ○ Personalizadas: {counters['personalizada']}")
         else:
             logger.info(f"⚠️ UBICACIÓN SIN CAMBIOS: {location_name} (ID: {location_id}) - No se crearon nuevas instancias")
         
@@ -345,11 +345,18 @@ def run_task_scheduler_for_location(location_id=None):
         # Variables para contador de tareas
         total_tasks_created = 0
         total_tasks_by_type = {
-            'daily': 0,
-            'weekly': 0,
-            'biweekly': 0,
-            'monthly': 0,
-            'custom': 0
+            'diaria': 0,
+            'dia_lunes': 0,
+            'dia_martes': 0,
+            'dia_miercoles': 0,
+            'dia_jueves': 0,
+            'dia_viernes': 0,
+            'dia_sabado': 0,
+            'dia_domingo': 0,
+            'semanal': 0,
+            'quincenal': 0,
+            'mensual': 0,
+            'personalizada': 0
         }
         total_locations_processed = 0
         total_locations_with_tasks = 0
@@ -413,11 +420,19 @@ def run_task_scheduler_for_location(location_id=None):
         logger.info(f"Ubicaciones procesadas: {total_locations_processed} de {len(locations)}")
         logger.info(f"Ubicaciones con tareas: {total_locations_with_tasks}")
         logger.info(f"Total de instancias de tareas creadas: {total_tasks_created}")
-        logger.info(f"  ○ Tareas diarias: {total_tasks_by_type['daily']}")
-        logger.info(f"  ○ Tareas semanales: {total_tasks_by_type['weekly']}")
-        logger.info(f"  ○ Tareas quincenales: {total_tasks_by_type['biweekly']}")
-        logger.info(f"  ○ Tareas mensuales: {total_tasks_by_type['monthly']}")
-        logger.info(f"  ○ Tareas personalizadas: {total_tasks_by_type['custom']}")
+        logger.info(f"  ○ Tareas diarias: {total_tasks_by_type['diaria']}")
+        logger.info(f"  ○ Tareas lunes: {total_tasks_by_type['dia_lunes']}")
+        logger.info(f"  ○ Tareas martes: {total_tasks_by_type['dia_martes']}")
+        logger.info(f"  ○ Tareas miércoles: {total_tasks_by_type['dia_miercoles']}")
+        logger.info(f"  ○ Tareas jueves: {total_tasks_by_type['dia_jueves']}")
+        logger.info(f"  ○ Tareas viernes: {total_tasks_by_type['dia_viernes']}")
+        logger.info(f"  ○ Tareas sábado: {total_tasks_by_type['dia_sabado']}")
+        logger.info(f"  ○ Tareas domingo: {total_tasks_by_type['dia_domingo']}")
+        logger.info(f"  ○ Tareas semanales: {total_tasks_by_type['semanal']}")
+        logger.info(f"  ○ Tareas quincenales: {total_tasks_by_type['quincenal']}")
+        logger.info(f"  ○ Tareas mensuales: {total_tasks_by_type['mensual']}")
+        logger.info(f"  ○ Tareas personalizadas: {total_tasks_by_type['personalizada']}")
+
         logger.info("=" * 100 + "\n")
         
         return total_tasks_created

@@ -10,7 +10,7 @@ import os
 import fcntl
 import socket
 from datetime import datetime, timedelta
-from models_tasks import Task, TaskFrequency, TaskStatus, TaskInstance, WeekDay
+from models_tasks import Task, TaskFrequency, TaskStatus, TaskInstance, WeekDay, TaskMonthDay
 from app import db
 
 # Configuración de logging
@@ -33,6 +33,97 @@ last_run_time = None
 service_active = False
 last_reset_date = None
 lock_file_handle = None
+
+
+def reset_monthly_tasks():
+    """
+    Reinicia el estado de las tareas mensuales cuando inicia un nuevo mes.
+    Actualiza el campo current_month_completed para que las tareas mensuales 
+    puedan volver a mostrarse según los días configurados.
+    
+    Returns:
+        int: Número de tareas actualizadas
+    """
+    try:
+        today = datetime.now().date()
+        # Si es el primer día del mes, reiniciamos todas las tareas mensuales
+        # marcando current_month_completed como False
+        if today.day == 1:
+            # Obtener todas las tareas mensuales
+            monthly_tasks = Task.query.filter_by(
+                frequency=TaskFrequency.MENSUAL,
+                current_month_completed=True,
+                status=TaskStatus.PENDIENTE
+            ).all()
+            
+            if not monthly_tasks:
+                logger.info("No hay tareas mensuales para reiniciar")
+                return 0
+                
+            # Reiniciar el estado de completed para el nuevo mes
+            for task in monthly_tasks:
+                task.current_month_completed = False
+                logger.debug(f"Tarea mensual '{task.title}' reiniciada para el nuevo mes")
+            
+            # Guardar los cambios
+            db.session.commit()
+            logger.info(f"Se reiniciaron {len(monthly_tasks)} tareas mensuales para el nuevo mes")
+            return len(monthly_tasks)
+            
+        # Si no es el primer día del mes, verificamos si hay tareas mensuales
+        # asignadas a este día del mes específico
+        else:
+            # Procesamos tareas mensuales con días específicos
+            day_of_month = today.day
+            
+            # Obtener tareas mensuales con días específicos para hoy
+            # y que no estén completadas para este mes
+            monthly_tasks_for_today = Task.query.join(
+                TaskMonthDay,
+                Task.id == TaskMonthDay.task_id
+            ).filter(
+                Task.frequency == TaskFrequency.MENSUAL,
+                Task.current_month_completed == False,
+                Task.status == TaskStatus.PENDIENTE,
+                TaskMonthDay.day_of_month == day_of_month
+            ).all()
+            
+            if not monthly_tasks_for_today:
+                logger.info(f"No hay tareas mensuales para el día {day_of_month} del mes")
+                return 0
+                
+            # Crear instancias para las tareas de hoy
+            instances_created = 0
+            
+            for task in monthly_tasks_for_today:
+                # Verificar si ya existe una instancia para hoy
+                existing_instance = TaskInstance.query.filter_by(
+                    task_id=task.id,
+                    scheduled_date=today
+                ).first()
+                
+                # Si no existe, crear una nueva instancia para hoy
+                if not existing_instance:
+                    new_instance = TaskInstance(
+                        task_id=task.id,
+                        scheduled_date=today,
+                        status=TaskStatus.PENDIENTE
+                    )
+                    db.session.add(new_instance)
+                    instances_created += 1
+                    logger.debug(f"Creada instancia de tarea mensual '{task.title}' para hoy (día {day_of_month})")
+            
+            # Guardar los cambios
+            if instances_created > 0:
+                db.session.commit()
+                logger.info(f"Se crearon {instances_created} instancias de tareas mensuales para hoy (día {day_of_month})")
+            
+            return instances_created
+            
+    except Exception as e:
+        logger.error(f"Error al reiniciar tareas mensuales: {str(e)}")
+        db.session.rollback()
+        return 0
 
 
 def reset_daily_tasks():
@@ -168,7 +259,14 @@ def daily_tasks_reset_worker():
                         if tasks_reset_count > 0:
                             logger.info(f"Reinicio exitoso: {tasks_reset_count} tareas diarias actualizadas")
                         else:
-                            logger.info("No se reiniciaron tareas (no hay tareas diarias o ya se hizo hoy)")
+                            logger.info("No se reiniciaron tareas diarias (no hay tareas diarias o ya se hizo hoy)")
+                            
+                        # Realizar el reinicio de tareas mensuales (personalizadas o por primer día del mes)
+                        monthly_tasks_reset_count = reset_monthly_tasks()
+                        if monthly_tasks_reset_count > 0:
+                            logger.info(f"Reinicio exitoso: {monthly_tasks_reset_count} tareas mensuales actualizadas")
+                        else:
+                            logger.info("No se reiniciaron tareas mensuales (no hay tareas mensuales para hoy)")
                         
                 else:
                     logger.debug("No es momento de ejecutar el reinicio de tareas diarias")

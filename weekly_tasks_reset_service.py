@@ -23,12 +23,22 @@ logger = logging.getLogger(__name__)
 RESET_HOUR = 4  # 04:00 AM
 RESET_MINUTE = 0
 
+import os
+import fcntl
+import socket
+
+# Archivo de bloqueo para evitar múltiples instancias
+LOCK_FILE = "/tmp/weekly_tasks_reset_service.lock"
+
 # Variables globales para controlar el estado del servicio
 service_thread = None
 service_running = False
 last_run_time = None
 service_active = False
 last_reset_date = None
+
+# Variable para controlar si ya existe una instancia en ejecución
+lock_file_handle = None
 
 def reset_weekly_tasks():
     """
@@ -283,14 +293,34 @@ def weekly_tasks_reset_worker():
 def start_weekly_tasks_reset_service():
     """
     Inicia el servicio de reinicio de tareas semanales en un hilo separado.
+    Utiliza un archivo de bloqueo para evitar múltiples ejecuciones con varios workers.
     
     Returns:
         bool: True si el servicio se inició correctamente, False en caso contrario.
     """
-    global service_thread, service_running, service_active
+    global service_thread, service_running, service_active, lock_file_handle
     
+    # Verificar si ya hay una instancia en ejecución (incluso en otro worker)
+    try:
+        # Intentar obtener un bloqueo exclusivo (no bloqueante)
+        lock_file_handle = open(LOCK_FILE, 'w')
+        fcntl.lockf(lock_file_handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        
+        # Escribir información en el archivo de bloqueo
+        pid = os.getpid()
+        host = socket.gethostname()
+        lock_info = f"{pid}@{host} {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        lock_file_handle.write(lock_info)
+        lock_file_handle.flush()
+        
+        logger.info(f"Adquirido bloqueo exclusivo para el servicio (PID: {pid})")
+    except IOError:
+        # No se pudo obtener el bloqueo, otro proceso ya lo tiene
+        logger.info("Otra instancia del servicio ya está en ejecución")
+        return False
+        
     if service_thread is not None and service_thread.is_alive():
-        logger.info("El servicio de reinicio de tareas ya está en ejecución")
+        logger.info("El servicio de reinicio de tareas ya está en ejecución en este worker")
         return False
     
     # Si el hilo anterior existe pero está muerto, limpiar la referencia
@@ -314,6 +344,11 @@ def start_weekly_tasks_reset_service():
         return True
     else:
         logger.error("No se pudo iniciar el servicio de reinicio de tareas semanales")
+        # Liberar el bloqueo
+        if lock_file_handle:
+            fcntl.lockf(lock_file_handle, fcntl.LOCK_UN)
+            lock_file_handle.close()
+            lock_file_handle = None
         return False
 
 

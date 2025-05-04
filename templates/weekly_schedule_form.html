@@ -6,7 +6,7 @@
     .day-title {
         background-color: #f8f9fa;
         font-weight: bold;
-        padding: 20px 15px; /* Reducido el padding horizontal para no introducir desplazamiento */
+        padding: 25px 15px 15px; /* Padding vertical ajustado para bajar elementos */
         border-radius: 8px 8px 0 0; /* Bordes más redondeados */
         border-bottom: 2px solid #ddd;
         margin-bottom: 0;
@@ -65,14 +65,14 @@
         <div class="col-md-6">
             <div class="card day-card">
                 <div class="day-title d-flex justify-content-between align-items-center position-relative">
-                    <span class="position-relative ms-2" style="z-index: 10; margin-left: 10px;">
+                    <span class="position-relative" style="z-index: 10; margin-left: 20px; transform: translateY(4px);">
                         <i class="bi bi-calendar-day me-2"></i>
                         {{ day.name }}
                     </span>
                     {% if day.schedule and day.schedule.is_working_day %}
-                        <span class="badge bg-success working-day-badge position-relative me-2" style="z-index: 10; margin-right: 10px;">Laborable</span>
+                        <span class="badge bg-success working-day-badge position-relative" style="z-index: 10; margin-right: 20px; transform: translateY(4px);">Laborable</span>
                     {% else %}
-                        <span class="badge bg-secondary working-day-badge position-relative me-2" style="z-index: 10; margin-right: 10px;">No Laborable</span>
+                        <span class="badge bg-secondary working-day-badge position-relative" style="z-index: 10; margin-right: 20px; transform: translateY(4px);">No Laborable</span>
                     {% endif %}
                 </div>
                 <div class="card-body">

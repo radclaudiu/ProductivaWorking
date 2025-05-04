@@ -171,36 +171,34 @@
         <div class="col-lg-12 mb-4">
             <div class="card shadow mb-4">
                 <div class="card-header py-3 d-flex align-items-center">
-                    <button type="button" class="btn btn-sm btn-outline-info me-2" data-bs-toggle="modal" data-bs-target="#helpModal">
+                    <button type="button" class="btn btn-sm btn-outline-info me-2" id="helpButton" data-bs-toggle="popover" data-bs-placement="bottom" data-bs-title="Sistema de generación manual y exportación manual de fichajes" data-bs-html="true" data-bs-content="<p>Esta sección está diseñada para la creación y gestión manual de fichajes, especialmente para:</p><ul><li>Fichajes que no se han creado correctamente en el portal de fichajes</li><li>Antiguos fichajes que necesita crear retroactivamente</li><li>Fichajes que necesita generar para imprimir y entregar al empleado</li></ul><p class='alert alert-warning'>Este sistema es totalmente independiente del portal de fichajes usado por los empleados.</p>">
                         <i class="bi bi-question-circle"></i>
                     </button>
                     <h6 class="m-0 font-weight-bold">Generación de fichajes de forma manual</h6>
                 </div>
                 
-                <!-- Modal de Ayuda -->
-                <div class="modal fade" id="helpModal" tabindex="-1" aria-labelledby="helpModalLabel" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header bg-earth-dark text-white">
-                                <h5 class="modal-title" id="helpModalLabel">Información Importante</h5>
-                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <h6 class="fw-bold mb-3">Sistema de generación manual y exportación manual de fichajes</h6>
-                                <p>Esta sección está diseñada para la creación y gestión manual de fichajes, especialmente para:</p>
-                                <ul>
-                                    <li>Fichajes que no se han creado correctamente en el portal de fichajes</li>
-                                    <li>Antiguos fichajes que necesita crear retroactivamente</li>
-                                    <li>Fichajes que necesita generar para imprimir y entregar al empleado</li>
-                                </ul>
-                                <p class="alert alert-warning">Este sistema es totalmente independiente del portal de fichajes usado por los empleados y no influye ni es influido por el mismo.</p>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <!-- Script para inicializar los popovers -->
+                <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Inicializar todos los popovers en la página
+                    var popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'))
+                    var popoverList = popoverTriggerList.map(function (popoverTriggerEl) {
+                        return new bootstrap.Popover(popoverTriggerEl, {
+                            trigger: 'click',
+                            container: 'body'
+                        })
+                    })
+                    
+                    // Cerrar popover al hacer clic fuera
+                    document.addEventListener('click', function(e) {
+                        if (e.target.id !== 'helpButton' && !e.target.closest('[data-bs-toggle="popover"]')) {
+                            popoverList.forEach(function(popover) {
+                                popover.hide();
+                            });
+                        }
+                    });
+                });
+                </script>
                 <div class="alert alert-danger mx-3 mt-3">
                     <strong>IMPORTANTE:</strong> Este apartado no tiene nada que ver con el Punto de fichaje de los empleados sino que es una gestión de fichajes y generaciones de PDF de forma independiente al portal de fichajes.
                 </div>

@@ -1727,18 +1727,31 @@ def complete_task(task_id):
         flash('Tarea no válida para este local.', 'danger')
         return redirect(url_for('tasks.local_user_tasks'))
     
-    # Verificar si ya ha sido completada hoy por este usuario
-    today = date.today()
+    # Obtener la fecha de la URL si está presente, o usar la fecha actual
+    date_str = request.args.get('date_str')
+    if date_str:
+        try:
+            # Intentar convertir la fecha de la URL al formato correcto
+            task_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            # Si hay error en la fecha, usar la fecha actual
+            task_date = date.today()
+    else:
+        task_date = date.today()
+    
+    # Verificar si ya ha sido completada en la fecha específica por este usuario
     completion = TaskCompletion.query.filter_by(
         task_id=task.id,
         local_user_id=user_id
     ).filter(
-        func.date(TaskCompletion.completion_date) == today
+        func.date(TaskCompletion.completion_date) == task_date
     ).first()
     
     if completion:
-        flash('Ya has completado esta tarea hoy.', 'warning')
-        return redirect(url_for('tasks.local_user_tasks'))
+        flash(f'Ya has completado esta tarea en {task_date.strftime("%d/%m/%Y")}.', 'warning')
+        return redirect(url_for('tasks.local_user_tasks', date_str=date_str))
+    
+    # Guardar la fecha para usarla en el commit
     
     form = TaskCompletionForm()
     
@@ -1749,17 +1762,25 @@ def complete_task(task_id):
             notes=form.notes.data
         )
         
-        # Buscar la instancia de tarea para la fecha actual
-        today = date.today()
+        # Buscar la instancia de tarea para la fecha especificada
         task_instance = TaskInstance.query.filter_by(
             task_id=task.id,
-            scheduled_date=today
+            scheduled_date=task_date
         ).first()
         
         if task_instance:
             # Actualizar SOLO el estado de la instancia específica a completada
             task_instance.status = TaskStatus.COMPLETADA
             task_instance.completed_by_id = user_id
+        else:
+            # Si no existe instancia para esa fecha, crearla completada
+            task_instance = TaskInstance(
+                task_id=task.id,
+                scheduled_date=task_date,
+                status=TaskStatus.COMPLETADA,
+                completed_by_id=user_id
+            )
+            db.session.add(task_instance)
         
         # IMPORTANTE: Ya no actualizamos el estado general de la tarea
         # para permitir que aparezca en días siguientes
@@ -1793,17 +1814,28 @@ def ajax_complete_task(task_id):
     if task.location_id != user.location_id:
         return jsonify({'error': 'Tarea no válida para este local'}), 403
     
-    # Verificar si ya ha sido completada hoy por este usuario
-    today = date.today()
+    # Obtener la fecha de la URL si está presente, o usar la fecha actual
+    date_str = request.args.get('date_str')
+    if date_str:
+        try:
+            # Intentar convertir la fecha de la URL al formato correcto
+            task_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            # Si hay error en la fecha, usar la fecha actual
+            task_date = date.today()
+    else:
+        task_date = date.today()
+    
+    # Verificar si ya ha sido completada en la fecha específica por este usuario
     existing_completion = TaskCompletion.query.filter_by(
         task_id=task.id,
         local_user_id=user_id
     ).filter(
-        func.date(TaskCompletion.completion_date) == today
+        func.date(TaskCompletion.completion_date) == task_date
     ).first()
     
     if existing_completion:
-        return jsonify({'error': 'Ya has completado esta tarea hoy'}), 400
+        return jsonify({'error': f'Ya has completado esta tarea en {task_date.strftime("%d/%m/%Y")}'}), 400
     
     # Obtener notas (opcional)
     data = request.json
@@ -1816,17 +1848,25 @@ def ajax_complete_task(task_id):
         notes=notes
     )
     
-    # Buscar la instancia de tarea para la fecha actual
-    today = date.today()
+    # Buscar la instancia de tarea para la fecha especificada
     task_instance = TaskInstance.query.filter_by(
         task_id=task.id,
-        scheduled_date=today
+        scheduled_date=task_date
     ).first()
     
     if task_instance:
         # Actualizar SOLO el estado de la instancia específica a completada
         task_instance.status = TaskStatus.COMPLETADA
         task_instance.completed_by_id = user_id
+    else:
+        # Si no existe instancia para esa fecha, crearla completada
+        task_instance = TaskInstance(
+            task_id=task.id,
+            scheduled_date=task_date,
+            status=TaskStatus.COMPLETADA,
+            completed_by_id=user_id
+        )
+        db.session.add(task_instance)
     
     # IMPORTANTE: Ya no actualizamos el estado general de la tarea
     # para permitir que aparezca en días siguientes

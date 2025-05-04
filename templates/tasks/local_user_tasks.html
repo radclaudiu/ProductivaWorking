@@ -459,8 +459,18 @@
         const currentTime = now.getHours().toString().padStart(2, '0') + ':' + 
                            now.getMinutes().toString().padStart(2, '0');
         
+        // Obtener la fecha de la URL actual
+        const urlParams = new URLSearchParams(window.location.search);
+        const dateStr = urlParams.get('date_str');
+        
+        // Construir la URL de la API con el parámetro de fecha si está presente
+        let apiUrl = `/tasks/local-user/tasks/${taskId}/ajax-complete`;
+        if (dateStr) {
+            apiUrl += `?date_str=${dateStr}`;
+        }
+        
         // Realizar petición AJAX
-        fetch(`/tasks/local-user/tasks/${taskId}/ajax-complete`, {
+        fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

@@ -59,212 +59,236 @@ def create_task_instance(task, scheduled_date):
     return False
 
 def process_tasks_for_location(location, target_date=None):
-    """Procesa todas las tareas de una ubicación para una fecha específica
+    """Procesa todas las tareas de una ubicación para las próximas 4 semanas
     
     Args:
         location: Objeto Location a procesar
-        target_date: Fecha objetivo para la que generar instancias (por defecto, hoy)
+        target_date: Fecha de inicio para generar instancias (por defecto, hoy)
     """
     location_id = location.id
     location_name = location.name
     
     # Si no se especifica fecha, usamos la fecha actual
-    process_date = target_date if target_date else date.today()
+    start_date = target_date if target_date else date.today()
     
-    logger.info(f"🔄 PROCESANDO UBICACIÓN: {location_name} (ID: {location_id}) para fecha {process_date}")
+    # Generamos tareas para las próximas 4 semanas (28 días)
+    num_days = 28
+    
+    logger.info(f"🔄 PROCESANDO UBICACIÓN: {location_name} (ID: {location_id}) para los próximos {num_days} días")
     
     # Contador para cada tipo de tarea
     counters = {
-        'daily': 0,
-        'weekly': 0,
-        'biweekly': 0,
-        'monthly': 0,
-        'custom': 0
+        'diaria': 0,
+        'dia_lunes': 0,
+        'dia_martes': 0,
+        'dia_miercoles': 0,
+        'dia_jueves': 0,
+        'dia_viernes': 0,
+        'dia_sabado': 0,
+        'dia_domingo': 0,
+        'semanal': 0,
+        'quincenal': 0,
+        'mensual': 0,
+        'personalizada': 0
     }
     
     try:
-        # Procesar tareas diarias
-        daily_tasks = Task.query.filter_by(frequency=TaskFrequency.DIARIA, location_id=location_id).filter(
-            (Task.end_date.is_(None)) | (Task.end_date >= process_date)
-        ).filter(Task.start_date <= process_date).all()
-        
-        for task in daily_tasks:
-            # Siempre creamos una instancia para tareas diarias
-            if create_task_instance(task, process_date):
-                counters['daily'] += 1
-        
-        # Procesar tareas semanales
-        weekly_tasks = Task.query.filter_by(frequency=TaskFrequency.SEMANAL, location_id=location_id).filter(
-            (Task.end_date.is_(None)) | (Task.end_date >= process_date)
-        ).filter(Task.start_date <= process_date).all()
-        
-        for task in weekly_tasks:
-            # Calcular el lunes y domingo de la semana actual
-            monday_of_week = process_date - timedelta(days=process_date.weekday())
-            sunday_of_week = monday_of_week + timedelta(days=6)
+        # Generamos tareas para cada día en las próximas 4 semanas
+        for day_offset in range(num_days):
+            process_date = start_date + timedelta(days=day_offset)
+            # Día de la semana (0=Lunes, 6=Domingo)
+            weekday = process_date.weekday()
             
-            # Verificar si ya existe una instancia para este día específico de la semana
-            existing_for_this_date = TaskInstance.query.filter_by(
-                task_id=task.id, 
-                scheduled_date=process_date
-            ).first()
+            # Procesar tareas DIARIAS para este día
+            daily_tasks = Task.query.filter_by(frequency=TaskFrequency.DIARIA, location_id=location_id).filter(
+                (Task.end_date.is_(None)) | (Task.end_date >= process_date)
+            ).filter(Task.start_date <= process_date).all()
             
-            # 1. Si no existe una instancia, siempre crear una nueva
-            if not existing_for_this_date:
-                logger.info(f"Creando instancia de tarea semanal '{task.title}' para {process_date}")
+            for task in daily_tasks:
+                # Siempre creamos una instancia para tareas diarias
                 if create_task_instance(task, process_date):
-                    counters['weekly'] += 1
-            # 2. Si existe una instancia pero está completada y estamos creando para una nueva semana, crear de nuevo
-            elif existing_for_this_date.status == TaskStatus.COMPLETADA:
-                # Determinar si la fecha actual es un lunes y estamos induciendo la regeneración semanal
-                # Si es lunes (process_date.weekday() == 0) y la instancia existente está completada,
-                # debemos recrearla para la nueva semana
-                if process_date.weekday() == 0:  # Es lunes
-                    # Borrar la instancia existente si está completada
-                    logger.info(f"Regenerando instancia de tarea semanal '{task.title}' para nueva semana {process_date}")
-                    db.session.delete(existing_for_this_date)
-                    db.session.commit()
-                    # Crear una nueva instancia
-                    if create_task_instance(task, process_date):
-                        counters['weekly'] += 1
-        
-        # Procesar tareas quincenales
-        biweekly_tasks = Task.query.filter_by(frequency=TaskFrequency.QUINCENAL, location_id=location_id).filter(
-            (Task.end_date.is_(None)) | (Task.end_date >= process_date)
-        ).filter(Task.start_date <= process_date).all()
-        
-        for task in biweekly_tasks:
-            # Determinar la quincena actual
-            if process_date.day < 16:
-                # Primera quincena (1-15)
-                fortnight_start = date(process_date.year, process_date.month, 1)
-                fortnight_end = date(process_date.year, process_date.month, 15)
-            else:
-                # Segunda quincena (16-fin)
-                fortnight_start = date(process_date.year, process_date.month, 16)
-                last_day = monthrange(process_date.year, process_date.month)[1]
-                fortnight_end = date(process_date.year, process_date.month, last_day)
+                    counters['diaria'] += 1
             
-            # Verificar si ya existe una instancia para este día específico de la quincena
-            existing_for_this_date = TaskInstance.query.filter_by(
-                task_id=task.id, 
-                scheduled_date=process_date
-            ).first()
-            
-            # 1. Si no existe una instancia, crear una nueva
-            if not existing_for_this_date:
-                logger.info(f"Creando instancia de tarea quincenal '{task.title}' para {process_date}")
-                if create_task_instance(task, process_date):
-                    counters['biweekly'] += 1
-            # 2. Si existe una instancia pero está completada y estamos creando para una nueva quincena, crear de nuevo
-            elif existing_for_this_date.status == TaskStatus.COMPLETADA:
-                # Determinar si es el primer día de una quincena (1 o 16) y hay que regenerar
-                # Si es día 1 o 16 y la instancia existente está completada,
-                # debemos recrearla para la nueva quincena
-                if process_date.day == 1 or process_date.day == 16:  # Primer día de quincena
-                    # Borrar la instancia existente si está completada
-                    logger.info(f"Regenerando instancia de tarea quincenal '{task.title}' para nueva quincena {process_date}")
-                    db.session.delete(existing_for_this_date)
-                    db.session.commit()
-                    # Crear una nueva instancia
-                    if create_task_instance(task, process_date):
-                        counters['biweekly'] += 1
-        
-        # Procesar tareas mensuales
-        monthly_tasks = Task.query.filter_by(frequency=TaskFrequency.MENSUAL, location_id=location_id).filter(
-            (Task.end_date.is_(None)) | (Task.end_date >= process_date)
-        ).filter(Task.start_date <= process_date).all()
-        
-        for task in monthly_tasks:
-            # Determinar el mes actual
-            month_start = date(process_date.year, process_date.month, 1)
-            last_day = monthrange(process_date.year, process_date.month)[1]
-            month_end = date(process_date.year, process_date.month, last_day)
-            
-            # Verificar si ya existe una instancia para este día específico del mes
-            existing_for_this_date = TaskInstance.query.filter_by(
-                task_id=task.id, 
-                scheduled_date=process_date
-            ).first()
-            
-            # 1. Si no existe una instancia, crear una nueva
-            if not existing_for_this_date:
-                logger.info(f"Creando instancia de tarea mensual '{task.title}' para {process_date}")
-                if create_task_instance(task, process_date):
-                    counters['monthly'] += 1
-            # 2. Si existe una instancia pero está completada y estamos creando para un nuevo mes, crear de nuevo
-            elif existing_for_this_date.status == TaskStatus.COMPLETADA:
-                # Determinar si es el primer día del mes (día 1) y hay que regenerar
-                # Si es día 1 y la instancia existente está completada,
-                # debemos recrearla para el nuevo mes
-                if process_date.day == 1:  # Primer día del mes
-                    # Borrar la instancia existente si está completada
-                    logger.info(f"Regenerando instancia de tarea mensual '{task.title}' para nuevo mes {process_date}")
-                    db.session.delete(existing_for_this_date)
-                    db.session.commit()
-                    # Crear una nueva instancia
-                    if create_task_instance(task, process_date):
-                        counters['monthly'] += 1
-        
-        # Procesar tareas personalizadas
-        custom_tasks = Task.query.filter_by(frequency=TaskFrequency.PERSONALIZADA, location_id=location_id).filter(
-            (Task.end_date.is_(None)) | (Task.end_date >= process_date)
-        ).filter(Task.start_date <= process_date).all()
-        
-        for task in custom_tasks:
-            if not task.weekdays:
-                continue
-                
-            # Verificar si alguno de los días configurados coincide con la fecha de proceso
-            process_date_weekday = process_date.weekday()  # 0=Lunes, 6=Domingo
-            
-            # Crear mapeo de nombres de días a números
-            day_map = {
-                'lunes': 0, 'martes': 1, 'miercoles': 2, 'jueves': 3,
-                'viernes': 4, 'sabado': 5, 'domingo': 6
+            # Procesar tareas para DÍAS ESPECÍFICOS (lunes, martes, etc.)
+            # Mapeo de día de semana (0-6) a enum TaskFrequency
+            day_specific_map = {
+                0: TaskFrequency.DIA_LUNES,
+                1: TaskFrequency.DIA_MARTES,
+                2: TaskFrequency.DIA_MIERCOLES,
+                3: TaskFrequency.DIA_JUEVES,
+                4: TaskFrequency.DIA_VIERNES,
+                5: TaskFrequency.DIA_SABADO,
+                6: TaskFrequency.DIA_DOMINGO
             }
             
-            for weekday in task.weekdays:
-                weekday_value = weekday.day_of_week.value.lower()
-                if day_map.get(weekday_value) == process_date_weekday:
-                    # Verificar si ya existe una instancia para este día específico
-                    existing_for_this_date = TaskInstance.query.filter_by(
-                        task_id=task.id, 
-                        scheduled_date=process_date
-                    ).first()
+            # Mapeo de día de semana (0-6) a contador
+            counter_map = {
+                0: 'dia_lunes',
+                1: 'dia_martes',
+                2: 'dia_miercoles',
+                3: 'dia_jueves',
+                4: 'dia_viernes',
+                5: 'dia_sabado',
+                6: 'dia_domingo'
+            }
+            
+            # Obtener tareas para el día específico de la semana
+            day_specific_freq = day_specific_map[weekday]
+            day_specific_tasks = Task.query.filter_by(frequency=day_specific_freq, location_id=location_id).filter(
+                (Task.end_date.is_(None)) | (Task.end_date >= process_date)
+            ).filter(Task.start_date <= process_date).all()
+            
+            for task in day_specific_tasks:
+                # Crear instancia para tareas de día específico
+                if create_task_instance(task, process_date):
+                    counters[counter_map[weekday]] += 1
                     
-                    # 1. Si no existe una instancia, crear una nueva
-                    if not existing_for_this_date:
-                        logger.info(f"Creando instancia de tarea personalizada '{task.title}' para {process_date}")
-                        if create_task_instance(task, process_date):
-                            counters['custom'] += 1
-                    # 2. Si existe una instancia pero está completada y estamos creando para un nuevo periodo, crear de nuevo
-                    elif existing_for_this_date.status == TaskStatus.COMPLETADA:
-                        # Obtener la fecha de una semana atrás
-                        one_week_ago = process_date - timedelta(days=7)
-                        # Verificar si hay una instancia completada para la semana anterior
-                        prev_instance = TaskInstance.query.filter_by(
-                            task_id=task.id, 
-                            scheduled_date=one_week_ago
-                        ).first()
-                        
-                        # Si hay una instancia anterior completada y la fecha actual es un nuevo día de la semana
-                        # que coincide con la configuración, regeneramos la tarea
-                        if prev_instance:
-                            logger.info(f"Regenerando instancia de tarea personalizada '{task.title}' para nueva semana {process_date}")
-                            db.session.delete(existing_for_this_date)
-                            db.session.commit()
-                            # Crear una nueva instancia
-                            if create_task_instance(task, process_date):
-                                counters['custom'] += 1
-                    break
+            # Procesar tareas SEMANALES
+            # Las tareas semanales deben aparecer todos los días hasta que se completen en esa semana
+            weekly_tasks = Task.query.filter_by(frequency=TaskFrequency.SEMANAL, location_id=location_id).filter(
+                (Task.end_date.is_(None)) | (Task.end_date >= process_date)
+            ).filter(Task.start_date <= process_date).all()
+            
+            for task in weekly_tasks:
+                # Calcular el inicio de la semana actual (lunes)
+                monday_of_week = process_date - timedelta(days=process_date.weekday())
+                
+                # Verificar si ya hay una tarea completada en esta semana
+                completed_this_week = TaskInstance.query.filter(
+                    TaskInstance.task_id == task.id,
+                    TaskInstance.status == TaskStatus.COMPLETADA,
+                    TaskInstance.scheduled_date >= monday_of_week,
+                    TaskInstance.scheduled_date <= monday_of_week + timedelta(days=6)
+                ).first()
+                
+                # Si ya está completada para esta semana, no crear nuevas instancias
+                if completed_this_week:
+                    continue
+                    
+                # Si no está completada en esta semana, crear instancia para hoy
+                if create_task_instance(task, process_date):
+                    counters['semanal'] += 1
+        
+            # Procesar tareas QUINCENALES
+            # Las tareas quincenales deben aparecer todos los días hasta que se completen en esa quincena
+            biweekly_tasks = Task.query.filter_by(frequency=TaskFrequency.QUINCENAL, location_id=location_id).filter(
+                (Task.end_date.is_(None)) | (Task.end_date >= process_date)
+            ).filter(Task.start_date <= process_date).all()
+            
+            for task in biweekly_tasks:
+                # Determinar si estamos en la primera o segunda quincena
+                if process_date.day <= 15:
+                    # Primera quincena: días 1-15
+                    period_start = date(process_date.year, process_date.month, 1)
+                    period_end = date(process_date.year, process_date.month, 15)
+                else:
+                    # Segunda quincena: días 16-fin de mes
+                    period_start = date(process_date.year, process_date.month, 16)
+                    # Último día del mes
+                    next_month = process_date.month + 1 if process_date.month < 12 else 1
+                    next_month_year = process_date.year if process_date.month < 12 else process_date.year + 1
+                    period_end = date(next_month_year, next_month, 1) - timedelta(days=1)
+                
+                # Verificar si ya hay una tarea completada en esta quincena
+                completed_this_period = TaskInstance.query.filter(
+                    TaskInstance.task_id == task.id,
+                    TaskInstance.status == TaskStatus.COMPLETADA,
+                    TaskInstance.scheduled_date >= period_start,
+                    TaskInstance.scheduled_date <= period_end
+                ).first()
+                
+                # Si ya está completada para esta quincena, no crear nuevas instancias
+                if completed_this_period:
+                    continue
+                    
+                # Si no está completada en esta quincena, crear instancia para hoy
+                if create_task_instance(task, process_date):
+                    counters['quincenal'] += 1
+        
+            # Procesar tareas MENSUALES
+            # Las tareas mensuales deben aparecer todos los días hasta que se completen en ese mes
+            monthly_tasks = Task.query.filter_by(frequency=TaskFrequency.MENSUAL, location_id=location_id).filter(
+                (Task.end_date.is_(None)) | (Task.end_date >= process_date)
+            ).filter(Task.start_date <= process_date).all()
+            
+            for task in monthly_tasks:
+                # Determinar el periodo del mes actual
+                month_start = date(process_date.year, process_date.month, 1)
+                # Último día del mes
+                next_month = process_date.month + 1 if process_date.month < 12 else 1
+                next_month_year = process_date.year if process_date.month < 12 else process_date.year + 1
+                month_end = date(next_month_year, next_month, 1) - timedelta(days=1)
+                
+                # Verificar si ya hay una tarea completada en este mes
+                completed_this_month = TaskInstance.query.filter(
+                    TaskInstance.task_id == task.id,
+                    TaskInstance.status == TaskStatus.COMPLETADA,
+                    TaskInstance.scheduled_date >= month_start,
+                    TaskInstance.scheduled_date <= month_end
+                ).first()
+                
+                # Si ya está completada para este mes, no crear nuevas instancias
+                if completed_this_month:
+                    continue
+                    
+                # Si no está completada en este mes, crear instancia para hoy
+                if create_task_instance(task, process_date):
+                    counters['mensual'] += 1
+        
+            # Procesar tareas PERSONALIZADAS (con días de la semana específicos)
+            custom_tasks = Task.query.filter_by(frequency=TaskFrequency.PERSONALIZADA, location_id=location_id).filter(
+                (Task.end_date.is_(None)) | (Task.end_date >= process_date)
+            ).filter(Task.start_date <= process_date).all()
+            
+            for task in custom_tasks:
+                if not task.weekdays:
+                    continue
+                    
+                # Verificar si alguno de los días configurados coincide con la fecha de proceso
+                process_date_weekday = process_date.weekday()  # 0=Lunes, 6=Domingo
+                
+                # Crear mapeo de nombres de días a números
+                day_map = {
+                    'lunes': 0, 'martes': 1, 'miercoles': 2, 'jueves': 3,
+                    'viernes': 4, 'sabado': 5, 'domingo': 6
+                }
+                
+                task_matches_today = False
+                for weekday in task.weekdays:
+                    weekday_value = weekday.day_of_week.value.lower()
+                    if day_map.get(weekday_value) == process_date_weekday:
+                        task_matches_today = True
+                        break
+                
+                # Si no coincide con el día actual, no crear instancia
+                if not task_matches_today:
+                    continue
+                
+                # Calcular el inicio de la semana actual (lunes)
+                monday_of_week = process_date - timedelta(days=process_date.weekday())
+                
+                # Verificar si ya hay una tarea completada en esta semana
+                completed_this_week = TaskInstance.query.filter(
+                    TaskInstance.task_id == task.id,
+                    TaskInstance.status == TaskStatus.COMPLETADA,
+                    TaskInstance.scheduled_date >= monday_of_week,
+                    TaskInstance.scheduled_date <= monday_of_week + timedelta(days=6)
+                ).first()
+                
+                # Si ya está completada para esta semana, no crear nuevas instancias
+                if completed_this_week:
+                    continue
+                    
+                # Si no está completada en esta semana, crear instancia para hoy
+                if create_task_instance(task, process_date):
+                    counters['personalizada'] += 1
         
         # Mostrar resultados de procesamiento
         total_instances = sum(counters.values())
         if total_instances > 0:
             logger.info(f"✅ UBICACIÓN PROCESADA: {location_name} (ID: {location_id}) - Creadas {total_instances} instancias:")
-            logger.info(f"   ○ Diarias: {counters['daily']}")
-            logger.info(f"   ○ Semanales: {counters['weekly']}")
+            logger.info(f"   ○ Diarias: {counters['diaria']}")
+            logger.info(f"   ○ Semanales: {counters['semanal']}")
             logger.info(f"   ○ Quincenales: {counters['biweekly']}")
             logger.info(f"   ○ Mensuales: {counters['monthly']}")
             logger.info(f"   ○ Personalizadas: {counters['custom']}")

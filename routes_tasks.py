@@ -1491,8 +1491,12 @@ def local_user_tasks(date_str=None, group_id=None):
         if task.frequency == TaskFrequency.DIARIA:
             return True
         
-        # Para tareas semanales, verificar día de la semana
+        # Para tareas semanales, verificar día de la semana y estado de completado semanal
         if task.frequency == TaskFrequency.SEMANAL:
+            # Si está completada para esta semana, no mostrarla
+            if task.current_week_completed and check_date.weekday() < 7:  # cualquier día de la semana
+                return False
+                
             weekday_name = WeekDay(days_map[check_date.weekday()].lower())
             for schedule in task.schedule_details:
                 if schedule.day_of_week and schedule.day_of_week.value == weekday_name.value:

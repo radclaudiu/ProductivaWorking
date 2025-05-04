@@ -1572,24 +1572,79 @@ def local_user_tasks(date_str=None, group_id=None):
             # Si la instancia no está completada, mostrar la tarea
             return True
         
-        # PARTE 3: Verificar por frecuencia si no hay instancia
-        # Este caso debería ser poco común ya que el programador de tareas
-        # debería crear instancias para todas las fechas aplicables
+        # PARTE 3: Para tareas semanales, quincenales o mensuales, verificar si ya se completó en el periodo actual
+        today = date.today()
         
         # Las tareas diarias deben aparecer todos los días
         if task.frequency == TaskFrequency.DIARIA:
             return True
             
-        # Las tareas semanales deben aparecer todos los días de la semana
+        # Las tareas semanales sólo deben aparecer hasta que se completen en la semana actual
         elif task.frequency == TaskFrequency.SEMANAL:
+            # Calcular el inicio de la semana actual (lunes)
+            current_week_start = today - timedelta(days=today.weekday())
+            
+            # Buscar si hay alguna instancia completada en la semana actual
+            completed_this_week = TaskInstance.query.filter(
+                TaskInstance.task_id == task.id,
+                TaskInstance.status == TaskStatus.COMPLETADA,
+                TaskInstance.scheduled_date >= current_week_start,
+                TaskInstance.scheduled_date <= current_week_start + timedelta(days=6)
+            ).first()
+            
+            # Si ya se completó esta semana, no mostrar en los días restantes
+            if completed_this_week:
+                return False
             return True
             
-        # Las tareas quincenales deben aparecer todos los días de la quincena
+        # Las tareas quincenales sólo deben aparecer hasta que se completen en la quincena actual
         elif task.frequency == TaskFrequency.QUINCENAL:
+            # Determinar si estamos en la primera o segunda quincena
+            if check_date.day <= 15:
+                # Primera quincena: días 1-15
+                period_start = date(check_date.year, check_date.month, 1)
+                period_end = date(check_date.year, check_date.month, 15)
+            else:
+                # Segunda quincena: días 16-fin de mes
+                period_start = date(check_date.year, check_date.month, 16)
+                # Último día del mes
+                next_month = check_date.month + 1 if check_date.month < 12 else 1
+                next_month_year = check_date.year if check_date.month < 12 else check_date.year + 1
+                period_end = date(next_month_year, next_month, 1) - timedelta(days=1)
+            
+            # Buscar si hay alguna instancia completada en la quincena actual
+            completed_this_period = TaskInstance.query.filter(
+                TaskInstance.task_id == task.id,
+                TaskInstance.status == TaskStatus.COMPLETADA,
+                TaskInstance.scheduled_date >= period_start,
+                TaskInstance.scheduled_date <= period_end
+            ).first()
+            
+            # Si ya se completó en esta quincena, no mostrar en los días restantes
+            if completed_this_period:
+                return False
             return True
             
-        # Las tareas mensuales deben aparecer todos los días del mes
+        # Las tareas mensuales sólo deben aparecer hasta que se completen en el mes actual
         elif task.frequency == TaskFrequency.MENSUAL:
+            # Periodo del mes actual
+            month_start = date(check_date.year, check_date.month, 1)
+            # Último día del mes
+            next_month = check_date.month + 1 if check_date.month < 12 else 1
+            next_month_year = check_date.year if check_date.month < 12 else check_date.year + 1
+            month_end = date(next_month_year, next_month, 1) - timedelta(days=1)
+            
+            # Buscar si hay alguna instancia completada en el mes actual
+            completed_this_month = TaskInstance.query.filter(
+                TaskInstance.task_id == task.id,
+                TaskInstance.status == TaskStatus.COMPLETADA,
+                TaskInstance.scheduled_date >= month_start,
+                TaskInstance.scheduled_date <= month_end
+            ).first()
+            
+            # Si ya se completó este mes, no mostrar en los días restantes
+            if completed_this_month:
+                return False
             return True
             
         elif task.frequency == TaskFrequency.PERSONALIZADA and task.weekdays:

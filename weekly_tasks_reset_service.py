@@ -16,8 +16,8 @@ logging.basicConfig(level=logging.INFO,
                    datefmt='%Y-%m-%d %H:%M:%S')
 logger = logging.getLogger(__name__)
 
-# Intervalo entre ejecuciones (en segundos) - 1 hora
-CHECK_INTERVAL = 60 * 60  # 1 hora
+# No necesitamos un intervalo fijo de verificación, ya que calcularemos
+# exactamente cuánto tiempo falta hasta el próximo lunes
 
 # Hora del día para ejecutar el reinicio (formato 24h)
 RESET_HOUR = 4  # 04:00 AM
@@ -171,7 +171,8 @@ def weekly_tasks_reset_worker():
                 
             except Exception as e:
                 logger.error(f"Error durante la ejecución del reinicio de tareas: {str(e)}")
-                time.sleep(CHECK_INTERVAL)  # En caso de error, esperar el intervalo estándar
+                # Dormir 1 hora en caso de error
+                time.sleep(60 * 60)
     
     except Exception as e:
         logger.error(f"Error fatal en el servicio de reinicio de tareas: {str(e)}")

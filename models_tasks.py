@@ -5,7 +5,6 @@ from sqlalchemy import Enum
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import User, Company
 import socket
-from calendar import monthrange  # Añadido para el cálculo de días de meses
 
 class TaskPriority(enum.Enum):
     BAJA = "baja"
@@ -14,18 +13,11 @@ class TaskPriority(enum.Enum):
     URGENTE = "urgente"
 
 class TaskFrequency(enum.Enum):
-    DIARIA = "diaria"            # Tareas que se realizan todos los días
-    DIA_LUNES = "dia_lunes"      # Tareas específicas para los lunes
-    DIA_MARTES = "dia_martes"    # Tareas específicas para los martes
-    DIA_MIERCOLES = "dia_miercoles" # Tareas específicas para los miércoles
-    DIA_JUEVES = "dia_jueves"    # Tareas específicas para los jueves
-    DIA_VIERNES = "dia_viernes"  # Tareas específicas para los viernes
-    DIA_SABADO = "dia_sabado"    # Tareas específicas para los sábados
-    DIA_DOMINGO = "dia_domingo"  # Tareas específicas para los domingos
-    SEMANAL = "semanal"          # Tareas que se hacen una vez a la semana
-    QUINCENAL = "quincenal"      # Tareas que se hacen dos veces al mes (1-15 y 16-fin)
-    MENSUAL = "mensual"          # Tareas que se hacen una vez al mes
-    PERSONALIZADA = "personalizada" # Para configuraciones más complejas (legado)
+    DIARIA = "diaria"
+    SEMANAL = "semanal"
+    QUINCENAL = "quincenal"
+    MENSUAL = "mensual"
+    PERSONALIZADA = "personalizada"
 
 class TaskStatus(enum.Enum):
     PENDIENTE = "pendiente"
@@ -261,167 +253,55 @@ class Task(db.Model):
         }
     
     def is_due_today(self):
-        """Comprueba si la tarea está programada para hoy según su programación.
-        
-        IMPORTANTE: Esta lógica debe ser idéntica a la usada en task_is_due_on_date() en routes_tasks.py
-        """
+        """Comprueba si la tarea está programada para hoy según su programación."""
         today = date.today()
+        today_weekday = today.weekday()  # 0 es lunes, 6 es domingo
         
-        # PARTE 1: Validar rango de fechas
-        # Si la fecha está fuera del rango de fechas de la tarea, no es debido
-        start_date = self.start_date or self.created_at.date()
-        if today < start_date:
-            return False
+        # Si la tarea tiene fecha de fin y ya ha pasado, no está activa
         if self.end_date and today > self.end_date:
             return False
         
-        # PARTE 2: Verificar si ya existe una instancia para esta fecha
-        # y si ya ha sido completada HOY específicamente
-        from sqlalchemy import func
-
-        # Buscar si ya existe una instancia para hoy
-        # Usando self.__class__ para evitar importaciones circulares
-        from app import db
-        
-        instance = db.session.query(TaskInstance).filter_by(
-            task_id=self.id,
-            scheduled_date=today
-        ).first()
-        
-        if instance:
-            # Si existe instancia para esta fecha, verificar su estado
-            if instance.status == TaskStatus.COMPLETADA:
-                # Si la instancia para esta fecha específica está completada, no mostrar
-                return False
-            # Si la instancia no está completada, mostrar la tarea
-            return True
-        
-        # PARTE 3: Para tareas por frecuencia, verificar si ya se completó en el periodo actual
-        
-        # Las tareas diarias deben aparecer todos los días
-        if self.frequency == TaskFrequency.DIARIA:
-            return True
-            
-        # Verificar tareas para días específicos de la semana
-        today_weekday = today.weekday()  # 0 es lunes, 6 es domingo
-        
-        # Tareas para días específicos solo aparecen en sus días correspondientes
-        if self.frequency == TaskFrequency.DIA_LUNES and today_weekday == 0:
-            return True
-        elif self.frequency == TaskFrequency.DIA_MARTES and today_weekday == 1:
-            return True
-        elif self.frequency == TaskFrequency.DIA_MIERCOLES and today_weekday == 2:
-            return True
-        elif self.frequency == TaskFrequency.DIA_JUEVES and today_weekday == 3:
-            return True
-        elif self.frequency == TaskFrequency.DIA_VIERNES and today_weekday == 4:
-            return True
-        elif self.frequency == TaskFrequency.DIA_SABADO and today_weekday == 5:
-            return True
-        elif self.frequency == TaskFrequency.DIA_DOMINGO and today_weekday == 6:
-            return True
-        elif self.frequency in [TaskFrequency.DIA_LUNES, TaskFrequency.DIA_MARTES, 
-                               TaskFrequency.DIA_MIERCOLES, TaskFrequency.DIA_JUEVES, 
-                               TaskFrequency.DIA_VIERNES, TaskFrequency.DIA_SABADO, 
-                               TaskFrequency.DIA_DOMINGO]:
-            # Si es tarea de día específico pero no es el día correcto, no mostrar
+        # Si la tarea tiene fecha de inicio y aún no ha llegado, no está activa
+        if self.start_date and today < self.start_date:
             return False
-            
-        # Las tareas semanales sólo deben aparecer hasta que se completen en la semana actual
-        elif self.frequency == TaskFrequency.SEMANAL:
-            # Calcular el inicio de la semana actual (lunes)
-            current_week_start = today - timedelta(days=today.weekday())
-            
-            # Buscar si hay alguna instancia completada en la semana actual
-            completed_this_week = db.session.query(TaskInstance).filter(
-                TaskInstance.task_id == self.id,
-                TaskInstance.status == TaskStatus.COMPLETADA,
-                TaskInstance.scheduled_date >= current_week_start,
-                TaskInstance.scheduled_date <= current_week_start + timedelta(days=6)
-            ).first()
-            
-            # Si ya se completó esta semana, no mostrar en los días restantes
-            if completed_this_week:
-                return False
-            return True
-            
-        # Las tareas quincenales sólo deben aparecer hasta que se completen en la quincena actual
-        elif self.frequency == TaskFrequency.QUINCENAL:
-            # Determinar si estamos en la primera o segunda quincena
-            if today.day <= 15:
-                # Primera quincena: días 1-15
-                period_start = date(today.year, today.month, 1)
-                period_end = date(today.year, today.month, 15)
-            else:
-                # Segunda quincena: días 16-fin de mes
-                period_start = date(today.year, today.month, 16)
-                # Último día del mes
-                next_month = today.month + 1 if today.month < 12 else 1
-                next_month_year = today.year if today.month < 12 else today.year + 1
-                period_end = date(next_month_year, next_month, 1) - timedelta(days=1)
-            
-            # Buscar si hay alguna instancia completada en la quincena actual
-            completed_this_period = db.session.query(TaskInstance).filter(
-                TaskInstance.task_id == self.id,
-                TaskInstance.status == TaskStatus.COMPLETADA,
-                TaskInstance.scheduled_date >= period_start,
-                TaskInstance.scheduled_date <= period_end
-            ).first()
-            
-            # Si ya se completó en esta quincena, no mostrar en los días restantes
-            if completed_this_period:
-                return False
-            return True
-            
-        # Las tareas mensuales sólo deben aparecer hasta que se completen en el mes actual
-        elif self.frequency == TaskFrequency.MENSUAL:
-            # Periodo del mes actual
-            month_start = date(today.year, today.month, 1)
-            # Último día del mes
-            next_month = today.month + 1 if today.month < 12 else 1
-            next_month_year = today.year if today.month < 12 else today.year + 1
-            month_end = date(next_month_year, next_month, 1) - timedelta(days=1)
-            
-            # Buscar si hay alguna instancia completada en el mes actual
-            completed_this_month = db.session.query(TaskInstance).filter(
-                TaskInstance.task_id == self.id,
-                TaskInstance.status == TaskStatus.COMPLETADA,
-                TaskInstance.scheduled_date >= month_start,
-                TaskInstance.scheduled_date <= month_end
-            ).first()
-            
-            # Si ya se completó este mes, no mostrar en los días restantes
-            if completed_this_month:
-                return False
-            return True
-            
-        elif self.frequency == TaskFrequency.PERSONALIZADA and self.weekdays:
-            # Verificar si el día de la semana coincide con alguno de los días configurados
-            today_weekday = today.weekday()  # 0 es lunes, 6 es domingo
-            day_map = {
-                WeekDay.LUNES: 0,
-                WeekDay.MARTES: 1,
-                WeekDay.MIERCOLES: 2,
-                WeekDay.JUEVES: 3,
-                WeekDay.VIERNES: 4,
-                WeekDay.SABADO: 5,
-                WeekDay.DOMINGO: 6
-            }
-            
-            for weekday in self.weekdays:
-                if day_map.get(weekday.day_of_week) == today_weekday:
+        
+        # Para tareas personalizadas con múltiples días, verificamos los días configurados
+        if self.frequency == TaskFrequency.PERSONALIZADA and self.weekdays:
+            for weekday_entry in self.weekdays:
+                if TaskWeekday.day_matches_today(weekday_entry.day_of_week):
                     return True
-            return False
-        
-        # Comprobar programación específica, si existe
-        if self.schedule_details:
-            for schedule in self.schedule_details:
-                if schedule.is_active_for_date(today):
-                    return True
+            # Si llegamos aquí, es que hoy no es uno de los días configurados
             return False
             
-        # Por defecto, si no coincide con ninguna frecuencia conocida
-        return True
+        # Si no hay programación específica (schedule_details está vacío),
+        # consideramos que la tarea está activa según su frecuencia
+        if not self.schedule_details:
+            # Para tareas diarias, siempre están activas
+            if self.frequency == TaskFrequency.DIARIA:
+                return True
+                
+            # Para tareas semanales, verificamos si today es el mismo día de la semana que start_date
+            elif self.frequency == TaskFrequency.SEMANAL and self.start_date:
+                return today.weekday() == self.start_date.weekday()
+                
+            # Para tareas mensuales, verificamos si today es el mismo día del mes que start_date
+            elif self.frequency == TaskFrequency.MENSUAL and self.start_date:
+                return today.day == self.start_date.day
+                
+            # Para tareas quincenales, verificamos si han pasado múltiplos de 15 días desde start_date
+            elif self.frequency == TaskFrequency.QUINCENAL and self.start_date:
+                delta = (today - self.start_date).days
+                return delta % 15 == 0
+            
+            # Para cualquier otro caso, mostramos la tarea
+            return True
+        
+        # Comprobamos la programación específica
+        for schedule in self.schedule_details:
+            if schedule.is_active_for_date(today):
+                return True
+                
+        return False
 
 class TaskSchedule(db.Model):
     __tablename__ = 'task_schedules'
@@ -447,98 +327,13 @@ class TaskSchedule(db.Model):
             return f'<TaskSchedule {self.task.title}>'
     
     def is_active_for_date(self, check_date):
-        """Comprueba si este horario está activo para una fecha determinada.
-        
-        IMPORTANTE: Esta lógica debe ser idéntica a la usada en is_due_today() y task_is_due_on_date()
-        """
-        # IMPORTANTE: Primero verificar si existe una instancia de tarea para la fecha
-        from app import db
-        instance = db.session.query(TaskInstance).filter_by(
-            task_id=self.task.id,
-            scheduled_date=check_date
-        ).first()
-        
-        if instance:
-            # Si existe instancia para esta fecha, verificar su estado
-            if instance.status == TaskStatus.COMPLETADA:
-                # Si la instancia para esta fecha específica está completada, no mostrar
-                return False
-            # Si la instancia no está completada, mostrar la tarea
-            return True
-            
-        # Verificar por tipo de frecuencia
+        """Comprueba si este horario está activo para una fecha determinada."""
+        # Si es una tarea diaria, siempre está activa
         if self.task.frequency == TaskFrequency.DIARIA:
             return True
             
-        elif self.task.frequency == TaskFrequency.SEMANAL:
-            # Calcular el inicio de la semana actual (lunes)
-            current_week_start = check_date - timedelta(days=check_date.weekday())
-            
-            # Buscar si hay alguna instancia completada en la semana actual
-            completed_this_week = db.session.query(TaskInstance).filter(
-                TaskInstance.task_id == self.task.id,
-                TaskInstance.status == TaskStatus.COMPLETADA,
-                TaskInstance.scheduled_date >= current_week_start,
-                TaskInstance.scheduled_date <= current_week_start + timedelta(days=6)
-            ).first()
-            
-            # Si ya se completó esta semana, no mostrar en los días restantes
-            if completed_this_week:
-                return False
-            return True
-            
-        elif self.task.frequency == TaskFrequency.QUINCENAL:
-            # Determinar si estamos en la primera o segunda quincena
-            if check_date.day <= 15:
-                # Primera quincena: días 1-15
-                period_start = date(check_date.year, check_date.month, 1)
-                period_end = date(check_date.year, check_date.month, 15)
-            else:
-                # Segunda quincena: días 16-fin de mes
-                period_start = date(check_date.year, check_date.month, 16)
-                # Último día del mes
-                next_month = check_date.month + 1 if check_date.month < 12 else 1
-                next_month_year = check_date.year if check_date.month < 12 else check_date.year + 1
-                period_end = date(next_month_year, next_month, 1) - timedelta(days=1)
-            
-            # Buscar si hay alguna instancia completada en la quincena actual
-            completed_this_period = db.session.query(TaskInstance).filter(
-                TaskInstance.task_id == self.task.id,
-                TaskInstance.status == TaskStatus.COMPLETADA,
-                TaskInstance.scheduled_date >= period_start,
-                TaskInstance.scheduled_date <= period_end
-            ).first()
-            
-            # Si ya se completó en esta quincena, no mostrar en los días restantes
-            if completed_this_period:
-                return False
-            return True
-            
-        elif self.task.frequency == TaskFrequency.MENSUAL:
-            # Periodo del mes actual
-            month_start = date(check_date.year, check_date.month, 1)
-            # Último día del mes
-            next_month = check_date.month + 1 if check_date.month < 12 else 1
-            next_month_year = check_date.year if check_date.month < 12 else check_date.year + 1
-            month_end = date(next_month_year, next_month, 1) - timedelta(days=1)
-            
-            # Buscar si hay alguna instancia completada en el mes actual
-            completed_this_month = db.session.query(TaskInstance).filter(
-                TaskInstance.task_id == self.task.id,
-                TaskInstance.status == TaskStatus.COMPLETADA,
-                TaskInstance.scheduled_date >= month_start,
-                TaskInstance.scheduled_date <= month_end
-            ).first()
-            
-            # Si ya se completó este mes, no mostrar en los días restantes
-            if completed_this_month:
-                return False
-            return True
-        
-        # Para tareas personalizadas con días de semana, verificar coincidencia
-        if self.task.frequency == TaskFrequency.PERSONALIZADA and self.day_of_week:
-            # Obtener el día de la semana de check_date (0-6)
-            weekday = check_date.weekday()
+        # Para tareas semanales, comprobamos el día de la semana
+        if self.task.frequency == TaskFrequency.SEMANAL and self.day_of_week:
             day_map = {
                 WeekDay.LUNES: 0,
                 WeekDay.MARTES: 1,
@@ -548,15 +343,21 @@ class TaskSchedule(db.Model):
                 WeekDay.SABADO: 5,
                 WeekDay.DOMINGO: 6
             }
-            # Comprobar si coincide con el día programado
-            return day_map.get(self.day_of_week) == weekday
-        
-        # Para tareas mensuales con día del mes, verificar coincidencia
+            return check_date.weekday() == day_map[self.day_of_week]
+            
+        # Para tareas mensuales, comprobamos el día del mes
         if self.task.frequency == TaskFrequency.MENSUAL and self.day_of_month:
-            # Comprobar si el día coincide con el día configurado
             return check_date.day == self.day_of_month
-        
-        # Si llegamos aquí y no hemos retornado, por defecto no está activa
+            
+        # Para tareas quincenales (cada 15 días)
+        if self.task.frequency == TaskFrequency.QUINCENAL:
+            if not self.task.start_date:
+                return False
+                
+            delta = (check_date - self.task.start_date).days
+            return delta % 15 == 0
+            
+        # Si llegamos aquí y no hemos retornado, no está activa
         return False
         
 class TaskWeekday(db.Model):

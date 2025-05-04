@@ -2,8 +2,6 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from functools import wraps
 from datetime import datetime, date, timedelta
-import threading
-from calendar import monthrange
 import os
 import io
 import socket
@@ -13,12 +11,11 @@ from werkzeug.utils import secure_filename
 from wtforms.validators import Optional
 
 from app import db
-from sqlalchemy import func
 from models import User, Company, Employee
 from models_tasks import (Location, LocalUser, Task, TaskSchedule, TaskCompletion, TaskPriority, 
                          TaskFrequency, TaskStatus, WeekDay, TaskGroup, TaskWeekday,
                          Product, ProductConservation, ProductLabel, ConservationType, LabelTemplate,
-                         NetworkPrinter, TaskInstance)
+                         NetworkPrinter)
 from forms_tasks import (LocationForm, LocalUserForm, TaskForm, DailyScheduleForm, WeeklyScheduleForm, 
                         MonthlyScheduleForm, BiweeklyScheduleForm, TaskCompletionForm, 
                         LocalUserPinForm, SearchForm, TaskGroupForm, CustomWeekdaysForm, PortalLoginForm,
@@ -26,9 +23,6 @@ from forms_tasks import (LocationForm, LocalUserForm, TaskForm, DailyScheduleFor
                         NetworkPrinterForm)
 from utils import log_activity, can_manage_company, save_file
 from utils_tasks import create_default_local_user, regenerate_portal_password, count_available_employees, sync_employees_to_local_users
-
-# Importar el programador de tareas para ejecutarlo manualmente o para una ubicación específica
-from task_scheduler_service import run_task_scheduler, run_task_scheduler_for_location
 
 # Crear el Blueprint para las tareas
 tasks_bp = Blueprint('tasks', __name__)
@@ -751,21 +745,6 @@ def create_task(location_id):
             
             db.session.commit()
         
-        # Ejecutar el programador de tareas solo para esta ubicación
-        try:
-            log_activity(f'Iniciando programador de tareas automático para ubicación: {location.name} (ID: {location_id})')
-            # Ejecutar en modo no bloqueante para no retrasar la respuesta al usuario
-            threading.Thread(
-                target=run_task_scheduler_for_location,
-                args=(location_id,),
-                daemon=True
-            ).start()
-            flash(f'Programador de tareas iniciado en segundo plano para {location.name}', 'info')
-        except Exception as e:
-            # Si falla, solo registrarlo, pero continuar con la creación de la tarea
-            current_app.logger.error(f"❌ ERROR al ejecutar programador de tareas: {str(e)}")
-            log_activity(f'Error al ejecutar programador de tareas para ubicación {location.name}: {str(e)}')
-        
         # Redirigir a la página de programación según la frecuencia
         log_activity(f'Tarea creada: {task.title} en {location.name}')
         flash(f'Tarea "{task.title}" creada correctamente. Ahora debes configurar su programación.', 'success')
@@ -1165,53 +1144,6 @@ def portal_selection():
         print(f"[ERROR] Error en portal_selection: {str(e)}")
         # Devolver una respuesta mínima para evitar 500
         return f"Error: {str(e)}", 500
-        
-@tasks_bp.route('/run-scheduler')
-@login_required
-@manager_required
-def run_scheduler_manually():
-    """Ejecuta manualmente el programador de tareas"""
-    try:
-        log_activity('Ejecución manual del programador de tareas')
-        # Ejecutar el programador de tareas
-        with current_app.app_context():
-            run_task_scheduler()
-        flash('El programador de tareas se ha ejecutado correctamente.', 'success')
-    except Exception as e:
-        flash(f'Error al ejecutar el programador de tareas: {str(e)}', 'danger')
-        log_activity(f'Error en ejecución manual del programador de tareas: {str(e)}', level='error')
-    return redirect(url_for('tasks.index'))
-
-
-@tasks_bp.route('/run-scheduler-for-location/<int:location_id>', methods=['POST'])
-def run_scheduler_for_location(location_id):
-    """Ejecuta el programador de tareas para una ubicación específica desde el portal"""
-    # Verificar si el usuario está autenticado (admin o usuario local)
-    is_admin = current_user.is_authenticated if hasattr(current_user, 'is_authenticated') else False
-    is_local_user = 'local_user_id' in session
-    
-    if not (is_admin or is_local_user):
-        flash('No tiene permisos para ejecutar esta acción.', 'danger')
-        return redirect(url_for('tasks.index'))
-    
-    location = Location.query.get_or_404(location_id)
-    
-    try:
-        log_activity(f'Ejecución manual del programador de tareas para ubicación: {location.name} (ID: {location_id})')
-        # Ejecutar el programador de tareas para la ubicación especificada
-        # Ejecutar en modo no bloqueante para no retrasar la respuesta al usuario
-        threading.Thread(
-            target=run_task_scheduler_for_location,
-            args=(location_id,),
-            daemon=True
-        ).start()
-        flash(f'Programador de tareas iniciado para la ubicación {location.name}. Este proceso puede tardar unos segundos.', 'success')
-    except Exception as e:
-        flash(f'Error al ejecutar el programador de tareas: {str(e)}', 'danger')
-        log_activity(f'Error en ejecución manual del programador de tareas para ubicación {location.name}: {str(e)}', level='error')
-    
-    # Redirigir al usuario a la página del portal
-    return redirect(url_for('tasks.local_portal', location_id=location_id))
 
 @tasks_bp.route('/portal-test')
 def portal_test():
@@ -1521,7 +1453,7 @@ def local_user_tasks(date_str=None, group_id=None):
         LocalUser, TaskCompletion.local_user_id == LocalUser.id
     ).filter(
         TaskCompletion.task_id.in_([t.id for t in pending_tasks]),
-        func.date(TaskCompletion.completion_date) == selected_date
+        db.func.date(TaskCompletion.completion_date) == selected_date
     ).order_by(
         TaskCompletion.completion_date.desc()
     ).all()
@@ -1539,7 +1471,7 @@ def local_user_tasks(date_str=None, group_id=None):
     user_completions = TaskCompletion.query.filter_by(
         local_user_id=user_id
     ).filter(
-        func.date(TaskCompletion.completion_date) == selected_date
+        db.func.date(TaskCompletion.completion_date) == selected_date
     ).order_by(
         TaskCompletion.completion_date.desc()
     ).all()
@@ -1549,113 +1481,49 @@ def local_user_tasks(date_str=None, group_id=None):
     
     # Función auxiliar para comprobar si una tarea debe aparecer en la fecha seleccionada
     def task_is_due_on_date(task, check_date):
-        # PARTE 1: Validar rango de fechas
         # Si la fecha está fuera del rango de fechas de la tarea, no es debido
-        start_date = task.start_date or task.created_at.date()
-        if check_date < start_date:
+        if task.start_date and check_date < task.start_date:
             return False
         if task.end_date and check_date > task.end_date:
             return False
         
-        # PARTE 2: Verificar si ya existe una instancia para esta fecha
-        # Si existe una instancia, verificar si ya ha sido completada para ESTA FECHA específicamente
-        instance = TaskInstance.query.filter_by(
-            task_id=task.id,
-            scheduled_date=check_date
-        ).first()
-        
-        if instance:
-            # Si existe instancia para esta fecha, verificar su estado
-            if instance.status == TaskStatus.COMPLETADA:
-                # Si la instancia para esta fecha específica está completada, no mostrar
-                return False
-            # Si la instancia no está completada, mostrar la tarea
-            return True
-        
-        # PARTE 3: Para tareas semanales, quincenales o mensuales, verificar si ya se completó en el periodo actual
-        today = date.today()
-        
-        # Las tareas diarias deben aparecer todos los días
+        # Verificar frecuencia
         if task.frequency == TaskFrequency.DIARIA:
             return True
-            
-        # Las tareas semanales sólo deben aparecer hasta que se completen en la semana actual
-        elif task.frequency == TaskFrequency.SEMANAL:
-            # Calcular el inicio de la semana actual (lunes)
-            current_week_start = today - timedelta(days=today.weekday())
-            
-            # Buscar si hay alguna instancia completada en la semana actual
-            completed_this_week = TaskInstance.query.filter(
-                TaskInstance.task_id == task.id,
-                TaskInstance.status == TaskStatus.COMPLETADA,
-                TaskInstance.scheduled_date >= current_week_start,
-                TaskInstance.scheduled_date <= current_week_start + timedelta(days=6)
-            ).first()
-            
-            # Si ya se completó esta semana, no mostrar en los días restantes
-            if completed_this_week:
-                return False
-            return True
-            
-        # Las tareas quincenales sólo deben aparecer hasta que se completen en la quincena actual
-        elif task.frequency == TaskFrequency.QUINCENAL:
-            # Determinar si estamos en la primera o segunda quincena
-            if check_date.day <= 15:
-                # Primera quincena: días 1-15
-                period_start = date(check_date.year, check_date.month, 1)
-                period_end = date(check_date.year, check_date.month, 15)
-            else:
-                # Segunda quincena: días 16-fin de mes
-                period_start = date(check_date.year, check_date.month, 16)
-                # Último día del mes
-                next_month = check_date.month + 1 if check_date.month < 12 else 1
-                next_month_year = check_date.year if check_date.month < 12 else check_date.year + 1
-                period_end = date(next_month_year, next_month, 1) - timedelta(days=1)
-            
-            # Buscar si hay alguna instancia completada en la quincena actual
-            completed_this_period = TaskInstance.query.filter(
-                TaskInstance.task_id == task.id,
-                TaskInstance.status == TaskStatus.COMPLETADA,
-                TaskInstance.scheduled_date >= period_start,
-                TaskInstance.scheduled_date <= period_end
-            ).first()
-            
-            # Si ya se completó en esta quincena, no mostrar en los días restantes
-            if completed_this_period:
-                return False
-            return True
-            
-        # Las tareas mensuales sólo deben aparecer hasta que se completen en el mes actual
-        elif task.frequency == TaskFrequency.MENSUAL:
-            # Periodo del mes actual
-            month_start = date(check_date.year, check_date.month, 1)
-            # Último día del mes
-            next_month = check_date.month + 1 if check_date.month < 12 else 1
-            next_month_year = check_date.year if check_date.month < 12 else check_date.year + 1
-            month_end = date(next_month_year, next_month, 1) - timedelta(days=1)
-            
-            # Buscar si hay alguna instancia completada en el mes actual
-            completed_this_month = TaskInstance.query.filter(
-                TaskInstance.task_id == task.id,
-                TaskInstance.status == TaskStatus.COMPLETADA,
-                TaskInstance.scheduled_date >= month_start,
-                TaskInstance.scheduled_date <= month_end
-            ).first()
-            
-            # Si ya se completó este mes, no mostrar en los días restantes
-            if completed_this_month:
-                return False
-            return True
-            
-        elif task.frequency == TaskFrequency.PERSONALIZADA and task.weekdays:
-            # Verificar si el día de la semana coincide con alguno de los días configurados
+        
+        # Para tareas semanales, verificar día de la semana
+        if task.frequency == TaskFrequency.SEMANAL:
+            weekday_name = WeekDay(days_map[check_date.weekday()].lower())
+            for schedule in task.schedule_details:
+                if schedule.day_of_week and schedule.day_of_week.value == weekday_name.value:
+                    return True
+            return False
+        
+        # Para tareas quincenales, verificar quincena
+        if task.frequency == TaskFrequency.QUINCENAL:
+            start_date = task.start_date or task.created_at.date()
+            days_diff = (check_date - start_date).days
+            return days_diff % 14 == 0
+        
+        # Para tareas mensuales, verificar día del mes
+        if task.frequency == TaskFrequency.MENSUAL:
+            # Si hay horario mensual definido, verificar día del mes
+            schedules = [s for s in task.schedule_details if s.day_of_month]
+            if schedules:
+                return any(s.day_of_month == check_date.day for s in schedules)
+            # Si no hay horario específico, usar el día de inicio como referencia
+            start_date = task.start_date or task.created_at.date()
+            return start_date.day == check_date.day
+        
+        # Para tareas personalizadas, verificar días específicos
+        if task.frequency == TaskFrequency.PERSONALIZADA:
+            # Verificar si alguno de los días de la semana coincide
             weekday_value = days_map[check_date.weekday()].lower()
             for weekday in task.weekdays:
                 if weekday.day_of_week.value == weekday_value:
                     return True
             return False
-            
-        # Por defecto, si no coincide con ninguna frecuencia conocida
+        
         return False
     
     for task in pending_tasks:
@@ -1727,31 +1595,18 @@ def complete_task(task_id):
         flash('Tarea no válida para este local.', 'danger')
         return redirect(url_for('tasks.local_user_tasks'))
     
-    # Obtener la fecha de la URL si está presente, o usar la fecha actual
-    date_str = request.args.get('date_str')
-    if date_str:
-        try:
-            # Intentar convertir la fecha de la URL al formato correcto
-            task_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-        except ValueError:
-            # Si hay error en la fecha, usar la fecha actual
-            task_date = date.today()
-    else:
-        task_date = date.today()
-    
-    # Verificar si ya ha sido completada en la fecha específica por este usuario
+    # Verificar si ya ha sido completada hoy por este usuario
+    today = date.today()
     completion = TaskCompletion.query.filter_by(
         task_id=task.id,
         local_user_id=user_id
     ).filter(
-        func.date(TaskCompletion.completion_date) == task_date
+        db.func.date(TaskCompletion.completion_date) == today
     ).first()
     
     if completion:
-        flash(f'Ya has completado esta tarea en {task_date.strftime("%d/%m/%Y")}.', 'warning')
-        return redirect(url_for('tasks.local_user_tasks', date_str=date_str))
-    
-    # Guardar la fecha para usarla en el commit
+        flash('Ya has completado esta tarea hoy.', 'warning')
+        return redirect(url_for('tasks.local_user_tasks'))
     
     form = TaskCompletionForm()
     
@@ -1762,28 +1617,8 @@ def complete_task(task_id):
             notes=form.notes.data
         )
         
-        # Buscar la instancia de tarea para la fecha especificada
-        task_instance = TaskInstance.query.filter_by(
-            task_id=task.id,
-            scheduled_date=task_date
-        ).first()
-        
-        if task_instance:
-            # Actualizar SOLO el estado de la instancia específica a completada
-            task_instance.status = TaskStatus.COMPLETADA
-            task_instance.completed_by_id = user_id
-        else:
-            # Si no existe instancia para esa fecha, crearla completada
-            task_instance = TaskInstance(
-                task_id=task.id,
-                scheduled_date=task_date,
-                status=TaskStatus.COMPLETADA,
-                completed_by_id=user_id
-            )
-            db.session.add(task_instance)
-        
-        # IMPORTANTE: Ya no actualizamos el estado general de la tarea
-        # para permitir que aparezca en días siguientes
+        # Actualizar el estado de la tarea a completada
+        task.status = TaskStatus.COMPLETADA
         
         db.session.add(completion)
         db.session.commit()
@@ -1814,28 +1649,17 @@ def ajax_complete_task(task_id):
     if task.location_id != user.location_id:
         return jsonify({'error': 'Tarea no válida para este local'}), 403
     
-    # Obtener la fecha de la URL si está presente, o usar la fecha actual
-    date_str = request.args.get('date_str')
-    if date_str:
-        try:
-            # Intentar convertir la fecha de la URL al formato correcto
-            task_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-        except ValueError:
-            # Si hay error en la fecha, usar la fecha actual
-            task_date = date.today()
-    else:
-        task_date = date.today()
-    
-    # Verificar si ya ha sido completada en la fecha específica por este usuario
+    # Verificar si ya ha sido completada hoy por este usuario
+    today = date.today()
     existing_completion = TaskCompletion.query.filter_by(
         task_id=task.id,
         local_user_id=user_id
     ).filter(
-        func.date(TaskCompletion.completion_date) == task_date
+        db.func.date(TaskCompletion.completion_date) == today
     ).first()
     
     if existing_completion:
-        return jsonify({'error': f'Ya has completado esta tarea en {task_date.strftime("%d/%m/%Y")}'}), 400
+        return jsonify({'error': 'Ya has completado esta tarea hoy'}), 400
     
     # Obtener notas (opcional)
     data = request.json
@@ -1848,28 +1672,8 @@ def ajax_complete_task(task_id):
         notes=notes
     )
     
-    # Buscar la instancia de tarea para la fecha especificada
-    task_instance = TaskInstance.query.filter_by(
-        task_id=task.id,
-        scheduled_date=task_date
-    ).first()
-    
-    if task_instance:
-        # Actualizar SOLO el estado de la instancia específica a completada
-        task_instance.status = TaskStatus.COMPLETADA
-        task_instance.completed_by_id = user_id
-    else:
-        # Si no existe instancia para esa fecha, crearla completada
-        task_instance = TaskInstance(
-            task_id=task.id,
-            scheduled_date=task_date,
-            status=TaskStatus.COMPLETADA,
-            completed_by_id=user_id
-        )
-        db.session.add(task_instance)
-    
-    # IMPORTANTE: Ya no actualizamos el estado general de la tarea
-    # para permitir que aparezca en días siguientes
+    # Actualizar el estado de la tarea a completada
+    task.status = TaskStatus.COMPLETADA
     
     db.session.add(completion)
     db.session.commit()
@@ -2038,7 +1842,7 @@ def task_stats():
     # Tareas por prioridad
     tasks_by_priority_query = db.session.query(
         Task.priority,
-        func.count(Task.id)
+        db.func.count(Task.id)
     ).filter(
         Task.location_id.in_(location_ids)
     ).group_by(Task.priority).all()
@@ -2051,7 +1855,7 @@ def task_stats():
     # Tareas por local
     tasks_by_location_query = db.session.query(
         Location.name,
-        func.count(Task.id)
+        db.func.count(Task.id)
     ).join(
         Task, Location.id == Task.location_id
     ).filter(

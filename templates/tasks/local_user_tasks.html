@@ -155,17 +155,6 @@
             </div>
         </div>
     </div>
-    
-    <!-- Botón temporal para ejecutar el programador de tareas -->
-    <div class="alert alert-warning p-3 mb-4 text-center">
-        <h4 class="alert-heading">Botón de prueba (PROGRAMADOR DE TAREAS)</h4>
-        <form action="{{ url_for('tasks.run_scheduler_for_location', location_id=location.id) }}" method="post">
-            <button type="submit" class="btn btn-lg btn-danger my-2">
-                <i class="bi bi-clock-history"></i> Ejecutar Programador de Tareas (TEST)
-            </button>
-        </form>
-        <p class="mb-0">Este botón es temporal para pruebas. Ejecuta el programador para este local.</p>
-    </div>
 
     <!-- Carrusel de Fechas -->
     <div class="row mb-4">
@@ -459,18 +448,8 @@
         const currentTime = now.getHours().toString().padStart(2, '0') + ':' + 
                            now.getMinutes().toString().padStart(2, '0');
         
-        // Obtener la fecha de la URL actual
-        const urlParams = new URLSearchParams(window.location.search);
-        const dateStr = urlParams.get('date_str');
-        
-        // Construir la URL de la API con el parámetro de fecha si está presente
-        let apiUrl = `/tasks/local-user/tasks/${taskId}/ajax-complete`;
-        if (dateStr) {
-            apiUrl += `?date_str=${dateStr}`;
-        }
-        
         // Realizar petición AJAX
-        fetch(apiUrl, {
+        fetch(`/tasks/local-user/tasks/${taskId}/ajax-complete`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

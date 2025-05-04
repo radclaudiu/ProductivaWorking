@@ -204,6 +204,26 @@ class LocalUser(db.Model):
             'employee_name': f"{self.employee.first_name} {self.employee.last_name}" if self.employee else None
         }
 
+class TaskMonthDay(db.Model):
+    """Modelo para almacenar los días del mes en los que una tarea debe ejecutarse"""
+    __tablename__ = 'task_monthdays'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    day_of_month = db.Column(db.Integer, nullable=False)  # Día del mes (1-31)
+    
+    # Relaciones
+    task_id = db.Column(db.Integer, db.ForeignKey('tasks.id'), nullable=False)
+    task = db.relationship('Task', back_populates='monthdays')
+    
+    def __repr__(self):
+        return f'<TaskMonthDay {self.task.title} - Día {self.day_of_month}>'
+        
+    @classmethod
+    def day_matches_today(cls, day_of_month):
+        """Comprueba si el día del mes corresponde al día actual"""
+        return date.today().day == day_of_month
+
+
 class Task(db.Model):
     __tablename__ = 'tasks'
     
@@ -218,6 +238,7 @@ class Task(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     current_week_completed = db.Column(db.Boolean, default=False)  # Para tareas semanales con rango lunes-domingo
+    current_month_completed = db.Column(db.Boolean, default=False)  # Para tareas mensuales personalizadas
     
     # Relaciones
     location_id = db.Column(db.Integer, db.ForeignKey('locations.id'), nullable=False)
@@ -232,6 +253,7 @@ class Task(db.Model):
     # Programación
     schedule_details = db.relationship('TaskSchedule', back_populates='task', cascade='all, delete-orphan')
     weekdays = db.relationship('TaskWeekday', back_populates='task', cascade='all, delete-orphan')
+    monthdays = db.relationship('TaskMonthDay', back_populates='task', cascade='all, delete-orphan')
     
     # Historial de completado
     completions = db.relationship('TaskCompletion', back_populates='task', cascade='all, delete-orphan')
@@ -270,12 +292,25 @@ class Task(db.Model):
         if self.frequency == TaskFrequency.SEMANAL and self.current_week_completed:
             return False
         
-        # Para tareas personalizadas con múltiples días, verificamos los días configurados
+        # Para tareas personalizadas con múltiples días de la semana
         if self.frequency == TaskFrequency.PERSONALIZADA and self.weekdays:
             for weekday_entry in self.weekdays:
                 if TaskWeekday.day_matches_today(weekday_entry.day_of_week):
                     return True
             # Si llegamos aquí, es que hoy no es uno de los días configurados
+            return False
+            
+        # Para tareas mensuales personalizadas con múltiples días del mes
+        if self.frequency == TaskFrequency.MENSUAL and self.monthdays:
+            # Si la tarea ya está completada para el mes actual, no está activa
+            if self.current_month_completed:
+                return False
+                
+            # Verificar si hoy coincide con alguno de los días del mes configurados
+            for monthday_entry in self.monthdays:
+                if TaskMonthDay.day_matches_today(monthday_entry.day_of_month):
+                    return True
+            # Si llegamos aquí, es que hoy no es uno de los días del mes configurados
             return False
             
         # Si no hay programación específica (schedule_details está vacío),

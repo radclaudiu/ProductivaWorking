@@ -282,17 +282,11 @@ class Task(db.Model):
         ).first()
         
         if instance:
-            # Si existe instancia para esta fecha, verificar si ya hay completación
-            # solo en esta fecha específica (no en toda la semana/quincena/mes)
-            completion = db.session.query(TaskCompletion).filter_by(task_id=self.id).filter(
-                func.date(TaskCompletion.completion_date) == today
-            ).first()
-            
-            # Si hay completación en esta fecha específica, no mostrar
-            if completion:
+            # Si existe instancia para esta fecha, verificar su estado
+            if instance.status == TaskStatus.COMPLETADA:
+                # Si la instancia para esta fecha específica está completada, no mostrar
                 return False
-            # Si no hay completación para la fecha específica pero existe la instancia,
-            # mostrar la tarea
+            # Si la instancia no está completada, mostrar la tarea
             return True
         
         # PARTE 3: Verificar por frecuencia si no hay instancia

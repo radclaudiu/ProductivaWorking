@@ -1558,24 +1558,18 @@ def local_user_tasks(date_str=None, group_id=None):
             return False
         
         # PARTE 2: Verificar si ya existe una instancia para esta fecha
-        # Si existe una instancia, verificar si ya ha sido completada para HOY específicamente
+        # Si existe una instancia, verificar si ya ha sido completada para ESTA FECHA específicamente
         instance = TaskInstance.query.filter_by(
             task_id=task.id,
             scheduled_date=check_date
         ).first()
         
         if instance:
-            # Si existe instancia para esta fecha, verificar si ya hay completación
-            # solo en esta fecha específica (no en toda la semana/quincena/mes)
-            completion = TaskCompletion.query.filter_by(task_id=task.id).filter(
-                func.date(TaskCompletion.completion_date) == check_date
-            ).first()
-            
-            # Si hay completación en esta fecha específica, no mostrar
-            if completion:
+            # Si existe instancia para esta fecha, verificar su estado
+            if instance.status == TaskStatus.COMPLETADA:
+                # Si la instancia para esta fecha específica está completada, no mostrar
                 return False
-            # Si no hay completación para la fecha específica pero existe la instancia,
-            # mostrar la tarea
+            # Si la instancia no está completada, mostrar la tarea
             return True
         
         # PARTE 3: Verificar por frecuencia si no hay instancia
@@ -1700,7 +1694,19 @@ def complete_task(task_id):
             notes=form.notes.data
         )
         
-        # Actualizar el estado de la tarea a completada
+        # Buscar la instancia de tarea para la fecha actual
+        today = date.today()
+        task_instance = TaskInstance.query.filter_by(
+            task_id=task.id,
+            scheduled_date=today
+        ).first()
+        
+        if task_instance:
+            # Actualizar el estado de la instancia específica a completada
+            task_instance.status = TaskStatus.COMPLETADA
+            task_instance.completed_by_id = user_id
+        
+        # También actualizamos el estado general de la tarea
         task.status = TaskStatus.COMPLETADA
         
         db.session.add(completion)
@@ -1755,7 +1761,19 @@ def ajax_complete_task(task_id):
         notes=notes
     )
     
-    # Actualizar el estado de la tarea a completada
+    # Buscar la instancia de tarea para la fecha actual
+    today = date.today()
+    task_instance = TaskInstance.query.filter_by(
+        task_id=task.id,
+        scheduled_date=today
+    ).first()
+    
+    if task_instance:
+        # Actualizar el estado de la instancia específica a completada
+        task_instance.status = TaskStatus.COMPLETADA
+        task_instance.completed_by_id = user_id
+    
+    # También actualizamos el estado general de la tarea
     task.status = TaskStatus.COMPLETADA
     
     db.session.add(completion)

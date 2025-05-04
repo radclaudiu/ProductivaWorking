@@ -1481,6 +1481,90 @@ def local_user_tasks(date_str=None, group_id=None):
     
     # Función auxiliar para comprobar si una tarea debe aparecer en la fecha seleccionada
     def task_is_due_on_date(task, check_date):
+        # Para fechas futuras, mostramos las tareas que estarán programadas para esos días
+        today = date.today()
+        if check_date > today:
+            # Para fechas futuras, hay que simular si la tarea aparecería en esos días
+            # Verificar si la fecha sería un día donde la tarea debe aparecer siempre
+            if task.frequency == TaskFrequency.DIARIA:
+                return True
+            elif task.frequency == TaskFrequency.SEMANAL:
+                # Tareas semanales aparecen siempre los lunes o en otros días si no se han completado
+                if check_date.weekday() == 0:  # Si es lunes
+                    return True
+                
+                # Para otros días de la semana, hay que comprobar si se ha completado
+                # Simulamos como si ya estuvieramos en ese día futuro
+                monday_of_week = check_date - timedelta(days=check_date.weekday())
+                
+                # Comprobar si ha habido alguna completación en la semana actual
+                completions = TaskCompletion.query.filter_by(task_id=task.id).all()
+                
+                # Solo nos interesan completaciones entre el lunes y el día anterior al seleccionado
+                has_future_completions = False
+                for completion in completions:
+                    completion_date = completion.completion_date.date()
+                    if completion_date >= monday_of_week and completion_date < check_date:
+                        has_future_completions = True
+                        break
+                
+                # Si no hay completaciones simuladas, la tarea debe aparecer
+                return not has_future_completions
+                
+            elif task.frequency == TaskFrequency.QUINCENAL:
+                # Tareas quincenales aparecen los días 1 y 16, o en otros días si no se han completado
+                if check_date.day == 1 or check_date.day == 16:  # Si es inicio de quincena
+                    return True
+                    
+                # Para otros días, hay que comprobar si se ha completado en esa quincena
+                if check_date.day < 16:
+                    # Primera quincena
+                    first_day_of_fortnight = date(check_date.year, check_date.month, 1)
+                else:
+                    # Segunda quincena
+                    first_day_of_fortnight = date(check_date.year, check_date.month, 16)
+                    
+                # Comprobar completaciones simuladas
+                completions = TaskCompletion.query.filter_by(task_id=task.id).all()
+                has_future_completions = False
+                for completion in completions:
+                    completion_date = completion.completion_date.date()
+                    if completion_date >= first_day_of_fortnight and completion_date < check_date:
+                        has_future_completions = True
+                        break
+                        
+                # Si no hay completaciones simuladas, la tarea debe aparecer
+                return not has_future_completions
+                
+            elif task.frequency == TaskFrequency.MENSUAL:
+                # Tareas mensuales aparecen el día 1, o en otros días si no se han completado
+                if check_date.day == 1:  # Si es inicio de mes
+                    return True
+                    
+                # Para otros días, hay que comprobar si se ha completado en ese mes
+                first_day_of_month = date(check_date.year, check_date.month, 1)
+                
+                # Comprobar completaciones simuladas
+                completions = TaskCompletion.query.filter_by(task_id=task.id).all()
+                has_future_completions = False
+                for completion in completions:
+                    completion_date = completion.completion_date.date()
+                    if completion_date >= first_day_of_month and completion_date < check_date:
+                        has_future_completions = True
+                        break
+                        
+                # Si no hay completaciones simuladas, la tarea debe aparecer
+                return not has_future_completions
+            
+            # Para tareas personalizadas en fechas futuras, verificar días específicos
+            elif task.frequency == TaskFrequency.PERSONALIZADA:
+                # Verificar si alguno de los días de la semana coincide
+                weekday_value = days_map[check_date.weekday()].lower()
+                for weekday in task.weekdays:
+                    if weekday.day_of_week.value == weekday_value:
+                        return True
+                return False
+        
         # Si la fecha está fuera del rango de fechas de la tarea, no es debido
         if task.start_date and check_date < task.start_date:
             return False

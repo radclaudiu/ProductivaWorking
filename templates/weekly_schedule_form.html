@@ -6,11 +6,12 @@
     .day-title {
         background-color: #f8f9fa;
         font-weight: bold;
-        padding: 25px 15px 15px; /* Padding vertical ajustado para bajar elementos */
+        padding: 18px 15px 18px; /* Padding vertical ajustado para el contenido centrado */
         border-radius: 8px 8px 0 0; /* Bordes más redondeados */
         border-bottom: 2px solid #ddd;
         margin-bottom: 0;
         overflow: visible; /* Asegura que el contenido no se recorte */
+        text-align: center; /* Centrar el texto */
     }
     .day-card {
         margin-bottom: 30px; /* Más espacio entre tarjetas */
@@ -64,16 +65,18 @@
         {% for day in schedules %}
         <div class="col-md-6">
             <div class="card day-card">
-                <div class="day-title d-flex justify-content-between align-items-center position-relative">
-                    <span class="position-relative" style="z-index: 10; margin-left: 20px; transform: translateY(4px);">
+                <div class="day-title position-relative">
+                    <div class="d-flex justify-content-center align-items-center position-relative" style="z-index: 10; transform: translateY(4px);">
                         <i class="bi bi-calendar-day me-2"></i>
                         {{ day.name }}
-                    </span>
-                    {% if day.schedule and day.schedule.is_working_day %}
-                        <span class="badge bg-success working-day-badge position-relative" style="z-index: 10; margin-right: 20px; transform: translateY(4px);">Laborable</span>
-                    {% else %}
-                        <span class="badge bg-secondary working-day-badge position-relative" style="z-index: 10; margin-right: 20px; transform: translateY(4px);">No Laborable</span>
-                    {% endif %}
+                    </div>
+                    <div class="text-center mt-2">
+                        {% if day.schedule and day.schedule.is_working_day %}
+                            <span class="badge bg-success working-day-badge position-relative" style="z-index: 10; transform: translateY(4px);">Laborable</span>
+                        {% else %}
+                            <span class="badge bg-secondary working-day-badge position-relative" style="z-index: 10; transform: translateY(4px);">No Laborable</span>
+                        {% endif %}
+                    </div>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ day.action_url }}">

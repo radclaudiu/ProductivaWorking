@@ -10,6 +10,9 @@
                 <div class="card-header">
                     <h5 class="mb-0">Solicitud de Vacaciones</h5>
                 </div>
+                <div class="alert alert-danger mx-3 mt-3">
+                    <strong>IMPORTANTE:</strong> Los días marcados como vacaciones se excluirán automáticamente de la generación de fichajes manuales. Cuando se utilice el generador de fichajes, no se crearán fichajes para estos días.
+                </div>
                 <div class="card-body">
                     <form method="POST">
                         {{ form.hidden_tag() }}

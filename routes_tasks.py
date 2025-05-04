@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from functools import wraps
 from datetime import datetime, date, timedelta
+from calendar import monthrange
 import os
 import io
 import socket
@@ -1489,122 +1490,97 @@ def local_user_tasks(date_str=None, group_id=None):
             if task.frequency == TaskFrequency.DIARIA:
                 return True
             elif task.frequency == TaskFrequency.SEMANAL:
-                # Para fechas futuras, necesitamos verificar en qué semana estamos
-                current_monday = today - timedelta(days=today.weekday())  # Lunes de la semana actual
-                check_monday = check_date - timedelta(days=check_date.weekday())  # Lunes de la semana verificada
-                
-                # Si estamos verificando una semana futura (diferente a la actual)
-                if check_monday > current_monday:  
-                    # En semanas futuras, las tareas semanales siempre aparecen los lunes
-                    if check_date.weekday() == 0:  # Si es lunes
-                        return True
-                    # Para otros días de la semana futura, no aparecen hasta que llegue esa semana
-                    return False
-                
-                # Si es la semana actual
-                # Tareas semanales aparecen siempre los lunes o en otros días si no se han completado
-                if check_date.weekday() == 0:  # Si es lunes
-                    return True
-                
-                # Para otros días de la semana actual, hay que comprobar si se ha completado
+                # Para cualquier semana (actual o futura):
+                # - Las tareas semanales aparecen todos los días de la semana (lunes a domingo)
+                # - Si se ha completado ya en esa semana, no debe aparecer
+                # - En la siguiente semana, debe volver a aparecer independientemente de si
+                #   se completó o no en la semana anterior
+
+                # Calcular el lunes de la semana que estamos verificando
                 monday_of_week = check_date - timedelta(days=check_date.weekday())
-                
-                # Comprobar si ha habido alguna completación en la semana actual
+
+                # Obtener completaciones para esta tarea
                 completions = TaskCompletion.query.filter_by(task_id=task.id).all()
+
+                # Comprobar si hay alguna completación en esta semana específica
+                # Solo nos interesan completaciones entre el lunes y el domingo de esa semana
+                sunday_of_week = monday_of_week + timedelta(days=6)
+                has_completion_this_week = False
                 
-                # Solo nos interesan completaciones entre el lunes y el día anterior al seleccionado
-                has_future_completions = False
                 for completion in completions:
                     completion_date = completion.completion_date.date()
-                    if completion_date >= monday_of_week and completion_date < check_date:
-                        has_future_completions = True
+                    # Se ha completado si hay alguna completación entre el lunes y el domingo de esa semana
+                    if monday_of_week <= completion_date <= sunday_of_week:
+                        has_completion_this_week = True
                         break
-                
-                # Si no hay completaciones simuladas, la tarea debe aparecer
-                return not has_future_completions
+
+                # La tarea debe aparecer si no se ha completado esa semana
+                return not has_completion_this_week
                 
             elif task.frequency == TaskFrequency.QUINCENAL:
-                # Para fechas futuras, necesitamos verificar si estamos en quincena futura
-                current_year_month = (today.year, today.month)
-                check_year_month = (check_date.year, check_date.month)
-                current_fortnight = 1 if today.day < 16 else 2  # 1 = primera quincena, 2 = segunda quincena
-                check_fortnight = 1 if check_date.day < 16 else 2
+                # Para cualquier quincena (actual o futura):
+                # - Las tareas quincenales aparecen todos los días de la quincena
+                # - Si se ha completado ya en esa quincena, no debe aparecer
+                # - En la siguiente quincena, debe volver a aparecer independientemente de si
+                #   se completó o no en la quincena anterior
                 
-                # Verificar si la fecha es de una quincena futura
-                is_future_fortnight = False
-                if check_year_month > current_year_month:  # Año/mes posterior
-                    is_future_fortnight = True
-                elif check_year_month == current_year_month and check_fortnight > current_fortnight:  # Misma año/mes pero quincena posterior
-                    is_future_fortnight = True
-                    
-                # Si estamos verificando una quincena futura
-                if is_future_fortnight:
-                    # En quincenas futuras, las tareas quincenales solo aparecen en días 1 y 16
-                    if check_date.day == 1 or check_date.day == 16:  # Si es inicio de quincena
-                        return True
-                    # Para otros días de quincenas futuras, no aparecen hasta que llegue esa quincena
-                    return False
-                
-                # Si es la quincena actual
-                # Tareas quincenales aparecen siempre días 1 y 16, o en otros días si no se han completado
-                if check_date.day == 1 or check_date.day == 16:  # Si es inicio de quincena
-                    return True
-                    
-                # Para otros días de la quincena actual, hay que comprobar si se ha completado
+                # Determinar el primer y último día de la quincena actual
                 if check_date.day < 16:
-                    # Primera quincena
+                    # Primera quincena (día 1-15)
                     first_day_of_fortnight = date(check_date.year, check_date.month, 1)
+                    # El último día es el 15 o el último día del mes si tiene menos de 15 días
+                    last_day_of_month = monthrange(check_date.year, check_date.month)[1]
+                    last_day_of_fortnight = date(check_date.year, check_date.month, min(15, last_day_of_month))
                 else:
-                    # Segunda quincena
+                    # Segunda quincena (día 16-fin de mes)
                     first_day_of_fortnight = date(check_date.year, check_date.month, 16)
-                    
-                # Comprobar completaciones en la quincena actual
+                    last_day_of_month = monthrange(check_date.year, check_date.month)[1]
+                    last_day_of_fortnight = date(check_date.year, check_date.month, last_day_of_month)
+                
+                # Obtener completaciones para esta tarea
                 completions = TaskCompletion.query.filter_by(task_id=task.id).all()
-                has_completions_this_fortnight = False
+                
+                # Comprobar si hay alguna completación en esta quincena específica
+                # Solo nos interesan completaciones dentro de esta quincena
+                has_completion_this_fortnight = False
+                
                 for completion in completions:
                     completion_date = completion.completion_date.date()
-                    if completion_date >= first_day_of_fortnight and completion_date < check_date:
-                        has_completions_this_fortnight = True
+                    # Se ha completado si hay alguna completación dentro de esta quincena
+                    if first_day_of_fortnight <= completion_date <= last_day_of_fortnight:
+                        has_completion_this_fortnight = True
                         break
-                        
-                # Si no hay completaciones en esta quincena, la tarea debe aparecer
-                return not has_completions_this_fortnight
+                
+                # La tarea debe aparecer si no se ha completado en esta quincena
+                return not has_completion_this_fortnight
                 
             elif task.frequency == TaskFrequency.MENSUAL:
-                # Para fechas futuras, necesitamos verificar si estamos en un mes futuro
-                current_year_month = (today.year, today.month)
-                check_year_month = (check_date.year, check_date.month)
+                # Para cualquier mes (actual o futuro):
+                # - Las tareas mensuales aparecen todos los días del mes
+                # - Si se ha completado ya en ese mes, no debe aparecer
+                # - En el siguiente mes, debe volver a aparecer independientemente de si
+                #   se completó o no en el mes anterior
                 
-                # Verificar si la fecha es de un mes futuro
-                is_future_month = check_year_month > current_year_month
-                    
-                # Si estamos verificando un mes futuro
-                if is_future_month:
-                    # En meses futuros, las tareas mensuales solo aparecen el día 1
-                    if check_date.day == 1:  # Si es inicio de mes
-                        return True
-                    # Para otros días de meses futuros, no aparecen hasta que llegue ese mes
-                    return False
-                
-                # Si es el mes actual
-                # Tareas mensuales aparecen siempre el día 1, o en otros días si no se han completado
-                if check_date.day == 1:  # Si es inicio de mes
-                    return True
-                    
-                # Para otros días del mes actual, hay que comprobar si se ha completado en este mes
+                # Determinar el primer y último día del mes
                 first_day_of_month = date(check_date.year, check_date.month, 1)
+                last_day_of_month = date(check_date.year, check_date.month, monthrange(check_date.year, check_date.month)[1])
                 
-                # Comprobar completaciones en el mes actual
+                # Obtener completaciones para esta tarea
                 completions = TaskCompletion.query.filter_by(task_id=task.id).all()
-                has_completions_this_month = False
+                
+                # Comprobar si hay alguna completación en este mes específico
+                # Solo nos interesan completaciones dentro de este mes
+                has_completion_this_month = False
+                
                 for completion in completions:
                     completion_date = completion.completion_date.date()
-                    if completion_date >= first_day_of_month and completion_date < check_date:
-                        has_completions_this_month = True
+                    # Se ha completado si hay alguna completación dentro de este mes
+                    if first_day_of_month <= completion_date <= last_day_of_month:
+                        has_completion_this_month = True
                         break
-                        
-                # Si no hay completaciones en este mes, la tarea debe aparecer
-                return not has_completions_this_month
+                
+                # La tarea debe aparecer si no se ha completado en este mes
+                return not has_completion_this_month
             
             # Para tareas personalizadas en fechas futuras, verificar días específicos
             elif task.frequency == TaskFrequency.PERSONALIZADA:

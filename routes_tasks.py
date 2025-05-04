@@ -752,16 +752,18 @@ def create_task(location_id):
         
         # Ejecutar el programador de tareas solo para esta ubicación
         try:
+            log_activity(f'Iniciando programador de tareas automático para ubicación: {location.name} (ID: {location_id})')
             # Ejecutar en modo no bloqueante para no retrasar la respuesta al usuario
             threading.Thread(
                 target=run_task_scheduler_for_location,
                 args=(location_id,),
                 daemon=True
             ).start()
-            log_activity(f'Programador de tareas ejecutado automáticamente para la ubicación {location.name}')
+            flash(f'Programador de tareas iniciado en segundo plano para {location.name}', 'info')
         except Exception as e:
             # Si falla, solo registrarlo, pero continuar con la creación de la tarea
-            current_app.logger.error(f"Error al ejecutar programador de tareas: {str(e)}")
+            current_app.logger.error(f"❌ ERROR al ejecutar programador de tareas: {str(e)}")
+            log_activity(f'Error al ejecutar programador de tareas para ubicación {location.name}: {str(e)}')
         
         # Redirigir a la página de programación según la frecuencia
         log_activity(f'Tarea creada: {task.title} en {location.name}')

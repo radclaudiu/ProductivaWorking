@@ -71,7 +71,7 @@ def process_tasks_for_location(location, target_date=None):
     # Si no se especifica fecha, usamos la fecha actual
     process_date = target_date if target_date else date.today()
     
-    logger.info(f"Procesando ubicación: {location_name} (ID: {location_id}) para fecha {process_date}")
+    logger.info(f"🔄 PROCESANDO UBICACIÓN: {location_name} (ID: {location_id}) para fecha {process_date}")
     
     # Contador para cada tipo de tarea
     counters = {
@@ -244,12 +244,17 @@ def process_tasks_for_location(location, target_date=None):
                         counters['custom'] += 1
                     break
         
-        logger.info(f"Ubicación {location_name} (ID: {location_id}) procesada: "
-                   f"Diarias={counters['daily']}, "
-                   f"Semanales={counters['weekly']}, "
-                   f"Quincenales={counters['biweekly']}, "
-                   f"Mensuales={counters['monthly']}, "
-                   f"Personalizadas={counters['custom']}")
+        # Mostrar resultados de procesamiento
+        total_instances = sum(counters.values())
+        if total_instances > 0:
+            logger.info(f"✅ UBICACIÓN PROCESADA: {location_name} (ID: {location_id}) - Creadas {total_instances} instancias:")
+            logger.info(f"   ○ Diarias: {counters['daily']}")
+            logger.info(f"   ○ Semanales: {counters['weekly']}")
+            logger.info(f"   ○ Quincenales: {counters['biweekly']}")
+            logger.info(f"   ○ Mensuales: {counters['monthly']}")
+            logger.info(f"   ○ Personalizadas: {counters['custom']}")
+        else:
+            logger.info(f"⚠️ UBICACIÓN SIN CAMBIOS: {location_name} (ID: {location_id}) - No se crearon nuevas instancias")
         
         return counters
     
@@ -268,13 +273,15 @@ def run_task_scheduler_for_location(location_id=None):
     Args:
         location_id: ID de la ubicación para la que ejecutar el programador. Si es None, se ejecuta para todas.
     """
-    # Banner de inicio en el log
-    logger.info("*" * 100)
+    # Banner de inicio en el log con estilo mejorado
+    logger.info("\n" + "=" * 100)
     if location_id:
-        logger.info("*" + " " * 25 + "PROGRAMADOR DE TAREAS - EJECUCIÓN PARA UBICACIÓN ESPECÍFICA" + " " * 25 + "*")
+        title = "PROGRAMADOR DE TAREAS - EJECUCIÓN PARA UBICACIÓN ESPECÍFICA"
+        logger.info(f"{'=' * 10} 🔄 {title} 🔄 {'=' * 10}")
     else:
-        logger.info("*" + " " * 30 + "PROGRAMADOR DE TAREAS - EJECUCIÓN GLOBAL" + " " * 30 + "*")
-    logger.info("*" * 100)
+        title = "PROGRAMADOR DE TAREAS - EJECUCIÓN GLOBAL"
+        logger.info(f"{'=' * 15} 🔄 {title} 🔄 {'=' * 15}")
+    logger.info("=" * 100 + "\n")
     
     start_time = datetime.now()
     
@@ -373,10 +380,11 @@ def run_task_scheduler_for_location(location_id=None):
                        total_counters['biweekly'] + total_counters['monthly'] + 
                        total_counters['custom'])
         
-        # Banner de finalización en el log
-        logger.info("*" * 80)
-        logger.info("*" + " " * 23 + "PROGRAMADOR DE TAREAS COMPLETADO" + " " * 23 + "*")
-        logger.info("*" * 80)
+        # Banner de finalización en el log con estilo mejorado
+        logger.info("\n" + "=" * 100)
+        title = "PROGRAMADOR DE TAREAS COMPLETADO"
+        logger.info(f"{'=' * 25} ✅ {title} ✅ {'=' * 25}")
+        logger.info("=" * 100)
         
         logger.info(f"Programador de tareas completado en {duration:.2f} segundos")
         logger.info(f"Ubicaciones procesadas: {total_counters['locations_processed']} "
@@ -479,10 +487,11 @@ def service_loop():
 def start_service():
     """Inicia el servicio en un hilo separado"""
     try:
-        # Banner de inicio del servicio
-        logger.info("*" * 80)
-        logger.info("*" + " " * 20 + "INICIANDO SERVICIO DE PROGRAMADOR DE TAREAS" + " " * 20 + "*")
-        logger.info("*" * 80)
+        # Banner de inicio del servicio con estilo mejorado
+        logger.info("\n" + "=" * 100)
+        title = "INICIANDO SERVICIO DE PROGRAMADOR DE TAREAS"
+        logger.info(f"{'=' * 20} 🕐 {title} 🕐 {'=' * 20}")
+        logger.info("=" * 100)
         
         logger.info("Iniciando servicio de programación de tareas")
         
@@ -511,10 +520,11 @@ def stop_service():
     """Detiene el servicio"""
     global keep_running
     
-    # Banner de detención del servicio
-    logger.info("*" * 80)
-    logger.info("*" + " " * 20 + "DETENIENDO SERVICIO DE PROGRAMADOR DE TAREAS" + " " * 20 + "*")
-    logger.info("*" * 80)
+    # Banner de detención del servicio con estilo mejorado
+    logger.info("\n" + "=" * 100)
+    title = "DETENIENDO SERVICIO DE PROGRAMADOR DE TAREAS"
+    logger.info(f"{'=' * 20} ⏸️ {title} ⏸️ {'=' * 20}")
+    logger.info("=" * 100)
     
     logger.info("Deteniendo servicio de programación de tareas")
     keep_running = False
@@ -524,10 +534,11 @@ def stop_service():
     
     logger.info("Servicio de programación de tareas detenido")
     
-    # Banner de confirmación
-    logger.info("*" * 80)
-    logger.info("*" + " " * 21 + "SERVICIO DE PROGRAMADOR DE TAREAS DETENIDO" + " " * 21 + "*")
-    logger.info("*" * 80)
+    # Banner de confirmación de detección con estilo mejorado
+    logger.info("\n" + "=" * 100)
+    title = "SERVICIO DE PROGRAMADOR DE TAREAS DETENIDO"
+    logger.info(f"{'=' * 20} ⏹️ {title} ⏹️ {'=' * 20}")
+    logger.info("=" * 100)
 
 # Código para ejecutar el servicio directamente
 if __name__ == "__main__":

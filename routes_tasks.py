@@ -831,31 +831,79 @@ def configure_weekly_schedule(task_id):
         flash('Esta tarea no es de frecuencia semanal.', 'warning')
         return redirect(url_for('tasks.list_tasks', location_id=task.location_id))
     
-    # Buscar si ya existe un horario
-    schedule = TaskSchedule.query.filter_by(task_id=task.id).first()
+    # Buscar horarios existentes
+    schedules = TaskSchedule.query.filter_by(task_id=task.id).all()
     
-    form = WeeklyScheduleForm(obj=schedule)
+    # Diccionario para mapear días de la semana a booleanos para el formulario
+    form_data = {
+        'monday': False,
+        'tuesday': False,
+        'wednesday': False,
+        'thursday': False,
+        'friday': False,
+        'saturday': False,
+        'sunday': False,
+        'start_time': None,
+        'end_time': None
+    }
+    
+    # Mapeo de WeekDay a nombre de campo del formulario
+    day_to_field = {
+        WeekDay.LUNES: 'monday',
+        WeekDay.MARTES: 'tuesday',
+        WeekDay.MIERCOLES: 'wednesday',
+        WeekDay.JUEVES: 'thursday',
+        WeekDay.VIERNES: 'friday',
+        WeekDay.SABADO: 'saturday',
+        WeekDay.DOMINGO: 'sunday'
+    }
+    
+    # Marcar días configurados y obtener horarios
+    for schedule in schedules:
+        if schedule.day_of_week and schedule.day_of_week in day_to_field:
+            form_data[day_to_field[schedule.day_of_week]] = True
+        
+        # Usar el primer horario encontrado para las horas (debería ser el mismo para todos)
+        if schedule.start_time and not form_data['start_time']:
+            form_data['start_time'] = schedule.start_time
+        if schedule.end_time and not form_data['end_time']:
+            form_data['end_time'] = schedule.end_time
+    
+    form = WeeklyScheduleForm(**form_data)
     
     if form.validate_on_submit():
-        if schedule:
-            # Actualizar horario existente
-            schedule.day_of_week = WeekDay(form.day_of_week.data)
-            schedule.start_time = form.start_time.data
-            schedule.end_time = form.end_time.data
-        else:
-            # Crear nuevo horario
-            schedule = TaskSchedule(
-                task_id=task.id,
-                day_of_week=WeekDay(form.day_of_week.data),
-                start_time=form.start_time.data,
-                end_time=form.end_time.data
-            )
-            db.session.add(schedule)
+        # Eliminar todos los horarios existentes
+        TaskSchedule.query.filter_by(task_id=task.id).delete()
+        
+        # Mapeo de nombre de campo a WeekDay
+        field_to_day = {
+            'monday': WeekDay.LUNES,
+            'tuesday': WeekDay.MARTES,
+            'wednesday': WeekDay.MIERCOLES,
+            'thursday': WeekDay.JUEVES,
+            'friday': WeekDay.VIERNES,
+            'saturday': WeekDay.SABADO,
+            'sunday': WeekDay.DOMINGO
+        }
+        
+        # Crear horario para cada día seleccionado
+        days_configured = []
+        for field, day in field_to_day.items():
+            if getattr(form, field).data:
+                schedule = TaskSchedule(
+                    task_id=task.id,
+                    day_of_week=day,
+                    start_time=form.start_time.data,
+                    end_time=form.end_time.data
+                )
+                db.session.add(schedule)
+                days_configured.append(day.value.capitalize())
         
         db.session.commit()
         
-        log_activity(f'Horario semanal configurado para tarea: {task.title}')
-        flash('Horario configurado correctamente.', 'success')
+        days_str = ', '.join(days_configured)
+        log_activity(f'Horario semanal configurado para tarea {task.title}: {days_str}')
+        flash(f'Horario configurado correctamente para los días: {days_str}', 'success')
         return redirect(url_for('tasks.list_tasks', location_id=task.location_id))
     
     return render_template('tasks/schedule_form.html',

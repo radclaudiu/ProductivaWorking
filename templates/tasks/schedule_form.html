@@ -40,11 +40,58 @@
                         
                         {% if schedule_type == 'semanal' %}
                         <div class="form-group mb-3">
-                            {{ form.day_of_week.label(class="form-label") }}
-                            {{ form.day_of_week(class="form-select" + (" is-invalid" if form.day_of_week.errors else "")) }}
-                            {% for error in form.day_of_week.errors %}
-                            <div class="invalid-feedback">{{ error }}</div>
-                            {% endfor %}
+                            <label class="form-label">Días de la semana</label>
+                            <div class="row">
+                                <div class="col-md-4 mb-2">
+                                    <div class="form-check">
+                                        {{ form.monday(class="form-check-input") }}
+                                        {{ form.monday.label(class="form-check-label") }}
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <div class="form-check">
+                                        {{ form.tuesday(class="form-check-input") }}
+                                        {{ form.tuesday.label(class="form-check-label") }}
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <div class="form-check">
+                                        {{ form.wednesday(class="form-check-input") }}
+                                        {{ form.wednesday.label(class="form-check-label") }}
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <div class="form-check">
+                                        {{ form.thursday(class="form-check-input") }}
+                                        {{ form.thursday.label(class="form-check-label") }}
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <div class="form-check">
+                                        {{ form.friday(class="form-check-input") }}
+                                        {{ form.friday.label(class="form-check-label") }}
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <div class="form-check">
+                                        {{ form.saturday(class="form-check-input") }}
+                                        {{ form.saturday.label(class="form-check-label") }}
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-2">
+                                    <div class="form-check">
+                                        {{ form.sunday(class="form-check-input") }}
+                                        {{ form.sunday.label(class="form-check-label") }}
+                                    </div>
+                                </div>
+                            </div>
+                            {% if form.errors and form.errors.get('_error_messages') %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.errors.get('_error_messages') %}
+                                {{ error }}
+                                {% endfor %}
+                            </div>
+                            {% endif %}
                         </div>
                         {% endif %}
                         

@@ -106,7 +106,13 @@ class DailyScheduleForm(FlaskForm):
             raise ValidationError('La hora de fin debe ser posterior a la hora de inicio')
 
 class WeeklyScheduleForm(FlaskForm):
-    day_of_week = SelectField('Día de la semana', choices=[(day.value, day.name.capitalize()) for day in WeekDay])
+    monday = BooleanField('Lunes')
+    tuesday = BooleanField('Martes')
+    wednesday = BooleanField('Miércoles')
+    thursday = BooleanField('Jueves')
+    friday = BooleanField('Viernes')
+    saturday = BooleanField('Sábado')
+    sunday = BooleanField('Domingo')
     start_time = TimeField('Hora de inicio', validators=[Optional()])
     end_time = TimeField('Hora de fin', validators=[Optional()])
     submit = SubmitField('Guardar Horario')
@@ -114,6 +120,12 @@ class WeeklyScheduleForm(FlaskForm):
     def validate_end_time(form, field):
         if field.data and form.start_time.data and field.data < form.start_time.data:
             raise ValidationError('La hora de fin debe ser posterior a la hora de inicio')
+    
+    def validate(form):
+        if not any([form.monday.data, form.tuesday.data, form.wednesday.data, 
+                    form.thursday.data, form.friday.data, form.saturday.data, form.sunday.data]):
+            raise ValidationError('Debes seleccionar al menos un día de la semana')
+        return True
 
 class MonthlyScheduleForm(FlaskForm):
     day_of_month = IntegerField('Día del mes', validators=[

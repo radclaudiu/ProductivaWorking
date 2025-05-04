@@ -102,32 +102,21 @@ def process_tasks_for_location(location, target_date=None):
             monday_of_week = process_date - timedelta(days=process_date.weekday())
             sunday_of_week = monday_of_week + timedelta(days=6)
             
-            # Verificar si ya existe una instancia para este día especifico de la semana
+            # Verificar si ya existe una instancia para este día específico de la semana
             existing_for_this_date = TaskInstance.query.filter_by(
                 task_id=task.id, 
                 scheduled_date=process_date
             ).first()
             
             if not existing_for_this_date:
-                # Obtener la última completación
-                last_completion = TaskCompletion.query.filter_by(task_id=task.id).order_by(
-                    TaskCompletion.completion_date.desc()
+                # Obtener las completaciones para esta semana
+                week_completions = TaskCompletion.query.filter_by(task_id=task.id).filter(
+                    TaskCompletion.completion_date >= monday_of_week,
+                    TaskCompletion.completion_date <= sunday_of_week
                 ).first()
                 
-                should_create_instance = False
-                
-                if not last_completion:
-                    # Si nunca se ha completado, crear instancia
-                    should_create_instance = True
-                else:
-                    # Si la última completación fue en una semana anterior, crear instancia
-                    last_date = last_completion.completion_date.date()
-                    last_monday = last_date - timedelta(days=last_date.weekday())
-                    
-                    if last_monday < monday_of_week:
-                        should_create_instance = True
-                
-                if should_create_instance and create_task_instance(task, process_date):
+                # Si no hay completaciones en esta semana, crear instancia para este día
+                if not week_completions and create_task_instance(task, process_date):
                     counters['weekly'] += 1
         
         # Procesar tareas quincenales
@@ -147,36 +136,21 @@ def process_tasks_for_location(location, target_date=None):
                 last_day = monthrange(process_date.year, process_date.month)[1]
                 fortnight_end = date(process_date.year, process_date.month, last_day)
             
-            # Verificar si ya existe una instancia para este día especifico de la quincena
+            # Verificar si ya existe una instancia para este día específico de la quincena
             existing_for_this_date = TaskInstance.query.filter_by(
                 task_id=task.id, 
                 scheduled_date=process_date
             ).first()
             
             if not existing_for_this_date:
-                # Obtener la última completación
-                last_completion = TaskCompletion.query.filter_by(task_id=task.id).order_by(
-                    TaskCompletion.completion_date.desc()
+                # Obtener las completaciones para esta quincena
+                fortnight_completions = TaskCompletion.query.filter_by(task_id=task.id).filter(
+                    TaskCompletion.completion_date >= fortnight_start,
+                    TaskCompletion.completion_date <= fortnight_end
                 ).first()
                 
-                should_create_instance = False
-                
-                if not last_completion:
-                    # Si nunca se ha completado, crear instancia
-                    should_create_instance = True
-                else:
-                    # Determinar la quincena de la última completación
-                    last_date = last_completion.completion_date.date()
-                    if last_date.day < 16:
-                        last_fortnight_start = date(last_date.year, last_date.month, 1)
-                    else:
-                        last_fortnight_start = date(last_date.year, last_date.month, 16)
-                    
-                    # Si la última completación fue en una quincena anterior, crear instancia
-                    if last_fortnight_start < fortnight_start:
-                        should_create_instance = True
-                
-                if should_create_instance and create_task_instance(task, process_date):
+                # Si no hay completaciones en esta quincena, crear instancia para este día
+                if not fortnight_completions and create_task_instance(task, process_date):
                     counters['biweekly'] += 1
         
         # Procesar tareas mensuales
@@ -190,33 +164,21 @@ def process_tasks_for_location(location, target_date=None):
             last_day = monthrange(process_date.year, process_date.month)[1]
             month_end = date(process_date.year, process_date.month, last_day)
             
-            # Verificar si ya existe una instancia para este día especifico del mes
+            # Verificar si ya existe una instancia para este día específico del mes
             existing_for_this_date = TaskInstance.query.filter_by(
                 task_id=task.id, 
                 scheduled_date=process_date
             ).first()
             
             if not existing_for_this_date:
-                # Obtener la última completación
-                last_completion = TaskCompletion.query.filter_by(task_id=task.id).order_by(
-                    TaskCompletion.completion_date.desc()
+                # Obtener las completaciones para este mes
+                month_completions = TaskCompletion.query.filter_by(task_id=task.id).filter(
+                    TaskCompletion.completion_date >= month_start,
+                    TaskCompletion.completion_date <= month_end
                 ).first()
                 
-                should_create_instance = False
-                
-                if not last_completion:
-                    # Si nunca se ha completado, crear instancia
-                    should_create_instance = True
-                else:
-                    # Determinar el mes de la última completación
-                    last_date = last_completion.completion_date.date()
-                    last_month_start = date(last_date.year, last_date.month, 1)
-                    
-                    # Si la última completación fue en un mes anterior, crear instancia
-                    if last_month_start < month_start:
-                        should_create_instance = True
-                
-                if should_create_instance and create_task_instance(task, process_date):
+                # Si no hay completaciones en este mes, crear instancia para este día
+                if not month_completions and create_task_instance(task, process_date):
                     counters['monthly'] += 1
         
         # Procesar tareas personalizadas

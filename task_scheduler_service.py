@@ -265,6 +265,11 @@ def run_task_scheduler():
     1. El día actual
     2. Los próximos 7 días
     """
+    # Banner de inicio en el log
+    logger.info("*" * 80)
+    logger.info("*" + " " * 28 + "PROGRAMADOR DE TAREAS" + " " * 28 + "*")
+    logger.info("*" * 80)
+    
     start_time = datetime.now()
     logger.info(f"Iniciando programador de tareas: {start_time}")
     
@@ -341,6 +346,11 @@ def run_task_scheduler():
                        total_counters['biweekly'] + total_counters['monthly'] + 
                        total_counters['custom'])
         
+        # Banner de finalización en el log
+        logger.info("*" * 80)
+        logger.info("*" + " " * 23 + "PROGRAMADOR DE TAREAS COMPLETADO" + " " * 23 + "*")
+        logger.info("*" * 80)
+        
         logger.info(f"Programador de tareas completado en {duration:.2f} segundos")
         logger.info(f"Ubicaciones procesadas: {total_counters['locations_processed']} "
                    f"(Errores: {total_counters['locations_with_errors']})")
@@ -350,6 +360,8 @@ def run_task_scheduler():
                    f"Quincenales={total_counters['biweekly']}, "
                    f"Mensuales={total_counters['monthly']}, "
                    f"Personalizadas={total_counters['custom']}")
+        
+        logger.info("*" * 80)
         
         # Imprimir también en la consola para depuración
         print(f"\n✅ Programador de tareas completado - {total_tasks} tareas programadas")

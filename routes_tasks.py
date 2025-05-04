@@ -13,11 +13,12 @@ from werkzeug.utils import secure_filename
 from wtforms.validators import Optional
 
 from app import db
+from sqlalchemy import func
 from models import User, Company, Employee
 from models_tasks import (Location, LocalUser, Task, TaskSchedule, TaskCompletion, TaskPriority, 
                          TaskFrequency, TaskStatus, WeekDay, TaskGroup, TaskWeekday,
                          Product, ProductConservation, ProductLabel, ConservationType, LabelTemplate,
-                         NetworkPrinter)
+                         NetworkPrinter, TaskInstance)
 from forms_tasks import (LocationForm, LocalUserForm, TaskForm, DailyScheduleForm, WeeklyScheduleForm, 
                         MonthlyScheduleForm, BiweeklyScheduleForm, TaskCompletionForm, 
                         LocalUserPinForm, SearchForm, TaskGroupForm, CustomWeekdaysForm, PortalLoginForm,
@@ -1520,7 +1521,7 @@ def local_user_tasks(date_str=None, group_id=None):
         LocalUser, TaskCompletion.local_user_id == LocalUser.id
     ).filter(
         TaskCompletion.task_id.in_([t.id for t in pending_tasks]),
-        db.func.date(TaskCompletion.completion_date) == selected_date
+        func.date(TaskCompletion.completion_date) == selected_date
     ).order_by(
         TaskCompletion.completion_date.desc()
     ).all()
@@ -1538,7 +1539,7 @@ def local_user_tasks(date_str=None, group_id=None):
     user_completions = TaskCompletion.query.filter_by(
         local_user_id=user_id
     ).filter(
-        db.func.date(TaskCompletion.completion_date) == selected_date
+        func.date(TaskCompletion.completion_date) == selected_date
     ).order_by(
         TaskCompletion.completion_date.desc()
     ).all()
@@ -1566,7 +1567,7 @@ def local_user_tasks(date_str=None, group_id=None):
             # Si existe instancia para esta fecha, verificar si ya hay completación
             # solo en esta fecha específica (no en toda la semana/quincena/mes)
             completion = TaskCompletion.query.filter_by(task_id=task.id).filter(
-                db.func.date(TaskCompletion.completion_date) == check_date
+                func.date(TaskCompletion.completion_date) == check_date
             ).first()
             
             # Si hay completación en esta fecha específica, no mostrar
@@ -1681,7 +1682,7 @@ def complete_task(task_id):
         task_id=task.id,
         local_user_id=user_id
     ).filter(
-        db.func.date(TaskCompletion.completion_date) == today
+        func.date(TaskCompletion.completion_date) == today
     ).first()
     
     if completion:
@@ -1735,7 +1736,7 @@ def ajax_complete_task(task_id):
         task_id=task.id,
         local_user_id=user_id
     ).filter(
-        db.func.date(TaskCompletion.completion_date) == today
+        func.date(TaskCompletion.completion_date) == today
     ).first()
     
     if existing_completion:
@@ -1922,7 +1923,7 @@ def task_stats():
     # Tareas por prioridad
     tasks_by_priority_query = db.session.query(
         Task.priority,
-        db.func.count(Task.id)
+        func.count(Task.id)
     ).filter(
         Task.location_id.in_(location_ids)
     ).group_by(Task.priority).all()
@@ -1935,7 +1936,7 @@ def task_stats():
     # Tareas por local
     tasks_by_location_query = db.session.query(
         Location.name,
-        db.func.count(Task.id)
+        func.count(Task.id)
     ).join(
         Task, Location.id == Task.location_id
     ).filter(

@@ -1191,13 +1191,12 @@ def run_scheduler_for_location(location_id):
     try:
         log_activity(f'Ejecución manual del programador de tareas para ubicación: {location.name} (ID: {location_id})')
         # Ejecutar el programador de tareas para la ubicación especificada
-        with current_app.app_context():
-            # Ejecutar en modo no bloqueante para no retrasar la respuesta al usuario
-            threading.Thread(
-                target=run_task_scheduler_for_location,
-                args=(location_id,),
-                daemon=True
-            ).start()
+        # Ejecutar en modo no bloqueante para no retrasar la respuesta al usuario
+        threading.Thread(
+            target=run_task_scheduler_for_location,
+            args=(location_id,),
+            daemon=True
+        ).start()
         flash(f'Programador de tareas iniciado para la ubicación {location.name}. Este proceso puede tardar unos segundos.', 'success')
     except Exception as e:
         flash(f'Error al ejecutar el programador de tareas: {str(e)}', 'danger')

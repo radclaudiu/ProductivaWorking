@@ -1406,18 +1406,19 @@ def portal_logout():
 import fcntl
 import os
 
-# Archivo de bloqueo para evitar ejecuciones simulátenas del test_reset_tasks
-TEST_RESET_LOCK_FILE = "/tmp/test_reset_tasks.lock"
+# Archivos de bloqueo para evitar ejecuciones simultáneas de pruebas manuales
+TEST_WEEKLY_RESET_LOCK_FILE = "/tmp/test_weekly_reset_tasks.lock"
+TEST_DAILY_RESET_LOCK_FILE = "/tmp/test_daily_reset_tasks.lock"
 
-@tasks_bp.route('/local-user/test-reset-tasks', methods=['POST'])
+@tasks_bp.route('/local-user/test-reset-weekly-tasks', methods=['POST'])
 @local_user_required
-def test_reset_tasks():
+def test_reset_weekly_tasks():
     """Ejecuta manualmente el reinicio de tareas semanales (solo para pruebas)"""
     # Usar un archivo de bloqueo para evitar ejecuciones simultáneas
     lock_file = None
     try:
         # Intentar obtener un bloqueo exclusivo (no bloqueante)
-        lock_file = open(TEST_RESET_LOCK_FILE, 'w')
+        lock_file = open(TEST_WEEKLY_RESET_LOCK_FILE, 'w')
         try:
             fcntl.lockf(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
             
@@ -1434,15 +1435,15 @@ def test_reset_tasks():
             # Procesar tareas personalizadas para la semana
             custom_tasks_count = process_custom_tasks_for_week()
             
-            log_activity(f'Reinicio manual de tareas ejecutado: {tasks_reset_count} tareas reiniciadas, {custom_tasks_count} instancias creadas')
-            flash('¡Reinicio de tareas ejecutado correctamente!', 'success')
+            log_activity(f'Reinicio manual de tareas semanales ejecutado: {tasks_reset_count} tareas reiniciadas, {custom_tasks_count} instancias creadas')
+            flash('¡Reinicio de tareas semanales ejecutado correctamente!', 'success')
             
         except IOError:
             # No se pudo obtener el bloqueo, otro proceso ya lo tiene
             flash('Ya se está ejecutando un reinicio de tareas. Por favor, espera unos segundos antes de intentarlo de nuevo.', 'warning')
             
     except Exception as e:
-        flash(f'Error al ejecutar el reinicio de tareas: {str(e)}', 'danger')
+        flash(f'Error al ejecutar el reinicio de tareas semanales: {str(e)}', 'danger')
     finally:
         # Liberar el bloqueo si lo conseguimos
         if lock_file:
@@ -1454,6 +1455,59 @@ def test_reset_tasks():
     
     # Redirigir a la página de tareas
     return redirect(url_for('tasks.local_user_tasks'))
+
+@tasks_bp.route('/local-user/test-reset-daily-tasks', methods=['POST'])
+@local_user_required
+def test_reset_daily_tasks():
+    """Ejecuta manualmente el reinicio de tareas diarias (solo para pruebas)"""
+    # Importar la función de reinicio de tareas diarias
+    from daily_tasks_reset_service import reset_daily_tasks
+    
+    # Usar un archivo de bloqueo para evitar ejecuciones simultáneas
+    lock_file = None
+    try:
+        # Intentar obtener un bloqueo exclusivo (no bloqueante)
+        lock_file = open(TEST_DAILY_RESET_LOCK_FILE, 'w')
+        try:
+            fcntl.lockf(lock_file, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            
+            # Escribir información en el archivo de bloqueo
+            pid = os.getpid()
+            lock_info = f"{pid} {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+            lock_file.write(lock_info)
+            lock_file.flush()
+            
+            # Si llegamos aquí, tenemos el bloqueo exclusivo
+            # Ejecutar manualmente el reinicio de tareas diarias
+            tasks_reset_count = reset_daily_tasks()
+            
+            log_activity(f'Reinicio manual de tareas diarias ejecutado: {tasks_reset_count} tareas diarias actualizadas')
+            flash('¡Reinicio de tareas diarias ejecutado correctamente!', 'success')
+            
+        except IOError:
+            # No se pudo obtener el bloqueo, otro proceso ya lo tiene
+            flash('Ya se está ejecutando un reinicio de tareas. Por favor, espera unos segundos antes de intentarlo de nuevo.', 'warning')
+            
+    except Exception as e:
+        flash(f'Error al ejecutar el reinicio de tareas diarias: {str(e)}', 'danger')
+    finally:
+        # Liberar el bloqueo si lo conseguimos
+        if lock_file:
+            try:
+                fcntl.lockf(lock_file, fcntl.LOCK_UN)
+                lock_file.close()
+            except:
+                pass
+    
+    # Redirigir a la página de tareas
+    return redirect(url_for('tasks.local_user_tasks'))
+
+# Para mantener compatibilidad, redirigir la ruta antigua a la nueva
+@tasks_bp.route('/local-user/test-reset-tasks', methods=['POST'])
+@local_user_required
+def test_reset_tasks():
+    """Ruta anterior para compatibilidad"""
+    return redirect(url_for('tasks.test_reset_weekly_tasks'))
 
 
 @tasks_bp.route('/local-user/tasks', defaults={'date_str': None, 'group_id': None})

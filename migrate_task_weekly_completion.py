@@ -15,7 +15,7 @@ os.chdir(script_dir)
 
 # Importar la aplicación Flask y configuración de base de datos
 from app import db, create_app
-from models_tasks import Task, TaskFrequency
+from models_tasks import Task, TaskFrequency, TaskStatus
 
 # Crear la aplicación Flask para tener contexto
 app = create_app()
@@ -34,13 +34,19 @@ def migrate_task_weekly_completion():
             
         # Crear la columna con un valor predeterminado de False
         logger.info("Añadiendo campo 'current_week_completed' a la tabla de tareas...")
-        db.engine.execute('ALTER TABLE tasks ADD COLUMN current_week_completed BOOLEAN DEFAULT FALSE')
+        with db.engine.connect() as conn:
+            conn.execution_options(autocommit=True).execute("ALTER TABLE tasks ADD COLUMN current_week_completed BOOLEAN DEFAULT FALSE")
         
         # Actualizar el valor para todas las tareas semanales ya completadas
-        tasks_updated = db.session.query(Task).filter_by(
-            frequency=TaskFrequency.SEMANAL,
-            status='completada'
-        ).update({Task.current_week_completed: True})
+        tasks = db.session.query(Task).filter(
+            Task.frequency == TaskFrequency.SEMANAL,
+            Task.status == TaskStatus.COMPLETADA
+        ).all()
+        
+        tasks_updated = 0
+        for task in tasks:
+            task.current_week_completed = True
+            tasks_updated += 1
         
         db.session.commit()
         

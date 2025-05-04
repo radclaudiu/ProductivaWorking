@@ -212,15 +212,15 @@
                                         Horarios
                                     </h5>
                                     <p class="card-text mb-4">
-                                        Configuración de los horarios laborales para fichajes manuales del empleado
+                                        Asignación de horarios laborales que se usarán como base para la generación de fichajes manuales.
                                     </p>
-                                    <div class="d-grid gap-2">
+                                    <div class="d-grid gap-2 mt-auto">
                                         {% if current_user.is_admin() or current_user.is_gerente() %}
-                                        <a href="{{ url_for('schedule.weekly_schedule', employee_id=employee.id) }}" class="btn btn-primary mt-auto">
+                                        <a href="{{ url_for('schedule.weekly_schedule', employee_id=employee.id) }}" class="btn btn-primary">
                                             <i class="fas fa-calendar-week"></i> Gestionar Horario
                                         </a>
                                         {% else %}
-                                        <a href="{{ url_for('schedule.list_schedules', employee_id=employee.id) }}" class="btn btn-primary mt-auto">
+                                        <a href="{{ url_for('schedule.list_schedules', employee_id=employee.id) }}" class="btn btn-primary">
                                             <i class="fas fa-calendar-alt"></i> Ver Horario
                                         </a>
                                         {% endif %}
@@ -237,10 +237,10 @@
                                         Generador de fichajes
                                     </h5>
                                     <p class="card-text mb-4">
-                                        Herramienta para crear fichajes manualmente para este empleado
+                                        Creación y edición de fichajes manuales. Permite generar informes PDF para imprimir y entregar al empleado.
                                     </p>
-                                    <div class="d-grid gap-2">
-                                        <a href="{{ url_for('checkin.list_checkins', employee_id=employee.id) }}" class="btn btn-info mt-auto">
+                                    <div class="d-grid gap-2 mt-auto">
+                                        <a href="{{ url_for('checkin.list_checkins', employee_id=employee.id) }}" class="btn btn-info">
                                             <i class="fas fa-user-clock"></i> Generador de fichajes
                                         </a>
                                     </div>
@@ -256,15 +256,15 @@
                                         Vacaciones
                                     </h5>
                                     <p class="card-text mb-4">
-                                        Gestión de períodos de vacaciones y ausencias. Cuando se crean fichajes manuales, se saltarán los días de vacaciones.
+                                        Períodos de vacaciones y ausencias. Los días marcados como vacaciones se excluirán de la generación de fichajes manuales.
                                     </p>
-                                    <div class="d-grid gap-2">
+                                    <div class="d-grid gap-2 mt-auto">
                                         {% if current_user.is_admin() or current_user.is_gerente() %}
-                                        <a href="{{ url_for('employee.manage_vacations', id=employee.id) }}" class="btn btn-success mt-auto">
+                                        <a href="{{ url_for('employee.manage_vacations', id=employee.id) }}" class="btn btn-success">
                                             <i class="fas fa-calendar-plus"></i> Gestionar Vacaciones
                                         </a>
                                         {% else %}
-                                        <a href="{{ url_for('employee.view_vacations', id=employee.id) }}" class="btn btn-success mt-auto">
+                                        <a href="{{ url_for('employee.view_vacations', id=employee.id) }}" class="btn btn-success">
                                             <i class="fas fa-calendar-alt"></i> Ver Vacaciones
                                         </a>
                                         {% endif %}

@@ -108,16 +108,12 @@ def process_tasks_for_location(location, target_date=None):
                 scheduled_date=process_date
             ).first()
             
-            if not existing_for_this_date:
-                # Obtener las completaciones para esta semana
-                week_completions = TaskCompletion.query.filter_by(task_id=task.id).filter(
-                    TaskCompletion.completion_date >= monday_of_week,
-                    TaskCompletion.completion_date <= sunday_of_week
-                ).first()
-                
-                # Si no hay completaciones en esta semana, crear instancia para este día
-                if not week_completions and create_task_instance(task, process_date):
-                    counters['weekly'] += 1
+            # Si no existe una instancia para este día, crearla
+            # IMPORTANTE: No verificamos completaciones porque queremos que
+            # las tareas aparezcan todos los días hasta que se completen
+            # INDIVIDUALMENTE para cada día, no para la semana completa
+            if not existing_for_this_date and create_task_instance(task, process_date):
+                counters['weekly'] += 1
         
         # Procesar tareas quincenales
         biweekly_tasks = Task.query.filter_by(frequency=TaskFrequency.QUINCENAL, location_id=location_id).filter(
@@ -142,16 +138,12 @@ def process_tasks_for_location(location, target_date=None):
                 scheduled_date=process_date
             ).first()
             
-            if not existing_for_this_date:
-                # Obtener las completaciones para esta quincena
-                fortnight_completions = TaskCompletion.query.filter_by(task_id=task.id).filter(
-                    TaskCompletion.completion_date >= fortnight_start,
-                    TaskCompletion.completion_date <= fortnight_end
-                ).first()
-                
-                # Si no hay completaciones en esta quincena, crear instancia para este día
-                if not fortnight_completions and create_task_instance(task, process_date):
-                    counters['biweekly'] += 1
+            # Si no existe una instancia para este día, crearla
+            # IMPORTANTE: No verificamos completaciones porque queremos que
+            # las tareas aparezcan todos los días hasta que se completen
+            # INDIVIDUALMENTE para cada día, no para la quincena completa
+            if not existing_for_this_date and create_task_instance(task, process_date):
+                counters['biweekly'] += 1
         
         # Procesar tareas mensuales
         monthly_tasks = Task.query.filter_by(frequency=TaskFrequency.MENSUAL, location_id=location_id).filter(
@@ -170,16 +162,12 @@ def process_tasks_for_location(location, target_date=None):
                 scheduled_date=process_date
             ).first()
             
-            if not existing_for_this_date:
-                # Obtener las completaciones para este mes
-                month_completions = TaskCompletion.query.filter_by(task_id=task.id).filter(
-                    TaskCompletion.completion_date >= month_start,
-                    TaskCompletion.completion_date <= month_end
-                ).first()
-                
-                # Si no hay completaciones en este mes, crear instancia para este día
-                if not month_completions and create_task_instance(task, process_date):
-                    counters['monthly'] += 1
+            # Si no existe una instancia para este día, crearla
+            # IMPORTANTE: No verificamos completaciones porque queremos que
+            # las tareas aparezcan todos los días hasta que se completen
+            # INDIVIDUALMENTE para cada día, no para el mes completo
+            if not existing_for_this_date and create_task_instance(task, process_date):
+                counters['monthly'] += 1
         
         # Procesar tareas personalizadas
         custom_tasks = Task.query.filter_by(frequency=TaskFrequency.PERSONALIZADA, location_id=location_id).filter(

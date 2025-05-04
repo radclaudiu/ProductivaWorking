@@ -1549,6 +1549,7 @@ def local_user_tasks(date_str=None, group_id=None):
     
     # Función auxiliar para comprobar si una tarea debe aparecer en la fecha seleccionada
     def task_is_due_on_date(task, check_date):
+        # PARTE 1: Validar rango de fechas
         # Si la fecha está fuera del rango de fechas de la tarea, no es debido
         start_date = task.start_date or task.created_at.date()
         if check_date < start_date:
@@ -1556,8 +1557,8 @@ def local_user_tasks(date_str=None, group_id=None):
         if task.end_date and check_date > task.end_date:
             return False
         
-        # ENFOQUE UNIFICADO: Primero verificar si existe una instancia para esta fecha
-        # Si existe una instancia, la tarea debería mostrarse para esta fecha
+        # PARTE 2: Verificar si ya existe una instancia para esta fecha
+        # Si existe una instancia, verificar si ya ha sido completada para HOY específicamente
         instance = TaskInstance.query.filter_by(
             task_id=task.id,
             scheduled_date=check_date
@@ -1573,30 +1574,31 @@ def local_user_tasks(date_str=None, group_id=None):
             # Si hay completación en esta fecha específica, no mostrar
             if completion:
                 return False
-            # Si no hay completación en esta fecha específica pero existe la instancia,
+            # Si no hay completación para la fecha específica pero existe la instancia,
             # mostrar la tarea
             return True
         
-        # Si no existe instancia, verificar por frecuencia y reglas específicas
+        # PARTE 3: Verificar por frecuencia si no hay instancia
+        # Este caso debería ser poco común ya que el programador de tareas
+        # debería crear instancias para todas las fechas aplicables
+        
+        # Las tareas diarias deben aparecer todos los días
         if task.frequency == TaskFrequency.DIARIA:
             return True
             
+        # Las tareas semanales deben aparecer todos los días de la semana
         elif task.frequency == TaskFrequency.SEMANAL:
-            # Si no hay instancia pero es una tarea semanal, probablemente es porque
-            # aún no se ejecutó el programador. Verificar por día de la semana.
             return True
             
+        # Las tareas quincenales deben aparecer todos los días de la quincena
         elif task.frequency == TaskFrequency.QUINCENAL:
-            # Si no hay instancia pero es quincenal, probablemente es porque
-            # aún no se ejecutó el programador.
             return True
             
+        # Las tareas mensuales deben aparecer todos los días del mes
         elif task.frequency == TaskFrequency.MENSUAL:
-            # Si no hay instancia pero es mensual, probablemente es porque
-            # aún no se ejecutó el programador.
             return True
             
-        elif task.frequency == TaskFrequency.PERSONALIZADA:
+        elif task.frequency == TaskFrequency.PERSONALIZADA and task.weekdays:
             # Verificar si el día de la semana coincide con alguno de los días configurados
             weekday_value = days_map[check_date.weekday()].lower()
             for weekday in task.weekdays:

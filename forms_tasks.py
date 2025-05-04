@@ -121,10 +121,14 @@ class WeeklyScheduleForm(FlaskForm):
         if field.data and form.start_time.data and field.data < form.start_time.data:
             raise ValidationError('La hora de fin debe ser posterior a la hora de inicio')
     
-    def validate(form):
-        if not any([form.monday.data, form.tuesday.data, form.wednesday.data, 
-                    form.thursday.data, form.friday.data, form.saturday.data, form.sunday.data]):
-            raise ValidationError('Debes seleccionar al menos un día de la semana')
+    def validate(self):
+        if not super().validate():
+            return False
+            
+        if not any([self.monday.data, self.tuesday.data, self.wednesday.data, 
+                    self.thursday.data, self.friday.data, self.saturday.data, self.sunday.data]):
+            self._error_messages = ['Debes seleccionar al menos un día de la semana']
+            return False
         return True
 
 class MonthlyScheduleForm(FlaskForm):

@@ -85,9 +85,9 @@
                                     </div>
                                 </div>
                             </div>
-                            {% if form.errors and form.errors.get('_error_messages') %}
+                            {% if form.errors and '_error_messages' in form.__dict__ and form._error_messages %}
                             <div class="invalid-feedback d-block">
-                                {% for error in form.errors.get('_error_messages') %}
+                                {% for error in form._error_messages %}
                                 {{ error }}
                                 {% endfor %}
                             </div>

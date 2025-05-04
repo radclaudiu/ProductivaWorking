@@ -260,6 +260,7 @@ class Task(db.Model):
         """
         today = date.today()
         
+        # PARTE 1: Validar rango de fechas
         # Si la fecha está fuera del rango de fechas de la tarea, no es debido
         start_date = self.start_date or self.created_at.date()
         if today < start_date:
@@ -267,63 +268,51 @@ class Task(db.Model):
         if self.end_date and today > self.end_date:
             return False
         
-        # NUEVO ENFOQUE UNIFICADO: Mismo algoritmo para todas las fechas
-        # Verificar por tipo de frecuencia
+        # PARTE 2: Verificar si ya existe una instancia para esta fecha
+        # y si ya ha sido completada HOY específicamente
+        from sqlalchemy import func
+
+        # Buscar si ya existe una instancia para hoy
+        # Usando self.__class__ para evitar importaciones circulares
+        from app import db
+        
+        instance = db.session.query(TaskInstance).filter_by(
+            task_id=self.id,
+            scheduled_date=today
+        ).first()
+        
+        if instance:
+            # Si existe instancia para esta fecha, verificar si ya hay completación
+            # solo en esta fecha específica (no en toda la semana/quincena/mes)
+            completion = db.session.query(TaskCompletion).filter_by(task_id=self.id).filter(
+                func.date(TaskCompletion.completion_date) == today
+            ).first()
+            
+            # Si hay completación en esta fecha específica, no mostrar
+            if completion:
+                return False
+            # Si no hay completación para la fecha específica pero existe la instancia,
+            # mostrar la tarea
+            return True
+        
+        # PARTE 3: Verificar por frecuencia si no hay instancia
+        # Este caso debería ser poco común ya que el programador de tareas
+        # debería crear instancias para todas las fechas aplicables
+        
+        # Las tareas diarias deben aparecer todos los días
         if self.frequency == TaskFrequency.DIARIA:
             return True
             
+        # Las tareas semanales deben aparecer todos los días de la semana
         elif self.frequency == TaskFrequency.SEMANAL:
-            # 1. Calcular el lunes y domingo de la semana de today
-            monday_of_week = today - timedelta(days=today.weekday())
-            sunday_of_week = monday_of_week + timedelta(days=6)
-            
-            # 2. Comprobar si hay alguna completación en ESTA semana específica
-            for completion in self.completions:
-                completion_date = completion.completion_date.date()
-                # Si hay completación en esta semana (lunes a domingo), no mostrar la tarea
-                if monday_of_week <= completion_date <= sunday_of_week:
-                    return False
-            
-            # Si no hay completaciones en esta semana, mostrar la tarea
             return True
             
+        # Las tareas quincenales deben aparecer todos los días de la quincena
         elif self.frequency == TaskFrequency.QUINCENAL:
-            # 1. Determinar la quincena actual (1-15 o 16-fin)
-            if today.day < 16:
-                # Primera quincena
-                first_day = date(today.year, today.month, 1)
-                last_day_of_month = monthrange(today.year, today.month)[1]
-                last_day = date(today.year, today.month, min(15, last_day_of_month))
-            else:
-                # Segunda quincena
-                first_day = date(today.year, today.month, 16)
-                last_day_of_month = monthrange(today.year, today.month)[1]
-                last_day = date(today.year, today.month, last_day_of_month)
-            
-            # 2. Comprobar si hay alguna completación en ESTA quincena específica
-            for completion in self.completions:
-                completion_date = completion.completion_date.date()
-                # Si hay completación en esta quincena, no mostrar la tarea
-                if first_day <= completion_date <= last_day:
-                    return False
-            
-            # Si no hay completaciones en esta quincena, mostrar la tarea
             return True
             
+        # Las tareas mensuales deben aparecer todos los días del mes
         elif self.frequency == TaskFrequency.MENSUAL:
-            # 1. Determinar el primer y último día del mes actual
-            first_day = date(today.year, today.month, 1)
-            last_day_of_month = monthrange(today.year, today.month)[1]
-            last_day = date(today.year, today.month, last_day_of_month)
-            
-            # 2. Comprobar si hay alguna completación en ESTE mes específico
-            for completion in self.completions:
-                completion_date = completion.completion_date.date()
-                # Si hay completación en este mes, no mostrar la tarea
-                if first_day <= completion_date <= last_day:
-                    return False
-            
-            # Si no hay completaciones en este mes, mostrar la tarea
             return True
             
         elif self.frequency == TaskFrequency.PERSONALIZADA and self.weekdays:

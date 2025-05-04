@@ -1620,6 +1620,10 @@ def complete_task(task_id):
         # Actualizar el estado de la tarea a completada
         task.status = TaskStatus.COMPLETADA
         
+        # Si es una tarea semanal, marcar como completada para esta semana
+        if task.frequency == TaskFrequency.SEMANAL:
+            task.current_week_completed = True
+        
         db.session.add(completion)
         db.session.commit()
         
@@ -1674,6 +1678,10 @@ def ajax_complete_task(task_id):
     
     # Actualizar el estado de la tarea a completada
     task.status = TaskStatus.COMPLETADA
+    
+    # Si es una tarea semanal, marcar como completada para esta semana
+    if task.frequency == TaskFrequency.SEMANAL:
+        task.current_week_completed = True
     
     db.session.add(completion)
     db.session.commit()

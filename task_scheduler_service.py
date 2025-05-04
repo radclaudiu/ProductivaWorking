@@ -258,12 +258,15 @@ def process_tasks_for_location(location, target_date=None):
         db.session.rollback()
         return counters
 
-def run_task_scheduler():
-    """Función principal que ejecuta el programador de tareas
+def run_task_scheduler_for_location(location_id=None):
+    """Función principal que ejecuta el programador de tareas, opcionalmente solo para una ubicación específica
     
     Esta función genera instancias de tareas para:
     1. El día actual
     2. Los próximos 7 días
+    
+    Args:
+        location_id: ID de la ubicación para la que ejecutar el programador. Si es None, se ejecuta para todas.
     """
     # Banner de inicio en el log
     logger.info("*" * 80)
@@ -271,7 +274,17 @@ def run_task_scheduler():
     logger.info("*" * 80)
     
     start_time = datetime.now()
-    logger.info(f"Iniciando programador de tareas: {start_time}")
+    
+    # Si se especifica una ubicación, indicarlo en el log
+    if location_id:
+        location = Location.query.get(location_id)
+        if not location:
+            logger.error(f"No se encontró la ubicación con ID {location_id}")
+            print(f"\n❌ Error: No se encontró la ubicación con ID {location_id}\n")
+            return
+        logger.info(f"Iniciando programador de tareas SOLO para ubicación: {location.name} (ID: {location_id}) - {start_time}")
+    else:
+        logger.info(f"Iniciando programador de tareas para TODAS las ubicaciones: {start_time}")
     
     # Contadores globales
     total_counters = {
@@ -286,9 +299,17 @@ def run_task_scheduler():
     }
     
     try:
-        # Obtener todas las ubicaciones activas
-        locations = Location.query.filter_by(is_active=True).all()
-        logger.info(f"Se encontraron {len(locations)} ubicaciones activas")
+        # Obtener ubicaciones activas (todas o solo una específica)
+        if location_id:
+            locations = Location.query.filter_by(id=location_id, is_active=True).all()
+            if not locations:
+                logger.error(f"La ubicación con ID {location_id} no está activa o no existe")
+                print(f"\n❌ Error: La ubicación con ID {location_id} no está activa o no existe\n")
+                return
+        else:
+            locations = Location.query.filter_by(is_active=True).all()
+        
+        logger.info(f"Se encontraron {len(locations)} ubicaciones activas para procesar")
         
         # Fechas para las que generar tareas
         today = date.today()
@@ -376,6 +397,11 @@ def run_task_scheduler():
     except Exception as e:
         logger.error(f"Error general en el programador de tareas: {str(e)}")
         print(f"\n❌ Error en el programador de tareas: {str(e)}\n")
+
+def run_task_scheduler():
+    """Función que ejecuta el programador de tareas para todas las ubicaciones (para compatibilidad)"""
+    return run_task_scheduler_for_location()
+
 
 def schedule_next_run():
     """Programa la próxima ejecución para las 6:00 AM"""

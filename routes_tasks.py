@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from functools import wraps
 from datetime import datetime, date, timedelta
+import threading
 from calendar import monthrange
 import os
 import io
@@ -25,8 +26,8 @@ from forms_tasks import (LocationForm, LocalUserForm, TaskForm, DailyScheduleFor
 from utils import log_activity, can_manage_company, save_file
 from utils_tasks import create_default_local_user, regenerate_portal_password, count_available_employees, sync_employees_to_local_users
 
-# Importar el programador de tareas para ejecutarlo manualmente
-from task_scheduler_service import run_task_scheduler
+# Importar el programador de tareas para ejecutarlo manualmente o para una ubicación específica
+from task_scheduler_service import run_task_scheduler, run_task_scheduler_for_location
 
 # Crear el Blueprint para las tareas
 tasks_bp = Blueprint('tasks', __name__)
@@ -748,6 +749,19 @@ def create_task(location_id):
                 db.session.add(TaskWeekday(task_id=task.id, day_of_week=WeekDay.DOMINGO))
             
             db.session.commit()
+        
+        # Ejecutar el programador de tareas solo para esta ubicación
+        try:
+            # Ejecutar en modo no bloqueante para no retrasar la respuesta al usuario
+            threading.Thread(
+                target=run_task_scheduler_for_location,
+                args=(location_id,),
+                daemon=True
+            ).start()
+            log_activity(f'Programador de tareas ejecutado automáticamente para la ubicación {location.name}')
+        except Exception as e:
+            # Si falla, solo registrarlo, pero continuar con la creación de la tarea
+            current_app.logger.error(f"Error al ejecutar programador de tareas: {str(e)}")
         
         # Redirigir a la página de programación según la frecuencia
         log_activity(f'Tarea creada: {task.title} en {location.name}')

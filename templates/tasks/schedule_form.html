@@ -27,7 +27,7 @@
                         {% if schedule_type == 'diario' %}
                         Esta tarea se ejecutará todos los días a la hora especificada.
                         {% elif schedule_type == 'semanal' %}
-                        Esta tarea se ejecutará cada semana en el día seleccionado y la hora especificada.
+                        Esta tarea aparecerá todos los días hasta que se complete. Una vez completada, desaparecerá hasta el próximo lunes.
                         {% elif schedule_type == 'mensual' %}
                         Esta tarea se ejecutará cada mes en el día seleccionado y la hora especificada.
                         {% elif schedule_type == 'quincenal' %}
@@ -40,58 +40,19 @@
                         
                         {% if schedule_type == 'semanal' %}
                         <div class="form-group mb-3">
-                            <label class="form-label">Días de la semana</label>
-                            <div class="row">
-                                <div class="col-md-4 mb-2">
-                                    <div class="form-check">
-                                        {{ form.monday(class="form-check-input") }}
-                                        {{ form.monday.label(class="form-check-label") }}
-                                    </div>
-                                </div>
-                                <div class="col-md-4 mb-2">
-                                    <div class="form-check">
-                                        {{ form.tuesday(class="form-check-input") }}
-                                        {{ form.tuesday.label(class="form-check-label") }}
-                                    </div>
-                                </div>
-                                <div class="col-md-4 mb-2">
-                                    <div class="form-check">
-                                        {{ form.wednesday(class="form-check-input") }}
-                                        {{ form.wednesday.label(class="form-check-label") }}
-                                    </div>
-                                </div>
-                                <div class="col-md-4 mb-2">
-                                    <div class="form-check">
-                                        {{ form.thursday(class="form-check-input") }}
-                                        {{ form.thursday.label(class="form-check-label") }}
-                                    </div>
-                                </div>
-                                <div class="col-md-4 mb-2">
-                                    <div class="form-check">
-                                        {{ form.friday(class="form-check-input") }}
-                                        {{ form.friday.label(class="form-check-label") }}
-                                    </div>
-                                </div>
-                                <div class="col-md-4 mb-2">
-                                    <div class="form-check">
-                                        {{ form.saturday(class="form-check-input") }}
-                                        {{ form.saturday.label(class="form-check-label") }}
-                                    </div>
-                                </div>
-                                <div class="col-md-4 mb-2">
-                                    <div class="form-check">
-                                        {{ form.sunday(class="form-check-input") }}
-                                        {{ form.sunday.label(class="form-check-label") }}
-                                    </div>
-                                </div>
+                            <!-- Inputs ocultos para marcar todos los días como seleccionados -->
+                            {{ form.monday(type="hidden", value="y") }}
+                            {{ form.tuesday(type="hidden", value="y") }}
+                            {{ form.wednesday(type="hidden", value="y") }}
+                            {{ form.thursday(type="hidden", value="y") }}
+                            {{ form.friday(type="hidden", value="y") }}
+                            {{ form.saturday(type="hidden", value="y") }}
+                            {{ form.sunday(type="hidden", value="y") }}
+                            
+                            <div class="alert alert-success">
+                                <i class="bi bi-check-circle-fill me-2"></i>
+                                La tarea semanal aparecerá <strong>todos los días</strong> hasta que se complete. El lunes de cada semana volverá a aparecer aunque se haya completado la semana anterior.
                             </div>
-                            {% if form.errors and '_error_messages' in form.__dict__ and form._error_messages %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in form._error_messages %}
-                                {{ error }}
-                                {% endfor %}
-                            </div>
-                            {% endif %}
                         </div>
                         {% endif %}
                         

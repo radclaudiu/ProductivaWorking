@@ -15,7 +15,7 @@ from models import User, Company, Employee
 from models_tasks import (Location, LocalUser, Task, TaskSchedule, TaskCompletion, TaskPriority, 
                          TaskFrequency, TaskStatus, WeekDay, TaskGroup, TaskWeekday,
                          Product, ProductConservation, ProductLabel, ConservationType, LabelTemplate,
-                         NetworkPrinter)
+                         NetworkPrinter, TaskInstance)
 from forms_tasks import (LocationForm, LocalUserForm, TaskForm, DailyScheduleForm, WeeklyScheduleForm, 
                         MonthlyScheduleForm, BiweeklyScheduleForm, TaskCompletionForm, 
                         LocalUserPinForm, SearchForm, TaskGroupForm, CustomWeekdaysForm, PortalLoginForm,
@@ -23,6 +23,7 @@ from forms_tasks import (LocationForm, LocalUserForm, TaskForm, DailyScheduleFor
                         NetworkPrinterForm)
 from utils import log_activity, can_manage_company, save_file
 from utils_tasks import create_default_local_user, regenerate_portal_password, count_available_employees, sync_employees_to_local_users
+from weekly_tasks_reset_service import reset_weekly_tasks, process_custom_tasks_for_week
 
 # Crear el Blueprint para las tareas
 tasks_bp = Blueprint('tasks', __name__)
@@ -1402,10 +1403,30 @@ def portal_logout():
     flash('Has cerrado sesión del portal correctamente.', 'success')
     return redirect(url_for('tasks.index'))
 
-@tasks_bp.route('/local-user/tasks')
-@tasks_bp.route('/local-user/tasks/<string:date_str>')
-@tasks_bp.route('/local-user/tasks/group/<int:group_id>')
-@tasks_bp.route('/local-user/tasks/<string:date_str>/group/<int:group_id>')
+@tasks_bp.route('/local-user/test-reset-tasks', methods=['POST'])
+@local_user_required
+def test_reset_tasks():
+    """Ejecuta manualmente el reinicio de tareas semanales (solo para pruebas)"""
+    try:
+        # Ejecutar manualmente el reinicio de tareas semanales
+        tasks_reset_count = reset_weekly_tasks()
+        
+        # Procesar tareas personalizadas para la semana
+        custom_tasks_count = process_custom_tasks_for_week()
+        
+        log_activity(f'Reinicio manual de tareas ejecutado: {tasks_reset_count} tareas reiniciadas, {custom_tasks_count} instancias creadas')
+        flash('¡Reinicio de tareas ejecutado correctamente!', 'success')
+    except Exception as e:
+        flash(f'Error al ejecutar el reinicio de tareas: {str(e)}', 'danger')
+    
+    # Redirigir a la página de tareas
+    return redirect(url_for('tasks.local_user_tasks'))
+
+
+@tasks_bp.route('/local-user/tasks', defaults={'date_str': None, 'group_id': None})
+@tasks_bp.route('/local-user/tasks/<date_str>', defaults={'group_id': None})
+@tasks_bp.route('/local-user/tasks/group/<int:group_id>', defaults={'date_str': None})
+@tasks_bp.route('/local-user/tasks/<date_str>/group/<int:group_id>')
 @local_user_required
 def local_user_tasks(date_str=None, group_id=None):
     """Panel de tareas para usuario local"""

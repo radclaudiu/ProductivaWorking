@@ -149,6 +149,12 @@
         </h1>
         <div class="btn-toolbar mb-2 mb-md-0">
             <div class="btn-group me-2">
+                <form action="{{ url_for('tasks.test_reset_tasks') }}" method="post" class="d-inline me-2" onsubmit="return confirm('¿Estás seguro de que quieres reiniciar TODAS las tareas semanales? Esto establecerá todas las tareas semanales como pendientes.');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-warning" title="Reinicia todas las tareas semanales (prueba)">
+                        <i class="bi bi-arrow-repeat"></i> <span>Reiniciar tareas</span>
+                    </button>
+                </form>
                 <a href="{{ url_for('tasks.local_logout') }}" class="btn btn-lg" style="border: 2px solid black; color: black; font-weight: bold;">
                     <i class="bi bi-box-arrow-left"></i> <span>Salir</span>
                 </a>

@@ -3,10 +3,13 @@ import time
 import threading
 from datetime import datetime, date, timedelta
 import logging
-from app import db, app
+from flask import current_app
 from models_tasks import Task, TaskInstance, TaskCompletion, TaskFrequency, TaskStatus, Location
 from calendar import monthrange
 import random
+
+# Evitamos la importación circular
+from app import db
 
 # Configuración de logging
 logging.basicConfig(
@@ -355,10 +358,14 @@ def service_loop():
         logger.info("Continuando ejecución del servicio - archivo de inicio encontrado")
     
     # Ejecutar inmediatamente si es la primera vez o si se está recuperando de un reinicio
-    with app.app_context():
-        if first_run:
-            logger.info("Ejecutando programador de tareas en el primer inicio")
+    if first_run:
+        logger.info("Ejecutando programador de tareas en el primer inicio")
+        try:
+            # Utilizamos la función sin contexto ya que podría no estar disponible
             run_task_scheduler()
+        except Exception as e:
+            logger.error(f"Error al ejecutar programador de tareas: {str(e)}")
+            print(f"Error en programador de tareas: {str(e)}")
     
     # Indicar que la inicialización está completa
     initialization_complete = True

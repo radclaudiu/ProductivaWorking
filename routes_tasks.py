@@ -25,6 +25,9 @@ from forms_tasks import (LocationForm, LocalUserForm, TaskForm, DailyScheduleFor
 from utils import log_activity, can_manage_company, save_file
 from utils_tasks import create_default_local_user, regenerate_portal_password, count_available_employees, sync_employees_to_local_users
 
+# Importar el programador de tareas para ejecutarlo manualmente
+from task_scheduler_service import run_task_scheduler
+
 # Crear el Blueprint para las tareas
 tasks_bp = Blueprint('tasks', __name__)
 
@@ -1145,6 +1148,22 @@ def portal_selection():
         print(f"[ERROR] Error en portal_selection: {str(e)}")
         # Devolver una respuesta mínima para evitar 500
         return f"Error: {str(e)}", 500
+        
+@tasks_bp.route('/run-scheduler')
+@login_required
+@manager_required
+def run_scheduler_manually():
+    """Ejecuta manualmente el programador de tareas"""
+    try:
+        log_activity('Ejecución manual del programador de tareas')
+        # Ejecutar el programador de tareas
+        with current_app.app_context():
+            run_task_scheduler()
+        flash('El programador de tareas se ha ejecutado correctamente.', 'success')
+    except Exception as e:
+        flash(f'Error al ejecutar el programador de tareas: {str(e)}', 'danger')
+        log_activity(f'Error en ejecución manual del programador de tareas: {str(e)}', level='error')
+    return redirect(url_for('tasks.index'))
 
 @tasks_bp.route('/portal-test')
 def portal_test():

@@ -98,36 +98,30 @@ def should_run_reset():
 
 def calculate_sleep_time():
     """
-    Calcula el tiempo que debe dormir el servicio hasta la próxima verificación.
-    Si hoy es lunes y aún no llega la hora, espera hasta la hora exacta.
-    Si hoy no es lunes o ya pasó la hora, espera hasta la medianoche + 10 minutos, o hasta el CHECK_INTERVAL.
+    Calcula el tiempo exacto que debe dormir el servicio hasta el próximo lunes a las 04:00 AM.
     
     Returns:
-        float: Tiempo en segundos que debe dormir el servicio
+        float: Tiempo en segundos hasta el próximo lunes a las 04:00 AM
     """
     now = datetime.now()
     today = now.date()
     
-    # Si hoy es lunes y aún no llega la hora
+    # Si hoy es lunes y aún no llega la hora de reinicio
     if today.weekday() == 0 and now.hour < RESET_HOUR:
         target_time = now.replace(hour=RESET_HOUR, minute=RESET_MINUTE, second=0, microsecond=0)
         return (target_time - now).total_seconds()
     
-    # Si el siguiente lunes está a menos de CHECK_INTERVAL, calcular tiempo hasta entonces + 10 minutos
+    # En cualquier otro caso, calcular días hasta el próximo lunes
     days_until_monday = (7 - today.weekday()) % 7
-    if days_until_monday == 0:  # Hoy es lunes pero ya pasó la hora
+    if days_until_monday == 0:  # Hoy es lunes pero ya pasó la hora de reinicio
         days_until_monday = 7
     
-    next_check = now + timedelta(days=days_until_monday)
-    next_check = next_check.replace(hour=RESET_HOUR, minute=RESET_MINUTE, second=0, microsecond=0)
-    seconds_until_next = (next_check - now).total_seconds()
+    # Calcular el próximo lunes a las 04:00 AM
+    next_reset = now + timedelta(days=days_until_monday)
+    next_reset = next_reset.replace(hour=RESET_HOUR, minute=RESET_MINUTE, second=0, microsecond=0)
     
-    # Si el tiempo hasta el próximo lunes es menor que el intervalo, usar ese tiempo
-    if seconds_until_next < CHECK_INTERVAL:
-        return seconds_until_next
-    
-    # De lo contrario, usar el intervalo estándar
-    return CHECK_INTERVAL
+    # Devolver el tiempo exacto en segundos
+    return (next_reset - now).total_seconds()
 
 def weekly_tasks_reset_worker():
     """

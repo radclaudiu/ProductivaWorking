@@ -307,14 +307,58 @@ class Task(db.Model):
                 # Si no hay completaciones esta semana, la tarea debe aparecer
                 return not has_completions_this_week
                 
-            # Para tareas mensuales, verificamos si today es el mismo día del mes que start_date
-            elif self.frequency == TaskFrequency.MENSUAL and self.start_date:
-                return today.day == self.start_date.day
+            # Para tareas mensuales, nueva lógica: aparecer todos los días hasta que se completen
+            elif self.frequency == TaskFrequency.MENSUAL:
+                # Determinar si es el primer día del mes
+                is_first_day_of_month = today.day == 1
                 
-            # Para tareas quincenales, verificamos si han pasado múltiplos de 15 días desde start_date
-            elif self.frequency == TaskFrequency.QUINCENAL and self.start_date:
-                delta = (today - self.start_date).days
-                return delta % 15 == 0
+                # Si es el primer día del mes, siempre mostrar la tarea
+                if is_first_day_of_month:
+                    return True
+                
+                # Para cualquier otro día, verificar si ya ha sido completada en este mes
+                # El primer día del mes actual
+                first_day_of_month = date(today.year, today.month, 1)
+                
+                # Comprobar si hay alguna completación en este mes
+                has_completions_this_month = False
+                for completion in self.completions:
+                    completion_date = completion.completion_date.date()
+                    if completion_date >= first_day_of_month and completion_date < today:
+                        has_completions_this_month = True
+                        break
+                
+                # Si no hay completaciones este mes, la tarea debe aparecer
+                return not has_completions_this_month
+                
+            # Para tareas quincenales, implementar la misma lógica que las semanales
+            elif self.frequency == TaskFrequency.QUINCENAL:
+                # Determinar si es el primer día de la quincena (día 1 o 16 del mes)
+                is_first_day_of_fortnight = today.day == 1 or today.day == 16
+                
+                # Si es el primer día de la quincena, siempre mostrar la tarea
+                if is_first_day_of_fortnight:
+                    return True
+                
+                # Para cualquier otro día, verificar si ya ha sido completada en esta quincena
+                # Determinar el primer día de la quincena actual
+                if today.day < 16:
+                    # Primera quincena (día 1-15)
+                    first_day_of_fortnight = date(today.year, today.month, 1)
+                else:
+                    # Segunda quincena (día 16-fin de mes)
+                    first_day_of_fortnight = date(today.year, today.month, 16)
+                
+                # Comprobar si hay alguna completación en esta quincena
+                has_completions_this_fortnight = False
+                for completion in self.completions:
+                    completion_date = completion.completion_date.date()
+                    if completion_date >= first_day_of_fortnight and completion_date < today:
+                        has_completions_this_fortnight = True
+                        break
+                
+                # Si no hay completaciones esta quincena, la tarea debe aparecer
+                return not has_completions_this_fortnight
             
             # Para cualquier otro caso, mostramos la tarea
             return True
@@ -355,8 +399,9 @@ class TaskSchedule(db.Model):
         if self.task.frequency == TaskFrequency.DIARIA:
             return True
             
-        # Para tareas semanales, comprobamos el día de la semana
+        # Para tareas semanales, seguimos la nueva lógica de persistencia
         if self.task.frequency == TaskFrequency.SEMANAL and self.day_of_week:
+            # Mapeo de días de la semana
             day_map = {
                 WeekDay.LUNES: 0,
                 WeekDay.MARTES: 1,
@@ -366,19 +411,69 @@ class TaskSchedule(db.Model):
                 WeekDay.SABADO: 5,
                 WeekDay.DOMINGO: 6
             }
-            return check_date.weekday() == day_map[self.day_of_week]
             
-        # Para tareas mensuales, comprobamos el día del mes
-        if self.task.frequency == TaskFrequency.MENSUAL and self.day_of_month:
-            return check_date.day == self.day_of_month
-            
-        # Para tareas quincenales (cada 15 días)
-        if self.task.frequency == TaskFrequency.QUINCENAL:
-            if not self.task.start_date:
-                return False
+            # Si es lunes, siempre mostrar la tarea
+            if check_date.weekday() == 0:  # 0 = Lunes
+                return True
                 
-            delta = (check_date - self.task.start_date).days
-            return delta % 15 == 0
+            # Para cualquier otro día, verificar si la tarea ya fue completada esta semana
+            monday_of_week = check_date - timedelta(days=check_date.weekday())
+            
+            # Comprobar completaciones de esta semana, hasta la fecha indicada
+            has_completions_this_week = False
+            for completion in self.task.completions:
+                completion_date = completion.completion_date.date()
+                if completion_date >= monday_of_week and completion_date < check_date:
+                    has_completions_this_week = True
+                    break
+                    
+            # Si no hay completaciones esta semana, la tarea debe aparecer
+            return not has_completions_this_week
+            
+        # Para tareas mensuales, implementar la nueva lógica de persistencia
+        if self.task.frequency == TaskFrequency.MENSUAL and self.day_of_month:
+            # Si es el primer día del mes, siempre mostrar la tarea
+            if check_date.day == 1:
+                return True
+                
+            # Para cualquier otro día, verificar si ya ha sido completada en este mes
+            first_day_of_month = date(check_date.year, check_date.month, 1)
+            
+            # Comprobar si hay alguna completación en este mes
+            has_completions_this_month = False
+            for completion in self.task.completions:
+                completion_date = completion.completion_date.date()
+                if completion_date >= first_day_of_month and completion_date < check_date:
+                    has_completions_this_month = True
+                    break
+                    
+            # Si no hay completaciones este mes, la tarea debe aparecer
+            return not has_completions_this_month
+            
+        # Para tareas quincenales, implementar la nueva lógica de persistencia
+        if self.task.frequency == TaskFrequency.QUINCENAL:
+            # Determinar si es el primer día de la quincena (día 1 o 16 del mes)
+            if check_date.day == 1 or check_date.day == 16:
+                return True
+                
+            # Para cualquier otro día, verificar si ya ha sido completada en esta quincena
+            if check_date.day < 16:
+                # Primera quincena (día 1-15)
+                first_day_of_fortnight = date(check_date.year, check_date.month, 1)
+            else:
+                # Segunda quincena (día 16-fin de mes)
+                first_day_of_fortnight = date(check_date.year, check_date.month, 16)
+                
+            # Comprobar si hay alguna completación en esta quincena
+            has_completions_this_fortnight = False
+            for completion in self.task.completions:
+                completion_date = completion.completion_date.date()
+                if completion_date >= first_day_of_fortnight and completion_date < check_date:
+                    has_completions_this_fortnight = True
+                    break
+                    
+            # Si no hay completaciones esta quincena, la tarea debe aparecer
+            return not has_completions_this_fortnight
             
         # Si llegamos aquí y no hemos retornado, no está activa
         return False

@@ -1521,21 +1521,66 @@ def local_user_tasks(date_str=None, group_id=None):
             # Si no hay completaciones esta semana, la tarea debe aparecer
             return not has_completions_this_week
         
-        # Para tareas quincenales, verificar quincena
+        # Para tareas quincenales, implementar la misma lógica que las semanales
         if task.frequency == TaskFrequency.QUINCENAL:
             start_date = task.start_date or task.created_at.date()
-            days_diff = (check_date - start_date).days
-            return days_diff % 14 == 0
+            
+            # Determinar si es el primer día de la quincena (día 1 o 16 del mes)
+            is_first_day_of_fortnight = check_date.day == 1 or check_date.day == 16
+            
+            # Si es el primer día de la quincena, siempre mostrar la tarea
+            if is_first_day_of_fortnight:
+                return True
+            
+            # Para cualquier otro día, verificar si ya ha sido completada en esta quincena
+            # Determinar el primer día de la quincena actual
+            if check_date.day < 16:
+                # Primera quincena (día 1-15)
+                first_day_of_fortnight = date(check_date.year, check_date.month, 1)
+            else:
+                # Segunda quincena (día 16-fin de mes)
+                first_day_of_fortnight = date(check_date.year, check_date.month, 16)
+            
+            # Obtener completaciones para esta tarea
+            completions = TaskCompletion.query.filter_by(task_id=task.id).all()
+            
+            # Comprobar si hay alguna completación en esta quincena
+            has_completions_this_fortnight = False
+            for completion in completions:
+                completion_date = completion.completion_date.date()
+                if completion_date >= first_day_of_fortnight and completion_date < check_date:
+                    has_completions_this_fortnight = True
+                    break
+            
+            # Si no hay completaciones esta quincena, la tarea debe aparecer
+            return not has_completions_this_fortnight
         
-        # Para tareas mensuales, verificar día del mes
+        # Para tareas mensuales, implementar la misma lógica
         if task.frequency == TaskFrequency.MENSUAL:
-            # Si hay horario mensual definido, verificar día del mes
-            schedules = [s for s in task.schedule_details if s.day_of_month]
-            if schedules:
-                return any(s.day_of_month == check_date.day for s in schedules)
-            # Si no hay horario específico, usar el día de inicio como referencia
-            start_date = task.start_date or task.created_at.date()
-            return start_date.day == check_date.day
+            # Determinar si es el primer día del mes
+            is_first_day_of_month = check_date.day == 1
+            
+            # Si es el primer día del mes, siempre mostrar la tarea
+            if is_first_day_of_month:
+                return True
+            
+            # Para cualquier otro día, verificar si ya ha sido completada en este mes
+            # El primer día del mes actual
+            first_day_of_month = date(check_date.year, check_date.month, 1)
+            
+            # Obtener completaciones para esta tarea
+            completions = TaskCompletion.query.filter_by(task_id=task.id).all()
+            
+            # Comprobar si hay alguna completación en este mes
+            has_completions_this_month = False
+            for completion in completions:
+                completion_date = completion.completion_date.date()
+                if completion_date >= first_day_of_month and completion_date < check_date:
+                    has_completions_this_month = True
+                    break
+            
+            # Si no hay completaciones este mes, la tarea debe aparecer
+            return not has_completions_this_month
         
         # Para tareas personalizadas, verificar días específicos
         if task.frequency == TaskFrequency.PERSONALIZADA:

@@ -280,9 +280,32 @@ class Task(db.Model):
             if self.frequency == TaskFrequency.DIARIA:
                 return True
                 
-            # Para tareas semanales, verificamos si today es el mismo día de la semana que start_date
-            elif self.frequency == TaskFrequency.SEMANAL and self.start_date:
-                return today.weekday() == self.start_date.weekday()
+            # Para tareas semanales, nueva lógica: aparecer todos los días hasta que se completen
+            elif self.frequency == TaskFrequency.SEMANAL:
+                # Si es lunes, siempre mostrar la tarea
+                today_weekday = today.weekday()
+                if today_weekday == 0:  # 0 = Lunes
+                    return True
+                    
+                # Para cualquier otro día de la semana, verificar si la tarea ya fue completada esta semana
+                # Calculamos el lunes de la semana actual
+                monday_of_week = today - timedelta(days=today_weekday)
+                
+                # Verificar si hay alguna completación de esta tarea desde el lunes hasta ayer
+                # Usamos la relación directa para evitar importaciones circulares
+                completions_this_week = self.completions
+                
+                # Filtrar completaciones de esta semana (desde el lunes hasta hoy)
+                # No usamos query para evitar importaciones circulares
+                has_completions_this_week = False
+                for completion in completions_this_week:
+                    completion_date = completion.completion_date.date()
+                    if completion_date >= monday_of_week and completion_date < today:
+                        has_completions_this_week = True
+                        break
+                
+                # Si no hay completaciones esta semana, la tarea debe aparecer
+                return not has_completions_this_week
                 
             # Para tareas mensuales, verificamos si today es el mismo día del mes que start_date
             elif self.frequency == TaskFrequency.MENSUAL and self.start_date:

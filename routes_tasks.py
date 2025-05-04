@@ -1506,15 +1506,20 @@ def local_user_tasks(date_str=None, group_id=None):
             # Calculamos el lunes de la semana actual (para días de martes a domingo)
             monday_of_week = check_date - timedelta(days=check_date.weekday())
             
-            # Verificar si hay alguna completación de esta tarea desde el lunes hasta la fecha actual
-            # (Solo comprobamos hasta el día anterior, ya que las completados de hoy ya se tienen en cuenta)
-            completions_this_week = TaskCompletion.query.filter_by(task_id=task.id).filter(
-                TaskCompletion.completion_date >= monday_of_week,
-                TaskCompletion.completion_date < check_date
-            ).first()
+            # Obtener completaciones para esta tarea
+            # Usar una consulta directa para obtener todas las completaciones de la tarea
+            completions = TaskCompletion.query.filter_by(task_id=task.id).all()
+            
+            # Comprobar si hay alguna completación esta semana (entre el lunes y el día anterior al actual)
+            has_completions_this_week = False
+            for completion in completions:
+                completion_date = completion.completion_date.date()
+                if completion_date >= monday_of_week and completion_date < check_date:
+                    has_completions_this_week = True
+                    break
             
             # Si no hay completaciones esta semana, la tarea debe aparecer
-            return completions_this_week is None
+            return not has_completions_this_week
         
         # Para tareas quincenales, verificar quincena
         if task.frequency == TaskFrequency.QUINCENAL:

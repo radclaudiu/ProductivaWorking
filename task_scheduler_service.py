@@ -54,7 +54,7 @@ def create_task_instance(task, scheduled_date):
         )
         db.session.add(instance)
         db.session.commit()
-        logger.info(f"Nueva instancia creada para tarea {task.id} ({task.title}) en fecha {scheduled_date}")
+        logger.info(f"✅ TAREA INSTANCIADA: '{task.title}' (ID: {task.id}) para fecha {scheduled_date}")
         return True
     return False
 
@@ -269,9 +269,12 @@ def run_task_scheduler_for_location(location_id=None):
         location_id: ID de la ubicación para la que ejecutar el programador. Si es None, se ejecuta para todas.
     """
     # Banner de inicio en el log
-    logger.info("*" * 80)
-    logger.info("*" + " " * 28 + "PROGRAMADOR DE TAREAS" + " " * 28 + "*")
-    logger.info("*" * 80)
+    logger.info("*" * 100)
+    if location_id:
+        logger.info("*" + " " * 25 + "PROGRAMADOR DE TAREAS - EJECUCIÓN PARA UBICACIÓN ESPECÍFICA" + " " * 25 + "*")
+    else:
+        logger.info("*" + " " * 30 + "PROGRAMADOR DE TAREAS - EJECUCIÓN GLOBAL" + " " * 30 + "*")
+    logger.info("*" * 100)
     
     start_time = datetime.now()
     
@@ -279,12 +282,15 @@ def run_task_scheduler_for_location(location_id=None):
     if location_id:
         location = Location.query.get(location_id)
         if not location:
-            logger.error(f"No se encontró la ubicación con ID {location_id}")
+            logger.error(f"❌ ERROR: No se encontró la ubicación con ID {location_id}")
             print(f"\n❌ Error: No se encontró la ubicación con ID {location_id}\n")
             return
-        logger.info(f"Iniciando programador de tareas SOLO para ubicación: {location.name} (ID: {location_id}) - {start_time}")
+        location_info = f"{location.name} (ID: {location_id})"
+        logger.info(f"✅ INICIANDO PROGRAMADOR ESPECÍFICO para ubicación: {location_info}")
+        logger.info(f"Hora de inicio: {start_time}")
     else:
-        logger.info(f"Iniciando programador de tareas para TODAS las ubicaciones: {start_time}")
+        logger.info(f"✅ INICIANDO PROGRAMADOR GLOBAL para TODAS las ubicaciones")
+        logger.info(f"Hora de inicio: {start_time}")
     
     # Contadores globales
     total_counters = {

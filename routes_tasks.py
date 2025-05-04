@@ -930,31 +930,53 @@ def configure_monthly_schedule(task_id):
         flash('Esta tarea no es de frecuencia mensual.', 'warning')
         return redirect(url_for('tasks.list_tasks', location_id=task.location_id))
     
-    # Buscar si ya existe un horario
+    # Buscar si ya existe un horario del modelo anterior
     schedule = TaskSchedule.query.filter_by(task_id=task.id).first()
     
+    # Buscar días configurados con el nuevo modelo
+    existing_days = [str(day.day_of_month) for day in task.monthdays]
+    
+    # Inicializar formulario con los valores existentes
     form = MonthlyScheduleForm(obj=schedule)
     
+    # Precargar los días seleccionados del nuevo modelo
+    if existing_days:
+        form.selected_days.data = existing_days
+    
     if form.validate_on_submit():
-        if schedule:
-            # Actualizar horario existente
-            schedule.day_of_month = form.day_of_month.data
-            schedule.start_time = form.start_time.data
-            schedule.end_time = form.end_time.data
-        else:
-            # Crear nuevo horario
-            schedule = TaskSchedule(
-                task_id=task.id,
-                day_of_month=form.day_of_month.data,
-                start_time=form.start_time.data,
-                end_time=form.end_time.data
-            )
-            db.session.add(schedule)
+        # Manejar el modelo anterior (TaskSchedule) por compatibilidad
+        if form.day_of_month.data:
+            if schedule:
+                # Actualizar horario existente
+                schedule.day_of_month = form.day_of_month.data
+                schedule.start_time = form.start_time.data
+                schedule.end_time = form.end_time.data
+            else:
+                # Crear nuevo horario
+                schedule = TaskSchedule(
+                    task_id=task.id,
+                    day_of_month=form.day_of_month.data,
+                    start_time=form.start_time.data,
+                    end_time=form.end_time.data
+                )
+                db.session.add(schedule)
+                
+        # Manejar el nuevo modelo (TaskMonthDay) - Primero eliminar días existentes
+        for monthday in task.monthdays:
+            db.session.delete(monthday)
         
+        # Agregar los nuevos días seleccionados
+        if form.selected_days.data:
+            for day_str in form.selected_days.data:
+                day_num = int(day_str)
+                monthday = TaskMonthDay(task_id=task.id, day_of_month=day_num)
+                db.session.add(monthday)
+        
+        # Guardar todos los cambios
         db.session.commit()
         
-        log_activity(f'Horario mensual configurado para tarea: {task.title}')
-        flash('Horario configurado correctamente.', 'success')
+        log_activity(f'Horario mensual personalizado configurado para tarea: {task.title}')
+        flash('Horario mensual configurado correctamente.', 'success')
         return redirect(url_for('tasks.list_tasks', location_id=task.location_id))
     
     return render_template('tasks/schedule_form.html',

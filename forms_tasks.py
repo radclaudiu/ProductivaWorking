@@ -133,10 +133,17 @@ class WeeklyScheduleForm(FlaskForm):
         return True
 
 class MonthlyScheduleForm(FlaskForm):
-    day_of_month = IntegerField('Día del mes', validators=[
-        DataRequired(),
+    # Campo original para compatibilidad con el modelo TaskSchedule
+    day_of_month = IntegerField('Día del mes (modelo anterior)', validators=[
+        Optional(),
         NumberRange(min=1, max=31, message='El día debe estar entre 1 y 31')
     ])
+    
+    # Nuevo campo para seleccionar múltiples días del mes
+    selected_days = SelectMultipleField('Selecciona los días del mes', 
+                                     choices=[(str(i), str(i)) for i in range(1, 32)],
+                                     validators=[Optional()])
+    
     start_time = TimeField('Hora de inicio', validators=[Optional()])
     end_time = TimeField('Hora de fin', validators=[Optional()])
     submit = SubmitField('Guardar Horario')
@@ -144,6 +151,17 @@ class MonthlyScheduleForm(FlaskForm):
     def validate_end_time(form, field):
         if field.data and form.start_time.data and field.data < form.start_time.data:
             raise ValidationError('La hora de fin debe ser posterior a la hora de inicio')
+            
+    def validate(form):
+        if not super().validate():
+            return False
+            
+        # Asegurarse de que haya al menos un día seleccionado o un día del mes configurado
+        if not form.selected_days.data and not form.day_of_month.data:
+            form.selected_days.errors.append('Debes seleccionar al menos un día del mes')
+            return False
+            
+        return True
 
 class BiweeklyScheduleForm(FlaskForm):
     start_time = TimeField('Hora de inicio', validators=[Optional()])

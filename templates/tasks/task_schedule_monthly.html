@@ -27,9 +27,38 @@
                         {{ form.hidden_tag() }}
                         
                         <div class="alert alert-info mb-4">
-                            <i class="bi bi-info-circle"></i> Configura el día del mes y el horario para esta tarea. La tarea se ejecutará el mismo día cada mes.
+                            <i class="bi bi-info-circle"></i> Configura los días del mes y el horario para esta tarea. La tarea se mostrará en los días seleccionados cada mes.
                         </div>
                         
+                        <!-- Nueva interfaz para seleccionar múltiples días -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="form-group mb-4">
+                                    <label class="form-label fw-bold mb-3">{{ form.selected_days.label }}</label>
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <div class="row row-cols-3 row-cols-md-6 g-3">
+                                                {% for value, label in form.selected_days.choices %}
+                                                <div class="col">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" 
+                                                               id="day-{{ value }}" name="selected_days" value="{{ value }}"
+                                                               {% if value in form.selected_days.data %}checked{% endif %}>
+                                                        <label class="form-check-label" for="day-{{ value }}">{{ label }}</label>
+                                                    </div>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% for error in form.selected_days.errors %}
+                                    <div class="text-danger mt-2">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Campo original para mantener compatibilidad -->
                         <div class="row mb-4">
                             <div class="col-md-4">
                                 <div class="form-group">
@@ -38,7 +67,7 @@
                                     {% for error in form.day_of_month.errors %}
                                     <div class="invalid-feedback">{{ error }}</div>
                                     {% endfor %}
-                                    <div class="form-text">Número entre 1 y 31. Si el mes no tiene ese día, se ejecutará el último día del mes.</div>
+                                    <div class="form-text">Campo opcional para compatibilidad (nuevo sistema arriba)</div>
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -71,10 +100,31 @@
                 </div>
             </div>
             
+            <!-- Panel para mostrar los días configurados con el nuevo sistema -->
+            {% if task.monthdays %}
+            <div class="card shadow mb-4">
+                <div class="card-header py-3">
+                    <h6 class="m-0 fw-bold">Días del Mes Configurados</h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col">
+                            <div class="d-flex flex-wrap">
+                                {% for monthday in task.monthdays %}
+                                <span class="badge bg-primary me-2 mb-2 p-2">Día {{ monthday.day_of_month }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Panel para mostrar los horarios del modelo anterior -->
             {% if schedules %}
             <div class="card shadow">
                 <div class="card-header py-3">
-                    <h6 class="m-0 fw-bold">Horarios Configurados</h6>
+                    <h6 class="m-0 fw-bold">Horarios Configurados (Modelo Anterior)</h6>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">

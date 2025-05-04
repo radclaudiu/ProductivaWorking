@@ -27,8 +27,8 @@ try:
     from task_scheduler_service import start_service as start_task_scheduler
     
     # Iniciar el servicio
-    task_scheduler_thread = start_task_scheduler()
-    if task_scheduler_thread and task_scheduler_thread.is_alive():
+    success = start_task_scheduler()
+    if success:
         logger.info("✓ Servicio de programación de tareas iniciado correctamente")
     else:
         logger.warning("⚠ No se pudo iniciar el servicio de programación de tareas")

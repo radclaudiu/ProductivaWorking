@@ -1,623 +1,229 @@
-/* Estilos modernos para Productiva - Paleta de colores Tierra y Naturaleza */
+/**
+ * Estilos modernos para Productiva
+ */
 
-/* Variables de colores personalizados */
 :root {
-  /* Beige para fondos */
-  --beige-light: #f5f0e3;
-  --beige-medium: #ebe5d6;
-  --beige-dark: #d9d0bc;
-  
-  /* Tonos tierra */
-  --chocolate: #5c4033; /* Marrón chocolate para titulares */
-  --terracota: #c87f5d; /* Terracota suave para elementos destacados */
-  
-  /* Verdes naturales */
-  --olive-green: #556b2f; /* Verde oliva para iconos y acentos */
-  --sage-green: #8a9f80; /* Verde salvia para elementos secundarios */
-  
-  /* Naranjas cálidos */
-  --burnt-orange: #d35400; /* Naranja quemado para llamadas a la acción */
-  --ochre: #c19a6b; /* Ocre para elementos informativos */
-  
-  /* Colores de función */
-  --success: #626e59; /* Verde oliva para éxito */
-  --warning: #d8985f; /* Naranja claro para advertencias */
-  --danger: #a54026; /* Terracota oscuro para peligro */
-  --info: #6b8fa3; /* Azul apagado para información */
+    --primary-color: #6D584B;
+    --secondary-color: #8D6E63;
+    --accent-color: #A1887F;
+    --light-bg: #F5F0E3;
+    --beige-bg: #F0E6D2;
+    --text-color: #4E342E;
+    --success-color: #4b6f44;
+    --warning-color: #e9a849;
+    --danger-color: #ac3f3f;
+    --info-color: #4b8aa6;
 }
 
-/* Resetear tema oscuro a claro con fondo beige */
-[data-bs-theme="light"], [data-bs-theme="dark"] {
-  --bs-body-color: #3c3c3c;
-  --bs-body-bg: var(--beige-light); /* Fondo beige */
-  --bs-body-color-rgb: 60, 60, 60;
-  --bs-body-bg-rgb: 245, 240, 227;
-  --bs-emphasis-color: var(--chocolate);
-  --bs-emphasis-color-rgb: 92, 64, 51;
-  --bs-secondary-color: #6c757d;
-  --bs-secondary-color-rgb: 108, 117, 125;
-  --bs-secondary-bg: var(--beige-medium); /* Beige secundario */
-  --bs-secondary-bg-rgb: 235, 229, 214;
-  --bs-tertiary-color: rgba(60, 60, 60, 0.5);
-  --bs-tertiary-color-rgb: 60, 60, 60;
-  --bs-tertiary-bg: var(--beige-dark); /* Beige terciario */
-  --bs-tertiary-bg-rgb: 217, 208, 188;
-  --bs-heading-color: var(--chocolate);
+/* Estilos para la barra de navegación */
+.navbar-productiva {
+    background-color: var(--primary-color) !important;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-/* Ajustes globales */
-body {
-  background-color: var(--beige-light);
-  color: #3c3c3c;
-  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+/* Estilos para las tarjetas */
+.card-modern {
+    border-radius: 10px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden;
+    border: none;
 }
 
-/* Navbar moderno */
-.navbar {
-  background: linear-gradient(135deg, var(--chocolate), var(--terracota)) !important;
-  box-shadow: 0 2px 10px rgba(92, 64, 51, 0.15);
-  border-bottom: none;
-  padding: 0.15rem 0.5rem; /* Reducido aún más el padding vertical */
-  min-height: auto; /* Eliminar la altura mínima */
-  height: auto; /* Permitir que se ajuste al contenido */
-  border-radius: 0 0 16px 16px;
+.card-modern:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
 }
 
-/* Ajustes específicos para pantallas grandes */
-@media (min-width: 992px) {
-  .navbar {
-    max-height: 50px; /* Altura máxima fija para la barra en pantallas grandes */
-    overflow: hidden; /* Evitar que los elementos se salgan */
-  }
-  .navbar-nav {
-    display: flex;
-    align-items: center; /* Centrar verticalmente los elementos */
-  }
+.card-modern .card-header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    font-weight: 600;
+    border-bottom: none;
+    padding: 1rem 1.5rem;
 }
 
-.navbar-brand {
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  color: #fff !important;
-  font-size: 1.1rem; /* Reducir el tamaño de la marca */
-  padding: 0.25rem 0; /* Reducir el padding de la marca */
+.card-modern .card-body {
+    padding: 1.5rem;
 }
 
-.navbar-nav .nav-link {
-  color: rgba(255, 255, 255, 0.9) !important;
+/* Estilos para botones */
+.btn-earth {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
+    transition: all 0.3s ease;
 }
 
-.navbar-nav .nav-link:hover {
-  color: #fff !important;
+.btn-earth:hover {
+    background-color: var(--secondary-color);
+    border-color: var(--secondary-color);
+    color: white;
 }
 
-.navbar-nav .active > .nav-link,
-.navbar-nav .nav-link.active {
-  color: #fff !important;
-  font-weight: 600;
+.btn-earth-outline {
+    background-color: transparent;
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    transition: all 0.3s ease;
 }
 
-/* Botones con bordes redondeados */
-.btn {
-  border-radius: 12px;
-  padding: 0.6rem 1.2rem;
-  font-weight: 500;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease-in-out;
+.btn-earth-outline:hover {
+    background-color: var(--primary-color);
+    color: white;
 }
 
-/* Botones más pequeños y compactos en la barra de navegación */
-.navbar .btn-sm {
-  padding: 0.2rem 0.4rem;
-  font-size: 0.8rem;
-  margin: 1px 2px; /* Reducir el margen entre botones */
-  line-height: 1; /* Reducir la altura de línea */
+/* Degradados para fondos */
+.bg-gradient-earth {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
 }
 
-.btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+/* Estilos para tablas */
+.table-earth {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.05);
 }
 
-.btn:active {
-  transform: translateY(0);
+.table-earth thead th {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    font-weight: 600;
+    padding: 12px 15px;
 }
 
-/* Colores de botones personalizados */
-.btn-primary {
-  background-color: var(--olive-green);
-  border-color: var(--olive-green);
+.table-earth tbody tr:nth-child(even) {
+    background-color: var(--light-bg);
 }
 
-.btn-primary:hover, .btn-primary:focus {
-  background-color: #415223;
-  border-color: #415223;
+.table-earth tbody tr:hover {
+    background-color: var(--beige-bg);
 }
 
-.btn-secondary {
-  background-color: var(--sage-green);
-  border-color: var(--sage-green);
+.table-earth td {
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 10px 15px;
+    vertical-align: middle;
 }
 
-.btn-success {
-  background-color: var(--success);
-  border-color: var(--success);
+/* Estilos para alertas */
+.alert-earth {
+    background-color: var(--beige-bg);
+    border-left: 4px solid var(--primary-color);
+    color: var(--text-color);
+    border-radius: 0 4px 4px 0;
+    padding: 15px 20px;
 }
 
-.btn-danger {
-  background-color: var(--danger);
-  border-color: var(--danger);
+/* Estilos para badges */
+.badge-earth {
+    background-color: var(--primary-color);
+    color: white;
+    font-weight: 500;
+    padding: 5px 10px;
+    border-radius: 20px;
 }
 
-.btn-warning {
-  background-color: var(--warning);
-  border-color: var(--warning);
-  color: #fff;
+/* Estilos para tabs */
+.nav-tabs-earth {
+    border-bottom: 2px solid var(--light-bg);
 }
 
-.btn-info {
-  background-color: var(--info);
-  border-color: var(--info);
-  color: #fff;
+.nav-tabs-earth .nav-link {
+    border: none;
+    color: var(--text-color);
+    padding: 10px 15px;
+    border-radius: 0;
+    position: relative;
+    font-weight: 500;
 }
 
-.btn-action {
-  background-color: var(--burnt-orange);
-  border-color: var(--burnt-orange);
-  color: #fff;
+.nav-tabs-earth .nav-link:hover {
+    color: var(--primary-color);
 }
 
-.btn-action:hover, .btn-action:focus {
-  background-color: #bf4c00;
-  border-color: #bf4c00;
-  color: #fff;
+.nav-tabs-earth .nav-link.active {
+    color: var(--primary-color);
+    background-color: transparent;
 }
 
-/* Tarjetas con bordes redondeados */
-.card {
-  border-radius: 16px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  border: none;
-  overflow: hidden;
-  transition: all 0.3s ease;
-  background-color: #ffffff; /* Fondo blanco para las tarjetas */
+.nav-tabs-earth .nav-link.active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: var(--primary-color);
 }
 
-.card:hover {
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-  transform: translateY(-5px);
-}
-
-.card-header {
-  background-color: #ffffff; /* Fondo blanco para el encabezado */
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-  font-weight: 600;
-  color: var(--chocolate);
-}
-
-.card-footer {
-  background-color: #ffffff; /* Fondo blanco para el footer */
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.card-title {
-  color: var(--chocolate);
-  font-weight: 600;
-}
-
-/* Tablas más modernas */
-.table {
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-  background-color: #ffffff; /* Fondo blanco para las tablas */
-}
-
-.table thead th {
-  background-color: var(--beige-medium); /* Color beige para encabezados */
-  font-weight: 600;
-  text-transform: uppercase;
-  font-size: 0.8rem;
-  letter-spacing: 0.5px;
-  border-bottom: none;
-  padding: 12px 15px;
-  color: var(--chocolate);
-}
-
-.table tbody tr {
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.table tbody tr:last-child {
-  border-bottom: none;
-}
-
-.table tbody td {
-  padding: 12px 15px;
-  vertical-align: middle;
-}
-
-.table-striped > tbody > tr:nth-of-type(odd) {
-  background-color: rgba(245, 240, 227, 0.3); /* Rayas sutilmente beige para tablas con rayas */
-}
-
-.table-hover > tbody > tr:hover {
-  background-color: rgba(245, 240, 227, 0.5); /* Efecto hover con tono beige */
-}
-
-/* Formularios modernos */
-.form-control, .form-select {
-  border-radius: 10px;
-  padding: 0.6rem 1rem;
-  border: 1px solid #e0e0e0;
-  transition: all 0.2s;
-  background-color: #ffffff; /* Fondo blanco para inputs */
-}
-
-.form-control:focus, .form-select:focus {
-  border-color: var(--olive-green);
-  box-shadow: 0 0 0 0.2rem rgba(85, 107, 47, 0.2);
-  background-color: #ffffff; /* Mantener fondo blanco al enfocar */
-}
-
-.form-label {
-  font-weight: 500;
-  margin-bottom: 0.4rem;
-  color: var(--chocolate);
-}
-
-/* Formularios con fondo */
-.form-container {
-  background-color: #ffffff;
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  margin-bottom: 1.5rem;
-}
-
-/* Alertas redondeadas */
-.alert {
-  border-radius: 12px;
-  border: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-/* Colores de alertas personalizados */
-.alert-primary {
-  background-color: rgba(85, 107, 47, 0.15);
-  color: var(--olive-green);
-}
-
-.alert-secondary {
-  background-color: rgba(138, 159, 128, 0.15);
-  color: var(--sage-green);
-}
-
-.alert-success {
-  background-color: rgba(98, 110, 89, 0.15);
-  color: var(--success);
-}
-
-.alert-danger {
-  background-color: rgba(165, 64, 38, 0.15);
-  color: var(--danger);
-}
-
-.alert-warning {
-  background-color: rgba(216, 152, 95, 0.15);
-  color: var(--warning);
-}
-
-.alert-info {
-  background-color: rgba(107, 143, 163, 0.15);
-  color: var(--info);
-}
-
-/* Badges redondeadas */
-.badge {
-  border-radius: 8px;
-  padding: 0.35em 0.65em;
-  font-weight: 500;
-}
-
-/* Colores de badges personalizados */
-.badge-primary {
-  background-color: var(--olive-green);
-}
-
-.badge-secondary {
-  background-color: var(--sage-green);
-}
-
-.badge-success {
-  background-color: var(--success);
-}
-
-.badge-danger {
-  background-color: var(--danger);
-}
-
-.badge-warning {
-  background-color: var(--warning);
-}
-
-.badge-info {
-  background-color: var(--info);
-}
-
-.badge-action {
-  background-color: var(--burnt-orange);
-}
-
-/* Footer */
-.footer {
-  background: linear-gradient(135deg, var(--chocolate), var(--terracota)) !important;
-  color: white;
-  border-radius: 16px 16px 0 0;
-  margin-top: 3rem;
-  box-shadow: 0 -2px 10px rgba(92, 64, 51, 0.15);
-}
-
-.footer .text-muted {
-  color: rgba(255, 255, 255, 0.9) !important;
-}
-
-/* Dashboard */
-.dashboard-card {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.dashboard-card-body {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.dashboard-icon {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-  color: var(--olive-green);
-}
-
-.dashboard-stats {
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  color: var(--chocolate);
-}
-
-.dashboard-card-title {
-  color: var(--chocolate);
-  font-weight: 600;
-}
-
-.dashboard-card-text {
-  color: #4a4a4a;
-}
-
-/* Iconos flotantes */
-.floating-icon {
-  position: fixed;
-  bottom: 30px;
-  right: 30px;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  background-color: var(--burnt-orange);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  box-shadow: 0 4px 12px rgba(211, 84, 0, 0.25);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  z-index: 1000;
-}
-
-.floating-icon:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 6px 16px rgba(211, 84, 0, 0.35);
-  background-color: #bf4c00;
-}
-
-/* Ajustes responsivos */
-@media (max-width: 768px) {
-  .btn {
-    padding: 0.5rem 1rem;
-  }
-  
-  .card {
-    margin-bottom: 1.5rem;
-  }
-  
-  .dashboard-icon {
-    font-size: 2rem;
-  }
-  
-  .dashboard-stats {
+/* Estilos para iconos */
+.icon-earth {
+    color: var(--primary-color);
     font-size: 1.5rem;
-  }
-  
-  /* Ajustes para botones del menú móvil */
-  .navbar-collapse .nav-item {
-    margin-bottom: 0.3rem;
-    width: 100%;
-  }
-  
-  .navbar-collapse .nav-item .btn {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    width: 100%;
-    min-height: 38px; /* Reducida la altura mínima */
-    padding: 0.5rem 0.8rem; /* Reducido el padding */
-    margin-top: 0.2rem;
-    margin-bottom: 0.2rem;
-    white-space: normal; /* Permitir múltiples líneas de texto */
-  }
-  
-  .navbar-collapse .nav-item .btn i {
     margin-right: 10px;
-    font-size: 1.1rem;
-    min-width: 24px; /* Ancho fijo para los iconos */
-  }
 }
 
-/* Estilos mejorados para el menú móvil */
-.navbar-collapse {
-  padding: 1rem 0;
+/* Estilos para formularios */
+.form-control-earth {
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    padding: 10px 15px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-@media (max-width: 991px) {
-  .navbar-collapse {
-    background-color: rgba(92, 64, 51, 0.97);
-    border-radius: 0 0 16px 16px;
-    padding: 1rem;
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
-    max-height: 80vh;
-    overflow-y: auto;
-  }
-  
-  .navbar-nav.me-auto {
-    margin-bottom: 1rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    padding-bottom: 1rem;
-  }
-  
-  /* Aplicar espaciado extra solo en móvil */
-  .dropdown-menu {
-    margin-top: 0.5rem !important;
-    padding: 0.75rem 0 !important;
-  }
-  
-  .dropdown-item {
-    padding: 0.75rem 1.5rem !important;
-  }
+.form-control-earth:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(109, 88, 75, 0.25);
 }
 
-/* Estilos para el modo instalado PWA */
-.pwa-installed .navbar {
-  padding-top: max(0.8rem, env(safe-area-inset-top));
-  border-radius: 0;
+.form-label-earth {
+    color: var(--text-color);
+    font-weight: 500;
+    margin-bottom: 8px;
 }
 
-.pwa-installed .footer {
-  padding-bottom: max(1rem, env(safe-area-inset-bottom));
+/* Estilos para paginación */
+.pagination-earth .page-link {
+    color: var(--primary-color);
+    border: 1px solid #ddd;
 }
 
-/* Efecto de carga para elementos */
-.shimmer {
-  background: #f6f6f6;
-  background-image: linear-gradient(
-    to right,
-    #f6f6f6 0%,
-    #f0f0f0 20%,
-    #f6f6f6 40%,
-    #f6f6f6 100%
-  );
-  background-repeat: no-repeat;
-  background-size: 800px 100%;
-  animation: shimmer 1.5s infinite linear;
-  border-radius: 12px;
-  height: 100%;
-  min-height: 50px;
+.pagination-earth .page-item.active .page-link {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: white;
 }
 
-@keyframes shimmer {
-  0% {
-    background-position: -468px 0;
-  }
-  100% {
-    background-position: 468px 0;
-  }
+.pagination-earth .page-link:hover {
+    background-color: var(--light-bg);
 }
 
-/* Colores de estado */
-.status-active {
-  color: var(--success);
-}
-.status-pending {
-  color: var(--warning);
-}
-.status-inactive {
-  color: var(--danger);
+/* Animaciones */
+.fade-in {
+    animation: fadeIn 0.5s ease-in-out;
 }
 
-/* Tooltips mejorados */
-.tooltip .tooltip-inner {
-  border-radius: 8px;
-  box-shadow: 0 3px 10px rgba(92, 64, 51, 0.15);
-  padding: 8px 12px;
-  background-color: var(--chocolate);
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-/* Estilos adicionales para elementos interactivos */
-.link-earth {
-  color: var(--olive-green);
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.link-earth:hover {
-  color: #415223;
-  text-decoration: underline;
-}
-
-.link-terracota {
-  color: var(--terracota);
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.link-terracota:hover {
-  color: #b16b4d;
-  text-decoration: underline;
-}
-
-.link-ochre {
-  color: var(--ochre);
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.link-ochre:hover {
-  color: #a7845b;
-  text-decoration: underline;
-}
-
-/* Texto en tonos tierra */
-.text-earth {
-  color: var(--olive-green);
-}
-
-.text-terracota {
-  color: var(--terracota);
-}
-
-.text-ochre {
-  color: var(--ochre);
-}
-
-.text-chocolate {
-  color: var(--chocolate);
-}
-
-.bg-beige-light {
-  background-color: var(--beige-light);
-}
-
-.bg-beige-medium {
-  background-color: var(--beige-medium);
-}
-
-.border-earth {
-  border-color: var(--olive-green) !important;
-}
-
-.border-terracota {
-  border-color: var(--terracota) !important;
+/* Estilos para móvil */
+@media (max-width: 768px) {
+    .card-modern .card-body {
+        padding: 1rem;
+    }
+    
+    .table-responsive-earth {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
 }

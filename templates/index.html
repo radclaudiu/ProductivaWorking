@@ -1,57 +1,692 @@
-{% extends "layout.html" %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Productiva - Sistema Integral de Gestión Empresarial</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Sistema integral de gestión empresarial con control de fichajes, tareas, arqueos de caja y gastos mensuales">
+    <meta name="theme-color" content="#5c4033">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Productiva">
+    <link rel="manifest" href="{{ url_for('manifest') }}">
+    <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192x192.png') }}">
+    <link rel="apple-touch-icon" sizes="152x152" href="{{ url_for('static', filename='icons/icon-152x152.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/icon-192x192.png') }}">
+    <link rel="apple-touch-icon" sizes="167x167" href="{{ url_for('static', filename='icons/icon-152x152.png') }}">
+    
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <!-- Google Fonts - Roboto para un diseño más moderno -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/pwa.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modern.css') }}">
+    
+    <style>
+        :root {
+            --primary-color: #6D584B;
+            --secondary-color: #8D6E63;
+            --accent-color: #A1887F;
+            --light-bg: #F5F0E3;
+            --beige-bg: #F0E6D2;
+            --text-color: #4E342E;
+            --success-color: #4b6f44;
+            --warning-color: #e9a849;
+            --danger-color: #ac3f3f;
+            --info-color: #4b8aa6;
+        }
 
-{% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8 text-center">
-            <h1 class="display-4 mb-4">
-                <i class="bi bi-building"></i> Productiva
-            </h1>
-            <p class="lead">
-                Sistema integral para la gestión eficiente de empresas y empleados
-            </p>
-            <hr class="my-4">
-            <p>
-                Inicie sesión para acceder al sistema.
-            </p>
-            <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg" style="background-color: #4b6f44; border-color: #4b6f44;">
-                <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
-            </a>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--light-bg);
+            color: var(--text-color);
+            overflow-x: hidden;
+        }
+
+        .hero-section {
+            background: linear-gradient(135deg, #8D6E63, #6D584B);
+            color: white;
+            padding: 5rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('{{ url_for("static", filename="img/pattern.svg") }}');
+            background-size: cover;
+            opacity: 0.1;
+        }
+
+        .feature-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            height: 100%;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-top: 5px solid var(--primary-color);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            display: inline-block;
+            padding: 15px;
+            border-radius: 50%;
+            background-color: var(--light-bg);
+            color: var(--primary-color);
+        }
+
+        .login-section {
+            background-color: var(--beige-bg);
+            padding: 4rem 0;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .login-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .login-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .login-body {
+            padding: 2rem;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+
+        .section-title {
+            position: relative;
+            margin-bottom: 3rem;
+            color: var(--primary-color);
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 3px;
+            background-color: var(--accent-color);
+        }
+
+        .testimonial-card {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .testimonial-card::before {
+            content: '\201C';
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            font-size: 4rem;
+            color: var(--light-bg);
+            font-family: Georgia, serif;
+        }
+
+        .client-info {
+            display: flex;
+            align-items: center;
+            margin-top: 1.5rem;
+        }
+
+        .client-image {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+
+        .cta-section {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 5rem 0;
+            text-align: center;
+        }
+
+        .footer {
+            background-color: #333;
+            color: white;
+            padding: 3rem 0;
+        }
+
+        .footer-links h5 {
+            color: var(--light-bg);
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+
+        .footer-links ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-links a {
+            color: #ccc;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .social-links a {
+            color: white;
+            font-size: 1.5rem;
+            margin-right: 1rem;
+            transition: color 0.3s;
+        }
+
+        .social-links a:hover {
+            color: var(--light-bg);
+        }
+
+        .feature-color-1 { border-top-color: var(--primary-color); }
+        .feature-color-2 { border-top-color: var(--success-color); }
+        .feature-color-3 { border-top-color: var(--warning-color); }
+        .feature-color-4 { border-top-color: var(--danger-color); }
+        .feature-color-5 { border-top-color: var(--info-color); }
+        .feature-color-6 { border-top-color: var(--accent-color); }
+
+        .icon-color-1 { background-color: var(--light-bg); color: var(--primary-color); }
+        .icon-color-2 { background-color: #e8f0e5; color: var(--success-color); }
+        .icon-color-3 { background-color: #fdf5e6; color: var(--warning-color); }
+        .icon-color-4 { background-color: #f9e7e7; color: var(--danger-color); }
+        .icon-color-5 { background-color: #e7f1f6; color: var(--info-color); }
+        .icon-color-6 { background-color: #f5eeea; color: var(--accent-color); }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: 3rem 0;
+            }
             
-            <!-- Sección de instalación de PWA -->
-            <div id="pwa-install-section" class="mt-4 p-3 rounded" style="background-color: #f5f0e3; border: 1px solid #e0d8c0; display: none;">
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <h5 style="color: #5c4033;">¡Instala nuestra aplicación!</h5>
-                        <p class="text-muted mb-0 small">Accede rápidamente y trabaja sin conexión</p>
+            .feature-card {
+                margin-bottom: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark" style="background-color: var(--primary-color);">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <i class="bi bi-building me-2"></i> Productiva
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" 
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#funcionalidades">Funcionalidades</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#testimonios">Testimonios</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#contacto">Contacto</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#login">Iniciar Sesión</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h1 class="display-4 fw-bold mb-4">Gestiona tu empresa de forma inteligente</h1>
+                    <p class="lead mb-4">Productiva es un sistema integral que unifica la gestión de fichajes, tareas, arqueos de caja y gastos, simplificando tus operaciones diarias.</p>
+                    <div class="d-flex flex-wrap gap-3">
+                        <a href="#login" class="btn btn-light btn-lg">Iniciar Sesión</a>
+                        <a href="#funcionalidades" class="btn btn-outline-light btn-lg">Explorar Funcionalidades</a>
                     </div>
-                    <div class="col-md-4">
-                        <button id="install-button" class="btn btn-success w-100" style="display: none; background-color: #4b6f44; border-color: #4b6f44;">
-                            <i class="bi bi-download me-1"></i> Instalar
-                        </button>
+                </div>
+                <div class="col-lg-6 d-none d-lg-block text-center">
+                    <img src="{{ url_for('static', filename='img/dashboard-illustration.svg') }}" alt="Productiva Dashboard" class="img-fluid" style="max-height: 400px;">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Login Section -->
+    <section class="login-section" id="login">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-md-5">
+                    <div class="login-card">
+                        <div class="login-header">
+                            <h3><i class="bi bi-lock"></i> Iniciar Sesión</h3>
+                        </div>
+                        <div class="login-body">
+                            <form method="POST" action="{{ url_for('auth.login') }}">
+                                {{ form.hidden_tag() }}
+                                
+                                <div class="mb-3">
+                                    {{ form.username.label(class="form-label") }}
+                                    {{ form.username(class="form-control", placeholder="Introduzca su nombre de usuario") }}
+                                    {% for error in form.username.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.password.label(class="form-label") }}
+                                    <div class="input-group">
+                                        {{ form.password(class="form-control", placeholder="Introduzca su contraseña", id="password") }}
+                                        <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                    </div>
+                                    {% for error in form.password.errors %}
+                                        <div class="text-danger">{{ error }}</div>
+                                    {% endfor %}
+                                </div>
+                                
+                                <div class="mb-3 form-check">
+                                    {{ form.remember_me(class="form-check-input") }}
+                                    {{ form.remember_me.label(class="form-check-label") }}
+                                </div>
+                                
+                                {{ form.submit(class="btn btn-primary w-100") }}
+                            </form>
+                        </div>
+                        <div class="card-footer py-3" id="pwa-install-container" style="display: none; background-color: #f5f0e3; border-top: 1px solid #e0d8c0;">
+                            <div class="d-flex flex-column align-items-center">
+                                <div class="mb-2 text-center">
+                                    <i class="bi bi-download text-success fs-3"></i>
+                                    <h5 class="mb-0">Instala esta aplicación en tu teléfono</h5>
+                                    <p class="text-muted small">Accede rápidamente y trabaja sin conexión</p>
+                                </div>
+                                <button id="pwa-install-button" class="btn w-75" style="background: linear-gradient(135deg, #4b6f44, #667d59); color: white;">
+                                    <i class="bi bi-plus-circle me-2"></i> Instalar Productiva
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-5 d-flex flex-column justify-content-center">
+                    <h2 class="mb-4">Optimiza tu gestión empresarial</h2>
+                    <p class="lead mb-3">Productiva centraliza todas tus operaciones en una única plataforma:</p>
+                    <ul class="list-group list-group-flush mb-4">
+                        <li class="list-group-item bg-transparent border-0"><i class="bi bi-check-circle-fill text-success me-2"></i> Control de asistencia y fichajes</li>
+                        <li class="list-group-item bg-transparent border-0"><i class="bi bi-check-circle-fill text-success me-2"></i> Gestión de tareas y asignaciones</li>
+                        <li class="list-group-item bg-transparent border-0"><i class="bi bi-check-circle-fill text-success me-2"></i> Arqueos de caja y control de efectivo</li>
+                        <li class="list-group-item bg-transparent border-0"><i class="bi bi-check-circle-fill text-success me-2"></i> Registro y seguimiento de gastos</li>
+                        <li class="list-group-item bg-transparent border-0"><i class="bi bi-check-circle-fill text-success me-2"></i> Informes y análisis detallados</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="py-5" id="funcionalidades">
+        <div class="container">
+            <h2 class="section-title mb-5">Funcionalidades Principales</h2>
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card feature-color-1">
+                        <div class="icon-color-1 feature-icon">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+                        <h4>Control de Fichajes</h4>
+                        <p>Gestiona la asistencia de empleados con control horario automatizado. Configura horarios, genera informes y monitoriza horas extras.</p>
+                        <ul class="list-unstyled mt-3">
+                            <li><i class="bi bi-check-circle-fill text-success me-2"></i> Registro automático de entradas/salidas</li>
+                            <li><i class="bi bi-check-circle-fill text-success me-2"></i> Cálculo de horas trabajadas</li>
+                            <li><i class="bi bi-check-circle-fill text-success me-2"></i> Control de vacaciones y ausencias</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card feature-color-2">
+                        <div class="icon-color-2 feature-icon">
+                            <i class="bi bi-list-check"></i>
+                        </div>
+                        <h4>Gestión de Tareas</h4>
+                        <p>Organiza y asigna tareas a los equipos con seguimiento en tiempo real. Establece prioridades y fechas límite para maximizar la productividad.</p>
+                        <ul class="list-unstyled mt-3">
+                            <li><i class="bi bi-check-circle-fill text-success me-2"></i> Tareas diarias, semanales y mensuales</li>
+                            <li><i class="bi bi-check-circle-fill text-success me-2"></i> Asignación por responsables</li>
+                            <li><i class="bi bi-check-circle-fill text-success me-2"></i> Notificaciones de vencimiento</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card feature-color-3">
+                        <div class="icon-color-3 feature-icon">
+                            <i class="bi bi-cash-coin"></i>
+                        </div>
+                        <h4>Arqueos de Caja</h4>
+                        <p>Controla los movimientos de efectivo con arqueos de caja detallados. Realiza conciliaciones e identifica discrepancias al instante.</p>
+                        <ul class="list-unstyled mt-3">
+                            <li><i class="bi bi-check-circle-fill text-success me-2"></i> Registro de ingresos y gastos</li>
+                            <li><i class="bi bi-check-circle-fill text-success me-2"></i> Cálculo de saldos automático</li>
+                            <li><i class="bi bi-check-circle-fill text-success me-2"></i> Histórico de movimientos</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card feature-color-4">
+                        <div class="icon-color-4 feature-icon">
+                            <i class="bi bi-receipt"></i>
+                        </div>
+                        <h4>Gastos Mensuales</h4>
+                        <p>Registra y categoriza todos los gastos de la empresa. Establece presupuestos y monitoriza las tendencias de gasto para optimizar recursos.</p>
+                        <ul class="list-unstyled mt-3">
+                            <li><i class="bi bi-check-circle-fill text-success me-2"></i> Categorización de gastos</li>
+                            <li><i class="bi bi-check-circle-fill text-success me-2"></i> Adjuntar comprobantes digitales</li>
+                            <li><i class="bi bi-check-circle-fill text-success me-2"></i> Análisis comparativo por períodos</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card feature-color-5">
+                        <div class="icon-color-5 feature-icon">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                        <h4>Informes y Dashboards</h4>
+                        <p>Accede a análisis detallados y visualizaciones en tiempo real. Toma decisiones basadas en datos con informes personalizables.</p>
+                        <ul class="list-unstyled mt-3">
+                            <li><i class="bi bi-check-circle-fill text-success me-2"></i> Estadísticas de productividad</li>
+                            <li><i class="bi bi-check-circle-fill text-success me-2"></i> Gráficos interactivos</li>
+                            <li><i class="bi bi-check-circle-fill text-success me-2"></i> Exportación en múltiples formatos</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature-card feature-color-6">
+                        <div class="icon-color-6 feature-icon">
+                            <i class="bi bi-shield-check"></i>
+                        </div>
+                        <h4>Administración Segura</h4>
+                        <p>Configura permisos y roles de usuario para garantizar que cada miembro del equipo solo acceda a la información necesaria.</p>
+                        <ul class="list-unstyled mt-3">
+                            <li><i class="bi bi-check-circle-fill text-success me-2"></i> Control de acceso por roles</li>
+                            <li><i class="bi bi-check-circle-fill text-success me-2"></i> Historial de actividades</li>
+                            <li><i class="bi bi-check-circle-fill text-success me-2"></i> Copias de seguridad automáticas</li>
+                        </ul>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
-{% endblock %}
+    </section>
 
-{% block scripts %}
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // El botón de instalación se gestionará automáticamente por main.js
-        // La función showInstallPromotion() ya comprueba la ruta actual
-        
-        // Actualizar la visualización del contenedor según disponibilidad
-        window.addEventListener('beforeinstallprompt', (e) => {
-            document.getElementById('pwa-install-section').style.display = 'block';
+    <!-- Testimonials -->
+    <section class="py-5 bg-light" id="testimonios">
+        <div class="container">
+            <h2 class="section-title">Lo que dicen nuestros clientes</h2>
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="testimonial-card">
+                        <p>"Productiva ha revolucionado nuestra gestión diaria. El control de fichajes es preciso y la gestión de tareas nos ha permitido aumentar la productividad un 30%."</p>
+                        <div class="client-info">
+                            <div class="client-image">AM</div>
+                            <div>
+                                <h6 class="mb-0">Ana Martínez</h6>
+                                <small class="text-muted">Directora RRHH, Retail Corp</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="testimonial-card">
+                        <p>"La función de arqueos de caja ha sido clave para mantener nuestras finanzas controladas. Ahora detectamos discrepancias al instante y ahorramos tiempo en conciliaciones."</p>
+                        <div class="client-info">
+                            <div class="client-image">JR</div>
+                            <div>
+                                <h6 class="mb-0">Javier Rodríguez</h6>
+                                <small class="text-muted">CFO, Hostelería Express</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="testimonial-card">
+                        <p>"Desde que implementamos Productiva, nuestro seguimiento de gastos es impecable. Los informes nos permiten tomar mejores decisiones estratégicas."</p>
+                        <div class="client-info">
+                            <div class="client-image">CL</div>
+                            <div>
+                                <h6 class="mb-0">Carmen López</h6>
+                                <small class="text-muted">CEO, Soluciones Logísticas</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Call to Action -->
+    <section class="cta-section" id="contacto">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 text-center">
+                    <h2 class="mb-4">¿Listo para transformar tu empresa?</h2>
+                    <p class="lead mb-4">Únete a cientos de empresas que ya optimizan su gestión con Productiva.</p>
+                    <a href="#login" class="btn btn-light btn-lg">Comenzar Ahora</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-4 mb-4 mb-md-0">
+                    <h5 class="mb-3">Productiva</h5>
+                    <p>Sistema integral de gestión empresarial que simplifica tus operaciones diarias con módulos interconectados para control de fichajes, tareas, arqueos y gastos.</p>
+                    <div class="social-links mt-3">
+                        <a href="#"><i class="bi bi-facebook"></i></a>
+                        <a href="#"><i class="bi bi-twitter"></i></a>
+                        <a href="#"><i class="bi bi-linkedin"></i></a>
+                        <a href="#"><i class="bi bi-instagram"></i></a>
+                    </div>
+                </div>
+                <div class="col-md-2 mb-4 mb-md-0">
+                    <div class="footer-links">
+                        <h5>Enlaces</h5>
+                        <ul>
+                            <li><a href="#">Inicio</a></li>
+                            <li><a href="#funcionalidades">Funcionalidades</a></li>
+                            <li><a href="#testimonios">Testimonios</a></li>
+                            <li><a href="#contacto">Contacto</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-4 mb-md-0">
+                    <div class="footer-links">
+                        <h5>Módulos</h5>
+                        <ul>
+                            <li><a href="#">Control de Fichajes</a></li>
+                            <li><a href="#">Gestión de Tareas</a></li>
+                            <li><a href="#">Arqueos de Caja</a></li>
+                            <li><a href="#">Gastos Mensuales</a></li>
+                            <li><a href="#">Informes</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="footer-links">
+                        <h5>Contacto</h5>
+                        <ul>
+                            <li><i class="bi bi-envelope me-2"></i> info@productiva.com</li>
+                            <li><i class="bi bi-telephone me-2"></i> +34 900 123 456</li>
+                            <li><i class="bi bi-geo-alt me-2"></i> Calle Ejemplo 123, Madrid</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <hr class="mt-4 mb-3" style="border-color: rgba(255,255,255,0.1);">
+            <div class="row">
+                <div class="col-md-6 text-center text-md-start">
+                    <p class="mb-0">© 2025 Productiva. Todos los derechos reservados.</p>
+                </div>
+                <div class="col-md-6 text-center text-md-end">
+                    <a href="#" class="text-white me-3">Política de Privacidad</a>
+                    <a href="#" class="text-white">Términos de Servicio</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Inicializar la función cuando el DOM esté cargado
+        document.addEventListener('DOMContentLoaded', function() {
+            // Función para mostrar/ocultar contraseña
+            const togglePassword = document.getElementById('togglePassword');
+            const password = document.getElementById('password');
+            
+            if (togglePassword && password) {
+                togglePassword.addEventListener('click', function() {
+                    const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+                    password.setAttribute('type', type);
+                    
+                    // Cambiar el ícono del botón
+                    togglePassword.querySelector('i').classList.toggle('bi-eye');
+                    togglePassword.querySelector('i').classList.toggle('bi-eye-slash');
+                });
+            }
+            
+            // Gestión de la instalación PWA
+            let deferredPrompt;
+            const pwaInstallContainer = document.getElementById('pwa-install-container');
+            const pwaInstallButton = document.getElementById('pwa-install-button');
+            
+            // Mostrar el botón de instalación solo si el navegador lo permite
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                if (pwaInstallContainer) {
+                    pwaInstallContainer.style.display = 'block';
+                }
+            });
+            
+            // Manejar clic en el botón de instalación
+            if (pwaInstallButton) {
+                pwaInstallButton.addEventListener('click', async () => {
+                    if (deferredPrompt) {
+                        deferredPrompt.prompt();
+                        const { outcome } = await deferredPrompt.userChoice;
+                        console.log(`User response to the install prompt: ${outcome}`);
+                        
+                        if (outcome === 'accepted') {
+                            console.log('Usuario instaló la PWA');
+                            pwaInstallContainer.style.display = 'none';
+                        }
+                        
+                        deferredPrompt = null;
+                    }
+                });
+            }
+            
+            // Si ya está instalada, no mostrar el botón
+            window.addEventListener('appinstalled', () => {
+                console.log('PWA ya instalada');
+                if (pwaInstallContainer) {
+                    pwaInstallContainer.style.display = 'none';
+                }
+                deferredPrompt = null;
+            });
+            
+            // Smooth scrolling para los enlaces de anclaje
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    
+                    const targetId = this.getAttribute('href');
+                    if (targetId === '#') return;
+                    
+                    const targetElement = document.querySelector(targetId);
+                    if (targetElement) {
+                        targetElement.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                        
+                        // Cerrar el menú móvil si está abierto
+                        const navbarCollapse = document.querySelector('.navbar-collapse');
+                        if (navbarCollapse && navbarCollapse.classList.contains('show')) {
+                            navbarCollapse.classList.remove('show');
+                        }
+                    }
+                });
+            });
         });
-        
-        // Si ya está instalada, no mostrar la sección
-        if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-            document.getElementById('pwa-install-section').style.display = 'none';
-        }
-    });
-</script>
-{% endblock %}
+    </script>
+</body>
+</html>

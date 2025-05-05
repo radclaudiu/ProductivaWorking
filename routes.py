@@ -57,31 +57,12 @@ def manager_required(f):
 # Authentication routes
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
+    # Si el usuario ya está autenticado, redirigir al dashboard
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
     
-    form = LoginForm()
-    if form.validate_on_submit():
-        user = User.query.filter_by(username=form.username.data).first()
-        if user is None or not user.check_password(form.password.data) or not user.is_active:
-            flash('Usuario o contraseña invalidos.', 'danger')
-            return redirect(url_for('auth.login'))
-        
-        # Hacer la sesión permanente si se selecciona "recordarme"
-        if form.remember_me.data:
-            session.permanent = True
-        
-        login_user(user, remember=form.remember_me.data)
-        log_activity(f'Login exitoso: {user.username}', user.id)
-        
-        next_page = request.args.get('next')
-        if not next_page or urlparse(next_page).netloc != '':
-            next_page = url_for('main.dashboard')
-        
-        flash(f'Bienvenido, {user.username}!', 'success')
-        return redirect(next_page)
-    
-    return render_template('login.html', title='Iniciar Sesión', form=form)
+    # Redireccionar a la página de inicio que tiene el formulario integrado
+    return redirect(url_for('main.index'))
 
 @auth_bp.route('/logout')
 @login_required
@@ -132,11 +113,36 @@ def register():
     return render_template('register.html', title='Registrar Usuario', form=form)
 
 # Main routes
-@main_bp.route('/')
+@main_bp.route('/', methods=['GET', 'POST'])
 def index():
+    # Si el usuario ya está autenticado, redirigir al dashboard
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
-    return redirect(url_for('auth.login'))
+    
+    # Mostrar landing page con formulario de login integrado
+    form = LoginForm()
+    
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=form.username.data).first()
+        
+        if user and user.check_password(form.password.data) and user.is_active:
+            # Hacer la sesión permanente si se selecciona "recordarme"
+            if form.remember_me.data:
+                session.permanent = True
+            
+            login_user(user, remember=form.remember_me.data)
+            log_activity(f'Login exitoso: {user.username}', user.id)
+            
+            next_page = request.args.get('next')
+            if not next_page or urlparse(next_page).netloc != '':
+                next_page = url_for('main.dashboard')
+            
+            flash(f'Bienvenido, {user.username}!', 'success')
+            return redirect(next_page)
+        else:
+            flash('Nombre de usuario o contraseña incorrectos.', 'danger')
+    
+    return render_template('index.html', form=form)
 
 @main_bp.route('/dashboard')
 @login_required

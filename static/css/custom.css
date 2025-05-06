@@ -29,6 +29,42 @@
     font-weight: 500;
 }
 
+/* Estilos para testimonios */
+.testimonial-card {
+    position: relative;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    background-color: #f8f5f2;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.testimonial-card::before {
+    content: '\201C';
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    font-size: 4rem;
+    color: #8D6E63;
+    line-height: 1;
+    opacity: 0.3;
+}
+
+.testimonial-card::after {
+    content: '\201D';
+    position: absolute;
+    bottom: 0;
+    right: 1.5rem;
+    font-size: 4rem;
+    color: #8D6E63;
+    line-height: 1;
+    opacity: 0.3;
+}
+
+.testimonial-author {
+    font-weight: 600;
+    color: #6D584B;
+}
+
 /* Para las tarjetas con fondo marrón */
 .card-header.text-white .nav-pills .nav-link {
     color: white !important;

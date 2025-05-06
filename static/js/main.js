@@ -161,55 +161,7 @@ window.addEventListener('appinstalled', (evt) => {
   }
 });
 
-// Detección de estado online/offline
-function updateOnlineStatus() {
-  const onlineStatus = document.querySelector('.online-status');
-  const offlineStatus = document.querySelector('.offline-status');
-  const offlineNotification = document.getElementById('offline-notification');
-  
-  if (navigator.onLine) {
-    // Estamos online
-    if (onlineStatus) onlineStatus.style.display = 'inline-block';
-    if (offlineStatus) offlineStatus.style.display = 'none';
-    
-    // Ocultar notificación offline
-    if (offlineNotification) {
-      offlineNotification.classList.remove('visible');
-    }
-    
-    // Intentar sincronizar datos pendientes
-    if ('serviceWorker' in navigator && 'SyncManager' in window) {
-      navigator.serviceWorker.ready
-        .then(registration => {
-          return registration.sync.register('sync-checkpoints');
-        })
-        .catch(err => console.log('Error al registrar la sincronización: ', err));
-    }
-  } else {
-    // Estamos offline
-    if (onlineStatus) onlineStatus.style.display = 'none';
-    if (offlineStatus) offlineStatus.style.display = 'inline-block';
-    
-    // Mostrar notificación offline
-    if (offlineNotification) {
-      offlineNotification.classList.add('visible');
-      
-      // Ocultar después de 5 segundos
-      setTimeout(() => {
-        offlineNotification.classList.remove('visible');
-      }, 5000);
-    }
-  }
-}
-
-// Registrar los eventos de cambio de estado de conexión
-window.addEventListener('online', updateOnlineStatus);
-window.addEventListener('offline', updateOnlineStatus);
-
-// Comprobar el estado inicial cuando la página se carga
-document.addEventListener('DOMContentLoaded', () => {
-  updateOnlineStatus();
-});
+// Limpiar gestión de la conexión (eliminar el código duplicado)
 
 // Función para alternar la visibilidad de la contraseña
 function togglePasswordVisibility(passwordId, buttonId) {

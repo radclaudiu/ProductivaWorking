@@ -1150,34 +1150,76 @@ def edit_task(task_id):
 @manager_required
 def delete_task(task_id):
     """Eliminar una tarea"""
-    task = Task.query.get_or_404(task_id)
-    
-    # Verificar permisos (admin o gerente de la empresa)
-    if not current_user.is_admin() and (not current_user.is_gerente() or current_user.company_id != task.location.company_id):
-        flash('No tienes permiso para eliminar esta tarea.', 'danger')
-        return redirect(url_for('tasks.list_tasks', location_id=task.location_id))
-    
-    location_id = task.location_id
-    title = task.title
-    
-    # Eliminar primero las programaciones, completados y días del mes asignados
-    TaskSchedule.query.filter_by(task_id=task.id).delete()
-    TaskCompletion.query.filter_by(task_id=task.id).delete()
-    
-    # Eliminar días del mes asignados (para tareas mensuales)
     try:
-        # Ya estamos importando TaskMonthDay al comienzo del archivo
-        TaskMonthDay.query.filter_by(task_id=task.id).delete()
-    except Exception as e:
-        current_app.logger.error(f"Error al eliminar TaskMonthDay: {e}")
-        # Continuar con la operación incluso si hay un error aquí
-    
-    db.session.delete(task)
-    db.session.commit()
-    
-    log_activity(f'Tarea eliminada: {title}')
-    flash(f'Tarea "{title}" eliminada correctamente.', 'success')
-    return redirect(url_for('tasks.list_tasks', location_id=location_id))
+        task = Task.query.get_or_404(task_id)
+        
+        # Verificar permisos (admin o gerente de la empresa)
+        if not current_user.is_admin() and (not current_user.is_gerente() or current_user.company_id != task.location.company_id):
+            flash('No tienes permiso para eliminar esta tarea.', 'danger')
+            return redirect(url_for('tasks.list_tasks', location_id=task.location_id))
+        
+        location_id = task.location_id
+        title = task.title
+        
+        # Guardar info para debugging
+        debug_info = {
+            "task_id": task.id,
+            "task_title": task.title,
+            "location_id": task.location_id,
+            "frequency": task.frequency,
+            "month_days": []
+        }
+        
+        # Primero obtener los días del mes para debugging
+        try:
+            month_days = TaskMonthDay.query.filter_by(task_id=task.id).all()
+            debug_info["month_days"] = [md.day_of_month for md in month_days]
+            current_app.logger.info(f"Tarea con ID {task.id} tiene los siguientes días del mes: {debug_info['month_days']}")
+        except Exception as debug_e:
+            current_app.logger.error(f"Error al obtener TaskMonthDay para debugging: {debug_e}")
+        
+        # Eliminar primero las programaciones y completados
+        try:
+            TaskSchedule.query.filter_by(task_id=task.id).delete()
+            current_app.logger.info(f"Programaciones eliminadas para tarea {task.id}")
+        except Exception as e:
+            current_app.logger.error(f"Error al eliminar TaskSchedule: {e}")
+            db.session.rollback()
+            raise
+            
+        try:
+            TaskCompletion.query.filter_by(task_id=task.id).delete()
+            current_app.logger.info(f"Completados eliminados para tarea {task.id}")
+        except Exception as e:
+            current_app.logger.error(f"Error al eliminar TaskCompletion: {e}")
+            db.session.rollback()
+            raise
+        
+        # Eliminar días del mes asignados (para tareas mensuales)
+        try:
+            result = TaskMonthDay.query.filter_by(task_id=task.id).delete()
+            current_app.logger.info(f"Días del mes eliminados para tarea {task.id}: {result} registros")
+        except Exception as e:
+            current_app.logger.error(f"Error al eliminar TaskMonthDay: {e}")
+            db.session.rollback()
+            raise
+        
+        try:
+            db.session.delete(task)
+            db.session.commit()
+            current_app.logger.info(f"Tarea {task.id} eliminada completamente")
+        except Exception as e:
+            current_app.logger.error(f"Error al eliminar Task: {e}")
+            db.session.rollback()
+            raise
+        
+        log_activity(f'Tarea eliminada: {title}')
+        flash(f'Tarea "{title}" eliminada correctamente.', 'success')
+        return redirect(url_for('tasks.list_tasks', location_id=location_id))
+    except Exception as main_error:
+        current_app.logger.error(f"Error general en delete_task: {main_error}")
+        flash(f'Error al eliminar la tarea: {str(main_error)}', 'danger')
+        return redirect(url_for('tasks.index'))
 
 @tasks_bp.route('/tasks/<int:task_id>')
 @login_required

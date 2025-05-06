@@ -13,7 +13,7 @@ from wtforms.validators import Optional
 from app import db
 from models import User, Company, Employee
 from models_tasks import (Location, LocalUser, Task, TaskSchedule, TaskCompletion, TaskPriority, 
-                         TaskFrequency, TaskStatus, WeekDay, TaskGroup, TaskWeekday,
+                         TaskFrequency, TaskStatus, WeekDay, TaskGroup, TaskWeekday, TaskMonthDay,
                          Product, ProductConservation, ProductLabel, ConservationType, LabelTemplate,
                          NetworkPrinter, TaskInstance)
 from forms_tasks import (LocationForm, LocalUserForm, TaskForm, DailyScheduleForm, WeeklyScheduleForm, 
@@ -1166,8 +1166,7 @@ def delete_task(task_id):
     
     # Eliminar días del mes asignados (para tareas mensuales)
     try:
-        # Importar aquí para evitar referencias circulares
-        from models_tasks import TaskMonthDay
+        # Ya estamos importando TaskMonthDay al comienzo del archivo
         TaskMonthDay.query.filter_by(task_id=task.id).delete()
     except Exception as e:
         current_app.logger.error(f"Error al eliminar TaskMonthDay: {e}")

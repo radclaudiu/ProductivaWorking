@@ -1160,9 +1160,18 @@ def delete_task(task_id):
     location_id = task.location_id
     title = task.title
     
-    # Eliminar primero las programaciones y completados
+    # Eliminar primero las programaciones, completados y días del mes asignados
     TaskSchedule.query.filter_by(task_id=task.id).delete()
     TaskCompletion.query.filter_by(task_id=task.id).delete()
+    
+    # Eliminar días del mes asignados (para tareas mensuales)
+    try:
+        # Importar aquí para evitar referencias circulares
+        from models_tasks import TaskMonthDay
+        TaskMonthDay.query.filter_by(task_id=task.id).delete()
+    except Exception as e:
+        current_app.logger.error(f"Error al eliminar TaskMonthDay: {e}")
+        # Continuar con la operación incluso si hay un error aquí
     
     db.session.delete(task)
     db.session.commit()

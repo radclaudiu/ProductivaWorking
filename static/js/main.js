@@ -11,6 +11,40 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// Control del estado de la conexión
+function updateOnlineStatus() {
+  const banner = document.querySelector('.offline-banner');
+  if (!banner) return;
+  
+  if (navigator.onLine) {
+    banner.classList.remove('show');
+    // Guardar en localStorage que estamos online
+    localStorage.setItem('online_status', 'online');
+  } else {
+    banner.classList.add('show');
+    // Guardar en localStorage que estamos offline
+    localStorage.setItem('online_status', 'offline');
+  }
+}
+
+// Eventos para detectar cambios en la conexión
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+
+// Inicialización del detector de conexión
+window.addEventListener('DOMContentLoaded', () => {
+  // Crear banner de offline si no existe
+  if (!document.querySelector('.offline-banner')) {
+    const banner = document.createElement('div');
+    banner.className = 'offline-banner';
+    banner.innerHTML = '<i class="bi bi-wifi-off me-2"></i> Sin conexión - Trabajando en modo offline';
+    document.body.appendChild(banner);
+  }
+  
+  // Comprobar estado inicial
+  updateOnlineStatus();
+});
+
 // Función para determinar la sección activa basada en la URL actual
 function setActiveNavItem() {
   const path = window.location.pathname;

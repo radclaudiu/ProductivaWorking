@@ -1,140 +1,143 @@
-/**
- * Estilos para funcionalidades PWA
- */
-
-#pwa-install-container {
-    display: none;
-    background-color: #f8f9fa;
-    border-top: 1px solid #dee2e6;
-    padding: 15px;
-    text-align: center;
+/* Estilos específicos para cuando la aplicación está instalada como PWA */
+.pwa-installed .navbar {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: 10px;
 }
 
-#pwa-install-button {
-    background-color: var(--primary-color, #6D584B);
+.pwa-installed {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+}
+
+/* Ocultar elementos que no son necesarios en modo instalado */
+.pwa-installed #install-button-container {
+    display: none !important;
+}
+
+/* Estilos para offline */
+.offline-notification {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 9999;
+    background-color: var(--danger); /* Color terracota oscuro de nuestra paleta */
     color: white;
-    border: none;
-    border-radius: 30px;
-    padding: 8px 16px;
-    font-weight: 500;
-    transition: all 0.3s ease;
+    padding: 12px 24px;
+    border-radius: 12px; /* Bordes más redondeados, según el nuevo diseño */
+    box-shadow: 0 4px 10px rgba(165, 64, 38, 0.25); /* Sombra con tono del color */
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s, transform 0.3s;
+    font-family: 'Roboto', sans-serif;
 }
 
-#pwa-install-button:hover {
-    background-color: var(--secondary-color, #8D6E63);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+.offline-notification.visible {
+    opacity: 1;
+    transform: translateY(0);
 }
 
-.pwa-installer-icon {
-    font-size: 2rem;
-    color: var(--success-color, #4b6f44);
-    margin-bottom: 10px;
+.offline-notification i {
+    margin-right: 10px;
+    font-size: 18px;
 }
 
-/* Pantalla de carga para PWA */
-#loading-screen {
+/* Animación de reconexión */
+.reconnecting {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Mejoras de UI para dispositivos móviles */
+@media (max-width: 768px) {
+    .pwa-installed .container-fluid {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    
+    .pwa-installed .btn {
+        padding: 0.375rem 0.5rem;
+    }
+    
+    .pwa-installed .navbar-brand {
+        font-size: 1.1rem;
+    }
+    
+    /* Mejoras para pantallas táctiles */
+    .pwa-installed .btn,
+    .pwa-installed .nav-link,
+    .pwa-installed .dropdown-item {
+        min-height: 44px; /* Área táctil mínima recomendada */
+        display: flex;
+        align-items: center;
+    }
+}
+
+/* Prevenir zoom en inputs en iOS */
+.pwa-installed input[type="text"],
+.pwa-installed input[type="email"],
+.pwa-installed input[type="password"],
+.pwa-installed input[type="number"],
+.pwa-installed select {
+    font-size: 16px; /* Previene el zoom automático en iOS */
+}
+
+/* Splash screen */
+.splash-screen {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: var(--light-bg, #F5F0E3);
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, #5c4033, #c87f5d); /* Chocolate a Terracota */
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    z-index: 9999;
-    transition: opacity 0.5s ease;
+    z-index: 10000;
+    transition: opacity 0.5s;
 }
 
-.loading-logo {
+.splash-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.splash-logo {
     width: 120px;
     height: 120px;
     margin-bottom: 20px;
-    animation: pulse 1.5s infinite ease-in-out;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
 }
 
-.loading-spinner {
-    border: 5px solid rgba(0, 0, 0, 0.1);
+.splash-title {
+    color: #f5f0e3; /* Beige claro */
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 40px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.splash-spinner {
+    border: 4px solid rgba(245, 240, 227, 0.3); /* Beige transparente */
     border-radius: 50%;
-    border-top: 5px solid var(--primary-color, #6D584B);
-    width: 50px;
-    height: 50px;
+    border-top: 4px solid #f5f0e3; /* Beige claro */
+    width: 40px;
+    height: 40px;
     animation: spin 1s linear infinite;
-}
-
-.loading-text {
-    margin-top: 20px;
-    font-size: 1.2rem;
-    color: var(--text-color, #4E342E);
-    font-weight: 500;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
-}
-
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
-}
-
-/* Estilos para el banner de offline */
-.offline-banner {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background-color: var(--warning-color, #e9a849);
-    color: white;
-    text-align: center;
-    padding: 10px;
-    z-index: 1000;
-    display: none;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.offline-banner.show {
-    display: block;
-    animation: slideUp 0.3s ease-out;
-}
-
-@keyframes slideUp {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
-}
-
-/* Indicador de estado de sincronización */
-.sync-status {
-    display: inline-block;
-    padding: 5px 10px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    margin-left: 10px;
-}
-
-.sync-status.online {
-    background-color: var(--success-color, #4b6f44);
-    color: white;
-}
-
-.sync-status.offline {
-    background-color: var(--danger-color, #ac3f3f);
-    color: white;
-}
-
-.sync-status.syncing {
-    background-color: var(--warning-color, #e9a849);
-    color: white;
-    animation: blink 1s infinite;
-}
-
-@keyframes blink {
-    0% { opacity: 1; }
-    50% { opacity: 0.5; }
-    100% { opacity: 1; }
 }

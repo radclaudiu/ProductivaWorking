@@ -11,40 +11,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// Control del estado de la conexión
-function updateOnlineStatus() {
-  const banner = document.querySelector('.offline-banner');
-  if (!banner) return;
-  
-  if (navigator.onLine) {
-    banner.classList.remove('show');
-    // Guardar en localStorage que estamos online
-    localStorage.setItem('online_status', 'online');
-  } else {
-    banner.classList.add('show');
-    // Guardar en localStorage que estamos offline
-    localStorage.setItem('online_status', 'offline');
-  }
-}
-
-// Eventos para detectar cambios en la conexión
-window.addEventListener('online', updateOnlineStatus);
-window.addEventListener('offline', updateOnlineStatus);
-
-// Inicialización del detector de conexión
-window.addEventListener('DOMContentLoaded', () => {
-  // Crear banner de offline si no existe
-  if (!document.querySelector('.offline-banner')) {
-    const banner = document.createElement('div');
-    banner.className = 'offline-banner';
-    banner.innerHTML = '<i class="bi bi-wifi-off me-2"></i> Sin conexión - Trabajando en modo offline';
-    document.body.appendChild(banner);
-  }
-  
-  // Comprobar estado inicial
-  updateOnlineStatus();
-});
-
 // Función para determinar la sección activa basada en la URL actual
 function setActiveNavItem() {
   const path = window.location.pathname;
@@ -161,7 +127,55 @@ window.addEventListener('appinstalled', (evt) => {
   }
 });
 
-// Limpiar gestión de la conexión (eliminar el código duplicado)
+// Detección de estado online/offline
+function updateOnlineStatus() {
+  const onlineStatus = document.querySelector('.online-status');
+  const offlineStatus = document.querySelector('.offline-status');
+  const offlineNotification = document.getElementById('offline-notification');
+  
+  if (navigator.onLine) {
+    // Estamos online
+    if (onlineStatus) onlineStatus.style.display = 'inline-block';
+    if (offlineStatus) offlineStatus.style.display = 'none';
+    
+    // Ocultar notificación offline
+    if (offlineNotification) {
+      offlineNotification.classList.remove('visible');
+    }
+    
+    // Intentar sincronizar datos pendientes
+    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+      navigator.serviceWorker.ready
+        .then(registration => {
+          return registration.sync.register('sync-checkpoints');
+        })
+        .catch(err => console.log('Error al registrar la sincronización: ', err));
+    }
+  } else {
+    // Estamos offline
+    if (onlineStatus) onlineStatus.style.display = 'none';
+    if (offlineStatus) offlineStatus.style.display = 'inline-block';
+    
+    // Mostrar notificación offline
+    if (offlineNotification) {
+      offlineNotification.classList.add('visible');
+      
+      // Ocultar después de 5 segundos
+      setTimeout(() => {
+        offlineNotification.classList.remove('visible');
+      }, 5000);
+    }
+  }
+}
+
+// Registrar los eventos de cambio de estado de conexión
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+
+// Comprobar el estado inicial cuando la página se carga
+document.addEventListener('DOMContentLoaded', () => {
+  updateOnlineStatus();
+});
 
 // Función para alternar la visibilidad de la contraseña
 function togglePasswordVisibility(passwordId, buttonId) {

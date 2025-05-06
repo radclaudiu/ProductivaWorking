@@ -112,7 +112,7 @@
                 </div>
                 
                 <ul class="navbar-nav ms-3 d-flex align-items-center">
-                    <li class="nav-item dropdown">
+                    <li class="nav-item dropdown position-relative">
                         <a class="nav-link dropdown-toggle py-2 px-3" href="#" id="navbarDropdown" role="button" 
                            data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-person-circle"></i> 
@@ -121,7 +121,8 @@
                                 {{ current_user.role.name }}
                             </span>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
+                        <div class="position-absolute" style="right: 0; left: auto; min-width: 100%;">
+                        <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="navbarDropdown" style="z-index: 9999; position: static;">
                             <li class="mb-1">
                                 <a class="dropdown-item d-flex align-items-center" href="{{ url_for('main.profile') }}">
                                     <i class="bi bi-person me-2"></i> <span>Mi Perfil</span>
@@ -146,6 +147,7 @@
                                 </a>
                             </li>
                         </ul>
+                        </div>
                     </li>
                 </ul>
                 {% endif %}

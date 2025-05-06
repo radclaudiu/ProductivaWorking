@@ -1,5 +1,21 @@
 /* Estilos personalizados para tonos tierra */
 
+/* Fix for dropdown menu positioning */
+.dropdown-menu {
+    z-index: 9999 !important;
+    position: absolute !important;
+}
+
+.navbar .dropdown {
+    position: static;
+}
+
+.navbar .dropdown-menu {
+    right: 0 !important;
+    left: auto !important;
+    margin-top: 0.5rem;
+}
+
 /* Navegación con pestañas */
 .nav-pills .nav-link.active {
     background-color: #6D584B !important;

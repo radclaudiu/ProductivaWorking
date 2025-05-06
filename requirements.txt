@@ -40,3 +40,5 @@ trafilatura
 flask-session
 openai
 anthropic
+flask-login
+flask-wtf

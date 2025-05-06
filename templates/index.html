@@ -1,40 +1,255 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8 text-center">
-            <h1 class="display-4 mb-4">
-                <i class="bi bi-building"></i> Productiva
-            </h1>
-            <p class="lead">
-                Sistema integral para la gestión eficiente de empresas y empleados
-            </p>
-            <hr class="my-4">
-            <p>
-                Inicie sesión para acceder al sistema.
-            </p>
-            <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg" style="background-color: #4b6f44; border-color: #4b6f44;">
-                <i class="bi bi-box-arrow-in-right"></i> Iniciar Sesión
-            </a>
-            
-            <!-- Sección de instalación de PWA -->
-            <div id="pwa-install-section" class="mt-4 p-3 rounded" style="background-color: #f5f0e3; border: 1px solid #e0d8c0; display: none;">
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <h5 style="color: #5c4033;">¡Instala nuestra aplicación!</h5>
-                        <p class="text-muted mb-0 small">Accede rápidamente y trabaja sin conexión</p>
+<div class="hero-section py-5" style="background: linear-gradient(135deg, #a18068 0%, #6D584B 100%); color: white;">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6 py-4">
+                <h1 class="display-4 fw-bold mb-3">Productiva</h1>
+                <p class="lead mb-4">Sistema integral para la gestión eficiente de empresas y empleados. Simplifica el control horario y optimiza las tareas diarias.</p>
+                <div class="d-flex flex-wrap mb-4">
+                    <div class="d-flex align-items-center me-4 mb-2">
+                        <i class="bi bi-check-circle-fill text-success me-2" style="font-size: 1.2rem;"></i>
+                        <span>Control preciso</span>
                     </div>
-                    <div class="col-md-4">
-                        <button id="install-button" class="btn btn-success w-100" style="display: none; background-color: #4b6f44; border-color: #4b6f44;">
-                            <i class="bi bi-download me-1"></i> Instalar
-                        </button>
+                    <div class="d-flex align-items-center me-4 mb-2">
+                        <i class="bi bi-check-circle-fill text-success me-2" style="font-size: 1.2rem;"></i>
+                        <span>Fácil de usar</span>
+                    </div>
+                    <div class="d-flex align-items-center me-4 mb-2">
+                        <i class="bi bi-check-circle-fill text-success me-2" style="font-size: 1.2rem;"></i>
+                        <span>Múltiples locales</span>
+                    </div>
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="bi bi-check-circle-fill text-success me-2" style="font-size: 1.2rem;"></i>
+                        <span>Reportes detallados</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Formulario de inicio de sesión integrado en la página principal -->
+            <div class="col-lg-6">
+                <div class="card shadow border-0">
+                    <div class="card-header text-center" style="background: rgba(255, 255, 255, 0.9);">
+                        <h3 style="color: #6D584B;">
+                            <i class="bi bi-lock"></i> Iniciar Sesión
+                        </h3>
+                    </div>
+                    <div class="card-body p-4">
+                        <form method="POST" action="{{ url_for('auth.login') }}">
+                            {{ form.hidden_tag() }}
+                            
+                            <div class="mb-3">
+                                {{ form.username.label(class="form-label") }}
+                                {{ form.username(class="form-control", placeholder="Introduzca su nombre de usuario") }}
+                                {% for error in form.username.errors %}
+                                    <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="mb-3">
+                                {{ form.password.label(class="form-label") }}
+                                <div class="input-group">
+                                    {{ form.password(class="form-control", placeholder="Introduzca su contraseña", id="password") }}
+                                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                {% for error in form.password.errors %}
+                                    <div class="text-danger">{{ error }}</div>
+                                {% endfor %}
+                            </div>
+                            
+                            <div class="mb-3 form-check">
+                                {{ form.remember_me(class="form-check-input") }}
+                                {{ form.remember_me.label(class="form-check-label") }}
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary w-100" style="background-color: #8D6E63; border-color: #6D584B;">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Iniciar Sesión
+                            </button>
+                        </form>
+                    </div>
+                    <div class="card-footer py-3" id="pwa-install-container" style="display: none; background-color: #f5f0e3; border-top: 1px solid #e0d8c0;">
+                        <div class="d-flex flex-column align-items-center">
+                            <div class="mb-2 text-center">
+                                <i class="bi bi-download text-success fs-3"></i>
+                                <h5 class="mb-0" style="color: #5c4033;">Instala esta aplicación</h5>
+                                <p class="text-muted small">Accede rápidamente y trabaja sin conexión</p>
+                            </div>
+                            <button id="pwa-install-button" class="btn w-75" style="background-color: #8D6E63; border-color: #6D584B; color: white;">
+                                <i class="bi bi-plus-circle me-2"></i> Instalar Productiva
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Features Section -->
+<div class="container py-5">
+    <div class="row text-center mb-5">
+        <div class="col-lg-8 mx-auto">
+            <h2 class="fw-bold" style="color: #6D584B;">Funcionalidades principales</h2>
+            <p class="lead" style="color: #8D6E63;">Todo lo que necesitas para gestionar tu equipo de forma eficiente</p>
+        </div>
+    </div>
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; background-color: #f5f0e3;">
+                        <i class="bi bi-clock-history" style="font-size: 2rem; color: #8D6E63;"></i>
+                    </div>
+                    <h5 class="card-title fw-bold" style="color: #6D584B;">Punto de Fichaje</h5>
+                    <p class="card-text">Control horario preciso con check-in y check-out. Registra horas trabajadas y gestiona permisos y ausencias de forma rápida y sencilla.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; background-color: #f5f0e3;">
+                        <i class="bi bi-list-check" style="font-size: 2rem; color: #8D6E63;"></i>
+                    </div>
+                    <h5 class="card-title fw-bold" style="color: #6D584B;">Gestión de Tareas</h5>
+                    <p class="card-text">Crea, asigna y monitoriza tareas con diferentes periodicidades. Personaliza fechas específicas del mes y mejora la planificación del trabajo.</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <div class="rounded-circle mx-auto mb-3 d-flex align-items-center justify-content-center" style="width: 80px; height: 80px; background-color: #f5f0e3;">
+                        <i class="bi bi-graph-up" style="font-size: 2rem; color: #8D6E63;"></i>
+                    </div>
+                    <h5 class="card-title fw-bold" style="color: #6D584B;">Informes y Estadísticas</h5>
+                    <p class="card-text">Genera informes detallados de horas trabajadas, rendimiento por empleado y completado de tareas para una mejor toma de decisiones.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Testimonials Section -->
+<div class="py-5" style="background-color: #f5f0e3;">
+    <div class="container py-4">
+        <div class="row text-center mb-5">
+            <div class="col-lg-8 mx-auto">
+                <h2 class="fw-bold" style="color: #6D584B;">Lo que dicen nuestros clientes</h2>
+                <p class="lead" style="color: #8D6E63;">Empresas que han mejorado su productividad con nuestra plataforma</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="d-flex mb-3">
+                            {% for i in range(5) %}
+                            <i class="bi bi-star-fill me-1" style="color: #ffc107;"></i>
+                            {% endfor %}
+                        </div>
+                        <p class="card-text mb-3">"Productiva ha sido clave para organizar el trabajo de nuestros 3 locales. El sistema de tareas con días específicos del mes nos permite planificar mucho mejor."</p>
+                        <div class="d-flex align-items-center">
+                            <div style="width: 48px; height: 48px; background-color: #8D6E63; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px;">RC</div>
+                            <div>
+                                <h6 class="mb-0" style="color: #6D584B;">Ricardo Campos</h6>
+                                <small class="text-muted">Director de Operaciones</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="d-flex mb-3">
+                            {% for i in range(5) %}
+                            <i class="bi bi-star-fill me-1" style="color: #ffc107;"></i>
+                            {% endfor %}
+                        </div>
+                        <p class="card-text mb-3">"El control horario nos ha permitido ahorrar tiempo en administración y tener datos precisos de las horas trabajadas. Su interfaz es muy intuitiva y fácil de usar."</p>
+                        <div class="d-flex align-items-center">
+                            <div style="width: 48px; height: 48px; background-color: #8D6E63; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px;">LM</div>
+                            <div>
+                                <h6 class="mb-0" style="color: #6D584B;">Laura Martínez</h6>
+                                <small class="text-muted">Gerente de Tienda</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 border-0 shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="d-flex mb-3">
+                            {% for i in range(5) %}
+                            <i class="bi bi-star-fill me-1" style="color: #ffc107;"></i>
+                            {% endfor %}
+                        </div>
+                        <p class="card-text mb-3">"La implementación fue muy sencilla y el soporte técnico excelente. Hemos mejorado la eficiencia del equipo y reducido los errores en la gestión de turnos."</p>
+                        <div class="d-flex align-items-center">
+                            <div style="width: 48px; height: 48px; background-color: #8D6E63; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-right: 12px;">JF</div>
+                            <div>
+                                <h6 class="mb-0" style="color: #6D584B;">Javier Fernández</h6>
+                                <small class="text-muted">Director de Recursos Humanos</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Habilitar funcionalidad de mostrar/ocultar contraseña
+        togglePasswordVisibility('password', 'togglePassword');
+        
+        // Gestión de la instalación PWA
+        let deferredPrompt;
+        const pwaInstallContainer = document.getElementById('pwa-install-container');
+        const pwaInstallButton = document.getElementById('pwa-install-button');
+        
+        // Mostrar el botón de instalación solo si el navegador lo permite
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if(pwaInstallContainer) {
+                pwaInstallContainer.style.display = 'block';
+            }
+        });
+        
+        // Manejar clic en el botón de instalación
+        if(pwaInstallButton) {
+            pwaInstallButton.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    
+                    if (outcome === 'accepted') {
+                        pwaInstallContainer.style.display = 'none';
+                    }
+                    
+                    deferredPrompt = null;
+                }
+            });
+        }
+        
+        // Si ya está instalada, no mostrar el botón
+        window.addEventListener('appinstalled', () => {
+            if(pwaInstallContainer) {
+                pwaInstallContainer.style.display = 'none';
+            }
+            deferredPrompt = null;
+        });
+    });
+</script>
 {% endblock %}
 
 {% block scripts %}

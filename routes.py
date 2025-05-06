@@ -132,11 +132,34 @@ def register():
     return render_template('register.html', title='Registrar Usuario', form=form)
 
 # Main routes
-@main_bp.route('/')
+@main_bp.route('/', methods=['GET', 'POST'])
 def index():
     if current_user.is_authenticated:
         return redirect(url_for('main.dashboard'))
-    return redirect(url_for('auth.login'))
+    
+    # Usar el mismo formulario de login para la página principal
+    form = LoginForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=form.username.data).first()
+        if user is None or not user.check_password(form.password.data) or not user.is_active:
+            flash('Usuario o contraseña invalidos.', 'danger')
+            return redirect(url_for('main.index'))
+        
+        # Hacer la sesión permanente si se selecciona "recordarme"
+        if form.remember_me.data:
+            session.permanent = True
+        
+        login_user(user, remember=form.remember_me.data)
+        log_activity(f'Login exitoso: {user.username}', user.id)
+        
+        next_page = request.args.get('next')
+        if not next_page or urlparse(next_page).netloc != '':
+            next_page = url_for('main.dashboard')
+        
+        return redirect(next_page)
+    
+    # Renderizar la página de inicio con el formulario de login
+    return render_template('index.html', title='Bienvenido a Productiva', form=form)
 
 @main_bp.route('/dashboard')
 @login_required

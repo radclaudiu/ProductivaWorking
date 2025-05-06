@@ -205,11 +205,15 @@
 </div>
 {% endblock %}
 
+
+
 {% block scripts %}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Habilitar funcionalidad de mostrar/ocultar contraseña
-        togglePasswordVisibility('password', 'togglePassword');
+        if (typeof togglePasswordVisibility === 'function') {
+            togglePasswordVisibility('password', 'togglePassword');
+        }
         
         // Gestión de la instalación PWA
         let deferredPrompt;
@@ -223,6 +227,12 @@
             if(pwaInstallContainer) {
                 pwaInstallContainer.style.display = 'block';
             }
+            
+            // Mostrar también la sección de instalación en la página principal
+            const pwaInstallSection = document.getElementById('pwa-install-section');
+            if(pwaInstallSection) {
+                pwaInstallSection.style.display = 'block';
+            }
         });
         
         // Manejar clic en el botón de instalación
@@ -233,7 +243,9 @@
                     const { outcome } = await deferredPrompt.userChoice;
                     
                     if (outcome === 'accepted') {
-                        pwaInstallContainer.style.display = 'none';
+                        if(pwaInstallContainer) pwaInstallContainer.style.display = 'none';
+                        const pwaInstallSection = document.getElementById('pwa-install-section');
+                        if(pwaInstallSection) pwaInstallSection.style.display = 'none';
                     }
                     
                     deferredPrompt = null;
@@ -243,29 +255,17 @@
         
         // Si ya está instalada, no mostrar el botón
         window.addEventListener('appinstalled', () => {
-            if(pwaInstallContainer) {
-                pwaInstallContainer.style.display = 'none';
-            }
+            if(pwaInstallContainer) pwaInstallContainer.style.display = 'none';
+            const pwaInstallSection = document.getElementById('pwa-install-section');
+            if(pwaInstallSection) pwaInstallSection.style.display = 'none';
             deferredPrompt = null;
         });
-    });
-</script>
-{% endblock %}
-
-{% block scripts %}
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // El botón de instalación se gestionará automáticamente por main.js
-        // La función showInstallPromotion() ya comprueba la ruta actual
         
-        // Actualizar la visualización del contenedor según disponibilidad
-        window.addEventListener('beforeinstallprompt', (e) => {
-            document.getElementById('pwa-install-section').style.display = 'block';
-        });
-        
-        // Si ya está instalada, no mostrar la sección
+        // Ocultar sección si ya está en modo standalone
         if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
-            document.getElementById('pwa-install-section').style.display = 'none';
+            if(pwaInstallContainer) pwaInstallContainer.style.display = 'none';
+            const pwaInstallSection = document.getElementById('pwa-install-section');
+            if(pwaInstallSection) pwaInstallSection.style.display = 'none';
         }
     });
 </script>

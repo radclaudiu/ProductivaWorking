@@ -1672,7 +1672,7 @@ def purge_monthly_tasks(location_id):
             results['schedules_deleted'] = schedules_deleted
             
             # PASO 3: Eliminar días del mes (SQL directo para evitar problemas de relación)
-            monthday_sql = text("DELETE FROM task_month_days WHERE task_id IN :task_ids")
+            monthday_sql = text("DELETE FROM task_monthdays WHERE task_id IN :task_ids")
             result = db.session.execute(monthday_sql, {"task_ids": tuple(task_ids) if len(task_ids) > 1 else f"({task_ids[0]})"})
             monthdays_deleted = result.rowcount
             current_app.logger.info(f"Eliminados {monthdays_deleted} registros de días mensuales")

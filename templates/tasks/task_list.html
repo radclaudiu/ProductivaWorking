@@ -149,6 +149,77 @@
         </div>
     </div>
 </div>
+<!-- Modal de confirmación para eliminar tarea -->
+<div class="modal fade" id="deleteTaskModal" tabindex="-1" aria-labelledby="deleteTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteTaskModalLabel">Confirmar eliminación</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que deseas eliminar la tarea <strong id="deleteTaskTitle">...</strong>?</p>
+                <p class="text-danger">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <a href="#" id="deleteTaskButton" class="btn btn-danger">Eliminar</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación para solucionar problemas de tareas mensuales -->
+<div class="modal fade" id="purgeMonthlyTasksModal" tabindex="-1" aria-labelledby="purgeMonthlyTasksModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="purgeMonthlyTasksModalLabel">Herramienta de mantenimiento de tareas</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Herramienta de administración:</strong> Este proceso intentará corregir problemas con las tareas mensuales que no se pueden eliminar correctamente.
+                </div>
+                
+                <p>Elija la acción que desea realizar:</p>
+                
+                <div class="card mb-3">
+                    <div class="card-header bg-danger text-white">
+                        Eliminar todas las tareas mensuales
+                    </div>
+                    <div class="card-body">
+                        <p>Esta acción eliminará <strong>todas las tareas mensuales</strong> de esta ubicación, incluyendo sus registros asociados.</p>
+                        <p class="text-danger"><strong>ADVERTENCIA:</strong> Esto eliminará todas las tareas configuradas con frecuencia mensual. Deberá recrearlas manualmente.</p>
+                        <div class="d-grid">
+                            <a href="{{ url_for('tasks.purge_monthly_tasks', location_id=location.id) }}" class="btn btn-danger">
+                                <i class="bi bi-trash"></i> Eliminar todas las tareas mensuales
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header bg-warning text-dark">
+                        Solucionar problemas de días mensuales
+                    </div>
+                    <div class="card-body">
+                        <p>Esta acción eliminará solo los registros huérfanos de TaskMonthDay sin afectar las tareas.</p>
+                        <div class="d-grid">
+                            <a href="{{ url_for('tasks.fix_task_monthdays', location_id=location.id) }}" class="btn btn-warning">
+                                <i class="bi bi-wrench"></i> Reparar configuración de días del mes
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
@@ -175,6 +246,26 @@
                 });
             });
         });
+        
+        // Configuración del modal para eliminar tarea
+        const deleteTaskModal = document.getElementById('deleteTaskModal');
+        if (deleteTaskModal) {
+            deleteTaskModal.addEventListener('show.bs.modal', function(event) {
+                // Botón que desencadenó el modal
+                const button = event.relatedTarget;
+                
+                // Extraer información
+                const taskId = button.getAttribute('data-task-id');
+                const taskTitle = button.getAttribute('data-task-title');
+                
+                // Actualizar el modal
+                document.getElementById('deleteTaskTitle').textContent = taskTitle;
+                
+                // Actualizar enlace del botón eliminar
+                const deleteButton = document.getElementById('deleteTaskButton');
+                deleteButton.href = '{{ url_for("tasks.delete_task", task_id=0) }}'.replace('0', taskId);
+            });
+        }
         
         // Búsqueda de tareas
         const searchInput = document.getElementById('taskSearch');

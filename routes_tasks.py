@@ -1607,6 +1607,115 @@ def test_reset_tasks():
     """Ruta anterior para compatibilidad"""
     return redirect(url_for('tasks.test_reset_weekly_tasks'))
 
+@tasks_bp.route('/purge-monthly-tasks/<int:location_id>')
+@login_required
+def purge_monthly_tasks(location_id):
+    """Elimina todas las tareas mensuales y sus registros asociados para una ubicación"""
+    # Verificar permisos (sólo admin)
+    if not current_user.is_admin():
+        flash('Solo administradores pueden usar esta función de mantenimiento.', 'danger')
+        return redirect(url_for('tasks.list_tasks', location_id=location_id))
+    
+    try:
+        # Obtener todas las tareas mensuales de esta ubicación
+        monthly_tasks = Task.query.filter_by(
+            location_id=location_id, 
+            frequency=TaskFrequency.MONTHLY
+        ).all()
+        
+        task_count = len(monthly_tasks)
+        
+        if task_count == 0:
+            flash('No se encontraron tareas mensuales para purgar.', 'info')
+            return redirect(url_for('tasks.list_tasks', location_id=location_id))
+        
+        # Registro para análisis
+        current_app.logger.info(f"Iniciando purga de {task_count} tareas mensuales en ubicación {location_id}")
+        
+        # Eliminar cada tarea mensual individualmente para mejor registro
+        deleted_count = 0
+        for task in monthly_tasks:
+            try:
+                # Registramos datos de la tarea antes de eliminarla
+                task_id = task.id
+                task_title = task.title
+                
+                # 1. Eliminar completados
+                TaskCompletion.query.filter_by(task_id=task.id).delete()
+                
+                # 2. Eliminar programación
+                TaskSchedule.query.filter_by(task_id=task.id).delete()
+                
+                # 3. Eliminar días del mes de forma segura
+                TaskMonthDay.query.filter_by(task_id=task.id).delete()
+                
+                # 4. Finalmente, eliminar la tarea
+                db.session.delete(task)
+                
+                # Registrar éxito para esta tarea
+                current_app.logger.info(f"Tarea mensual eliminada correctamente: {task_id} - {task_title}")
+                deleted_count += 1
+                
+            except Exception as task_error:
+                current_app.logger.error(f"Error al eliminar tarea mensual {task.id}: {task_error}")
+                # Continuar con la siguiente tarea
+        
+        # Commit al final para garantizar integridad
+        db.session.commit()
+        
+        # Mensaje de resultado
+        if deleted_count == task_count:
+            flash(f'Se eliminaron correctamente todas las {deleted_count} tareas mensuales.', 'success')
+        else:
+            flash(f'Se eliminaron {deleted_count} de {task_count} tareas mensuales. Revise los logs para más detalles.', 'warning')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error general en purge_monthly_tasks: {e}")
+        flash(f'Error al purgar tareas mensuales: {str(e)}', 'danger')
+    
+    return redirect(url_for('tasks.list_tasks', location_id=location_id))
+
+@tasks_bp.route('/fix-task-monthdays/<int:location_id>')
+@login_required
+def fix_task_monthdays(location_id):
+    """Repara o elimina registros huérfanos de TaskMonthDay"""
+    # Verificar permisos (sólo admin)
+    if not current_user.is_admin():
+        flash('Solo administradores pueden usar esta función de mantenimiento.', 'danger')
+        return redirect(url_for('tasks.list_tasks', location_id=location_id))
+    
+    try:
+        # Obtener todas las tareas de esta ubicación
+        tasks = Task.query.filter_by(location_id=location_id).all()
+        task_ids = [task.id for task in tasks]
+        
+        # Encontrar registros TaskMonthDay huérfanos (sin tarea asociada)
+        orphaned_records = TaskMonthDay.query.filter(
+            ~TaskMonthDay.task_id.in_(task_ids) if task_ids else True
+        ).all()
+        
+        orphan_count = len(orphaned_records)
+        
+        if orphan_count == 0:
+            flash('No se encontraron registros huérfanos de TaskMonthDay.', 'info')
+            return redirect(url_for('tasks.list_tasks', location_id=location_id))
+        
+        # Eliminar registros huérfanos
+        for record in orphaned_records:
+            db.session.delete(record)
+        
+        db.session.commit()
+        
+        flash(f'Se eliminaron {orphan_count} registros huérfanos de TaskMonthDay.', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error en fix_task_monthdays: {e}")
+        flash(f'Error al reparar registros: {str(e)}', 'danger')
+    
+    return redirect(url_for('tasks.list_tasks', location_id=location_id))
+
 
 @tasks_bp.route('/local-user/tasks', defaults={'date_str': None, 'group_id': None})
 @tasks_bp.route('/local-user/tasks/<date_str>', defaults={'group_id': None})

@@ -667,15 +667,15 @@
                     
                     const data = await response.json();
                     
-                    // Filtrar solo impresoras Raspberry Pi
-                    const raspberryPrinters = data.printers.filter(p => p.printer_type === 'raspberry_pi');
+                    // Usamos todas las impresoras disponibles
+                    const availablePrinters = data.printers;
                     
                     // Limpiar selector
                     const select = document.getElementById('raspberry-printer-select');
                     select.innerHTML = '<option value="">Seleccione una impresora...</option>';
                     
                     // Agregar las impresoras al selector
-                    if (raspberryPrinters.length > 0) {
+                    if (availablePrinters.length > 0) {
                         raspberryPrinters.forEach(printer => {
                             const option = document.createElement('option');
                             option.value = printer.id;

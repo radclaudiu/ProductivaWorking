@@ -155,12 +155,28 @@ sudo apt install -y python3 python3-pip python3-venv nginx cups libusb-1.0-0-dev
                     <!-- PASO 5: INSTALAR CONTROLADORES DE BROTHER -->
                     <div class="step-container">
                         <h5><span class="step-number">5</span> Instalar Controladores de Brother para TD-4550DNWB</h5>
+                        <p>Visite el <a href="https://support.brother.com/g/b/downloadlist.aspx?c=es&lang=es&prod=td4550dnwb_eu_as&os=128" target="_blank">sitio web oficial de Brother</a> para descargar los controladores más recientes.</p>
+                        <div class="important-note">
+                            <p><strong>Importante:</strong> Si los enlaces directos no funcionan, descargue manualmente los archivos <code>LPR driver</code> y <code>CUPSwrapper driver</code> de la sección "Linux" en el sitio web de Brother.</p>
+                        </div>
                         <div class="code-block">
 cd ~
-wget https://download.brother.com/welcome/dlf103945/td4550dnwbcupswrapper-1.0.0-0.armhf.deb
-wget https://download.brother.com/welcome/dlf103946/td4550dnwblpr-1.0.0-0.armhf.deb
-sudo dpkg -i --force-all td4550dnwblpr-1.0.0-0.armhf.deb
-sudo dpkg -i --force-all td4550dnwbcupswrapper-1.0.0-0.armhf.deb
+# Método 1: Usar el navegador web para descargar desde el sitio oficial de Brother
+# y transferir los archivos .deb a la Raspberry Pi usando SCP
+
+# Método 2: Alternativa - usar curl para descargar directamente
+sudo apt-get install -y curl
+
+# Descargar controladores (enlaces pueden cambiar, verificar en el sitio oficial)
+curl -L -O "https://download.brother.com/welcome/dlf103945/td4550dnwbcupswrapper-1.0.0-0.armhf.deb"
+curl -L -O "https://download.brother.com/welcome/dlf103946/td4550dnwblpr-1.0.0-0.armhf.deb"
+
+# Instalar (si descargó los archivos manualmente, asegúrese de que los nombres coincidan)
+sudo dpkg -i --force-all td4550dnwblpr-*.deb
+sudo dpkg -i --force-all td4550dnwbcupswrapper-*.deb
+
+# Si hay errores de dependencias, ejecutar:
+sudo apt-get -f install -y
 
 # Comprobar que CUPS esté funcionando
 sudo systemctl status cups

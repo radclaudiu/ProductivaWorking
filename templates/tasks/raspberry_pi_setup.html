@@ -90,6 +90,25 @@
         padding: 10px;
         margin: 10px 0;
     }
+    
+    .printer-image {
+        max-width: 100%;
+        height: auto;
+        margin: 10px 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .model-badge {
+        display: inline-block;
+        background-color: #8D6E63;
+        color: white;
+        font-weight: bold;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        margin-left: 10px;
+    }
 </style>
 {% endblock %}
 
@@ -99,7 +118,7 @@
         <div class="col-12">
             <div class="card shadow-sm">
                 <div class="card-header bg-earth-dark text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-raspberry-pi me-2"></i>Guía Completa de Instalación: Servidor de Impresión en Raspberry Pi</h5>
+                    <h5 class="mb-0"><i class="bi bi-raspberry-pi me-2"></i>Guía Completa de Instalación: Servidor de Impresión en Raspberry Pi para TD-4550DNWB<span class="model-badge">TD-4550DNWB</span></h5>
                     <div>
                         <a href="{{ url_for('tasks.local_user_labels') }}" class="btn btn-light btn-sm">
                             <i class="bi bi-arrow-left me-1"></i> Volver a Etiquetas
@@ -109,12 +128,12 @@
                 <div class="card-body">
                     <div class="alert alert-info mb-4">
                         <i class="bi bi-info-circle-fill me-2"></i>
-                        <strong>Para principiantes:</strong> Esta guía detallada le ayudará a configurar paso a paso una Raspberry Pi como servidor de impresión para impresoras Brother. No se requieren conocimientos previos de Linux o programación.
+                        <strong>Para principiantes:</strong> Esta guía detallada le ayudará a configurar paso a paso una Raspberry Pi como servidor de impresión para la impresora Brother TD-4550DNWB. No se requieren conocimientos previos de Linux o programación.
                     </div>
                     
                     <div class="important-note">
                         <h5><i class="bi bi-lightbulb-fill me-2"></i>¿Qué estamos construyendo?</h5>
-                        <p>Vamos a convertir una Raspberry Pi en un servidor de impresión que permitirá imprimir etiquetas en una impresora Brother desde cualquier dispositivo en la red. El servidor usa un <strong>entorno virtual de Python</strong> para mantener el sistema limpio y organizado.</p>
+                        <p>Vamos a convertir una Raspberry Pi en un servidor de impresión que permitirá imprimir etiquetas en su impresora Brother TD-4550DNWB desde cualquier dispositivo en la red. El servidor usa un <strong>entorno virtual de Python</strong> para mantener el sistema limpio y organizado, y utiliza los controladores oficiales de Brother para garantizar la compatibilidad.</p>
                     </div>
                     
                     <h4 class="mb-4">Guía Paso a Paso</h4>
@@ -294,7 +313,7 @@
                         <p>Ahora instalaremos los programas necesarios para el servidor de impresión:</p>
                         
                         <div class="code-block">
-                            sudo apt install -y python3 python3-pip python3-venv nginx cups libusb-1.0-0-dev
+                            sudo apt install -y python3 python3-pip python3-venv nginx cups libusb-1.0-0-dev cups-pdf build-essential libcups2-dev
                         </div>
                         <div class="command-explanation">
                             <strong>¿Qué estamos instalando?</strong><br>
@@ -302,8 +321,10 @@
                             • <code>python3-pip</code>: Gestor de paquetes para instalar bibliotecas de Python<br>
                             • <code>python3-venv</code>: Herramienta para crear entornos virtuales<br>
                             • <code>nginx</code>: Servidor web (opcional, para futuras expansiones)<br>
-                            • <code>cups</code>: Sistema de impresión para Linux<br>
-                            • <code>libusb-1.0-0-dev</code>: Biblioteca para acceder a dispositivos USB
+                            • <code>cups</code> y <code>cups-pdf</code>: Sistema de impresión para Linux<br>
+                            • <code>libusb-1.0-0-dev</code>: Biblioteca para acceder a dispositivos USB<br>
+                            • <code>build-essential</code>: Herramientas para compilar software<br>
+                            • <code>libcups2-dev</code>: Biblioteca de desarrollo para CUPS
                         </div>
                         
                         <div class="alert alert-info mb-3">
@@ -313,62 +334,87 @@
                         </div>
                     </div>
                     
-                    <!-- PASO 7: INSTALAR SOFTWARE DE BROTHER -->
+                    <!-- PASO 7: INSTALAR CONTROLADORES DE BROTHER -->
                     <div class="step-container">
-                        <h5><span class="step-number">7</span> Instalar Software de Brother</h5>
-                        <p>Primero instalaremos la biblioteca Brother globalmente para realizar pruebas:</p>
+                        <h5><span class="step-number">7</span> Instalar Controladores de Brother para TD-4550DNWB</h5>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-4">
+                                <img src="https://support.brother.com/g/b/img/product/td4550dnwbxl/td4550dnwbxl_main.jpg" alt="Brother TD-4550DNWB" class="printer-image">
+                            </div>
+                            <div class="col-md-8">
+                                <p>La impresora Brother TD-4550DNWB es una impresora de etiquetas profesional con múltiples opciones de conectividad. Para este modelo específico, necesitamos instalar los controladores oficiales de Brother en lugar de usar la biblioteca brother_ql, ya que este modelo no está soportado por esa biblioteca.</p>
+                                
+                                <div class="alert alert-warning">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                    <strong>Importante:</strong> Los controladores oficiales de Brother proporcionarán mejor compatibilidad y acceso a todas las funciones de la impresora TD-4550DNWB.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <p>Primero, descargamos los controladores de CUPS para Brother:</p>
                         
                         <div class="code-block">
-                            sudo pip3 install brother_ql
+                            cd ~
+                            wget https://download.brother.com/welcome/dlf103945/td4550dnwbcupswrapper-1.0.0-0.armhf.deb
+                            wget https://download.brother.com/welcome/dlf103946/td4550dnwblpr-1.0.0-0.armhf.deb
                         </div>
                         <div class="command-explanation">
-                            Instala la biblioteca para manejar impresoras Brother. Se instala con <code>sudo</code> para hacerla disponible a nivel del sistema.
+                            Descarga los paquetes de controladores oficiales de Brother para la impresora TD-4550DNWB. Incluyen los archivos LPR (sistema de impresión) y el wrapper de CUPS (para integración con el sistema de impresión de Linux).
                         </div>
                         
-                        <p>Verifique que la instalación fue correcta:</p>
+                        <p>Ahora instalamos los controladores:</p>
+                        
                         <div class="code-block">
-                            brother_ql --version
+                            sudo dpkg -i --force-all td4550dnwblpr-1.0.0-0.armhf.deb
+                            sudo dpkg -i --force-all td4550dnwbcupswrapper-1.0.0-0.armhf.deb
+                        </div>
+                        <div class="command-explanation">
+                            Instala los paquetes de controladores. Usamos <code>--force-all</code> para superar posibles problemas de dependencias en Raspberry Pi OS.
+                        </div>
+                        
+                        <p>Verificamos que CUPS esté ejecutándose correctamente:</p>
+                        
+                        <div class="code-block">
+                            sudo systemctl status cups
                         </div>
                         <div class="terminal-output">
-                            brother_ql 0.9.4
+                            ● cups.service - CUPS Scheduler
+                                Loaded: loaded (/lib/systemd/system/cups.service; enabled; vendor preset: enabled)
+                                Active: active (running) since Wed 2025-05-07 14:35:12 BST; 2min 24s ago
+                            Main PID: 1234 (cupsd)
+                                Tasks: 1 (limit: 4915)
+                                CGroup: /system.slice/cups.service
+                                        └─1234 /usr/sbin/cupsd -l
                         </div>
                         
-                        <div class="alert alert-warning">
-                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            <strong>Nota importante:</strong> Estamos instalando <code>brother_ql</code> de dos maneras diferentes:
-                            <ol>
-                                <li>Ahora, a nivel global para hacer pruebas iniciales</li>
-                                <li>Más adelante, dentro del entorno virtual para la aplicación</li>
-                            </ol>
-                            Esta doble instalación es intencional y facilita la depuración.
+                        <p>Si CUPS no está ejecutándose, iniciamos el servicio:</p>
+                        
+                        <div class="code-block">
+                            sudo systemctl start cups
+                            sudo systemctl enable cups
                         </div>
                         
-                        <p>La biblioteca <code>brother_ql</code> soporta varios modelos de impresoras Brother, incluyendo:</p>
-                        <div class="row">
-                            <div class="col-md-4">
-                                <ul>
-                                    <li>QL-500</li>
-                                    <li>QL-550</li>
-                                    <li>QL-560</li>
-                                    <li>QL-570</li>
-                                </ul>
-                            </div>
-                            <div class="col-md-4">
-                                <ul>
-                                    <li>QL-580N</li>
-                                    <li>QL-650TD</li>
-                                    <li>QL-700</li>
-                                    <li>QL-710W</li>
-                                </ul>
-                            </div>
-                            <div class="col-md-4">
-                                <ul>
-                                    <li>QL-720NW</li>
-                                    <li>QL-800</li>
-                                    <li>QL-810W</li>
-                                    <li>QL-820NWB</li>
-                                </ul>
-                            </div>
+                        <p class="mt-3">Verificamos que la impresora esté conectada y sea reconocida:</p>
+                        
+                        <div class="code-block">
+                            lsusb | grep Brother
+                        </div>
+                        <div class="terminal-output">
+                            Bus 001 Device 004: ID 04f9:2098 Brother Industries, Ltd TD-4550DNWB
+                        </div>
+                        
+                        <p>Ahora configuramos la impresora en CUPS:</p>
+                        
+                        <div class="code-block">
+                            sudo lpadmin -p TD-4550DNWB -E -v usb://Brother/TD-4550DNWB -m TD-4550DNWB.ppd
+                        </div>
+                        <div class="command-explanation">
+                            Este comando configura la impresora en el sistema CUPS:<br>
+                            • <code>-p TD-4550DNWB</code>: Nombre de la impresora<br>
+                            • <code>-E</code>: Habilita la impresora<br>
+                            • <code>-v usb://Brother/TD-4550DNWB</code>: Ruta USB de la impresora<br>
+                            • <code>-m TD-4550DNWB.ppd</code>: Archivo de definición de la impresora
                         </div>
                     </div>
                     
@@ -376,58 +422,70 @@
                     <div class="step-container">
                         <h5><span class="step-number">8</span> Verificar la Conexión de la Impresora</h5>
                         
-                        <p>Comprobemos que la Raspberry Pi detecta la impresora:</p>
+                        <p>Comprobemos que la Raspberry Pi detecta la impresora TD-4550DNWB:</p>
                         <div class="code-block">
-                            lsusb
+                            lsusb | grep Brother
                         </div>
                         <div class="terminal-output">
-                            Bus 001 Device 004: ID 04f9:209b Brother Industries, Ltd QL-800
-                            Bus 001 Device 003: ID 0424:ec00 Standard Microsystems Corp. SMSC9512/9514 Fast Ethernet Adapter
-                            Bus 001 Device 002: ID 0424:9514 Standard Microsystems Corp. SMC9514 Hub
-                            Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+                            Bus 001 Device 004: ID 04f9:2098 Brother Industries, Ltd TD-4550DNWB
                         </div>
                         <div class="command-explanation">
-                            Este comando muestra todos los dispositivos USB conectados. Busque una línea que mencione "Brother" o el modelo de su impresora.
+                            Este comando muestra los dispositivos USB de Brother conectados. Debería ver la impresora TD-4550DNWB en la lista.
                         </div>
                         
-                        <p>Ahora verificaremos el dispositivo que usará la impresora:</p>
+                        <p>Ahora verificamos que CUPS reconoce la impresora:</p>
                         <div class="code-block">
-                            ls -la /dev/usb/
+                            lpstat -p -d
                         </div>
                         <div class="terminal-output">
-                            total 0
-                            drwxr-xr-x 2 root root 60 May  7 14:42 .
-                            drwxr-xr-x 7 root root 3460 May  7 14:42 ..
-                            crw-rw---- 1 root lp 180, 0 May  7 14:42 lp0
+                            printer TD-4550DNWB is idle. enabled since Wed May 7 14:35:12 2025
                         </div>
                         <div class="command-explanation">
-                            Muestra los dispositivos USB de impresora. Normalmente verá <code>lp0</code>. <strong>Tome nota de esta ruta</strong> (por ejemplo, <code>/dev/usb/lp0</code>). La necesitará más adelante.
+                            Muestra las impresoras configuradas y su estado. Debería ver la TD-4550DNWB en estado "idle" (inactiva) y "enabled" (habilitada).
                         </div>
                         
-                        <p>Probemos la impresora directamente:</p>
+                        <p>Comprobamos que el servicio de impresión está funcionando correctamente:</p>
                         <div class="code-block">
-                            brother_ql info usb://
+                            sudo systemctl status cups
                         </div>
                         <div class="terminal-output">
-                            Found a Brother QL-800 at usb://dev/usb/lp0<br>
-                            Model: QL-800<br>
-                            Sensor status: 0x00<br>
-                            Errors: 0x00<br>
-                            Media: 62mm continuous with no marks
+                            ● cups.service - CUPS Scheduler
+                               Loaded: loaded (/lib/systemd/system/cups.service; enabled; vendor preset: enabled)
+                               Active: active (running) since Wed 2025-05-07 14:35:12 BST; 20min ago
+                             Main PID: 1234 (cupsd)
+                                Tasks: 1 (limit: 4915)
+                                  CPU: 345ms
+                               CGroup: /system.slice/cups.service
+                                       └─1234 /usr/sbin/cupsd -l
+                        </div>
+                        
+                        <p>Realizamos una impresión de prueba para verificar que todo funciona correctamente:</p>
+                        <div class="code-block">
+                            echo "Prueba de impresión TD-4550DNWB" > ~/test-print.txt
+                            lp -d TD-4550DNWB ~/test-print.txt
+                        </div>
+                        <div class="terminal-output">
+                            request id is TD-4550DNWB-1 (1 file(s))
                         </div>
                         <div class="command-explanation">
-                            Si la impresora es detectada correctamente, verá información sobre su modelo y estado. El comando <code>usb://</code> busca automáticamente la impresora en los puertos USB.
+                            Crea un archivo de texto simple y lo envía a la impresora. Si todo está configurado correctamente, la impresora debería imprimir el texto.
                         </div>
                         
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle-fill me-2"></i>
-                            <strong>Solución de problemas:</strong> Si no ve su impresora, asegúrese de que:
+                            <strong>Solución de problemas:</strong> Si la impresora no imprime correctamente:
                             <ul>
-                                <li>La impresora está conectada y encendida</li>
-                                <li>Intente desconectar y volver a conectar el USB</li>
-                                <li>Intente usar otro cable USB o otro puerto USB</li>
-                                <li>Reinicie la Raspberry Pi con <code>sudo reboot</code></li>
+                                <li>Verifique que la impresora está encendida y con papel</li>
+                                <li>Compruebe los permisos del dispositivo USB con <code>ls -la /dev/usb/lp0</code></li>
+                                <li>Asegúrese de que su usuario está en el grupo "lp" con <code>sudo usermod -a -G lp pi</code></li>
+                                <li>Reinicie CUPS con <code>sudo systemctl restart cups</code></li>
+                                <li>Verifique los logs con <code>sudo journalctl -u cups</code></li>
                             </ul>
+                        </div>
+                        
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle-fill me-2"></i>
+                            <strong>¡Excelente!</strong> Si la impresora ha impreso la prueba, significa que los controladores están instalados correctamente y CUPS está configurado para trabajar con su impresora Brother TD-4550DNWB.
                         </div>
                     </div>
                     

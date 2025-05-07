@@ -666,16 +666,23 @@
                     }
                     
                     const data = await response.json();
+                    console.log('Respuesta de API:', data); // Log para depuración
                     
-                    // Usamos todas las impresoras disponibles
-                    const availablePrinters = data.printers;
+                    // Verificar que tenemos los datos esperados
+                    if (!data || !data.success) {
+                        throw new Error(data.message || 'Error al obtener impresoras');
+                    }
+                    
+                    // Asegurarnos de que printers es un array, incluso si está vacío
+                    const availablePrinters = Array.isArray(data.printers) ? data.printers : [];
+                    console.log('Impresoras disponibles:', availablePrinters);
                     
                     // Limpiar selector
                     const select = document.getElementById('raspberry-printer-select');
                     select.innerHTML = '<option value="">Seleccione una impresora...</option>';
                     
                     // Agregar las impresoras al selector
-                    if (availablePrinters.length > 0) {
+                    if (availablePrinters && availablePrinters.length > 0) {
                         availablePrinters.forEach(printer => {
                             const option = document.createElement('option');
                             option.value = printer.id;

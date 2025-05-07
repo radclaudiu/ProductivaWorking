@@ -676,18 +676,18 @@
                     
                     // Agregar las impresoras al selector
                     if (availablePrinters.length > 0) {
-                        raspberryPrinters.forEach(printer => {
+                        availablePrinters.forEach(printer => {
                             const option = document.createElement('option');
                             option.value = printer.id;
                             option.textContent = printer.name;
                             select.appendChild(option);
                         });
-                        showMessage(`${raspberryPrinters.length} impresora(s) encontrada(s)`);
+                        showMessage(`${availablePrinters.length} impresora(s) encontrada(s)`);
                     } else {
-                        showMessage('No se encontraron impresoras Raspberry Pi configuradas', true);
+                        showMessage('No se encontraron impresoras configuradas', true);
                     }
                     
-                    return raspberryPrinters;
+                    return availablePrinters;
                 } catch (error) {
                     console.error('Error cargando impresoras:', error);
                     showMessage(`Error: ${error.message}`, true);
@@ -720,10 +720,8 @@
                         throw new Error('No se encontró la impresora seleccionada');
                     }
                     
-                    // Verificar que sea una impresora Raspberry Pi
-                    if (printer.printer_type !== 'raspberry_pi') {
-                        throw new Error('La impresora seleccionada no es de tipo Raspberry Pi');
-                    }
+                    // Aceptamos cualquier tipo de impresora para mayor compatibilidad
+                    // No hacemos verificación de tipo para permitir tanto DIRECT_NETWORK como raspberry_pi
                     
                     // Construir la URL del servidor de impresión
                     const url = `http://${printer.ip_address}:${printer.port || 5000}${printer.api_path || '/print'}`;

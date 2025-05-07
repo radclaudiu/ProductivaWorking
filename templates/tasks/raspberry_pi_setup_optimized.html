@@ -441,20 +441,69 @@
                     <!-- PASO 6: VERIFICAR Y CONFIGURAR IMPRESORA -->
                     <div class="step-container">
                         <h5><span class="step-number">6</span> Verificar y Configurar Impresora</h5>
-                        <div class="code-block">
-                            <button class="copy-button">Copiar todo</button>
-                            <div class="code-command"># Verificar que la impresora está conectada</div>
-                            <div class="code-command">lsusb | grep Brother</div>
-                            <div class="code-command"></div>
-                            <div class="code-command"># Configurar la impresora en CUPS</div>
-                            <div class="code-command">sudo lpadmin -p TD-4550DNWB -E -v usb://Brother/TD-4550DNWB -m TD-4550DNWB.ppd</div>
-                            <div class="code-command"></div>
-                            <div class="code-command"># Comprobar la configuración</div>
-                            <div class="code-command">lpstat -p -d</div>
-                            <div class="code-command"></div>
-                            <div class="code-command"># Realizar una impresión de prueba</div>
-                            <div class="code-command">echo "Prueba de impresión TD-4550DNWB" > ~/test-print.txt</div>
-                            <div class="code-command">lp -d TD-4550DNWB ~/test-print.txt</div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header bg-earth-medium text-white">
+                                Verificación de la impresora
+                            </div>
+                            <div class="card-body">
+                                <h6 class="mb-3">1. Verificar que la impresora está conectada</h6>
+                                <div class="terminal-command">
+                                    <code>lsusb | grep Brother</code>
+                                    <button class="copy-code-btn" data-command="lsusb | grep Brother">Copiar</button>
+                                </div>
+                                <div class="alert alert-success mt-2">
+                                    <strong>Resultado esperado:</strong>
+                                    <pre class="mb-0 mt-2">Bus 001 Device 003: ID 04f9:20ba Brother Industries, Ltd TD-4550DNWB</pre>
+                                </div>
+                                
+                                <h6 class="mb-3 mt-4">2. Configurar la impresora en CUPS</h6>
+                                <div class="terminal-command">
+                                    <code>sudo lpadmin -p TD-4550DNWB -E -v usb://Brother/TD-4550DNWB -m TD-4550DNWB.ppd</code>
+                                    <button class="copy-code-btn" data-command="sudo lpadmin -p TD-4550DNWB -E -v usb://Brother/TD-4550DNWB -m TD-4550DNWB.ppd">Copiar</button>
+                                </div>
+                                <div class="alert alert-warning mt-2">
+                                    <strong>Posible error:</strong> <code>lpadmin: cups-driverd failed to get PPD file</code>
+                                    <p class="mb-0 mt-2">Si recibes este error, intenta el siguiente comando alternativo que no requiere archivo PPD específico:</p>
+                                    <div class="terminal-command mt-2">
+                                        <code>sudo lpadmin -p TD-4550DNWB -E -v usb://Brother/TD-4550DNWB</code>
+                                        <button class="copy-code-btn" data-command="sudo lpadmin -p TD-4550DNWB -E -v usb://Brother/TD-4550DNWB">Copiar</button>
+                                    </div>
+                                    <p class="mb-0 mt-2">O busca el archivo PPD en el sistema después de instalar los drivers:</p>
+                                    <div class="terminal-command mt-2">
+                                        <code>find /usr/share/cups/model -name "*.ppd" | grep -i brother</code>
+                                        <button class="copy-code-btn" data-command="find /usr/share/cups/model -name \"*.ppd\" | grep -i brother">Copiar</button>
+                                    </div>
+                                    <p class="mb-0 mt-2">Y luego usa la ruta completa del archivo PPD encontrado:</p>
+                                    <div class="terminal-command mt-2">
+                                        <code>sudo lpadmin -p TD-4550DNWB -E -v usb://Brother/TD-4550DNWB -m /ruta/al/archivo.ppd</code>
+                                        <button class="copy-code-btn" data-command="sudo lpadmin -p TD-4550DNWB -E -v usb://Brother/TD-4550DNWB -m /ruta/al/archivo.ppd">Copiar</button>
+                                    </div>
+                                </div>
+                                
+                                <h6 class="mb-3 mt-4">3. Comprobar la configuración</h6>
+                                <div class="terminal-command">
+                                    <code>lpstat -p -d</code>
+                                    <button class="copy-code-btn" data-command="lpstat -p -d">Copiar</button>
+                                </div>
+                                <div class="alert alert-info mt-2">
+                                    <strong>¡Importante!</strong> Observe cuidadosamente el nombre real de la impresora en la salida.
+                                    <p class="mb-0 mt-2">A menudo, el nombre aparecerá como <code>Brother_TD_4550DNWB_USB</code> u otro nombre similar, no necesariamente "TD-4550DNWB". Use el nombre exacto que aparece en el siguiente paso.</p>
+                                </div>
+                                
+                                <h6 class="mb-3 mt-4">4. Realizar una impresión de prueba</h6>
+                                <div class="terminal-command">
+                                    <code>echo "Prueba de impresión TD-4550DNWB" > ~/test-print.txt</code>
+                                    <button class="copy-code-btn" data-command='echo "Prueba de impresión TD-4550DNWB" > ~/test-print.txt'>Copiar</button>
+                                </div>
+                                <div class="terminal-command">
+                                    <code>lp -d Brother_TD_4550DNWB_USB ~/test-print.txt</code>
+                                    <button class="copy-code-btn" data-command="lp -d Brother_TD_4550DNWB_USB ~/test-print.txt">Copiar</button>
+                                </div>
+                                <div class="alert alert-warning mt-2">
+                                    <strong>Nota:</strong> Sustituya <code>Brother_TD_4550DNWB_USB</code> por el nombre exacto que apareció en el resultado del comando <code>lpstat -p -d</code>.
+                                </div>
+                            </div>
                         </div>
                     </div>
                     
@@ -502,8 +551,8 @@ app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
 app.logger.info('Servidor de impresión TD-4550DNWB iniciado')
 
-# Nombre de la impresora CUPS
-PRINTER_NAME = "TD-4550DNWB"
+# Nombre de la impresora CUPS - IMPORTANTE: Use el nombre exacto que apareció en lpstat -p -d
+PRINTER_NAME = "Brother_TD_4550DNWB_USB"  # Ajuste este nombre según su configuración
 
 @app.route('/status', methods=['GET'])
 def status_check():

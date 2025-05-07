@@ -25,6 +25,50 @@
         margin-right: 10px;
     }
     
+    .terminal-command {
+        background-color: #1e1e1e;
+        border-radius: 4px;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .terminal-command code {
+        color: #f8f8f8;
+        font-family: 'Consolas', 'Monaco', monospace;
+        white-space: nowrap;
+        overflow-x: auto;
+        max-width: calc(100% - 70px);
+        display: block;
+    }
+    
+    .copy-code-btn {
+        background-color: #8D6E63;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 3px 8px;
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .copy-code-btn:hover {
+        background-color: #6D4C41;
+    }
+    
+    .step-by-step li {
+        padding-bottom: 10px;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .step-by-step li:last-child {
+        border-bottom: none;
+    }
+    
     .code-block {
         position: relative;
         background-color: #f1f1f1;
@@ -71,40 +115,6 @@
         overflow-x: auto;
         font-size: 0.9rem;
         position: relative;
-    }
-    
-    .code-command {
-        display: block;
-        padding: 5px 8px;
-        margin-bottom: 5px;
-        background-color: #f8f8f8;
-        border-radius: 4px;
-        border-left: 3px solid #8D6E63;
-    }
-    
-    .copy-button {
-        position: absolute;
-        right: 5px;
-        top: 5px;
-        background-color: #8D6E63;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        padding: 3px 8px;
-        font-size: 0.8rem;
-        cursor: pointer;
-    }
-    
-    .copy-code-btn {
-        background-color: #8D6E63;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        padding: 3px 8px;
-        font-size: 0.8rem;
-        cursor: pointer;
-        margin-left: 8px;
-        vertical-align: middle;
     }
     
     .alert-raspberry {
@@ -289,52 +299,142 @@
                     <!-- PASO 5: INSTALAR CONTROLADORES DE BROTHER -->
                     <div class="step-container">
                         <h5><span class="step-number">5</span> Instalar Controladores de Brother para TD-4550DNWB</h5>
-                        <p>Visite el <a href="https://support.brother.com/g/b/downloadlist.aspx?c=es&lang=es&prod=lptd4550dnwbeuk&os=130&flang=English#SelectLanguageType-593_0_1" target="_blank">sitio web oficial de Brother</a> para descargar los controladores más recientes.</p>
-                        <div class="important-note">
-                            <p><strong>Importante:</strong> Si los enlaces directos no funcionan, descargue manualmente los archivos <code>LPR driver</code> y <code>CUPSwrapper driver</code> de la sección "Linux" en el sitio web de Brother.</p>
-                            <p><strong>Instrucciones oficiales de Brother:</strong></p>
-                            <ol>
-                                <li>Descargue los drivers</li>
-                                <li>Inicie sesión como superusuario (o use "sudo")</li>
-                                <li>Encienda la impresora y conecte el cable USB</li>
-                                <li><strong>Importante:</strong> Cierre el asistente de instalación si aparece</li>
-                                <li>Abra la terminal y vaya al directorio donde está el driver</li>
-                                <li>Instale el driver con <code>dpkg -i --force-all (nombre-del-driver)</code></li>
-                                <li>Verifique si el driver está instalado con <code>dpkg -l | grep Brother</code></li>
-                            </ol>
+                        
+                        <div class="alert alert-primary">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <strong>Instrucciones oficiales de Brother</strong>
                         </div>
-                        <div class="code-block">
-                            <button class="copy-button">Copiar todo</button>
-                            <div class="code-command">cd ~</div>
-                            <div class="code-command"># Método 1: Usar el navegador web para descargar desde el sitio oficial de Brother</div>
-                            <div class="code-command"># y transferir los archivos .deb a la Raspberry Pi usando SCP</div>
-                            <div class="code-command"></div>
-                            <div class="code-command"># Método 2: Alternativa - usar curl para descargar directamente</div>
-                            <div class="code-command">sudo apt-get install -y curl</div>
-                            <div class="code-command"></div>
-                            <div class="code-command"># Descargar controladores (enlaces pueden cambiar, verificar en el sitio oficial)</div>
-                            <div class="code-command">curl -L -O "https://download.brother.com/welcome/dlf103945/td4550dnwbcupswrapper-1.0.0-0.armhf.deb"</div>
-                            <div class="code-command">curl -L -O "https://download.brother.com/welcome/dlf103946/td4550dnwblpr-1.0.0-0.armhf.deb"</div>
-                            <div class="code-command"></div>
-                            <div class="code-command"># Verificar si los archivos se descargaron correctamente</div>
-                            <div class="code-command">ls -la *.deb</div>
-                            <div class="code-command"></div>
-                            <div class="code-command"># Si el tamaño de los archivos es muy pequeño (menos de 1MB), la descarga falló</div>
-                            <div class="code-command"># En ese caso, descargue manualmente los archivos del sitio web de Brother</div>
-                            <div class="code-command"># y transfiéralos usando SCP o un dispositivo USB</div>
-                            <div class="code-command"></div>
-                            <div class="code-command"># Instalar (si descargó los archivos manualmente, asegúrese de que los nombres coincidan)</div>
-                            <div class="code-command">sudo dpkg -i --force-all td4550dnwblpr-*.deb</div>
-                            <div class="code-command">sudo dpkg -i --force-all td4550dnwbcupswrapper-*.deb</div>
-                            <div class="code-command"></div>
-                            <div class="code-command"># Si hay errores de dependencias, ejecutar:</div>
-                            <div class="code-command">sudo apt-get -f install -y</div>
-                            <div class="code-command"></div>
-                            <div class="code-command"># Comprobar que CUPS esté funcionando</div>
-                            <div class="code-command">sudo systemctl status cups</div>
-                            <div class="code-command"># Si no está activo, ejecutar:</div>
-                            <div class="code-command">sudo systemctl start cups</div>
-                            <div class="code-command">sudo systemctl enable cups</div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header bg-earth-medium text-white">
+                                Pasos de instalación oficiales
+                            </div>
+                            <div class="card-body">
+                                <ol class="mb-0 step-by-step">
+                                    <li class="mb-3">
+                                        <strong>Descargar el driver:</strong>
+                                        <p>Visite el <a href="https://support.brother.com/g/b/downloadlist.aspx?c=es&lang=es&prod=lptd4550dnwbeuk&os=130&flang=English#SelectLanguageType-593_0_1" target="_blank">sitio web oficial de Brother</a> para descargar los controladores más recientes.</p>
+                                    </li>
+                                    
+                                    <li class="mb-3">
+                                        <strong>Iniciar sesión como superusuario</strong> (o usar el comando "sudo" como en los ejemplos a continuación)
+                                    </li>
+                                    
+                                    <li class="mb-3">
+                                        <strong>Encender la impresora y conectar el cable USB</strong>
+                                    </li>
+                                    
+                                    <li class="mb-3">
+                                        <strong>IMPORTANTE: Cerrar el asistente de instalación</strong> si aparece automáticamente
+                                    </li>
+                                    
+                                    <li class="mb-3">
+                                        <strong>Abrir la terminal y navegar al directorio donde está el driver</strong>
+                                        <div class="terminal-command mt-2">
+                                            <code>cd ~/Descargas</code>
+                                            <button class="copy-code-btn" data-command="cd ~/Descargas">Copiar</button>
+                                        </div>
+                                    </li>
+                                    
+                                    <li class="mb-3">
+                                        <strong>Instalar el driver con el comando:</strong>
+                                        <div class="terminal-command mt-2">
+                                            <code>sudo dpkg -i --force-all td4550dnwblpr-*.deb</code>
+                                            <button class="copy-code-btn" data-command="sudo dpkg -i --force-all td4550dnwblpr-*.deb">Copiar</button>
+                                        </div>
+                                        <div class="terminal-command mt-2">
+                                            <code>sudo dpkg -i --force-all td4550dnwbcupswrapper-*.deb</code>
+                                            <button class="copy-code-btn" data-command="sudo dpkg -i --force-all td4550dnwbcupswrapper-*.deb">Copiar</button>
+                                        </div>
+                                    </li>
+                                    
+                                    <li class="mb-3">
+                                        <strong>Verificar si el driver está instalado:</strong>
+                                        <div class="terminal-command mt-2">
+                                            <code>dpkg -l | grep Brother</code>
+                                            <button class="copy-code-btn" data-command="dpkg -l | grep Brother">Copiar</button>
+                                        </div>
+                                    </li>
+                                </ol>
+                            </div>
+                        </div>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header bg-earth-medium text-white">
+                                Guía paso a paso detallada
+                            </div>
+                            <div class="card-body">
+                                <h6 class="mb-3">1. Descargar los drivers</h6>
+                                <p>Hay dos formas de obtener los drivers:</p>
+                                
+                                <div class="code-block mb-3">
+                                    <p><strong>Método 1:</strong> Descargar desde el sitio web oficial y transferir</p>
+                                    <p>Visite <a href="https://support.brother.com/g/b/downloadlist.aspx?c=es&lang=es&prod=lptd4550dnwbeuk&os=130&flang=English#SelectLanguageType-593_0_1" target="_blank">support.brother.com</a> y descargue:</p>
+                                    <ul>
+                                        <li>LPR driver</li>
+                                        <li>CUPSwrapper driver</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="code-block mb-3">
+                                    <p><strong>Método 2:</strong> Descargar directamente con curl en la Raspberry Pi</p>
+                                    <div class="terminal-command">
+                                        <code>sudo apt-get install -y curl</code>
+                                        <button class="copy-code-btn" data-command="sudo apt-get install -y curl">Copiar</button>
+                                    </div>
+                                    <div class="terminal-command">
+                                        <code>curl -L -O "https://download.brother.com/welcome/dlf103945/td4550dnwbcupswrapper-1.0.0-0.armhf.deb"</code>
+                                        <button class="copy-code-btn" data-command='curl -L -O "https://download.brother.com/welcome/dlf103945/td4550dnwbcupswrapper-1.0.0-0.armhf.deb"'>Copiar</button>
+                                    </div>
+                                    <div class="terminal-command">
+                                        <code>curl -L -O "https://download.brother.com/welcome/dlf103946/td4550dnwblpr-1.0.0-0.armhf.deb"</code>
+                                        <button class="copy-code-btn" data-command='curl -L -O "https://download.brother.com/welcome/dlf103946/td4550dnwblpr-1.0.0-0.armhf.deb"'>Copiar</button>
+                                    </div>
+                                </div>
+                                
+                                <h6 class="mb-3">2. Verificar las descargas</h6>
+                                <div class="terminal-command">
+                                    <code>ls -la *.deb</code>
+                                    <button class="copy-code-btn" data-command="ls -la *.deb">Copiar</button>
+                                </div>
+                                <p class="text-muted small">Nota: Verifique que el tamaño sea mayor a 1MB. Si es muy pequeño, la descarga falló.</p>
+                                
+                                <h6 class="mb-3">3. Instalar los drivers</h6>
+                                <div class="terminal-command">
+                                    <code>sudo dpkg -i --force-all td4550dnwblpr-*.deb</code>
+                                    <button class="copy-code-btn" data-command="sudo dpkg -i --force-all td4550dnwblpr-*.deb">Copiar</button>
+                                </div>
+                                <div class="terminal-command">
+                                    <code>sudo dpkg -i --force-all td4550dnwbcupswrapper-*.deb</code>
+                                    <button class="copy-code-btn" data-command="sudo dpkg -i --force-all td4550dnwbcupswrapper-*.deb">Copiar</button>
+                                </div>
+                                
+                                <h6 class="mb-3">4. Resolver posibles errores de dependencias</h6>
+                                <div class="terminal-command">
+                                    <code>sudo apt-get -f install -y</code>
+                                    <button class="copy-code-btn" data-command="sudo apt-get -f install -y">Copiar</button>
+                                </div>
+                                
+                                <h6 class="mb-3">5. Verificar que CUPS esté funcionando</h6>
+                                <div class="terminal-command">
+                                    <code>sudo systemctl status cups</code>
+                                    <button class="copy-code-btn" data-command="sudo systemctl status cups">Copiar</button>
+                                </div>
+                                <div class="terminal-command">
+                                    <code>sudo systemctl start cups</code>
+                                    <button class="copy-code-btn" data-command="sudo systemctl start cups">Copiar</button>
+                                </div>
+                                <div class="terminal-command">
+                                    <code>sudo systemctl enable cups</code>
+                                    <button class="copy-code-btn" data-command="sudo systemctl enable cups">Copiar</button>
+                                </div>
+                                
+                                <h6 class="mb-3">6. Verificar la instalación</h6>
+                                <div class="terminal-command">
+                                    <code>dpkg -l | grep Brother</code>
+                                    <button class="copy-code-btn" data-command="dpkg -l | grep Brother">Copiar</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     

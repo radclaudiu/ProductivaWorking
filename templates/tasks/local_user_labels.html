@@ -121,9 +121,15 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-                <a href="{{ url_for('tasks.raspberry_pi_setup') }}" class="btn btn-danger" target="_blank">
-                    <i class="bi bi-raspberry-pi me-1"></i>Pi Config
-                </a>
+                <div class="dropdown">
+                    <button class="btn btn-danger dropdown-toggle" type="button" id="piConfigDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-raspberry-pi me-1"></i>Pi Config
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="piConfigDropdown">
+                        <li><a class="dropdown-item" href="{{ url_for('tasks.raspberry_pi_setup') }}" target="_blank">Guía Completa</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('tasks.raspberry_pi_setup_optimized') }}" target="_blank">Guía Concisa</a></li>
+                    </ul>
+                </div>
                 <button type="button" class="btn btn-info" id="testPrinterBtn">
                     <i class="bi bi-arrow-clockwise me-1"></i>Probar Conexión
                 </button>
@@ -142,9 +148,15 @@
                 <div class="card-header bg-earth-dark text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-tag-fill me-2"></i>Etiquetas de Productos - {{ location.name }}</h5>
                     <div>
-                        <a href="{{ url_for('tasks.raspberry_pi_setup') }}" class="btn btn-danger btn-sm me-2" target="_blank">
-                            <i class="bi bi-raspberry-pi me-1"></i> Pi Config
-                        </a>
+                        <div class="dropdown d-inline-block me-2">
+                            <button class="btn btn-danger btn-sm dropdown-toggle" type="button" id="piConfigHeaderDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bi bi-raspberry-pi me-1"></i> Pi Config
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="piConfigHeaderDropdown">
+                                <li><a class="dropdown-item" href="{{ url_for('tasks.raspberry_pi_setup') }}" target="_blank">Guía Completa</a></li>
+                                <li><a class="dropdown-item" href="{{ url_for('tasks.raspberry_pi_setup_optimized') }}" target="_blank">Guía Concisa</a></li>
+                            </ul>
+                        </div>
                         <button type="button" class="btn btn-olive btn-sm me-2" id="openPrinterModal">
                             <i class="bi bi-printer-fill me-1"></i> Configurar Impresora
                         </button>

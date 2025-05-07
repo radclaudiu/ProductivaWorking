@@ -667,7 +667,7 @@ def print_label():
         return jsonify({'success': False, 'message': f'Error en el servidor: {str(e)}'})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=5555)
                         </div>
                         
                         <p>4. Guarde el archivo (Ctrl+O, Enter, Ctrl+X) y pruebe el servidor:</p>
@@ -677,8 +677,8 @@ if __name__ == '__main__':
                             <div class="code-command">python app.py</div>
                             <div class="code-command"></div>
                             <div class="code-command"># En otra terminal, pruebe la conexión</div>
-                            <div class="code-command">curl http://localhost:5000/health</div>
-                            <div class="code-command">curl http://localhost:5000/status</div>
+                            <div class="code-command">curl http://localhost:5555/health</div>
+                            <div class="code-command">curl http://localhost:5555/status</div>
                         </div>
                     </div>
                     
@@ -701,11 +701,24 @@ if __name__ == '__main__':
                             <div class="code-command">User=pi</div>
                             <div class="code-command">WorkingDirectory=/home/pi/printer_server</div>
                             <div class="code-command">Environment="PATH=/home/pi/printer_server/env/bin"</div>
-                            <div class="code-command">ExecStart=/home/pi/printer_server/env/bin/gunicorn --bind 0.0.0.0:5000 app:app</div>
+                            <div class="code-command">ExecStart=/home/pi/printer_server/env/bin/gunicorn --bind 0.0.0.0:5555 app:app</div>
                             <div class="code-command">Restart=always</div>
                             <div class="code-command"></div>
                             <div class="code-command">[Install]</div>
                             <div class="code-command">WantedBy=multi-user.target</div>
+                        </div>
+                        
+                        <div class="alert alert-danger mt-2">
+                            <strong>¡Importante!</strong> Asegúrese de que el archivo comience exactamente con "[Unit]" (sin comillas) y no tenga espacios antes. 
+                            <p class="mb-0 mt-2">Si ve errores como "Assignment outside of section", es posible que el archivo tenga caracteres o espacios invisibles al inicio. En ese caso, elimine el archivo y créelo de nuevo:</p>
+                            <div class="terminal-command mt-2">
+                                <code>sudo rm /etc/systemd/system/printer-server.service</code>
+                                <button class="copy-code-btn" data-command="sudo rm /etc/systemd/system/printer-server.service">Copiar</button>
+                            </div>
+                            <div class="terminal-command mt-2">
+                                <code>sudo nano /etc/systemd/system/printer-server.service</code>
+                                <button class="copy-code-btn" data-command="sudo nano /etc/systemd/system/printer-server.service">Copiar</button>
+                            </div>
                         </div>
                         
                         <p>Active e inicie el servicio:</p>
@@ -764,7 +777,7 @@ if __name__ == '__main__':
                                         </li>
                                         <li class="list-group-item d-flex justify-content-between">
                                             <strong>Puerto:</strong> 
-                                            <span>5000</span>
+                                            <span>5555</span>
                                         </li>
                                         <li class="list-group-item d-flex justify-content-between">
                                             <strong>Ruta API:</strong> 

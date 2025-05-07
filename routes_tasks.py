@@ -2181,6 +2181,16 @@ def raspberry_pi_setup():
     
     return render_template('tasks/raspberry_pi_setup.html', user=user, location=location)
 
+@tasks_bp.route('/local-user/raspberry-pi-setup-optimized')
+@local_user_required
+def raspberry_pi_setup_optimized():
+    """Página con instrucciones concisas para configurar Raspberry Pi como servidor de impresión"""
+    user_id = session['local_user_id']
+    user = LocalUser.query.get_or_404(user_id)
+    location = user.location
+    
+    return render_template('tasks/raspberry_pi_setup_optimized.html', user=user, location=location)
+
 # Página de selección de conservación para un producto específico
 @tasks_bp.route('/local-user/labels/<int:product_id>')
 @local_user_required

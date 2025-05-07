@@ -1,0 +1,550 @@
+{% extends 'tasks/portal_layout.html' %}
+
+{% block title %}Configuración de Raspberry Pi para Impresión{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+    .step-container {
+        padding: 15px;
+        margin-bottom: 15px;
+        border-radius: 8px;
+        background-color: #f9f7f4;
+        border-left: 5px solid #8D6E63;
+    }
+    
+    .step-number {
+        display: inline-block;
+        width: 28px;
+        height: 28px;
+        line-height: 28px;
+        text-align: center;
+        background-color: #8D6E63;
+        color: white;
+        border-radius: 50%;
+        margin-right: 10px;
+    }
+    
+    .code-block {
+        background-color: #f1f1f1;
+        border-left: 4px solid #8D6E63;
+        padding: 10px;
+        margin-bottom: 15px;
+        font-family: monospace;
+        overflow-x: auto;
+        font-size: 0.9rem;
+    }
+    
+    .alert-raspberry {
+        background-color: #f8d7da;
+        border-color: #f5c6cb;
+        color: #721c24;
+    }
+    
+    .highlight {
+        background-color: #ffffcc;
+        padding: 2px 4px;
+        border-radius: 3px;
+    }
+    
+    .important-note {
+        border-left: 4px solid #e67e22;
+        background-color: #fff3e0;
+        padding: 10px;
+        margin: 15px 0;
+    }
+    
+    .printer-image {
+        max-width: 100%;
+        height: auto;
+        margin: 10px 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .model-badge {
+        display: inline-block;
+        background-color: #8D6E63;
+        color: white;
+        font-weight: bold;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        margin-left: 10px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-earth-dark text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-raspberry-pi me-2"></i>Guía de Instalación: Servidor para Brother TD-4550DNWB<span class="model-badge">TD-4550DNWB</span></h5>
+                    <div>
+                        <a href="{{ url_for('tasks.local_user_labels') }}" class="btn btn-light btn-sm">
+                            <i class="bi bi-arrow-left me-1"></i> Volver a Etiquetas
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <i class="bi bi-info-circle-fill me-2"></i>
+                        <strong>Guía concisa:</strong> Configuración de Raspberry Pi como servidor de impresión para la impresora Brother TD-4550DNWB, que requiere controladores oficiales de Brother.
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <img src="https://support.brother.com/g/b/img/product/td4550dnwbxl/td4550dnwbxl_main.jpg" alt="Brother TD-4550DNWB" class="printer-image">
+                        </div>
+                        <div class="col-md-8">
+                            <div class="important-note">
+                                <h5><i class="bi bi-lightbulb-fill me-2"></i>¿Qué estamos construyendo?</h5>
+                                <p>Un servidor de impresión en Raspberry Pi que permitirá imprimir etiquetas en la impresora Brother TD-4550DNWB desde cualquier dispositivo en la red. Usaremos los controladores oficiales de Brother junto con CUPS (Sistema de impresión para Linux) y una API web simple.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- PASO 1: REQUISITOS PREVIOS -->
+                    <div class="step-container">
+                        <h5><span class="step-number">1</span> Requisitos</h5>
+                        <ul class="mb-0">
+                            <li>Raspberry Pi (modelo 3 o superior)</li>
+                            <li>Tarjeta microSD (mínimo 8GB)</li>
+                            <li>Impresora Brother TD-4550DNWB</li>
+                            <li>Cable USB para conectar la impresora a la Raspberry Pi</li>
+                        </ul>
+                    </div>
+                    
+                    <!-- PASO 2: INSTALAR RASPBERRY PI OS -->
+                    <div class="step-container">
+                        <h5><span class="step-number">2</span> Instalar Raspberry Pi OS</h5>
+                        <ol class="mb-0">
+                            <li>Descargue e instale <a href="https://www.raspberrypi.org/software/" target="_blank">Raspberry Pi Imager</a></li>
+                            <li>Seleccione "Raspberry Pi OS Lite (64-bit)"</li>
+                            <li>Configure SSH, nombre de usuario/contraseña y opcionalmente WiFi</li>
+                            <li>Escriba la imagen en la tarjeta microSD</li>
+                            <li>Arranque la Raspberry Pi con la tarjeta</li>
+                        </ol>
+                    </div>
+                    
+                    <!-- PASO 3: ACCEDER Y ACTUALIZAR -->
+                    <div class="step-container">
+                        <h5><span class="step-number">3</span> Acceder y Actualizar</h5>
+                        <p>Conéctese a la Raspberry Pi vía SSH (reemplace con su IP):</p>
+                        <div class="code-block">
+ssh pi@192.168.1.X
+                        </div>
+                        
+                        <p>Actualice el sistema:</p>
+                        <div class="code-block">
+sudo apt update
+sudo apt upgrade -y
+                        </div>
+                    </div>
+                    
+                    <!-- PASO 4: INSTALAR DEPENDENCIAS -->
+                    <div class="step-container">
+                        <h5><span class="step-number">4</span> Instalar Dependencias</h5>
+                        <div class="code-block">
+sudo apt install -y python3 python3-pip python3-venv nginx cups libusb-1.0-0-dev cups-pdf build-essential libcups2-dev
+                        </div>
+                    </div>
+                    
+                    <!-- PASO 5: INSTALAR CONTROLADORES DE BROTHER -->
+                    <div class="step-container">
+                        <h5><span class="step-number">5</span> Instalar Controladores de Brother para TD-4550DNWB</h5>
+                        <div class="code-block">
+cd ~
+wget https://download.brother.com/welcome/dlf103945/td4550dnwbcupswrapper-1.0.0-0.armhf.deb
+wget https://download.brother.com/welcome/dlf103946/td4550dnwblpr-1.0.0-0.armhf.deb
+sudo dpkg -i --force-all td4550dnwblpr-1.0.0-0.armhf.deb
+sudo dpkg -i --force-all td4550dnwbcupswrapper-1.0.0-0.armhf.deb
+
+# Comprobar que CUPS esté funcionando
+sudo systemctl status cups
+# Si no está activo, ejecutar:
+sudo systemctl start cups
+sudo systemctl enable cups
+                        </div>
+                    </div>
+                    
+                    <!-- PASO 6: VERIFICAR Y CONFIGURAR IMPRESORA -->
+                    <div class="step-container">
+                        <h5><span class="step-number">6</span> Verificar y Configurar Impresora</h5>
+                        <div class="code-block">
+# Verificar que la impresora está conectada
+lsusb | grep Brother
+
+# Configurar la impresora en CUPS
+sudo lpadmin -p TD-4550DNWB -E -v usb://Brother/TD-4550DNWB -m TD-4550DNWB.ppd
+
+# Comprobar la configuración
+lpstat -p -d
+
+# Realizar una impresión de prueba
+echo "Prueba de impresión TD-4550DNWB" > ~/test-print.txt
+lp -d TD-4550DNWB ~/test-print.txt
+                        </div>
+                    </div>
+                    
+                    <!-- PASO 7: CREAR SERVIDOR DE IMPRESIÓN -->
+                    <div class="step-container">
+                        <h5><span class="step-number">7</span> Crear Servidor de Impresión</h5>
+                        <p>1. Crear directorio y entorno virtual:</p>
+                        <div class="code-block">
+mkdir -p ~/printer_server
+cd ~/printer_server
+python3 -m venv env
+source env/bin/activate
+pip install flask gunicorn pycups
+                        </div>
+                        
+                        <p>2. Crear archivo de la aplicación:</p>
+                        <div class="code-block">
+nano ~/printer_server/app.py
+                        </div>
+                        
+                        <p>3. Copie este código en el archivo:</p>
+                        <div class="code-block">
+import os
+from flask import Flask, request, jsonify
+import subprocess
+import logging
+from logging.handlers import RotatingFileHandler
+import tempfile
+import base64
+import cups
+
+app = Flask(__name__)
+
+# Configuración de logging
+if not os.path.exists('logs'):
+    os.mkdir('logs')
+file_handler = RotatingFileHandler('logs/printer_server.log', maxBytes=10240, backupCount=10)
+file_handler.setFormatter(logging.Formatter(
+    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+))
+file_handler.setLevel(logging.INFO)
+app.logger.addHandler(file_handler)
+app.logger.setLevel(logging.INFO)
+app.logger.info('Servidor de impresión TD-4550DNWB iniciado')
+
+# Nombre de la impresora CUPS
+PRINTER_NAME = "TD-4550DNWB"
+
+@app.route('/status', methods=['GET'])
+def status_check():
+    """Verificar estado del servidor y la impresora TD-4550DNWB"""
+    try:
+        # Conectar con CUPS para verificar estado de la impresora
+        conn = cups.Connection()
+        printers = conn.getPrinters()
+        
+        if PRINTER_NAME in printers:
+            printer_info = printers[PRINTER_NAME]
+            printer_state = printer_info['printer-state']
+            state_message = "ready"
+            
+            if printer_state == 3:
+                state_message = "idle"
+            elif printer_state == 4:
+                state_message = "processing"
+            elif printer_state == 5:
+                state_message = "stopped"
+                
+            return jsonify({
+                'success': True,
+                'status': 'online',
+                'printer_status': state_message,
+                'printer_info': printer_info
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'status': 'online',
+                'printer_status': 'not_found',
+                'message': f'Impresora {PRINTER_NAME} no encontrada en CUPS'
+            })
+    except Exception as e:
+        app.logger.error(f'Error al verificar estado de la impresora: {str(e)}')
+        return jsonify({
+            'success': True,
+            'status': 'online',
+            'printer_status': 'error',
+            'error': str(e)
+        })
+
+@app.route('/health', methods=['GET'])
+def health_check():
+    """Endpoint simple para verificar que el servidor esté funcionando"""
+    return jsonify({'status': 'online'})
+
+@app.route('/print', methods=['POST'])
+def print_label():
+    """Endpoint principal para imprimir etiquetas en TD-4550DNWB usando CUPS"""
+    data = request.json
+    content = data.get('content')
+    
+    if not content:
+        return jsonify({'success': False, 'message': 'No se proporcionó contenido para imprimir'})
+    
+    try:
+        # Crear archivo temporal con la imagen base64
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp:
+            temp_filename = temp.name
+            try:
+                # Decodificar la imagen base64
+                imgdata = base64.b64decode(content.split(',')[1] if ',' in content else content)
+                temp.write(imgdata)
+                temp.flush()
+                
+                app.logger.info(f'Archivo temporal creado: {temp_filename}')
+                
+                # Conectar con CUPS e imprimir
+                conn = cups.Connection()
+                
+                # Verificar que la impresora existe
+                printers = conn.getPrinters()
+                if PRINTER_NAME not in printers:
+                    app.logger.error(f'Impresora {PRINTER_NAME} no encontrada')
+                    return jsonify({'success': False, 'message': f'Impresora {PRINTER_NAME} no encontrada'})
+                
+                # Opciones de impresión para TD-4550DNWB
+                options = {
+                    "media": "Custom.102x152mm",  # Ajustar según el tamaño de etiqueta que use
+                    "BrRollWidth": "102",        # Ancho del rollo en mm
+                    "BrLabelLength": "152",      # Longitud de la etiqueta en mm
+                    "fit-to-page": "true"
+                }
+                
+                # Enviar trabajo de impresión a CUPS
+                job_id = conn.printFile(PRINTER_NAME, temp_filename, "Etiqueta desde API", options)
+                
+                if job_id > 0:
+                    app.logger.info(f'Impresión exitosa: Job ID {job_id}')
+                    return jsonify({
+                        'success': True, 
+                        'message': 'Etiqueta enviada a la impresora correctamente',
+                        'job_id': job_id
+                    })
+                else:
+                    app.logger.error('Error al enviar trabajo de impresión a CUPS')
+                    return jsonify({'success': False, 'message': 'Error al enviar trabajo de impresión'})
+                
+            except Exception as e:
+                app.logger.error(f'Error al procesar la imagen: {str(e)}')
+                return jsonify({'success': False, 'message': f'Error al procesar la imagen: {str(e)}'})
+            finally:
+                # Limpiar archivo temporal
+                try:
+                    os.unlink(temp_filename)
+                except:
+                    pass
+    except Exception as e:
+        app.logger.error(f'Error en el servidor: {str(e)}')
+        return jsonify({'success': False, 'message': f'Error en el servidor: {str(e)}'})
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
+                        </div>
+                        
+                        <p>4. Guarde el archivo (Ctrl+O, Enter, Ctrl+X) y pruebe el servidor:</p>
+                        <div class="code-block">
+# Asegúrese de estar en el entorno virtual (env)
+python app.py
+
+# En otra terminal, pruebe la conexión
+curl http://localhost:5000/health
+curl http://localhost:5000/status
+                        </div>
+                    </div>
+                    
+                    <!-- PASO 8: CONFIGURAR SERVICIO SYSTEMD -->
+                    <div class="step-container">
+                        <h5><span class="step-number">8</span> Configurar Servicio Systemd</h5>
+                        <div class="code-block">
+sudo nano /etc/systemd/system/printer-server.service
+                        </div>
+                        
+                        <p>Copie este contenido (ajuste el nombre de usuario si no es 'pi'):</p>
+                        <div class="code-block">
+[Unit]
+Description=Servidor de impresión Brother TD-4550DNWB
+After=network.target
+
+[Service]
+User=pi
+WorkingDirectory=/home/pi/printer_server
+Environment="PATH=/home/pi/printer_server/env/bin"
+ExecStart=/home/pi/printer_server/env/bin/gunicorn --bind 0.0.0.0:5000 app:app
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+                        </div>
+                        
+                        <p>Active e inicie el servicio:</p>
+                        <div class="code-block">
+sudo systemctl enable printer-server.service
+sudo systemctl start printer-server.service
+sudo systemctl status printer-server.service
+                        </div>
+                    </div>
+                    
+                    <!-- PASO 9: CONFIGURAR IP ESTÁTICA -->
+                    <div class="step-container">
+                        <h5><span class="step-number">9</span> Configurar IP Estática</h5>
+                        <div class="code-block">
+sudo nano /etc/dhcpcd.conf
+                        </div>
+                        
+                        <p>Añada estas líneas al final (ajuste según su red):</p>
+                        <div class="code-block">
+# Configuración de IP estática para eth0 (cable)
+interface eth0
+static ip_address=192.168.1.200/24
+static routers=192.168.1.1
+static domain_name_servers=192.168.1.1
+
+# Configuración de IP estática para wlan0 (WiFi)
+interface wlan0
+static ip_address=192.168.1.200/24
+static routers=192.168.1.1
+static domain_name_servers=192.168.1.1
+                        </div>
+                        
+                        <p>Reinicie para aplicar la configuración:</p>
+                        <div class="code-block">
+sudo reboot
+                        </div>
+                    </div>
+                    
+                    <!-- RESUMEN -->
+                    <div class="step-container">
+                        <h5><i class="bi bi-check-circle-fill me-2 text-success"></i>Configuración Completa</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header bg-earth-medium text-white">
+                                        Configuración del Servidor
+                                    </div>
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item d-flex justify-content-between">
+                                            <strong>Dirección IP:</strong> 
+                                            <span>192.168.1.200 (o la que configuró)</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between">
+                                            <strong>Puerto:</strong> 
+                                            <span>5000</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between">
+                                            <strong>Ruta API:</strong> 
+                                            <span>/print</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header bg-earth-medium text-white">
+                                        Configuración de la Impresora TD-4550DNWB
+                                    </div>
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item d-flex justify-content-between">
+                                            <strong>Modelo:</strong> 
+                                            <span>TD-4550DNWB</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between">
+                                            <strong>Tipo de Impresora:</strong> 
+                                            <span>RASPBERRY_PI</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- SOLUCIÓN DE PROBLEMAS -->
+                    <div class="accordion" id="troubleshootingAccordion">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#problemHelp" aria-expanded="false" aria-controls="problemHelp">
+                                    <i class="bi bi-question-circle-fill me-2 text-primary"></i> Solución de Problemas
+                                </button>
+                            </h2>
+                            <div id="problemHelp" class="accordion-collapse collapse" data-bs-parent="#troubleshootingAccordion">
+                                <div class="accordion-body">
+                                    <p><strong>Verificar estado del servidor:</strong></p>
+                                    <div class="code-block">
+sudo systemctl status printer-server.service
+sudo journalctl -u printer-server.service -f
+                                    </div>
+                                    
+                                    <p><strong>Reiniciar servicios:</strong></p>
+                                    <div class="code-block">
+sudo systemctl restart cups
+sudo systemctl restart printer-server.service
+                                    </div>
+                                    
+                                    <p><strong>Verificar impresora:</strong></p>
+                                    <div class="code-block">
+lsusb | grep Brother
+lpstat -p -d
+lpq -a
+                                    </div>
+                                    
+                                    <p><strong>Probar impresión directa:</strong></p>
+                                    <div class="code-block">
+echo "Test TD-4550DNWB" > test.txt
+lp -d TD-4550DNWB test.txt
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Script para hacer que los acordeones funcionen
+document.addEventListener('DOMContentLoaded', function() {
+    var accordionButtons = document.querySelectorAll('.accordion-button');
+    
+    accordionButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            var targetId = this.getAttribute('data-bs-target').substring(1);
+            var targetElement = document.getElementById(targetId);
+            
+            if (targetElement.classList.contains('show')) {
+                targetElement.classList.remove('show');
+                this.classList.add('collapsed');
+                this.setAttribute('aria-expanded', 'false');
+            } else {
+                var parentId = targetElement.getAttribute('data-bs-parent');
+                if (parentId) {
+                    var parentElement = document.querySelector(parentId);
+                    var openPanels = parentElement.querySelectorAll('.accordion-collapse.show');
+                    openPanels.forEach(function(panel) {
+                        panel.classList.remove('show');
+                        var panelButton = document.querySelector('[data-bs-target="#' + panel.id + '"]');
+                        if (panelButton) {
+                            panelButton.classList.add('collapsed');
+                            panelButton.setAttribute('aria-expanded', 'false');
+                        }
+                    });
+                }
+                
+                targetElement.classList.add('show');
+                this.classList.remove('collapsed');
+                this.setAttribute('aria-expanded', 'true');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

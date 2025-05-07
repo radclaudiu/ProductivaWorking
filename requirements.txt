@@ -42,3 +42,4 @@ openai
 anthropic
 flask-login
 flask-wtf
+brother-ql

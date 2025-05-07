@@ -3811,7 +3811,7 @@ def manage_product_conservations(id):
 # API para gestión de impresoras desde el portal de usuarios
 @tasks_bp.route('/api/printers/location/<int:location_id>')
 def api_get_location_printer(location_id):
-    """API para obtener la impresora predeterminada para una ubicación"""
+    """API para obtener las impresoras disponibles para una ubicación"""
     # Verificar si hay algún tipo de autenticación (portal o general)
     if ('portal_authenticated' not in session or not session['portal_authenticated']) and not current_user.is_authenticated:
         current_app.logger.warning(f"Acceso no autorizado a API de impresora para ubicación {location_id}")
@@ -3822,43 +3822,42 @@ def api_get_location_printer(location_id):
         current_app.logger.warning(f"Usuario de portal intenta acceder a ubicación no permitida: {location_id}")
         return jsonify({'success': False, 'error': 'forbidden', 'message': 'Acceso no permitido a esta ubicación'}), 403
     
-    # Buscar la impresora predeterminada para esta ubicación
-    printer = NetworkPrinter.query.filter_by(
-        location_id=location_id, 
-        is_default=True, 
+    # Buscar todas las impresoras activas para esta ubicación
+    printers = NetworkPrinter.query.filter_by(
+        location_id=location_id,
         is_active=True
-    ).first()
+    ).all()
     
-    # Si no hay una predeterminada, obtener cualquier impresora activa
-    if not printer:
-        printer = NetworkPrinter.query.filter_by(
-            location_id=location_id,
-            is_active=True
-        ).first()
-    
-    if printer:
-        # No enviamos la contraseña por seguridad
-        return jsonify({
-            'success': True,
-            'printer': {
+    if printers:
+        # Crear lista de impresoras para devolver (sin contraseñas por seguridad)
+        printer_list = []
+        for printer in printers:
+            printer_list.append({
                 'id': printer.id,
                 'name': printer.name,
                 'ip_address': printer.ip_address,
                 'port': printer.port,
                 'model': printer.model,
                 'api_path': printer.api_path,
+                'printer_type': printer.printer_type,
                 'requires_auth': printer.requires_auth,
                 'username': printer.username if printer.requires_auth else None,
+                'usb_port': printer.usb_port,
                 'is_default': printer.is_default,
                 'last_status': printer.last_status,
                 'last_status_check': printer.last_status_check.isoformat() if printer.last_status_check else None
-            }
+            })
+        
+        return jsonify({
+            'success': True,
+            'printers': printer_list
         })
     else:
         return jsonify({
             'success': False,
             'error': 'no_printer',
-            'message': 'No hay impresora configurada para esta ubicación'
+            'message': 'No hay impresora configurada para esta ubicación',
+            'printers': []
         })
 
 @tasks_bp.route('/api/printers/check/<int:location_id>')

@@ -706,15 +706,20 @@
                     // Obtener la ubicación
                     const locationId = {{ user.location_id|default(0) }};
                     
-                    // Obtener información de la impresora seleccionada
-                    const response = await fetch(`/tasks/api/printer/${printerId}`);
+                    // Obtener todas las impresoras para encontrar la seleccionada
+                    const response = await fetch(`/tasks/api/printers/location/${locationId}`);
                     
                     if (!response.ok) {
                         throw new Error(`Error ${response.status}: ${response.statusText}`);
                     }
                     
-                    const printerData = await response.json();
-                    const printer = printerData.printer;
+                    const data = await response.json();
+                    if (!data.printers || !data.printers.length) {
+                        throw new Error('No se encontraron impresoras configuradas');
+                    }
+                    
+                    // Buscar la impresora con el ID correspondiente
+                    const printer = data.printers.find(p => p.id == printerId);
                     
                     if (!printer) {
                         throw new Error('No se encontró la impresora seleccionada');

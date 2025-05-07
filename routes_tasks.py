@@ -1177,6 +1177,14 @@ def delete_task(task_id):
             debug_info["month_days"] = [md.day_of_month for md in month_days]
             current_app.logger.info(f"Tarea con ID {task.id} tiene los siguientes días del mes: {debug_info['month_days']}")
             
+            # IMPORTANTE: Primero eliminar las instancias de tareas, que es la restricción de clave foránea que falla
+            current_app.logger.info(f"Eliminando instancias de tarea para task_id={task.id}")
+            from sqlalchemy import text
+            task_instances_sql = text("DELETE FROM task_instances WHERE task_id = :task_id")
+            result = db.session.execute(task_instances_sql, {"task_id": task.id})
+            num_deleted = result.rowcount
+            current_app.logger.info(f"Instancias de tarea eliminadas: {num_deleted} registros")
+            
             # Eliminar primero las programaciones
             TaskSchedule.query.filter_by(task_id=task.id).delete()
             current_app.logger.info(f"Programaciones eliminadas para tarea {task.id}")
@@ -1192,9 +1200,8 @@ def delete_task(task_id):
             
             try:
                 # 1. Primero intentar con DELETE directo en SQL (evitando cascadas)
-                from sqlalchemy import text
-                sql = text("DELETE FROM task_monthdays WHERE task_id = :task_id")
-                result = db.session.execute(sql, {"task_id": task.id})
+                monthdays_sql = text("DELETE FROM task_monthdays WHERE task_id = :task_id")
+                result = db.session.execute(monthdays_sql, {"task_id": task.id})
                 num_deleted = result.rowcount
                 current_app.logger.info(f"Días del mes eliminados para tarea {task.id} con SQL directo: {num_deleted} registros")
             except Exception as sql_error:
@@ -1215,9 +1222,12 @@ def delete_task(task_id):
                             current_app.logger.error(f"Error al eliminar día del mes {md.id}: {individual_error}")
                     current_app.logger.info(f"Días del mes eliminados individualmente: {deleted_count} de {len(month_days_to_delete)}")
             
+            # Hacer commit parcial después de eliminar todas las dependencias
+            db.session.commit()
+            current_app.logger.info(f"Commit parcial realizado después de eliminar dependencias")
+            
             # Registrar el estado antes de eliminar la tarea
             current_app.logger.info(f"Preparando eliminación final de la tarea {task.id}")
-            current_app.logger.info(f"Revisando relaciones de la tarea: {task.monthdays}")
             
             # Comprobar explícitamente si aún hay monthdays asociados
             remaining_monthdays = TaskMonthDay.query.filter_by(task_id=task.id).all()
@@ -1227,11 +1237,25 @@ def delete_task(task_id):
                 for rm in remaining_monthdays:
                     current_app.logger.info(f"Eliminando manualmente día del mes ID {rm.id}")
                     db.session.delete(rm)
+                # Commit parcial
+                db.session.commit()
+            
+            # Verificar si todavía hay instancias de tarea
+            remaining_instances = db.session.execute(
+                text("SELECT COUNT(*) as count FROM task_instances WHERE task_id = :task_id"), 
+                {"task_id": task.id}
+            ).scalar()
+            
+            if remaining_instances > 0:
+                current_app.logger.warning(f"Todavía hay {remaining_instances} instancias de tarea para task_id={task.id}")
+                # Eliminar de nuevo con SQL directo
+                db.session.execute(task_instances_sql, {"task_id": task.id})
+                db.session.commit()
             
             # Finalmente eliminar la tarea
             current_app.logger.info(f"Eliminando la tarea {task.id}")
             db.session.delete(task)
-            current_app.logger.info(f"Haciendo commit de los cambios")
+            current_app.logger.info(f"Haciendo commit final")
             db.session.commit()
             current_app.logger.info(f"Tarea {task.id} eliminada completamente")
             

@@ -1186,17 +1186,43 @@ def delete_task(task_id):
             current_app.logger.info(f"Completados eliminados para tarea {task.id}")
             
             # Eliminar días del mes asignados (para tareas mensuales)
-            # Obtener primero todos los registros
+            # Obtener primero todos los registros para depuración
             month_days_to_delete = TaskMonthDay.query.filter_by(task_id=task.id).all()
+            current_app.logger.info(f"Se encontraron {len(month_days_to_delete)} días del mes para eliminar de la tarea {task.id}")
             
-            # Eliminar individualmente cada registro
-            for md in month_days_to_delete:
-                db.session.delete(md)
-                
-            current_app.logger.info(f"Días del mes eliminados para tarea {task.id}: {len(month_days_to_delete)} registros")
+            try:
+                # Eliminar usando un enfoque de eliminación masiva que es más seguro
+                num_deleted = TaskMonthDay.query.filter_by(task_id=task.id).delete()
+                current_app.logger.info(f"Días del mes eliminados para tarea {task.id}: {num_deleted} registros")
+            except Exception as month_day_error:
+                current_app.logger.error(f"Error al eliminar TaskMonthDay: {month_day_error}")
+                # Intentar eliminar individualmente como respaldo
+                deleted_count = 0
+                for md in month_days_to_delete:
+                    try:
+                        db.session.delete(md)
+                        deleted_count += 1
+                    except Exception as individual_error:
+                        current_app.logger.error(f"Error al eliminar día del mes {md.id}: {individual_error}")
+                current_app.logger.info(f"Días del mes eliminados individualmente: {deleted_count} de {len(month_days_to_delete)}")
+            
+            # Registrar el estado antes de eliminar la tarea
+            current_app.logger.info(f"Preparando eliminación final de la tarea {task.id}")
+            current_app.logger.info(f"Revisando relaciones de la tarea: {task.monthdays}")
+            
+            # Comprobar explícitamente si aún hay monthdays asociados
+            remaining_monthdays = TaskMonthDay.query.filter_by(task_id=task.id).all()
+            if remaining_monthdays:
+                current_app.logger.warning(f"Todavía hay {len(remaining_monthdays)} registros TaskMonthDay para la tarea {task.id}")
+                # Eliminar manualmente para asegurar que se eliminan
+                for rm in remaining_monthdays:
+                    current_app.logger.info(f"Eliminando manualmente día del mes ID {rm.id}")
+                    db.session.delete(rm)
             
             # Finalmente eliminar la tarea
+            current_app.logger.info(f"Eliminando la tarea {task.id}")
             db.session.delete(task)
+            current_app.logger.info(f"Haciendo commit de los cambios")
             db.session.commit()
             current_app.logger.info(f"Tarea {task.id} eliminada completamente")
             
@@ -1210,7 +1236,10 @@ def delete_task(task_id):
             raise
             
     except Exception as main_error:
+        import traceback
+        error_traceback = traceback.format_exc()
         current_app.logger.error(f"Error general en delete_task: {main_error}")
+        current_app.logger.error(f"Traceback completo: {error_traceback}")
         flash(f'Error al eliminar la tarea: {str(main_error)}', 'danger')
         return redirect(url_for('tasks.index'))
 

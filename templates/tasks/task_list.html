@@ -18,6 +18,13 @@
                 <a href="{{ url_for('tasks.create_task', location_id=location.id) }}" class="btn btn-sm btn-primary">
                     <i class="bi bi-plus-lg"></i> Nueva Tarea
                 </a>
+                {% if current_user.is_admin() %}
+                <button type="button" class="btn btn-sm btn-danger" 
+                       data-bs-toggle="modal" 
+                       data-bs-target="#purgeMonthlyTasksModal">
+                    <i class="bi bi-exclamation-triangle"></i> Solucionar problemas de Tareas
+                </button>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -114,6 +121,13 @@
                                                 <i class="bi bi-check-lg"></i>
                                             </a>
                                             {% endif %}
+                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                   data-bs-toggle="modal" 
+                                                   data-bs-target="#deleteTaskModal" 
+                                                   data-task-id="{{ task.id }}"
+                                                   data-task-title="{{ task.title }}">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>

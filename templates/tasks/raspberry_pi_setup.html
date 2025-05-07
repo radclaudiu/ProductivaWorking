@@ -45,6 +45,51 @@
         padding: 2px 4px;
         border-radius: 3px;
     }
+    
+    .terminal-output {
+        background-color: #333;
+        color: #fff;
+        padding: 10px;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        font-family: monospace;
+    }
+    
+    .command-explanation {
+        margin-top: 8px;
+        margin-bottom: 15px;
+        padding-left: 15px;
+        border-left: 3px solid #ddd;
+        color: #666;
+    }
+    
+    .virtual-env-active {
+        color: #27ae60;
+        font-weight: bold;
+    }
+    
+    .important-note {
+        border-left: 4px solid #e67e22;
+        background-color: #fff3e0;
+        padding: 10px;
+        margin: 15px 0;
+    }
+    
+    .success-example {
+        background-color: #e8f5e9;
+        border: 1px solid #c8e6c9;
+        border-radius: 4px;
+        padding: 10px;
+        margin: 10px 0;
+    }
+    
+    .error-example {
+        background-color: #ffebee;
+        border: 1px solid #ffcdd2;
+        border-radius: 4px;
+        padding: 10px;
+        margin: 10px 0;
+    }
 </style>
 {% endblock %}
 
@@ -54,7 +99,7 @@
         <div class="col-12">
             <div class="card shadow-sm">
                 <div class="card-header bg-earth-dark text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="bi bi-raspberry-pi me-2"></i>Configuración de Raspberry Pi para Impresión</h5>
+                    <h5 class="mb-0"><i class="bi bi-raspberry-pi me-2"></i>Guía Completa de Instalación: Servidor de Impresión en Raspberry Pi</h5>
                     <div>
                         <a href="{{ url_for('tasks.local_user_labels') }}" class="btn btn-light btn-sm">
                             <i class="bi bi-arrow-left me-1"></i> Volver a Etiquetas
@@ -64,149 +109,415 @@
                 <div class="card-body">
                     <div class="alert alert-info mb-4">
                         <i class="bi bi-info-circle-fill me-2"></i>
-                        Esta guía le ayudará a configurar una Raspberry Pi como servidor de impresión para conectar impresoras Brother a su red.
+                        <strong>Para principiantes:</strong> Esta guía detallada le ayudará a configurar paso a paso una Raspberry Pi como servidor de impresión para impresoras Brother. No se requieren conocimientos previos de Linux o programación.
+                    </div>
+                    
+                    <div class="important-note">
+                        <h5><i class="bi bi-lightbulb-fill me-2"></i>¿Qué estamos construyendo?</h5>
+                        <p>Vamos a convertir una Raspberry Pi en un servidor de impresión que permitirá imprimir etiquetas en una impresora Brother desde cualquier dispositivo en la red. El servidor usa un <strong>entorno virtual de Python</strong> para mantener el sistema limpio y organizado.</p>
                     </div>
                     
                     <h4 class="mb-4">Guía Paso a Paso</h4>
                     
+                    <!-- PASO 1: REQUISITOS PREVIOS -->
                     <div class="step-container">
                         <h5><span class="step-number">1</span> Requisitos Previos</h5>
-                        <p>Antes de comenzar, asegúrese de tener:</p>
-                        <ul>
-                            <li>Una Raspberry Pi (modelo 3 o superior recomendado)</li>
-                            <li>Una tarjeta microSD (mínimo 8GB)</li>
-                            <li>Una impresora Brother compatible con USB</li>
-                            <li>Cable de alimentación para la Raspberry Pi</li>
-                            <li>Cable USB para conectar la impresora a la Raspberry Pi</li>
-                            <li>Conexión a Internet (preferiblemente por cable Ethernet)</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="step-container">
-                        <h5><span class="step-number">2</span> Instalar Raspberry Pi OS</h5>
-                        <p>Descargue e instale Raspberry Pi OS Lite (sin escritorio) en su tarjeta microSD:</p>
-                        <ol>
-                            <li>Descargue el <a href="https://www.raspberrypi.org/software/" target="_blank">Raspberry Pi Imager</a> en su ordenador</li>
-                            <li>Ejecute el programa y seleccione "Raspberry Pi OS Lite (64-bit)"</li>
-                            <li>Seleccione su tarjeta microSD como destino</li>
-                            <li>Haga clic en el icono de engranaje (configuración avanzada) y:
+                        <p>Antes de comenzar, reúna todos estos elementos:</p>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
                                 <ul>
-                                    <li>Active "Habilitar SSH"</li>
-                                    <li>Establezca un nombre de usuario y contraseña</li>
-                                    <li>Configure su red WiFi si no usará Ethernet</li>
+                                    <li>Una Raspberry Pi (modelo 3 o superior recomendado)</li>
+                                    <li>Una tarjeta microSD (mínimo 8GB)</li>
+                                    <li>Una impresora Brother compatible con USB</li>
                                 </ul>
-                            </li>
-                            <li>Haga clic en "Escribir" y espere a que finalice el proceso</li>
-                        </ol>
-                    </div>
-                    
-                    <div class="step-container">
-                        <h5><span class="step-number">3</span> Configuración Básica</h5>
-                        <p>Una vez que su Raspberry Pi esté funcionando:</p>
-                        <ol>
-                            <li>Inserte la tarjeta microSD en la Raspberry Pi</li>
-                            <li>Conecte la impresora Brother al puerto USB de la Raspberry Pi</li>
-                            <li>Conecte la Raspberry Pi a la red (mediante Ethernet o WiFi configurado)</li>
-                            <li>Conecte la alimentación a la Raspberry Pi</li>
-                            <li>Espere unos minutos a que el sistema arranque completamente</li>
-                        </ol>
-                    </div>
-                    
-                    <div class="step-container">
-                        <h5><span class="step-number">4</span> Acceder a la Raspberry Pi</h5>
-                        <p>Conéctese a su Raspberry Pi mediante SSH:</p>
-                        <div class="alert alert-raspberry">
-                            <strong>Nota:</strong> Necesitará encontrar la dirección IP de su Raspberry Pi. Puede hacerlo accediendo a la configuración de su router y buscando el dispositivo, o utilizando una aplicación como "Advanced IP Scanner".
-                        </div>
-                        <p>En Windows, use PuTTY o Terminal (PowerShell):</p>
-                        <div class="code-block">
-                            ssh usuario@192.168.1.X
-                        </div>
-                        <p>Donde <code>usuario</code> es el nombre de usuario configurado y <code>192.168.1.X</code> es la dirección IP de su Raspberry Pi.</p>
-                    </div>
-                    
-                    <div class="step-container">
-                        <h5><span class="step-number">5</span> Actualizar el Sistema</h5>
-                        <p>Una vez conectado, actualice el sistema con los siguientes comandos:</p>
-                        <div class="code-block">
-                            sudo apt update<br>
-                            sudo apt upgrade -y
-                        </div>
-                    </div>
-                    
-                    <div class="step-container">
-                        <h5><span class="step-number">6</span> Instalar Dependencias</h5>
-                        <p>Instale las herramientas necesarias para el servidor de impresión:</p>
-                        <div class="code-block">
-                            sudo apt install -y python3 python3-pip python3-venv nginx cups libusb-1.0-0-dev
-                        </div>
-                        <div class="alert alert-info mb-3">
-                            <i class="bi bi-info-circle-fill me-2"></i>
-                            <strong>Importante:</strong> Usaremos un entorno virtual de Python (venv) para evitar conflictos entre paquetes. Esto mantendrá las dependencias del servidor de impresión aisladas del sistema principal.
-                        </div>
-                    </div>
-                    
-                    <div class="step-container">
-                        <h5><span class="step-number">7</span> Instalar Software de Brother</h5>
-                        <p>Instale globalmente la biblioteca <code>brother_ql</code> que permite usar las impresoras de etiquetas Brother para las pruebas iniciales:</p>
-                        <div class="code-block">
-                            sudo pip3 install brother_ql
-                        </div>
-                        <p class="mb-3">Verifique que la instalación fue correcta:</p>
-                        <div class="code-block">
-                            brother_ql --version
+                            </div>
+                            <div class="col-md-6">
+                                <ul>
+                                    <li>Cable de alimentación para la Raspberry Pi</li>
+                                    <li>Cable USB para conectar la impresora a la Raspberry Pi</li>
+                                    <li>Conexión a Internet (preferiblemente por cable Ethernet)</li>
+                                </ul>
+                            </div>
                         </div>
                         <div class="alert alert-warning">
                             <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            <strong>Nota:</strong> Instalaremos brother_ql globalmente para facilitar las pruebas iniciales, pero más adelante también lo instalaremos dentro del entorno virtual para la aplicación.
+                            <strong>¿No tiene una Raspberry Pi?</strong> Para esta guía, necesitará una Raspberry Pi física. No se puede utilizar un emulador.
                         </div>
-                        <p class="alert alert-info">Esta biblioteca soporta varios modelos de impresoras Brother, incluyendo: QL-500, QL-550, QL-560, QL-570, QL-580N, QL-650TD, QL-700, QL-710W, QL-720NW, QL-800, QL-810W, QL-820NWB, entre otros.</p>
                     </div>
                     
+                    <!-- PASO 2: INSTALAR RASPBERRY PI OS -->
+                    <div class="step-container">
+                        <h5><span class="step-number">2</span> Instalar Raspberry Pi OS</h5>
+                        <p>Vamos a instalar el sistema operativo en la tarjeta microSD:</p>
+                        <ol>
+                            <li>Descargue el <a href="https://www.raspberrypi.org/software/" target="_blank">Raspberry Pi Imager</a> en su ordenador</li>
+                            <li>Inserte la tarjeta microSD en su ordenador</li>
+                            <li>Abra el programa Raspberry Pi Imager</li>
+                            <li>Haga clic en "Elegir OS" y seleccione "Raspberry Pi OS (other)" > "Raspberry Pi OS Lite (64-bit)"</li>
+                            <li>Haga clic en "Elegir almacenamiento" y seleccione su tarjeta microSD</li>
+                            <li>Haga clic en el icono de engranaje (configuración avanzada) y configure lo siguiente:
+                                <ul>
+                                    <li>Active "Habilitar SSH"</li>
+                                    <li>Establezca un nombre de usuario (ejemplo: <code>pi</code>)</li>
+                                    <li>Establezca una contraseña (ejemplo: <code>raspberry</code> - ¡cámbiela más tarde por seguridad!)</li>
+                                    <li>Si usará WiFi: Configure SSID y contraseña de su red WiFi</li>
+                                    <li>Si lo desea, configure la zona horaria y el idioma</li>
+                                </ul>
+                            </li>
+                            <li>Haga clic en "Guardar" para cerrar la configuración avanzada</li>
+                            <li>Haga clic en "Escribir" para grabar el sistema operativo en la tarjeta</li>
+                            <li>Confirme la operación cuando se le solicite</li>
+                            <li>Espere a que finalice el proceso (puede tardar unos minutos)</li>
+                            <li>Cuando aparezca "Escritura Completada" retire la tarjeta de forma segura</li>
+                        </ol>
+                        <div class="success-example">
+                            <p><i class="bi bi-check-circle-fill me-2"></i><strong>Su tarjeta microSD ahora contiene:</strong></p>
+                            <ul>
+                                <li>Raspberry Pi OS Lite (sistema sin interfaz gráfica)</li>
+                                <li>SSH habilitado para conectarse remotamente</li>
+                                <li>Usuario y contraseña configurados</li>
+                                <li>Configuración WiFi (si la agregó)</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- PASO 3: CONFIGURACIÓN BÁSICA -->
+                    <div class="step-container">
+                        <h5><span class="step-number">3</span> Configuración Básica</h5>
+                        <p>Vamos a poner en marcha su Raspberry Pi:</p>
+                        <ol>
+                            <li>Inserte la tarjeta microSD en la ranura de la Raspberry Pi</li>
+                            <li>Conecte la impresora Brother al puerto USB de la Raspberry Pi</li>
+                            <li>Conecte la Raspberry Pi a su router mediante cable Ethernet (recomendado) o vía WiFi (si lo configuró)</li>
+                            <li>Conecte el cable de alimentación a la Raspberry Pi</li>
+                            <li>El LED de alimentación de la Raspberry Pi se encenderá, y el LED de actividad parpadeará durante el arranque</li>
+                            <li>Espere aproximadamente 2 minutos para que el sistema arranque completamente</li>
+                        </ol>
+                        <div class="important-note">
+                            <p><i class="bi bi-info-circle-fill me-2"></i>La Raspberry Pi no tiene pantalla ni teclado en esta configuración. Accederemos a ella remotamente a través de la red en el siguiente paso.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- PASO 4: ACCEDER A LA RASPBERRY PI -->
+                    <div class="step-container">
+                        <h5><span class="step-number">4</span> Acceder a la Raspberry Pi</h5>
+                        <p>Ahora vamos a conectarnos a la Raspberry Pi a través de SSH:</p>
+                        
+                        <h6 class="mt-3 mb-2">Encontrar la dirección IP de la Raspberry Pi:</h6>
+                        <ul>
+                            <li><strong>Opción 1:</strong> Acceda a su router (típicamente en 192.168.1.1 o 192.168.0.1) y busque la lista de dispositivos conectados. Busque "raspberrypi" en la lista.</li>
+                            <li><strong>Opción 2:</strong> Use un escáner de red como "Advanced IP Scanner" en Windows o "Angry IP Scanner" (multiplataforma) para encontrar todos los dispositivos en su red.</li>
+                            <li><strong>Opción 3:</strong> Si configuró el "hostname" en la instalación, puede intentar conectarse usando: <code>raspberrypi.local</code></li>
+                        </ul>
+                        <div class="alert alert-raspberry">
+                            <strong>Nota:</strong> Necesitará saber la dirección IP de su Raspberry Pi para continuar. Típicamente será algo como <code>192.168.1.X</code> donde X es un número entre 2 y 254.
+                        </div>
+                        
+                        <h6 class="mt-4 mb-2">Conectarse a la Raspberry Pi:</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>En Windows:</strong></p>
+                                <p>Opción 1 - Usando PowerShell o CMD:</p>
+                                <div class="code-block">
+                                    ssh pi@192.168.1.X
+                                </div>
+                                <p>Opción 2 - Usando PuTTY:</p>
+                                <ol>
+                                    <li>Descargue e instale <a href="https://www.putty.org/" target="_blank">PuTTY</a></li>
+                                    <li>En "Host Name" escriba la IP de su Raspberry Pi</li>
+                                    <li>El puerto debe ser 22</li>
+                                    <li>Haga clic en "Open"</li>
+                                </ol>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>En macOS o Linux:</strong></p>
+                                <p>Abra Terminal y escriba:</p>
+                                <div class="code-block">
+                                    ssh pi@192.168.1.X
+                                </div>
+                                <p>Reemplace "192.168.1.X" con la dirección IP real de su Raspberry Pi.</p>
+                            </div>
+                        </div>
+                        
+                        <p class="mt-3">Al conectarse por primera vez, verá una advertencia sobre la autenticidad del host. Escriba "yes" para continuar.</p>
+                        <p>Cuando se le solicite, introduzca la contraseña que configuró durante la instalación (por defecto es "raspberry" si no la cambió).</p>
+                        
+                        <div class="terminal-output">
+                            $ ssh pi@192.168.1.123<br>
+                            The authenticity of host '192.168.1.123 (192.168.1.123)' can't be established.<br>
+                            ECDSA key fingerprint is SHA256:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.<br>
+                            Are you sure you want to continue connecting (yes/no/[fingerprint])? <strong>yes</strong><br>
+                            Warning: Permanently added '192.168.1.123' (ECDSA) to the list of known hosts.<br>
+                            pi@192.168.1.123's password: <strong>[Escriba su contraseña aquí]</strong><br>
+                            <br>
+                            Linux raspberrypi 6.1.0-rpi7-rpi-v8 #1 SMP PREEMPT Debian 1:6.1.54-1+rpt2 (2023-10-05) aarch64<br>
+                            <br>
+                            The programs included with the Debian GNU/Linux system are free software;<br>
+                            the exact distribution terms for each program are described in the<br>
+                            individual files in /usr/share/doc/*/copyright.<br>
+                            <br>
+                            Debian GNU/Linux comes with ABSOLUTELY NO WARRANTY, to the extent<br>
+                            permitted by applicable law.<br>
+                            <br>
+                            pi@raspberrypi:~ $
+                        </div>
+                        
+                        <p class="mt-3">Si ve un prompt similar a <code>pi@raspberrypi:~ $</code>, ¡felicidades! Ya está conectado a su Raspberry Pi.</p>
+                    </div>
+                    
+                    <!-- PASO 5: ACTUALIZAR EL SISTEMA -->
+                    <div class="step-container">
+                        <h5><span class="step-number">5</span> Actualizar el Sistema</h5>
+                        <p>Antes de instalar cualquier software, actualice el sistema operativo:</p>
+                        
+                        <div class="code-block">
+                            sudo apt update
+                        </div>
+                        <div class="command-explanation">
+                            Este comando actualiza la lista de paquetes disponibles. <code>sudo</code> otorga privilegios de administrador.
+                        </div>
+                        
+                        <div class="code-block">
+                            sudo apt upgrade -y
+                        </div>
+                        <div class="command-explanation">
+                            Este comando instala las actualizaciones disponibles. La opción <code>-y</code> responde "sí" automáticamente a las preguntas.
+                        </div>
+                        
+                        <p>La actualización puede tardar varios minutos. Tenga paciencia mientras se descargan e instalan los paquetes.</p>
+                        <p>Cuando termine, verá de nuevo el prompt <code>pi@raspberrypi:~ $</code>.</p>
+                    </div>
+                    
+                    <!-- PASO 6: INSTALAR DEPENDENCIAS -->
+                    <div class="step-container">
+                        <h5><span class="step-number">6</span> Instalar Dependencias</h5>
+                        <p>Ahora instalaremos los programas necesarios para el servidor de impresión:</p>
+                        
+                        <div class="code-block">
+                            sudo apt install -y python3 python3-pip python3-venv nginx cups libusb-1.0-0-dev
+                        </div>
+                        <div class="command-explanation">
+                            <strong>¿Qué estamos instalando?</strong><br>
+                            • <code>python3</code>: El lenguaje de programación que usaremos<br>
+                            • <code>python3-pip</code>: Gestor de paquetes para instalar bibliotecas de Python<br>
+                            • <code>python3-venv</code>: Herramienta para crear entornos virtuales<br>
+                            • <code>nginx</code>: Servidor web (opcional, para futuras expansiones)<br>
+                            • <code>cups</code>: Sistema de impresión para Linux<br>
+                            • <code>libusb-1.0-0-dev</code>: Biblioteca para acceder a dispositivos USB
+                        </div>
+                        
+                        <div class="alert alert-info mb-3">
+                            <i class="bi bi-info-circle-fill me-2"></i>
+                            <strong>¿Qué es un entorno virtual de Python?</strong><br>
+                            Un entorno virtual es como un "contenedor" aislado donde instalaremos las bibliotecas de Python para nuestro servidor de impresión. Esto evita conflictos con otras aplicaciones y mantiene el sistema operativo limpio y organizado. Piense en ello como una habitación separada donde guardaremos nuestras herramientas específicas.
+                        </div>
+                    </div>
+                    
+                    <!-- PASO 7: INSTALAR SOFTWARE DE BROTHER -->
+                    <div class="step-container">
+                        <h5><span class="step-number">7</span> Instalar Software de Brother</h5>
+                        <p>Primero instalaremos la biblioteca Brother globalmente para realizar pruebas:</p>
+                        
+                        <div class="code-block">
+                            sudo pip3 install brother_ql
+                        </div>
+                        <div class="command-explanation">
+                            Instala la biblioteca para manejar impresoras Brother. Se instala con <code>sudo</code> para hacerla disponible a nivel del sistema.
+                        </div>
+                        
+                        <p>Verifique que la instalación fue correcta:</p>
+                        <div class="code-block">
+                            brother_ql --version
+                        </div>
+                        <div class="terminal-output">
+                            brother_ql 0.9.4
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong>Nota importante:</strong> Estamos instalando <code>brother_ql</code> de dos maneras diferentes:
+                            <ol>
+                                <li>Ahora, a nivel global para hacer pruebas iniciales</li>
+                                <li>Más adelante, dentro del entorno virtual para la aplicación</li>
+                            </ol>
+                            Esta doble instalación es intencional y facilita la depuración.
+                        </div>
+                        
+                        <p>La biblioteca <code>brother_ql</code> soporta varios modelos de impresoras Brother, incluyendo:</p>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <ul>
+                                    <li>QL-500</li>
+                                    <li>QL-550</li>
+                                    <li>QL-560</li>
+                                    <li>QL-570</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4">
+                                <ul>
+                                    <li>QL-580N</li>
+                                    <li>QL-650TD</li>
+                                    <li>QL-700</li>
+                                    <li>QL-710W</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4">
+                                <ul>
+                                    <li>QL-720NW</li>
+                                    <li>QL-800</li>
+                                    <li>QL-810W</li>
+                                    <li>QL-820NWB</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- PASO 8: VERIFICAR CONEXIÓN DE IMPRESORA -->
                     <div class="step-container">
                         <h5><span class="step-number">8</span> Verificar la Conexión de la Impresora</h5>
-                        <p>Verifique que la Raspberry Pi detecta la impresora Brother:</p>
+                        
+                        <p>Comprobemos que la Raspberry Pi detecta la impresora:</p>
                         <div class="code-block">
                             lsusb
                         </div>
-                        <p>Debe ver una entrada que mencione su impresora Brother. También verifique el dispositivo USB:</p>
+                        <div class="terminal-output">
+                            Bus 001 Device 004: ID 04f9:209b Brother Industries, Ltd QL-800
+                            Bus 001 Device 003: ID 0424:ec00 Standard Microsystems Corp. SMSC9512/9514 Fast Ethernet Adapter
+                            Bus 001 Device 002: ID 0424:9514 Standard Microsystems Corp. SMC9514 Hub
+                            Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+                        </div>
+                        <div class="command-explanation">
+                            Este comando muestra todos los dispositivos USB conectados. Busque una línea que mencione "Brother" o el modelo de su impresora.
+                        </div>
+                        
+                        <p>Ahora verificaremos el dispositivo que usará la impresora:</p>
                         <div class="code-block">
                             ls -la /dev/usb/
                         </div>
-                        <p>Debería ver dispositivos como <code>lp0</code>. Tome nota de la ruta completa (por ejemplo, <code>/dev/usb/lp0</code>).</p>
-                        <p class="mt-3">Puede probar la impresora directamente con el comando:</p>
+                        <div class="terminal-output">
+                            total 0
+                            drwxr-xr-x 2 root root 60 May  7 14:42 .
+                            drwxr-xr-x 7 root root 3460 May  7 14:42 ..
+                            crw-rw---- 1 root lp 180, 0 May  7 14:42 lp0
+                        </div>
+                        <div class="command-explanation">
+                            Muestra los dispositivos USB de impresora. Normalmente verá <code>lp0</code>. <strong>Tome nota de esta ruta</strong> (por ejemplo, <code>/dev/usb/lp0</code>). La necesitará más adelante.
+                        </div>
+                        
+                        <p>Probemos la impresora directamente:</p>
                         <div class="code-block">
                             brother_ql info usb://
                         </div>
-                        <p>Si la impresora es detectada correctamente, verá información sobre su modelo y estado.</p>
-                    </div>
-                    
-                    <div class="step-container">
-                        <h5><span class="step-number">9</span> Instalar y Configurar el Servidor de Impresión</h5>
-                        <p>Cree un directorio para la aplicación y configure un entorno virtual:</p>
-                        <div class="code-block">
-                            mkdir -p ~/printer_server<br>
-                            cd ~/printer_server<br>
-                            python3 -m venv env<br>
-                            source env/bin/activate
+                        <div class="terminal-output">
+                            Found a Brother QL-800 at usb://dev/usb/lp0<br>
+                            Model: QL-800<br>
+                            Sensor status: 0x00<br>
+                            Errors: 0x00<br>
+                            Media: 62mm continuous with no marks
                         </div>
+                        <div class="command-explanation">
+                            Si la impresora es detectada correctamente, verá información sobre su modelo y estado. El comando <code>usb://</code> busca automáticamente la impresora en los puertos USB.
+                        </div>
+                        
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle-fill me-2"></i>
-                            <strong>Entorno virtual:</strong> Ahora está dentro del entorno virtual de Python. 
-                            Verá <code>(env)</code> al inicio del prompt, indicando que está aislado del sistema principal. 
-                            Todas las bibliotecas que instale ahora sólo afectarán a este entorno específico.
+                            <strong>Solución de problemas:</strong> Si no ve su impresora, asegúrese de que:
+                            <ul>
+                                <li>La impresora está conectada y encendida</li>
+                                <li>Intente desconectar y volver a conectar el USB</li>
+                                <li>Intente usar otro cable USB o otro puerto USB</li>
+                                <li>Reinicie la Raspberry Pi con <code>sudo reboot</code></li>
+                            </ul>
                         </div>
-                        <p>Instale las bibliotecas necesarias dentro del entorno virtual:</p>
+                    </div>
+                    
+                    <!-- PASO 9: CREAR Y ACTIVAR ENTORNO VIRTUAL -->
+                    <div class="step-container">
+                        <h5><span class="step-number">9</span> Crear y Activar el Entorno Virtual</h5>
+                        
+                        <p>Vamos a crear un directorio para nuestro proyecto y configurar un entorno virtual de Python:</p>
+                        
+                        <div class="code-block">
+                            mkdir -p ~/printer_server
+                        </div>
+                        <div class="command-explanation">
+                            Crea un directorio llamado <code>printer_server</code> en la carpeta personal. La opción <code>-p</code> crea directorios intermedios si es necesario.
+                        </div>
+                        
+                        <div class="code-block">
+                            cd ~/printer_server
+                        </div>
+                        <div class="command-explanation">
+                            Cambia al directorio recién creado. <code>~</code> es un atajo a su carpeta personal.
+                        </div>
+                        
+                        <div class="code-block">
+                            python3 -m venv env
+                        </div>
+                        <div class="command-explanation">
+                            Crea un entorno virtual llamado <code>env</code>. Este comando puede tardar unos segundos en completarse.
+                        </div>
+                        
+                        <h6 class="mt-4 mb-2"><i class="bi bi-stars me-2"></i>Activar el Entorno Virtual</h6>
+                        <p>Este paso es <strong>CRÍTICO</strong>. Debe activar el entorno virtual antes de instalar bibliotecas o ejecutar scripts:</p>
+                        
+                        <div class="code-block">
+                            source env/bin/activate
+                        </div>
+                        <div class="command-explanation">
+                            Activa el entorno virtual. Notará que el prompt cambia para mostrar <code>(env)</code> al principio, indicando que el entorno virtual está activo.
+                        </div>
+                        
+                        <div class="terminal-output">
+                            pi@raspberrypi:~/printer_server $ source env/bin/activate<br>
+                            <span class="virtual-env-active">(env)</span> pi@raspberrypi:~/printer_server $
+                        </div>
+                        
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong>¡Muy importante!</strong> Siempre que vea <span class="virtual-env-active">(env)</span> al principio del prompt, significa que su entorno virtual está activado. Si cierra la terminal o se desconecta, necesitará activarlo nuevamente con <code>source env/bin/activate</code> cuando vuelva a conectarse.
+                        </div>
+                        
+                        <h6 class="mt-4 mb-2">Instalar Bibliotecas en el Entorno Virtual</h6>
+                        <p>Ahora que el entorno virtual está activo, vamos a instalar las bibliotecas necesarias <strong>dentro</strong> del entorno:</p>
+                        
                         <div class="code-block">
                             pip install flask gunicorn brother_ql
                         </div>
-                        <p>Note que aquí usamos <code>pip</code> en lugar de <code>pip3</code> porque dentro del entorno virtual, 
-                        <code>pip</code> ya apunta a la versión de Python 3.</p>
-                        <p>Cree el archivo de la aplicación:</p>
+                        <div class="command-explanation">
+                            Instala tres bibliotecas dentro del entorno virtual:<br>
+                            • <code>flask</code>: Un marco web para crear la API<br>
+                            • <code>gunicorn</code>: Un servidor web para Python<br>
+                            • <code>brother_ql</code>: La biblioteca para manejar impresoras Brother
+                        </div>
+                        <div class="terminal-output">
+                            Collecting flask<br>
+                            ...<br>
+                            Collecting gunicorn<br>
+                            ...<br>
+                            Collecting brother_ql<br>
+                            ...<br>
+                            Successfully installed Flask-2.2.3 Jinja2-3.1.2 MarkupSafe-2.1.2 Werkzeug-2.2.3 brother-ql-0.9.4 click-8.1.3 gunicorn-20.1.0 itsdangerous-2.1.2 pillow-9.4.0
+                        </div>
+                        
+                        <p class="mt-3">Note que usamos <code>pip</code> en lugar de <code>pip3</code> porque dentro del entorno virtual, <code>pip</code> ya está configurado para usar Python 3.</p>
+                    </div>
+                    
+                    <!-- PASO 10: CREAR SERVIDOR DE IMPRESIÓN -->
+                    <div class="step-container">
+                        <h5><span class="step-number">10</span> Crear el Servidor de Impresión</h5>
+                        
+                        <p>Ahora vamos a crear el archivo del servidor que procesará las peticiones de impresión:</p>
+                        
                         <div class="code-block">
                             nano ~/printer_server/app.py
                         </div>
-                        <p>Copie el siguiente código en el editor:</p>
+                        <div class="command-explanation">
+                            Abre el editor de texto <code>nano</code> para crear un archivo llamado <code>app.py</code>
+                        </div>
+                        
+                        <p>Copie y pegue el siguiente código (puede usar Ctrl+Shift+V para pegar en la terminal):</p>
+                        
                         <div class="code-block">
 import os
 from flask import Flask, request, jsonify
@@ -230,12 +541,45 @@ app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
 app.logger.info('Servidor de impresión iniciado')
 
+@app.route('/status', methods=['GET'])
+def status_check():
+    """Verificar estado del servidor y la impresora"""
+    try:
+        # Intentar detectar la impresora
+        process = subprocess.run(['brother_ql', 'info', 'usb://'], 
+                                capture_output=True, text=True)
+        
+        if process.returncode == 0:
+            printer_info = process.stdout
+            return jsonify({
+                'success': True,
+                'status': 'online',
+                'printer_status': 'ready',
+                'printer_info': printer_info
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'status': 'online',
+                'printer_status': 'error',
+                'error': process.stderr
+            })
+    except Exception as e:
+        return jsonify({
+            'success': True,
+            'status': 'online',
+            'printer_status': 'unknown',
+            'error': str(e)
+        })
+
 @app.route('/health', methods=['GET'])
 def health_check():
+    """Endpoint simple para verificar que el servidor esté funcionando"""
     return jsonify({'status': 'online'})
 
 @app.route('/print', methods=['POST'])
 def print_label():
+    """Endpoint principal para imprimir etiquetas"""
     data = request.json
     usb_port = data.get('usb_port', '/dev/usb/lp0')
     printer_model = data.get('printer_model', 'QL-800')
@@ -297,16 +641,61 @@ def print_label():
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
                         </div>
-                        <p>Guarde el archivo (Ctrl+O, Enter, Ctrl+X)</p>
+                        
+                        <p>Para guardar el archivo:</p>
+                        <ol>
+                            <li>Presione <strong>Ctrl+O</strong> para guardar ("WriteOut")</li>
+                            <li>Presione <strong>Enter</strong> para confirmar el nombre del archivo</li>
+                            <li>Presione <strong>Ctrl+X</strong> para salir del editor</li>
+                        </ol>
+                        
+                        <h6 class="mt-4 mb-2">Probar el Servidor Manualmente</h6>
+                        
+                        <p>Antes de configurar el servicio, probemos que el servidor funciona correctamente:</p>
+                        <div class="code-block">
+                            # Asegúrese de que el entorno virtual esté activado - debe ver (env) al inicio del prompt
+                            # Si no lo ve, ejecute: source env/bin/activate
+                            
+                            python app.py
+                        </div>
+                        <div class="terminal-output">
+                            <span class="virtual-env-active">(env)</span> pi@raspberrypi:~/printer_server $ python app.py<br>
+                            * Serving Flask app 'app'<br>
+                            * Debug mode: off<br>
+                            WARNING: This is a development server. Do not use it in a production deployment.<br>
+                            * Running on all addresses (0.0.0.0)<br>
+                            * Running on http://127.0.0.1:5000<br>
+                            * Running on http://192.168.1.123:5000<br>
+                            Press CTRL+C to quit
+                        </div>
+                        
+                        <p>En otra terminal, pruebe que el servidor responde correctamente:</p>
+                        <div class="code-block">
+                            # Abra una nueva terminal y conéctese a su Raspberry Pi
+                            ssh pi@192.168.1.X
+                            
+                            # Pruebe la conexión con el servidor
+                            curl http://localhost:5000/health
+                        </div>
+                        <div class="terminal-output">
+                            {"status":"online"}
+                        </div>
+                        
+                        <p>Una vez que haya verificado que funciona, detenga el servidor temporal presionando <strong>Ctrl+C</strong> en la terminal donde lo ejecutó. Continuaremos configurando el servicio permanente.</p>
                     </div>
                     
+                    <!-- PASO 11: CONFIGURAR SERVICIO SYSTEMD -->
                     <div class="step-container">
-                        <h5><span class="step-number">10</span> Crear Servicio Systemd</h5>
-                        <p>Para que el servidor de impresión se inicie automáticamente:</p>
+                        <h5><span class="step-number">11</span> Configurar el Servicio Systemd</h5>
+                        
+                        <p>Ahora configuraremos el sistema para que el servidor se inicie automáticamente cuando arranque la Raspberry Pi:</p>
+                        
                         <div class="code-block">
                             sudo nano /etc/systemd/system/printer-server.service
                         </div>
-                        <p>Copie el siguiente contenido (ajuste el nombre de usuario si es diferente a 'pi'):</p>
+                        
+                        <p>Copie y pegue el siguiente contenido (ajuste el nombre de usuario si es diferente a 'pi'):</p>
+                        
                         <div class="code-block">
 [Unit]
 Description=Servidor de impresión Brother
@@ -322,121 +711,513 @@ Restart=always
 [Install]
 WantedBy=multi-user.target
                         </div>
-                        <p>Guarde el archivo y habilite el servicio:</p>
+                        
+                        <div class="command-explanation">
+                            Este archivo configura un servicio del sistema que:<br>
+                            • Se ejecutará como el usuario 'pi'<br>
+                            • Usará el entorno virtual creado anteriormente<br>
+                            • Iniciará automáticamente el servidor al arrancar<br>
+                            • Se reiniciará automáticamente si falla
+                        </div>
+                        
+                        <p>Guarde el archivo (Ctrl+O, Enter, Ctrl+X) y luego active el servicio:</p>
+                        
                         <div class="code-block">
-                            sudo systemctl enable printer-server.service<br>
-                            sudo systemctl start printer-server.service<br>
+                            sudo systemctl enable printer-server.service
+                        </div>
+                        <div class="terminal-output">
+                            Created symlink /etc/systemd/system/multi-user.target.wants/printer-server.service → /etc/systemd/system/printer-server.service.
+                        </div>
+                        
+                        <div class="code-block">
+                            sudo systemctl start printer-server.service
+                        </div>
+                        
+                        <div class="code-block">
                             sudo systemctl status printer-server.service
                         </div>
+                        <div class="terminal-output">
+                            ● printer-server.service - Servidor de impresión Brother<br>
+                               Loaded: loaded (/etc/systemd/system/printer-server.service; enabled; vendor preset: enabled)<br>
+                               Active: active (running) since Wed 2025-05-07 15:25:34 BST; 5s ago<br>
+                             Main PID: 12345 (gunicorn)<br>
+                                Tasks: 2 (limit: 4915)<br>
+                                  CPU: 1.028s<br>
+                               CGroup: /system.slice/printer-server.service<br>
+                                       ├─12345 /home/pi/printer_server/env/bin/python /home/pi/printer_server/env/bin/gunicorn --bind 0.0.0.0:5000 app:app<br>
+                                       └─12346 /home/pi/printer_server/env/bin/python /home/pi/printer_server/env/bin/gunicorn --bind 0.0.0.0:5000 app:app<br>
+                            <br>
+                            May 07 15:25:34 raspberrypi systemd[1]: Started Servidor de impresión Brother.<br>
+                            May 07 15:25:34 raspberrypi gunicorn[12345]: [2025-05-07 15:25:34 +0000] [12345] [INFO] Starting gunicorn 20.1.0<br>
+                            May 07 15:25:34 raspberrypi gunicorn[12345]: [2025-05-07 15:25:34 +0000] [12345] [INFO] Listening at: http://0.0.0.0:5000 (12345)<br>
+                            May 07 15:25:34 raspberrypi gunicorn[12345]: [2025-05-07 15:25:34 +0000] [12345] [INFO] Using worker: sync<br>
+                            May 07 15:25:34 raspberrypi gunicorn[12345]: [2025-05-07 15:25:34 +0000] [12346] [INFO] Booting worker with pid: 12346
+                        </div>
+                        
+                        <p>Presione <strong>Q</strong> para salir de la vista de estado.</p>
+                        
+                        <div class="alert alert-success">
+                            <i class="bi bi-check-circle-fill me-2"></i>
+                            <strong>¡Felicidades!</strong> Su servidor de impresión ya está funcionando como un servicio del sistema y se iniciará automáticamente cada vez que arranque la Raspberry Pi.
+                        </div>
+                        
+                        <h6 class="mt-4 mb-2">Verificar que el Servicio Funciona</h6>
+                        <div class="code-block">
+                            curl http://localhost:5000/health
+                        </div>
+                        <div class="terminal-output">
+                            {"status":"online"}
+                        </div>
+                        
+                        <div class="code-block">
+                            curl http://localhost:5000/status
+                        </div>
+                        <div class="terminal-output">
+                            {"printer_info":"Found a Brother QL-800 at usb:///dev/usb/lp0\nModel: QL-800\nSensor status: 0x00\nErrors: 0x00\nMedia: 62mm continuous with no marks\n","printer_status":"ready","status":"online","success":true}
+                        </div>
                     </div>
                     
+                    <!-- PASO 12: CONFIGURAR EN LA APLICACIÓN WEB -->
                     <div class="step-container">
-                        <h5><span class="step-number">11</span> Configurar en la Aplicación Web</h5>
-                        <p>Ahora puede configurar la impresora en la aplicación web:</p>
-                        <ol>
-                            <li>Dirección IP: IP de su Raspberry Pi (ej: 192.168.1.X)</li>
-                            <li>Puerto: 5000</li>
-                            <li>Ruta API: /print</li>
-                            <li>Puerto USB: La ruta que anotó anteriormente (ej: /dev/usb/lp0)</li>
-                        </ol>
-                        <p class="alert alert-warning">
+                        <h5><span class="step-number">12</span> Configurar en la Aplicación Web</h5>
+                        
+                        <p>Ahora que el servidor está funcionando, necesitamos configurarlo en la aplicación web:</p>
+                        
+                        <h6 class="mt-3 mb-2">Información Necesaria:</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header bg-earth-medium text-white">
+                                        Configuración del Servidor
+                                    </div>
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item d-flex justify-content-between">
+                                            <strong>Dirección IP:</strong> 
+                                            <span>IP de su Raspberry Pi (ej: 192.168.1.X)</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between">
+                                            <strong>Puerto:</strong> 
+                                            <span>5000</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between">
+                                            <strong>Ruta API:</strong> 
+                                            <span>/print</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card mb-3">
+                                    <div class="card-header bg-earth-medium text-white">
+                                        Configuración de la Impresora
+                                    </div>
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item d-flex justify-content-between">
+                                            <strong>Modelo:</strong> 
+                                            <span>QL-800 (o su modelo específico)</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between">
+                                            <strong>Puerto USB:</strong> 
+                                            <span>/dev/usb/lp0</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between">
+                                            <strong>Tipo de Impresora:</strong> 
+                                            <span>RASPBERRY_PI</span>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-warning">
                             <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                            <strong>Importante:</strong> Asegúrese de que la Raspberry Pi tiene una IP estática o una reserva DHCP en su router para que no cambie después de los reinicios.
-                        </p>
+                            <strong>Importante:</strong> Para que el servidor sea accesible desde otros dispositivos de forma permanente, configure una IP estática o una reserva DHCP en su router para la Raspberry Pi.
+                        </div>
+                        
+                        <h6 class="mt-4 mb-2">Configurar una IP Estática (Recomendado)</h6>
+                        <p>Para evitar que la dirección IP cambie después de reiniciar:</p>
+                        
+                        <div class="code-block">
+                            sudo nano /etc/dhcpcd.conf
+                        </div>
+                        
+                        <p>Añada estas líneas al final del archivo (ajuste las direcciones según su red):</p>
+                        
+                        <div class="code-block">
+# Configuración de IP estática para eth0 (cable)
+interface eth0
+static ip_address=192.168.1.200/24
+static routers=192.168.1.1
+static domain_name_servers=192.168.1.1
+
+# Configuración de IP estática para wlan0 (WiFi)
+interface wlan0
+static ip_address=192.168.1.200/24
+static routers=192.168.1.1
+static domain_name_servers=192.168.1.1
+                        </div>
+                        
+                        <p>Guarde el archivo (Ctrl+O, Enter, Ctrl+X) y reinicie la Raspberry Pi:</p>
+                        
+                        <div class="code-block">
+                            sudo reboot
+                        </div>
+                        
+                        <p>Después de reiniciar, su Raspberry Pi siempre tendrá la misma dirección IP (192.168.1.200 en este ejemplo).</p>
                     </div>
                     
+                    <!-- PASO 13: SOLUCIÓN DE PROBLEMAS -->
                     <div class="step-container">
-                        <h5><span class="step-number">12</span> Solución de Problemas</h5>
-                        <p>Si tiene problemas con la impresión:</p>
-                        <ul>
-                            <li>Verifique los logs del servidor:
-                                <div class="code-block">
-                                    sudo journalctl -u printer-server.service -f
+                        <h5><span class="step-number">13</span> Solución de Problemas</h5>
+                        
+                        <p>Si encuentra problemas con la impresión, aquí tiene algunas formas de diagnosticarlos:</p>
+                        
+                        <div class="accordion" id="troubleshootingAccordion">
+                            <!-- Problema 1 -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#problemOne" aria-expanded="false" aria-controls="problemOne">
+                                        <i class="bi bi-exclamation-triangle-fill me-2 text-warning"></i> El servidor no responde
+                                    </button>
+                                </h2>
+                                <div id="problemOne" class="accordion-collapse collapse" data-bs-parent="#troubleshootingAccordion">
+                                    <div class="accordion-body">
+                                        <ol>
+                                            <li>Verifique el estado del servicio:
+                                                <div class="code-block">
+                                                    sudo systemctl status printer-server.service
+                                                </div>
+                                            </li>
+                                            <li>Revise los logs del sistema:
+                                                <div class="code-block">
+                                                    sudo journalctl -u printer-server.service -f
+                                                </div>
+                                            </li>
+                                            <li>Reinicie el servicio:
+                                                <div class="code-block">
+                                                    sudo systemctl restart printer-server.service
+                                                </div>
+                                            </li>
+                                            <li>Verifique la conectividad de red:
+                                                <div class="code-block">
+                                                    ip addr show
+                                                </div>
+                                            </li>
+                                        </ol>
+                                    </div>
                                 </div>
-                            </li>
-                            <li>Verifique los logs específicos de la aplicación:
-                                <div class="code-block">
-                                    cat ~/printer_server/logs/printer_server.log
+                            </div>
+                            
+                            <!-- Problema 2 -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#problemTwo" aria-expanded="false" aria-controls="problemTwo">
+                                        <i class="bi bi-exclamation-triangle-fill me-2 text-warning"></i> La impresora no imprime
+                                    </button>
+                                </h2>
+                                <div id="problemTwo" class="accordion-collapse collapse" data-bs-parent="#troubleshootingAccordion">
+                                    <div class="accordion-body">
+                                        <ol>
+                                            <li>Verifique que la impresora esté conectada y encendida</li>
+                                            <li>Compruebe la detección de la impresora:
+                                                <div class="code-block">
+                                                    lsusb
+                                                    ls -la /dev/usb/
+                                                </div>
+                                            </li>
+                                            <li>Pruebe la impresora directamente:
+                                                <div class="code-block">
+                                                    brother_ql info usb://
+                                                </div>
+                                            </li>
+                                            <li>Verifique permisos del dispositivo USB:
+                                                <div class="code-block">
+                                                    sudo chmod 666 /dev/usb/lp0
+                                                </div>
+                                            </li>
+                                            <li>Compruebe si puede imprimir activando el entorno virtual:
+                                                <div class="code-block">
+                                                    cd ~/printer_server<br>
+                                                    source env/bin/activate<br>
+                                                    echo "Test" > test.txt<br>
+                                                    brother_ql print --printer /dev/usb/lp0 --model QL-800 test.txt
+                                                </div>
+                                            </li>
+                                        </ol>
+                                    </div>
                                 </div>
-                            </li>
-                            <li>Verifique que la impresora esté conectada y encendida</li>
-                            <li>Asegúrese de que la ruta del dispositivo USB es correcta</li>
-                            <li>Verifique permisos del dispositivo USB:
-                                <div class="code-block">
-                                    sudo chmod 666 /dev/usb/lp0
+                            </div>
+                            
+                            <!-- Problema 3 -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#problemThree" aria-expanded="false" aria-controls="problemThree">
+                                        <i class="bi bi-exclamation-triangle-fill me-2 text-warning"></i> Errores de entorno virtual
+                                    </button>
+                                </h2>
+                                <div id="problemThree" class="accordion-collapse collapse" data-bs-parent="#troubleshootingAccordion">
+                                    <div class="accordion-body">
+                                        <p>Si el servicio falla por problemas con el entorno virtual:</p>
+                                        <ol>
+                                            <li>Verifique la configuración del servicio:
+                                                <div class="code-block">
+                                                    sudo cat /etc/systemd/system/printer-server.service
+                                                </div>
+                                                Asegúrese de que las rutas al entorno virtual sean correctas.
+                                            </li>
+                                            <li>Recree el entorno virtual si es necesario:
+                                                <div class="code-block">
+                                                    cd ~/printer_server<br>
+                                                    rm -rf env<br>
+                                                    python3 -m venv env<br>
+                                                    source env/bin/activate<br>
+                                                    pip install flask gunicorn brother_ql
+                                                </div>
+                                            </li>
+                                            <li>Recargue la configuración del servicio:
+                                                <div class="code-block">
+                                                    sudo systemctl daemon-reload<br>
+                                                    sudo systemctl restart printer-server.service
+                                                </div>
+                                            </li>
+                                        </ol>
+                                    </div>
                                 </div>
-                            </li>
-                            <li>Compruebe si puede imprimir desde línea de comandos usando el entorno virtual:
-                                <div class="code-block">
-                                    cd ~/printer_server<br>
-                                    source env/bin/activate<br>
-                                    echo "Test" > test.txt<br>
-                                    brother_ql print --printer /dev/usb/lp0 --model QL-800 test.txt
+                            </div>
+                            
+                            <!-- Problema 4 -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#problemFour" aria-expanded="false" aria-controls="problemFour">
+                                        <i class="bi bi-exclamation-triangle-fill me-2 text-warning"></i> Logs y diagnóstico
+                                    </button>
+                                </h2>
+                                <div id="problemFour" class="accordion-collapse collapse" data-bs-parent="#troubleshootingAccordion">
+                                    <div class="accordion-body">
+                                        <p>Revise los diferentes logs para diagnosticar problemas:</p>
+                                        <ol>
+                                            <li>Logs del servicio del sistema:
+                                                <div class="code-block">
+                                                    sudo journalctl -u printer-server.service -f
+                                                </div>
+                                            </li>
+                                            <li>Logs de la aplicación:
+                                                <div class="code-block">
+                                                    cat ~/printer_server/logs/printer_server.log
+                                                </div>
+                                            </li>
+                                            <li>Pruebe el endpoint de estado:
+                                                <div class="code-block">
+                                                    curl http://localhost:5000/status
+                                                </div>
+                                            </li>
+                                            <li>Verifique la conectividad desde otro dispositivo:
+                                                <div class="code-block">
+                                                    # Desde otro computador en la misma red
+                                                    curl http://192.168.1.X:5000/health
+                                                </div>
+                                                Reemplace 192.168.1.X con la IP de su Raspberry Pi.
+                                            </li>
+                                        </ol>
+                                    </div>
                                 </div>
-                            </li>
-                            <li>Verifique que el servicio está funcionando correctamente:
-                                <div class="code-block">
-                                    curl http://localhost:5000/health
-                                </div>
-                                Debería devolver <code>{"status":"online"}</code>
-                            </li>
-                            <li>Pruebe la conexión desde la aplicación web con el botón "Probar Conexión"</li>
-                            <li>Reinicie el servicio si es necesario:
-                                <div class="code-block">
-                                    sudo systemctl restart printer-server.service
-                                </div>
-                            </li>
-                        </ul>
-                        <div class="alert alert-info">
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info mt-4">
                             <i class="bi bi-info-circle-fill me-2"></i>
-                            <strong>Nota sobre entornos virtuales:</strong> Si el servidor no encuentra el comando <code>brother_ql</code> cuando intenta imprimir, puede ser porque el entorno virtual no está activado correctamente. Compruebe que la configuración del servicio systemd incluye la ruta correcta al entorno virtual.
+                            <strong>Recordatorio sobre entornos virtuales:</strong> 
+                            <p>Si necesita realizar pruebas manuales, recuerde siempre activar primero el entorno virtual:</p>
+                            <div class="code-block">
+                                cd ~/printer_server<br>
+                                source env/bin/activate
+                            </div>
+                            <p>Verá <code>(env)</code> al principio del prompt cuando el entorno virtual esté activado.</p>
                         </div>
                     </div>
-
+                    
+                    <!-- PASO 14: MANTENIMIENTO -->
                     <div class="step-container">
-                        <h5><span class="step-number">13</span> Mantenimiento</h5>
-                        <p>Para mantener su servidor de impresión en buen estado:</p>
-                        <ul>
-                            <li>Actualice regularmente el sistema:
-                                <div class="code-block">
-                                    sudo apt update<br>
-                                    sudo apt upgrade -y
+                        <h5><span class="step-number">14</span> Mantenimiento</h5>
+                        
+                        <p>Para mantener su servidor de impresión en buen estado, realice estas tareas periódicamente:</p>
+                        
+                        <div class="accordion" id="maintenanceAccordion">
+                            <!-- Tarea 1 -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#maintenanceOne" aria-expanded="false" aria-controls="maintenanceOne">
+                                        <i class="bi bi-arrow-repeat me-2 text-primary"></i> Actualizar el sistema (mensualmente)
+                                    </button>
+                                </h2>
+                                <div id="maintenanceOne" class="accordion-collapse collapse" data-bs-parent="#maintenanceAccordion">
+                                    <div class="accordion-body">
+                                        <p>Mantenga el sistema operativo actualizado:</p>
+                                        <div class="code-block">
+                                            sudo apt update<br>
+                                            sudo apt upgrade -y
+                                        </div>
+                                        <p>Después de actualizaciones importantes, reinicie el sistema:</p>
+                                        <div class="code-block">
+                                            sudo reboot
+                                        </div>
+                                    </div>
                                 </div>
-                            </li>
-                            <li>Mantenga actualizadas las bibliotecas del entorno virtual:
-                                <div class="code-block">
-                                    cd ~/printer_server<br>
-                                    source env/bin/activate<br>
-                                    pip install --upgrade flask gunicorn brother_ql
+                            </div>
+                            
+                            <!-- Tarea 2 -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#maintenanceTwo" aria-expanded="false" aria-controls="maintenanceTwo">
+                                        <i class="bi bi-arrow-repeat me-2 text-primary"></i> Actualizar bibliotecas (trimestralmente)
+                                    </button>
+                                </h2>
+                                <div id="maintenanceTwo" class="accordion-collapse collapse" data-bs-parent="#maintenanceAccordion">
+                                    <div class="accordion-body">
+                                        <p>Actualice las bibliotecas Python en el entorno virtual:</p>
+                                        <div class="code-block">
+                                            cd ~/printer_server<br>
+                                            source env/bin/activate<br>
+                                            pip install --upgrade flask gunicorn brother_ql
+                                        </div>
+                                        <p>Reinicie el servicio después de actualizar las bibliotecas:</p>
+                                        <div class="code-block">
+                                            sudo systemctl restart printer-server.service
+                                        </div>
+                                    </div>
                                 </div>
-                            </li>
-                            <li>Rotación de logs - Si los logs ocupan demasiado espacio:
-                                <div class="code-block">
-                                    cd ~/printer_server<br>
-                                    rm -f logs/printer_server.log.*<br>
-                                    truncate -s 0 logs/printer_server.log
+                            </div>
+                            
+                            <!-- Tarea 3 -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#maintenanceThree" aria-expanded="false" aria-controls="maintenanceThree">
+                                        <i class="bi bi-arrow-repeat me-2 text-primary"></i> Gestión de logs (según necesidad)
+                                    </button>
+                                </h2>
+                                <div id="maintenanceThree" class="accordion-collapse collapse" data-bs-parent="#maintenanceAccordion">
+                                    <div class="accordion-body">
+                                        <p>Si los logs ocupan demasiado espacio, puede limpiarlos:</p>
+                                        <div class="code-block">
+                                            cd ~/printer_server<br>
+                                            rm -f logs/printer_server.log.*<br>
+                                            truncate -s 0 logs/printer_server.log
+                                        </div>
+                                        <p>Para ver el tamaño actual de los logs:</p>
+                                        <div class="code-block">
+                                            du -sh ~/printer_server/logs/
+                                        </div>
+                                    </div>
                                 </div>
-                            </li>
-                            <li>Revise el espacio en disco periódicamente:
-                                <div class="code-block">
-                                    df -h
+                            </div>
+                            
+                            <!-- Tarea 4 -->
+                            <div class="accordion-item">
+                                <h2 class="accordion-header">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#maintenanceFour" aria-expanded="false" aria-controls="maintenanceFour">
+                                        <i class="bi bi-arrow-repeat me-2 text-primary"></i> Copias de seguridad (antes de cambios importantes)
+                                    </button>
+                                </h2>
+                                <div id="maintenanceFour" class="accordion-collapse collapse" data-bs-parent="#maintenanceAccordion">
+                                    <div class="accordion-body">
+                                        <p>Realice una copia de seguridad de la configuración:</p>
+                                        <div class="code-block">
+                                            cd ~<br>
+                                            tar -czvf printer_server_backup.tar.gz printer_server/app.py /etc/systemd/system/printer-server.service
+                                        </div>
+                                        <p>Puede copiar este archivo a su ordenador mediante SCP:</p>
+                                        <div class="code-block">
+                                            # Ejecute este comando DESDE su ordenador, no en la Raspberry Pi
+                                            scp pi@192.168.1.X:~/printer_server_backup.tar.gz .
+                                        </div>
+                                    </div>
                                 </div>
-                            </li>
-                            <li>Realice copias de seguridad de la configuración para facilitar la recuperación:
-                                <div class="code-block">
-                                    cd ~<br>
-                                    tar -czvf printer_server_backup.tar.gz printer_server/app.py /etc/systemd/system/printer-server.service
-                                </div>
-                            </li>
-                        </ul>
-                        <div class="alert alert-info mb-3">
-                            <i class="bi bi-info-circle-fill me-2"></i>
-                            <strong>Recomendación:</strong> Mantenga una copia del código del servidor y estas instrucciones en un lugar seguro. Si necesita reinstalar la Raspberry Pi en el futuro, podrá configurar rápidamente el servidor de impresión de nuevo.
+                            </div>
                         </div>
+                        
+                        <div class="alert alert-success mt-4">
+                            <i class="bi bi-lightbulb-fill me-2"></i>
+                            <strong>Consejo:</strong> Guarde una copia de esta guía y del código del servidor en un lugar seguro. Si alguna vez necesita reinstalar la Raspberry Pi, le facilitará la configuración.
+                        </div>
+                    </div>
+                    
+                    <!-- RESUMEN -->
+                    <div class="step-container">
+                        <h5><i class="bi bi-check-circle-fill me-2 text-success"></i>¡Felicidades!</h5>
+                        <p>Ha completado con éxito la configuración de su servidor de impresión Raspberry Pi. Ahora puede imprimir etiquetas desde cualquier dispositivo en su red local.</p>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header bg-earth-dark text-white">
+                                Resumen de la Configuración
+                            </div>
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item">
+                                    <strong>URL del servidor:</strong> http://192.168.1.X:5000/print
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Endpoint de estado:</strong> http://192.168.1.X:5000/status
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Modelo de impresora:</strong> QL-800 (o su modelo específico)
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Puerto USB:</strong> /dev/usb/lp0
+                                </li>
+                                <li class="list-group-item">
+                                    <strong>Servicio del sistema:</strong> printer-server.service
+                                </li>
+                            </ul>
+                        </div>
+                        
+                        <p>Ahora puede configurar esta impresora en la aplicación web siguiendo el paso 12.</p>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+// Script para hacer que los acordeones funcionen
+document.addEventListener('DOMContentLoaded', function() {
+    // Obtener todos los botones del acordeón
+    var accordionButtons = document.querySelectorAll('.accordion-button');
+    
+    // Añadir event listeners a cada botón
+    accordionButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            // Obtener el ID del contenido a mostrar/ocultar
+            var targetId = this.getAttribute('data-bs-target').substring(1);
+            var targetElement = document.getElementById(targetId);
+            
+            // Alternar la clase 'show' para mostrar/ocultar el contenido
+            if (targetElement.classList.contains('show')) {
+                targetElement.classList.remove('show');
+                this.classList.add('collapsed');
+                this.setAttribute('aria-expanded', 'false');
+            } else {
+                // Cerrar todos los demás paneles primero
+                var parentId = targetElement.getAttribute('data-bs-parent');
+                if (parentId) {
+                    var parentElement = document.querySelector(parentId);
+                    var openPanels = parentElement.querySelectorAll('.accordion-collapse.show');
+                    openPanels.forEach(function(panel) {
+                        panel.classList.remove('show');
+                        var panelButton = document.querySelector('[data-bs-target="#' + panel.id + '"]');
+                        if (panelButton) {
+                            panelButton.classList.add('collapsed');
+                            panelButton.setAttribute('aria-expanded', 'false');
+                        }
+                    });
+                }
+                
+                // Abrir el panel seleccionado
+                targetElement.classList.add('show');
+                this.classList.remove('collapsed');
+                this.setAttribute('aria-expanded', 'true');
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

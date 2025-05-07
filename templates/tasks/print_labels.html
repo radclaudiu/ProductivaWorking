@@ -658,8 +658,8 @@
                         throw new Error('No se pudo determinar la ubicación');
                     }
                     
-                    // Hacer petición al servidor para obtener las impresoras de tipo Raspberry Pi
-                    const response = await fetch(`/tasks/api/printers/${locationId}?type=raspberry_pi`);
+                    // Hacer petición al servidor para obtener todas las impresoras disponibles
+                    const response = await fetch(`/tasks/api/printers/location/${locationId}`);
                     
                     if (!response.ok) {
                         throw new Error(`Error ${response.status}: ${response.statusText}`);

@@ -1625,14 +1625,24 @@ def purge_monthly_tasks(location_id):
         flash('Solo administradores pueden usar esta función de mantenimiento.', 'danger')
         return redirect(url_for('tasks.list_tasks', location_id=location_id))
     
+    results = {
+        'tasks_found': 0,
+        'tasks_deleted': 0,
+        'completions_deleted': 0,
+        'schedules_deleted': 0,
+        'month_days_deleted': 0,
+        'errors': []
+    }
+    
     try:
         # Obtener todas las tareas mensuales de esta ubicación
         monthly_tasks = Task.query.filter_by(
             location_id=location_id, 
-            frequency=TaskFrequency.MONTHLY
+            frequency=TaskFrequency.MENSUAL
         ).all()
         
         task_count = len(monthly_tasks)
+        results['tasks_found'] = task_count
         
         if task_count == 0:
             flash('No se encontraron tareas mensuales para purgar.', 'info')
@@ -1641,7 +1651,43 @@ def purge_monthly_tasks(location_id):
         # Registro para análisis
         current_app.logger.info(f"Iniciando purga de {task_count} tareas mensuales en ubicación {location_id}")
         
-        # Eliminar cada tarea mensual individualmente para mejor registro
+        # ESTRATEGIA: Recolectar todas las IDs primero
+        task_ids = [task.id for task in monthly_tasks]
+        
+        try:
+            # PASO 1: Eliminar completados (operación relativamente segura)
+            from sqlalchemy import text
+            # Usar SQL directo para evitar problemas de cascada
+            completion_sql = text("DELETE FROM task_completions WHERE task_id IN :task_ids")
+            result = db.session.execute(completion_sql, {"task_ids": tuple(task_ids) if len(task_ids) > 1 else f"({task_ids[0]})"})
+            completions_deleted = result.rowcount
+            current_app.logger.info(f"Eliminados {completions_deleted} registros de completado de tareas mensuales")
+            results['completions_deleted'] = completions_deleted
+            
+            # PASO 2: Eliminar programación (también debería ser seguro)
+            schedule_sql = text("DELETE FROM task_schedules WHERE task_id IN :task_ids")
+            result = db.session.execute(schedule_sql, {"task_ids": tuple(task_ids) if len(task_ids) > 1 else f"({task_ids[0]})"})
+            schedules_deleted = result.rowcount
+            current_app.logger.info(f"Eliminados {schedules_deleted} registros de programación de tareas mensuales")
+            results['schedules_deleted'] = schedules_deleted
+            
+            # PASO 3: Eliminar días del mes (SQL directo para evitar problemas de relación)
+            monthday_sql = text("DELETE FROM task_month_days WHERE task_id IN :task_ids")
+            result = db.session.execute(monthday_sql, {"task_ids": tuple(task_ids) if len(task_ids) > 1 else f"({task_ids[0]})"})
+            monthdays_deleted = result.rowcount
+            current_app.logger.info(f"Eliminados {monthdays_deleted} registros de días mensuales")
+            results['month_days_deleted'] = monthdays_deleted
+            
+            # Si todo ha ido bien hasta aquí, intentamos eliminar las tareas principales
+            db.session.commit()
+            current_app.logger.info("Commit de eliminación de registros relacionados realizado correctamente")
+            
+        except Exception as batch_error:
+            db.session.rollback()
+            current_app.logger.error(f"Error en eliminación por lotes: {batch_error}. Cambiando a modo individual...")
+            results['errors'].append(f"Error en eliminación por lotes: {str(batch_error)}")
+        
+        # PASO 4: Eliminar cada tarea mensual individualmente 
         deleted_count = 0
         for task in monthly_tasks:
             try:
@@ -1649,28 +1695,34 @@ def purge_monthly_tasks(location_id):
                 task_id = task.id
                 task_title = task.title
                 
-                # 1. Eliminar completados
-                TaskCompletion.query.filter_by(task_id=task.id).delete()
+                # Verificar si aún hay registros relacionados (por si la eliminación en lote falló)
+                if TaskCompletion.query.filter_by(task_id=task_id).count() > 0:
+                    TaskCompletion.query.filter_by(task_id=task_id).delete()
+                    
+                if TaskSchedule.query.filter_by(task_id=task_id).count() > 0:
+                    TaskSchedule.query.filter_by(task_id=task_id).delete()
+                    
+                if TaskMonthDay.query.filter_by(task_id=task_id).count() > 0:
+                    TaskMonthDay.query.filter_by(task_id=task_id).delete()
                 
-                # 2. Eliminar programación
-                TaskSchedule.query.filter_by(task_id=task.id).delete()
-                
-                # 3. Eliminar días del mes de forma segura
-                TaskMonthDay.query.filter_by(task_id=task.id).delete()
-                
-                # 4. Finalmente, eliminar la tarea
+                # Finalmente, eliminar la tarea
                 db.session.delete(task)
                 
+                # Intentar commit por cada tarea para garantizar que al menos algunas se eliminen
+                db.session.commit()
+                
                 # Registrar éxito para esta tarea
-                current_app.logger.info(f"Tarea mensual eliminada correctamente: {task_id} - {task_title}")
+                current_app.logger.info(f"Tarea mensual {task_id} - {task_title} eliminada correctamente")
                 deleted_count += 1
                 
             except Exception as task_error:
-                current_app.logger.error(f"Error al eliminar tarea mensual {task.id}: {task_error}")
+                db.session.rollback()
+                error_msg = f"Error al eliminar tarea mensual {task.id}: {task_error}"
+                current_app.logger.error(error_msg)
+                results['errors'].append(error_msg)
                 # Continuar con la siguiente tarea
         
-        # Commit al final para garantizar integridad
-        db.session.commit()
+        results['tasks_deleted'] = deleted_count
         
         # Mensaje de resultado
         if deleted_count == task_count:
@@ -1680,49 +1732,133 @@ def purge_monthly_tasks(location_id):
         
     except Exception as e:
         db.session.rollback()
+        import traceback
+        error_traceback = traceback.format_exc()
         current_app.logger.error(f"Error general en purge_monthly_tasks: {e}")
+        current_app.logger.error(f"Traceback completo: {error_traceback}")
         flash(f'Error al purgar tareas mensuales: {str(e)}', 'danger')
+        results['errors'].append(str(e))
     
+    # Registrar actividad
+    log_activity(f'Purga de tareas mensuales ejecutada. Resultados: {results}')
     return redirect(url_for('tasks.list_tasks', location_id=location_id))
 
 @tasks_bp.route('/fix-task-monthdays/<int:location_id>')
 @login_required
 def fix_task_monthdays(location_id):
-    """Repara o elimina registros huérfanos de TaskMonthDay"""
+    """Repara o elimina registros huérfanos de TaskMonthDay y corrige referencias incorrectas"""
     # Verificar permisos (sólo admin)
     if not current_user.is_admin():
         flash('Solo administradores pueden usar esta función de mantenimiento.', 'danger')
         return redirect(url_for('tasks.list_tasks', location_id=location_id))
     
+    results = {
+        'orphaned_deleted': 0,
+        'invalid_days_fixed': 0,
+        'duplicate_days_fixed': 0,
+        'errors': []
+    }
+    
     try:
-        # Obtener todas las tareas de esta ubicación
+        # Obtener todas las tareas de esta ubicación y un diccionario de ids para verificación rápida
         tasks = Task.query.filter_by(location_id=location_id).all()
-        task_ids = [task.id for task in tasks]
+        task_ids = {task.id: task for task in tasks}
         
-        # Encontrar registros TaskMonthDay huérfanos (sin tarea asociada)
+        current_app.logger.info(f"Iniciando corrección de TaskMonthDay - Encontradas {len(tasks)} tareas en ubicación {location_id}")
+        
+        # PASO 1: Encontrar y eliminar registros TaskMonthDay huérfanos (sin tarea asociada)
         orphaned_records = TaskMonthDay.query.filter(
-            ~TaskMonthDay.task_id.in_(task_ids) if task_ids else True
+            ~TaskMonthDay.task_id.in_(task_ids.keys()) if task_ids else True
         ).all()
         
         orphan_count = len(orphaned_records)
+        current_app.logger.info(f"Se encontraron {orphan_count} registros TaskMonthDay huérfanos")
         
-        if orphan_count == 0:
-            flash('No se encontraron registros huérfanos de TaskMonthDay.', 'info')
-            return redirect(url_for('tasks.list_tasks', location_id=location_id))
+        if orphan_count > 0:
+            # Mostrar detalles de registros huérfanos antes de eliminar
+            for record in orphaned_records:
+                current_app.logger.info(f"Eliminando registro huérfano: ID={record.id}, task_id={record.task_id}, día={record.day_of_month}")
+                db.session.delete(record)
+            
+            results['orphaned_deleted'] = orphan_count
         
-        # Eliminar registros huérfanos
-        for record in orphaned_records:
-            db.session.delete(record)
+        # PASO 2: Verificar y corregir días del mes inválidos
+        all_month_days = TaskMonthDay.query.filter(
+            TaskMonthDay.task_id.in_(task_ids.keys())
+        ).all()
         
-        db.session.commit()
+        invalid_days = [md for md in all_month_days if md.day_of_month < 1 or md.day_of_month > 31]
+        if invalid_days:
+            current_app.logger.warning(f"Se encontraron {len(invalid_days)} registros con días del mes inválidos")
+            for invalid in invalid_days:
+                current_app.logger.warning(f"Corrigiendo día inválido: ID={invalid.id}, task_id={invalid.task_id}, día={invalid.day_of_month}")
+                # Corregir valores fuera de rango
+                if invalid.day_of_month < 1:
+                    invalid.day_of_month = 1
+                elif invalid.day_of_month > 31:
+                    invalid.day_of_month = 31
+            
+            results['invalid_days_fixed'] = len(invalid_days)
         
-        flash(f'Se eliminaron {orphan_count} registros huérfanos de TaskMonthDay.', 'success')
+        # PASO 3: Eliminar duplicados (misma tarea, mismo día)
+        from sqlalchemy import func
+        duplicates = db.session.query(
+            TaskMonthDay.task_id,
+            TaskMonthDay.day_of_month,
+            func.count(TaskMonthDay.id).label('count')
+        ).group_by(
+            TaskMonthDay.task_id,
+            TaskMonthDay.day_of_month
+        ).having(
+            func.count(TaskMonthDay.id) > 1
+        ).all()
+        
+        duplicate_count = 0
+        for dup in duplicates:
+            task_id, day_of_month, count = dup
+            current_app.logger.warning(f"Encontrados {count} registros duplicados para tarea {task_id}, día {day_of_month}")
+            
+            # Obtener todos los registros duplicados excepto el primero (que mantendremos)
+            dup_records = TaskMonthDay.query.filter_by(
+                task_id=task_id,
+                day_of_month=day_of_month
+            ).order_by(TaskMonthDay.id).offset(1).all()
+            
+            for dr in dup_records:
+                current_app.logger.info(f"Eliminando duplicado: ID={dr.id}, task_id={dr.task_id}, día={dr.day_of_month}")
+                db.session.delete(dr)
+                duplicate_count += 1
+        
+        results['duplicate_days_fixed'] = duplicate_count
+        
+        # Confirmar cambios solo si hay algo que guardar
+        if results['orphaned_deleted'] > 0 or results['invalid_days_fixed'] > 0 or results['duplicate_days_fixed'] > 0:
+            db.session.commit()
+            
+            # Mensaje con detalles de las correcciones
+            message_parts = []
+            if results['orphaned_deleted'] > 0:
+                message_parts.append(f"{results['orphaned_deleted']} registros huérfanos eliminados")
+            if results['invalid_days_fixed'] > 0:
+                message_parts.append(f"{results['invalid_days_fixed']} días inválidos corregidos")
+            if results['duplicate_days_fixed'] > 0:
+                message_parts.append(f"{results['duplicate_days_fixed']} registros duplicados eliminados")
+                
+            flash(f"Corrección completada: {', '.join(message_parts)}.", 'success')
+        else:
+            flash('No se encontraron problemas que corregir en los registros TaskMonthDay.', 'info')
         
     except Exception as e:
         db.session.rollback()
+        import traceback
+        error_traceback = traceback.format_exc()
         current_app.logger.error(f"Error en fix_task_monthdays: {e}")
+        current_app.logger.error(f"Traceback completo: {error_traceback}")
         flash(f'Error al reparar registros: {str(e)}', 'danger')
+        results['errors'].append(str(e))
     
+    # Registrar actividad
+    log_activity(f'Herramienta de corrección TaskMonthDay ejecutada. Resultados: {results}')
     return redirect(url_for('tasks.list_tasks', location_id=location_id))
 
 

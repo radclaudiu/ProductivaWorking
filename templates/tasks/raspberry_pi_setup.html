@@ -363,23 +363,39 @@ templates/tasks/raspberry_pi_setup_optimized.html
                         
                         <p>Primero, descargamos los controladores de CUPS para Brother:</p>
                         
+                        <div class="alert alert-info mb-3">
+                            <i class="bi bi-info-circle-fill me-2"></i>
+                            <strong>Recomendación:</strong> Visite el <a href="https://support.brother.com/g/b/downloadlist.aspx?c=es&lang=es&prod=td4550dnwb_eu_as&os=128" target="_blank">sitio web oficial de Brother</a> para descargar los controladores más recientes para Linux/ARM.
+                        </div>
+                        
                         <div class="code-block">
                             cd ~
-                            wget https://download.brother.com/welcome/dlf103945/td4550dnwbcupswrapper-1.0.0-0.armhf.deb
-                            wget https://download.brother.com/welcome/dlf103946/td4550dnwblpr-1.0.0-0.armhf.deb
+                            # Método 1: Usar el navegador web para descargar desde el sitio oficial de Brother
+                            # y transferir los archivos .deb a la Raspberry Pi usando SCP
+                            
+                            # Método 2: Alternativa - usar curl para descargar directamente
+                            sudo apt-get install -y curl
+                            
+                            # Descargar controladores (enlaces pueden cambiar, verificar en el sitio oficial)
+                            curl -L -O "https://download.brother.com/welcome/dlf103945/td4550dnwbcupswrapper-1.0.0-0.armhf.deb"
+                            curl -L -O "https://download.brother.com/welcome/dlf103946/td4550dnwblpr-1.0.0-0.armhf.deb"
                         </div>
                         <div class="command-explanation">
-                            Descarga los paquetes de controladores oficiales de Brother para la impresora TD-4550DNWB. Incluyen los archivos LPR (sistema de impresión) y el wrapper de CUPS (para integración con el sistema de impresión de Linux).
+                            Descarga los paquetes de controladores oficiales de Brother para la impresora TD-4550DNWB. Incluyen los archivos LPR (sistema de impresión) y el wrapper de CUPS (para integración con el sistema de impresión de Linux). Si los enlaces directos no funcionan, descargue manualmente los archivos del sitio web oficial.
                         </div>
                         
                         <p>Ahora instalamos los controladores:</p>
                         
                         <div class="code-block">
-                            sudo dpkg -i --force-all td4550dnwblpr-1.0.0-0.armhf.deb
-                            sudo dpkg -i --force-all td4550dnwbcupswrapper-1.0.0-0.armhf.deb
+                            # Instalar (si descargó los archivos manualmente, asegúrese de que los nombres coincidan)
+                            sudo dpkg -i --force-all td4550dnwblpr-*.deb
+                            sudo dpkg -i --force-all td4550dnwbcupswrapper-*.deb
+                            
+                            # Si hay errores de dependencias, ejecutar:
+                            sudo apt-get -f install -y
                         </div>
                         <div class="command-explanation">
-                            Instala los paquetes de controladores. Usamos <code>--force-all</code> para superar posibles problemas de dependencias en Raspberry Pi OS.
+                            Instala los paquetes de controladores. Usamos <code>--force-all</code> para superar posibles problemas de dependencias en Raspberry Pi OS. Si aparecen errores de dependencias, el comando <code>apt-get -f install</code> intentará resolverlos automáticamente.
                         </div>
                         
                         <p>Verificamos que CUPS esté ejecutándose correctamente:</p>

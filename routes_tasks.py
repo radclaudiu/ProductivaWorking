@@ -1193,7 +1193,7 @@ def delete_task(task_id):
             try:
                 # 1. Primero intentar con DELETE directo en SQL (evitando cascadas)
                 from sqlalchemy import text
-                sql = text("DELETE FROM task_month_days WHERE task_id = :task_id")
+                sql = text("DELETE FROM task_monthdays WHERE task_id = :task_id")
                 result = db.session.execute(sql, {"task_id": task.id})
                 num_deleted = result.rowcount
                 current_app.logger.info(f"Días del mes eliminados para tarea {task.id} con SQL directo: {num_deleted} registros")

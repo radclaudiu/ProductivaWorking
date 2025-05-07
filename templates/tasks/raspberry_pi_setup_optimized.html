@@ -289,9 +289,19 @@
                     <!-- PASO 5: INSTALAR CONTROLADORES DE BROTHER -->
                     <div class="step-container">
                         <h5><span class="step-number">5</span> Instalar Controladores de Brother para TD-4550DNWB</h5>
-                        <p>Visite el <a href="https://support.brother.com/g/b/downloadlist.aspx?c=es&lang=es&prod=td4550dnwb_eu_as&os=128" target="_blank">sitio web oficial de Brother</a> para descargar los controladores más recientes.</p>
+                        <p>Visite el <a href="https://support.brother.com/g/b/downloadlist.aspx?c=es&lang=es&prod=lptd4550dnwbeuk&os=130&flang=English#SelectLanguageType-593_0_1" target="_blank">sitio web oficial de Brother</a> para descargar los controladores más recientes.</p>
                         <div class="important-note">
                             <p><strong>Importante:</strong> Si los enlaces directos no funcionan, descargue manualmente los archivos <code>LPR driver</code> y <code>CUPSwrapper driver</code> de la sección "Linux" en el sitio web de Brother.</p>
+                            <p><strong>Instrucciones oficiales de Brother:</strong></p>
+                            <ol>
+                                <li>Descargue los drivers</li>
+                                <li>Inicie sesión como superusuario (o use "sudo")</li>
+                                <li>Encienda la impresora y conecte el cable USB</li>
+                                <li><strong>Importante:</strong> Cierre el asistente de instalación si aparece</li>
+                                <li>Abra la terminal y vaya al directorio donde está el driver</li>
+                                <li>Instale el driver con <code>dpkg -i --force-all (nombre-del-driver)</code></li>
+                                <li>Verifique si el driver está instalado con <code>dpkg -l | grep Brother</code></li>
+                            </ol>
                         </div>
                         <div class="code-block">
                             <button class="copy-button">Copiar todo</button>
@@ -637,7 +647,61 @@ if __name__ == '__main__':
                     <!-- SOLUCIÓN DE PROBLEMAS -->
                     <div class="alert alert-warning">
                         <i class="bi bi-exclamation-triangle me-2"></i> 
-                        <strong>¿Problemas con la instalación?</strong> 
+                        <strong>¿Problemas con la instalación?</strong> <a href="#troubleshooting" class="alert-link">Consulte la sección de solución de problemas</a>
+                    </div>
+                    
+                    <div id="troubleshooting" class="step-container">
+                        <h4 class="mb-3"><i class="bi bi-tools me-2"></i>Solución de Problemas Comunes</h4>
+                        
+                        <div class="card mb-4">
+                            <div class="card-header bg-danger text-white">
+                                <h5 class="mb-0">Error: "No es un archivo en formato Debian"</h5>
+                            </div>
+                            <div class="card-body">
+                                <p>Este error ocurre cuando el archivo .deb descargado está dañado o incompleto. Las instrucciones oficiales de Brother indican:</p>
+                                
+                                <ol>
+                                    <li>Descargar el driver directamente del <a href="https://support.brother.com/g/b/downloadlist.aspx?c=es&lang=es&prod=lptd4550dnwbeuk&os=130&flang=English#SelectLanguageType-593_0_1" target="_blank">sitio web oficial de Brother</a></li>
+                                    <li>Verificar que el archivo descargado tiene un tamaño apropiado (varios MB, no KB)</li>
+                                    <li>Cerrar cualquier asistente de instalación que aparezca automáticamente</li>
+                                    <li>Usar el comando exacto <code>dpkg -i --force-all (nombre-del-driver)</code></li>
+                                </ol>
+                                
+                                <p><strong>Solución 1:</strong> Verificar el archivo descargado</p>
+                                <div class="code-block">
+                                    <button class="copy-button">Copiar todo</button>
+                                    <div class="code-command">ls -la *.deb</div>
+                                </div>
+                                
+                                <p><strong>Solución 2:</strong> Si el archivo es muy pequeño (menos de 1MB), está dañado. Descargue desde el navegador en su PC y transfiera a la Raspberry Pi:</p>
+                                <div class="code-block">
+                                    <button class="copy-button">Copiar todo</button>
+                                    <div class="code-command"># En su PC, use SCP para transferir los archivos a la Raspberry Pi</div>
+                                    <div class="code-command"># Reemplace "pi" y "192.168.1.X" con sus datos</div>
+                                    <div class="code-command">scp ruta_al_archivo/td4550dnwblpr-*.deb pi@192.168.1.X:~</div>
+                                    <div class="code-command">scp ruta_al_archivo/td4550dnwbcupswrapper-*.deb pi@192.168.1.X:~</div>
+                                </div>
+                                
+                                <p><strong>Solución 3:</strong> Instale las dependencias necesarias antes de intentar instalar los drivers:</p>
+                                <div class="code-block">
+                                    <button class="copy-button">Copiar todo</button>
+                                    <div class="code-command">sudo apt update</div>
+                                    <div class="code-command">sudo apt install -y cups libcups2-dev libc6-dev</div>
+                                </div>
+                                
+                                <p><strong>Solución 4:</strong> Use el flag <code>--force-all</code> como indican las instrucciones oficiales:</p>
+                                <div class="code-block">
+                                    <button class="copy-button">Copiar todo</button>
+                                    <div class="code-command">sudo dpkg -i --force-all td4550dnwblpr-*.deb</div>
+                                    <div class="code-command">sudo dpkg -i --force-all td4550dnwbcupswrapper-*.deb</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- RESUMEN -->
+                    <div class="step-container">
+                        <h5><i class="bi bi-check-circle-fill me-2 text-success"></i>Configuración Completa</h5>
                         <a href="#" id="showTroubleshooting" class="alert-link">Haga clic aquí para ver soluciones</a>
                     </div>
                     <div class="accordion" id="troubleshootingAccordion">

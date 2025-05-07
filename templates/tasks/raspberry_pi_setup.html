@@ -584,6 +584,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 import tempfile
 import base64
+import cups
 
 app = Flask(__name__)
 
@@ -597,36 +598,50 @@ file_handler.setFormatter(logging.Formatter(
 file_handler.setLevel(logging.INFO)
 app.logger.addHandler(file_handler)
 app.logger.setLevel(logging.INFO)
-app.logger.info('Servidor de impresión iniciado')
+app.logger.info('Servidor de impresión TD-4550DNWB iniciado')
+
+# Nombre de la impresora CUPS
+PRINTER_NAME = "TD-4550DNWB"
 
 @app.route('/status', methods=['GET'])
 def status_check():
-    """Verificar estado del servidor y la impresora"""
+    """Verificar estado del servidor y la impresora TD-4550DNWB"""
     try:
-        # Intentar detectar la impresora
-        process = subprocess.run(['brother_ql', 'info', 'usb://'], 
-                                capture_output=True, text=True)
+        # Conectar con CUPS para verificar estado de la impresora
+        conn = cups.Connection()
+        printers = conn.getPrinters()
         
-        if process.returncode == 0:
-            printer_info = process.stdout
+        if PRINTER_NAME in printers:
+            printer_info = printers[PRINTER_NAME]
+            printer_state = printer_info['printer-state']
+            state_message = "ready"
+            
+            if printer_state == 3:
+                state_message = "idle"
+            elif printer_state == 4:
+                state_message = "processing"
+            elif printer_state == 5:
+                state_message = "stopped"
+                
             return jsonify({
                 'success': True,
                 'status': 'online',
-                'printer_status': 'ready',
+                'printer_status': state_message,
                 'printer_info': printer_info
             })
         else:
             return jsonify({
                 'success': True,
                 'status': 'online',
-                'printer_status': 'error',
-                'error': process.stderr
+                'printer_status': 'not_found',
+                'message': f'Impresora {PRINTER_NAME} no encontrada en CUPS'
             })
     except Exception as e:
+        app.logger.error(f'Error al verificar estado de la impresora: {str(e)}')
         return jsonify({
             'success': True,
             'status': 'online',
-            'printer_status': 'unknown',
+            'printer_status': 'error',
             'error': str(e)
         })
 
@@ -637,19 +652,15 @@ def health_check():
 
 @app.route('/print', methods=['POST'])
 def print_label():
-    """Endpoint principal para imprimir etiquetas"""
+    """Endpoint principal para imprimir etiquetas en TD-4550DNWB usando CUPS"""
     data = request.json
-    usb_port = data.get('usb_port', '/dev/usb/lp0')
-    printer_model = data.get('printer_model', 'QL-800')
-    label_size = data.get('label_size', '62')
     content = data.get('content')
-    orientation = data.get('orientation', 'standard')
     
     if not content:
         return jsonify({'success': False, 'message': 'No se proporcionó contenido para imprimir'})
     
     try:
-        # Crear archivo temporal con el contenido base64
+        # Crear archivo temporal con la imagen base64
         with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as temp:
             temp_filename = temp.name
             try:
@@ -660,28 +671,36 @@ def print_label():
                 
                 app.logger.info(f'Archivo temporal creado: {temp_filename}')
                 
-                # Preparar comando de brother_ql
-                cmd = [
-                    'brother_ql',
-                    'print',
-                    '--printer', usb_port,
-                    '--model', printer_model,
-                    '--label', label_size,
-                    temp_filename
-                ]
+                # Conectar con CUPS e imprimir
+                conn = cups.Connection()
                 
-                if orientation == 'rotated':
-                    cmd.insert(3, '--rotate')
+                # Verificar que la impresora existe
+                printers = conn.getPrinters()
+                if PRINTER_NAME not in printers:
+                    app.logger.error(f'Impresora {PRINTER_NAME} no encontrada')
+                    return jsonify({'success': False, 'message': f'Impresora {PRINTER_NAME} no encontrada'})
                 
-                app.logger.info(f'Ejecutando comando: {" ".join(cmd)}')
-                process = subprocess.run(cmd, capture_output=True, text=True)
+                # Opciones de impresión para TD-4550DNWB
+                options = {
+                    "media": "Custom.102x152mm",  # Ajustar según el tamaño de etiqueta que use
+                    "BrRollWidth": "102",        # Ancho del rollo en mm
+                    "BrLabelLength": "152",      # Longitud de la etiqueta en mm
+                    "fit-to-page": "true"
+                }
                 
-                if process.returncode == 0:
-                    app.logger.info('Impresión exitosa')
-                    return jsonify({'success': True, 'message': 'Etiqueta enviada a la impresora correctamente'})
+                # Enviar trabajo de impresión a CUPS
+                job_id = conn.printFile(PRINTER_NAME, temp_filename, "Etiqueta desde API", options)
+                
+                if job_id > 0:
+                    app.logger.info(f'Impresión exitosa: Job ID {job_id}')
+                    return jsonify({
+                        'success': True, 
+                        'message': 'Etiqueta enviada a la impresora correctamente',
+                        'job_id': job_id
+                    })
                 else:
-                    app.logger.error(f'Error al imprimir: {process.stderr}')
-                    return jsonify({'success': False, 'message': f'Error al imprimir: {process.stderr}'})
+                    app.logger.error('Error al enviar trabajo de impresión a CUPS')
+                    return jsonify({'success': False, 'message': 'Error al enviar trabajo de impresión'})
                 
             except Exception as e:
                 app.logger.error(f'Error al procesar la imagen: {str(e)}')
@@ -711,12 +730,22 @@ if __name__ == '__main__':
                         
                         <p>Antes de configurar el servicio, probemos que el servidor funciona correctamente:</p>
                         <div class="code-block">
+                            # Primero, instalar la biblioteca de CUPS para Python
+                            pip install pycups
+                            
                             # Asegúrese de que el entorno virtual esté activado - debe ver (env) al inicio del prompt
                             # Si no lo ve, ejecute: source env/bin/activate
                             
                             python app.py
                         </div>
                         <div class="terminal-output">
+                            <span class="virtual-env-active">(env)</span> pi@raspberrypi:~/printer_server $ pip install pycups<br>
+                            Collecting pycups<br>
+                            &nbsp;&nbsp;Downloading pycups-2.0.1.tar.gz (52 kB)<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 52.4/52.4 kB 1.2 MB/s eta 0:00:00<br>
+                            Building wheels for collected packages: pycups<br>
+                            &nbsp;&nbsp;Building wheel for pycups (setup.py) ... done<br>
+                            Successfully installed pycups-2.0.1<br>
                             <span class="virtual-env-active">(env)</span> pi@raspberrypi:~/printer_server $ python app.py<br>
                             * Serving Flask app 'app'<br>
                             * Debug mode: off<br>
@@ -737,6 +766,14 @@ if __name__ == '__main__':
                         </div>
                         <div class="terminal-output">
                             {"status":"online"}
+                        </div>
+                        
+                        <p>Verifique el estado de la impresora a través del servidor:</p>
+                        <div class="code-block">
+                            curl http://localhost:5000/status
+                        </div>
+                        <div class="terminal-output">
+                            {"printer_info":{"device-uri":"usb://Brother/TD-4550DNWB","printer-info":"Brother TD-4550DNWB","printer-is-accepting-jobs":true,"printer-is-shared":true,"printer-make-and-model":"Brother TD-4550DNWB","printer-state":3,"printer-state-message":"","printer-state-reasons":["none"],"printer-type":10522636,"printer-uri-supported":"ipp://localhost:631/printers/TD-4550DNWB"},"printer_status":"idle","status":"online","success":true}
                         </div>
                         
                         <p>Una vez que haya verificado que funciona, detenga el servidor temporal presionando <strong>Ctrl+C</strong> en la terminal donde lo ejecutó. Continuaremos configurando el servicio permanente.</p>
@@ -831,7 +868,7 @@ WantedBy=multi-user.target
                             curl http://localhost:5000/status
                         </div>
                         <div class="terminal-output">
-                            {"printer_info":"Found a Brother QL-800 at usb:///dev/usb/lp0\nModel: QL-800\nSensor status: 0x00\nErrors: 0x00\nMedia: 62mm continuous with no marks\n","printer_status":"ready","status":"online","success":true}
+                            {"printer_info":{"device-uri":"usb://Brother/TD-4550DNWB","printer-info":"Brother TD-4550DNWB","printer-is-accepting-jobs":true,"printer-is-shared":true,"printer-make-and-model":"Brother TD-4550DNWB","printer-state":3,"printer-state-message":"","printer-state-reasons":["none"],"printer-type":10522636,"printer-uri-supported":"ipp://localhost:631/printers/TD-4550DNWB"},"printer_status":"idle","status":"online","success":true}
                         </div>
                     </div>
                     
@@ -867,12 +904,12 @@ WantedBy=multi-user.target
                             <div class="col-md-6">
                                 <div class="card mb-3">
                                     <div class="card-header bg-earth-medium text-white">
-                                        Configuración de la Impresora
+                                        Configuración de la Impresora TD-4550DNWB
                                     </div>
                                     <ul class="list-group list-group-flush">
                                         <li class="list-group-item d-flex justify-content-between">
                                             <strong>Modelo:</strong> 
-                                            <span>QL-800 (o su modelo específico)</span>
+                                            <span>TD-4550DNWB</span>
                                         </li>
                                         <li class="list-group-item d-flex justify-content-between">
                                             <strong>Puerto USB:</strong> 
@@ -983,9 +1020,9 @@ static domain_name_servers=192.168.1.1
                                                     ls -la /dev/usb/
                                                 </div>
                                             </li>
-                                            <li>Pruebe la impresora directamente:
+                                            <li>Verifique la configuración de CUPS:
                                                 <div class="code-block">
-                                                    brother_ql info usb://
+                                                    lpstat -p -d
                                                 </div>
                                             </li>
                                             <li>Verifique permisos del dispositivo USB:
@@ -993,12 +1030,15 @@ static domain_name_servers=192.168.1.1
                                                     sudo chmod 666 /dev/usb/lp0
                                                 </div>
                                             </li>
-                                            <li>Compruebe si puede imprimir activando el entorno virtual:
+                                            <li>Compruebe si puede imprimir directamente a través de CUPS:
                                                 <div class="code-block">
-                                                    cd ~/printer_server<br>
-                                                    source env/bin/activate<br>
-                                                    echo "Test" > test.txt<br>
-                                                    brother_ql print --printer /dev/usb/lp0 --model QL-800 test.txt
+                                                    echo "Test TD-4550DNWB" > test.txt<br>
+                                                    lp -d TD-4550DNWB test.txt
+                                                </div>
+                                            </li>
+                                            <li>Verifique el estado de los trabajos de impresión:
+                                                <div class="code-block">
+                                                    lpq -a
                                                 </div>
                                             </li>
                                         </ol>
@@ -1136,7 +1176,7 @@ static domain_name_servers=192.168.1.1
                                         <div class="code-block">
                                             cd ~/printer_server<br>
                                             source env/bin/activate<br>
-                                            pip install --upgrade flask gunicorn brother_ql
+                                            pip install --upgrade flask gunicorn pycups
                                         </div>
                                         <p>Reinicie el servicio después de actualizar las bibliotecas:</p>
                                         <div class="code-block">
@@ -1216,7 +1256,7 @@ static domain_name_servers=192.168.1.1
                                     <strong>Endpoint de estado:</strong> http://192.168.1.X:5000/status
                                 </li>
                                 <li class="list-group-item">
-                                    <strong>Modelo de impresora:</strong> QL-800 (o su modelo específico)
+                                    <strong>Modelo de impresora:</strong> TD-4550DNWB
                                 </li>
                                 <li class="list-group-item">
                                     <strong>Puerto USB:</strong> /dev/usb/lp0

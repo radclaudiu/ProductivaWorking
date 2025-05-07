@@ -1191,20 +1191,29 @@ def delete_task(task_id):
             current_app.logger.info(f"Se encontraron {len(month_days_to_delete)} días del mes para eliminar de la tarea {task.id}")
             
             try:
-                # Eliminar usando un enfoque de eliminación masiva que es más seguro
-                num_deleted = TaskMonthDay.query.filter_by(task_id=task.id).delete()
-                current_app.logger.info(f"Días del mes eliminados para tarea {task.id}: {num_deleted} registros")
-            except Exception as month_day_error:
-                current_app.logger.error(f"Error al eliminar TaskMonthDay: {month_day_error}")
-                # Intentar eliminar individualmente como respaldo
-                deleted_count = 0
-                for md in month_days_to_delete:
-                    try:
-                        db.session.delete(md)
-                        deleted_count += 1
-                    except Exception as individual_error:
-                        current_app.logger.error(f"Error al eliminar día del mes {md.id}: {individual_error}")
-                current_app.logger.info(f"Días del mes eliminados individualmente: {deleted_count} de {len(month_days_to_delete)}")
+                # 1. Primero intentar con DELETE directo en SQL (evitando cascadas)
+                from sqlalchemy import text
+                sql = text("DELETE FROM task_month_days WHERE task_id = :task_id")
+                result = db.session.execute(sql, {"task_id": task.id})
+                num_deleted = result.rowcount
+                current_app.logger.info(f"Días del mes eliminados para tarea {task.id} con SQL directo: {num_deleted} registros")
+            except Exception as sql_error:
+                current_app.logger.error(f"Error al eliminar con SQL directo: {sql_error}")
+                # 2. Intentar con el método de eliminación masiva de SQLAlchemy
+                try:
+                    num_deleted = TaskMonthDay.query.filter_by(task_id=task.id).delete(synchronize_session=False)
+                    current_app.logger.info(f"Días del mes eliminados para tarea {task.id} con método masivo: {num_deleted} registros")
+                except Exception as month_day_error:
+                    current_app.logger.error(f"Error al eliminar TaskMonthDay: {month_day_error}")
+                    # 3. Intentar eliminar individualmente como último recurso
+                    deleted_count = 0
+                    for md in month_days_to_delete:
+                        try:
+                            db.session.delete(md)
+                            deleted_count += 1
+                        except Exception as individual_error:
+                            current_app.logger.error(f"Error al eliminar día del mes {md.id}: {individual_error}")
+                    current_app.logger.info(f"Días del mes eliminados individualmente: {deleted_count} de {len(month_days_to_delete)}")
             
             # Registrar el estado antes de eliminar la tarea
             current_app.logger.info(f"Preparando eliminación final de la tarea {task.id}")

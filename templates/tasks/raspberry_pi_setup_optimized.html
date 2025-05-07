@@ -33,6 +33,41 @@
         font-family: monospace;
         overflow-x: auto;
         font-size: 0.9rem;
+        position: relative;
+    }
+    
+    .code-command {
+        display: block;
+        padding: 5px 8px;
+        margin-bottom: 5px;
+        background-color: #f8f8f8;
+        border-radius: 4px;
+        border-left: 3px solid #8D6E63;
+    }
+    
+    .copy-button {
+        position: absolute;
+        right: 5px;
+        top: 5px;
+        background-color: #8D6E63;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 3px 8px;
+        font-size: 0.8rem;
+        cursor: pointer;
+    }
+    
+    .copy-code-btn {
+        background-color: #8D6E63;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        padding: 3px 8px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        margin-left: 8px;
+        vertical-align: middle;
     }
     
     .alert-raspberry {
@@ -73,6 +108,62 @@
         margin-left: 10px;
     }
 </style>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Función para copiar texto al portapapeles
+        function copyToClipboard(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+        }
+        
+        // Configurar los botones de copia
+        document.querySelectorAll('.copy-code-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const command = this.getAttribute('data-command');
+                copyToClipboard(command);
+                
+                // Cambiar texto del botón temporalmente
+                const originalText = this.textContent;
+                this.textContent = '¡Copiado!';
+                
+                setTimeout(() => {
+                    this.textContent = originalText;
+                }, 1500);
+            });
+        });
+        
+        // Configurar los botones de copia de bloques
+        document.querySelectorAll('.copy-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const codeBlock = this.parentElement;
+                const commands = [];
+                codeBlock.querySelectorAll('.code-command').forEach(cmd => {
+                    const cmdText = cmd.textContent.trim();
+                    if (!cmdText.startsWith('#')) {
+                        commands.push(cmdText);
+                    }
+                });
+                copyToClipboard(commands.join('\n'));
+                
+                // Cambiar texto del botón temporalmente
+                const originalText = this.textContent;
+                this.textContent = '¡Copiado!';
+                
+                setTimeout(() => {
+                    this.textContent = originalText;
+                }, 1500);
+            });
+        });
+    });
+</script>
 {% endblock %}
 
 {% block content %}
@@ -134,13 +225,15 @@
                         <h5><span class="step-number">3</span> Acceder y Actualizar</h5>
                         <p>Conéctese a la Raspberry Pi vía SSH (reemplace con su IP):</p>
                         <div class="code-block">
-ssh pi@192.168.1.X
+                            <button class="copy-button">Copiar todo</button>
+                            <div class="code-command">ssh pi@192.168.1.X</div>
                         </div>
                         
                         <p>Actualice el sistema:</p>
                         <div class="code-block">
-sudo apt update
-sudo apt upgrade -y
+                            <button class="copy-button">Copiar todo</button>
+                            <div class="code-command">sudo apt update</div>
+                            <div class="code-command">sudo apt upgrade -y</div>
                         </div>
                     </div>
                     
@@ -148,7 +241,8 @@ sudo apt upgrade -y
                     <div class="step-container">
                         <h5><span class="step-number">4</span> Instalar Dependencias</h5>
                         <div class="code-block">
-sudo apt install -y python3 python3-pip python3-venv nginx cups libusb-1.0-0-dev cups-pdf build-essential libcups2-dev
+                            <button class="copy-button">Copiar todo</button>
+                            <div class="code-command">sudo apt install -y python3 python3-pip python3-venv nginx cups libusb-1.0-0-dev cups-pdf build-essential libcups2-dev</div>
                         </div>
                     </div>
                     
@@ -160,29 +254,30 @@ sudo apt install -y python3 python3-pip python3-venv nginx cups libusb-1.0-0-dev
                             <p><strong>Importante:</strong> Si los enlaces directos no funcionan, descargue manualmente los archivos <code>LPR driver</code> y <code>CUPSwrapper driver</code> de la sección "Linux" en el sitio web de Brother.</p>
                         </div>
                         <div class="code-block">
-cd ~
-# Método 1: Usar el navegador web para descargar desde el sitio oficial de Brother
-# y transferir los archivos .deb a la Raspberry Pi usando SCP
-
-# Método 2: Alternativa - usar curl para descargar directamente
-sudo apt-get install -y curl
-
-# Descargar controladores (enlaces pueden cambiar, verificar en el sitio oficial)
-curl -L -O "https://download.brother.com/welcome/dlf103945/td4550dnwbcupswrapper-1.0.0-0.armhf.deb"
-curl -L -O "https://download.brother.com/welcome/dlf103946/td4550dnwblpr-1.0.0-0.armhf.deb"
-
-# Instalar (si descargó los archivos manualmente, asegúrese de que los nombres coincidan)
-sudo dpkg -i --force-all td4550dnwblpr-*.deb
-sudo dpkg -i --force-all td4550dnwbcupswrapper-*.deb
-
-# Si hay errores de dependencias, ejecutar:
-sudo apt-get -f install -y
-
-# Comprobar que CUPS esté funcionando
-sudo systemctl status cups
-# Si no está activo, ejecutar:
-sudo systemctl start cups
-sudo systemctl enable cups
+                            <button class="copy-button">Copiar todo</button>
+                            <div class="code-command">cd ~</div>
+                            <div class="code-command"># Método 1: Usar el navegador web para descargar desde el sitio oficial de Brother</div>
+                            <div class="code-command"># y transferir los archivos .deb a la Raspberry Pi usando SCP</div>
+                            <div class="code-command"></div>
+                            <div class="code-command"># Método 2: Alternativa - usar curl para descargar directamente</div>
+                            <div class="code-command">sudo apt-get install -y curl</div>
+                            <div class="code-command"></div>
+                            <div class="code-command"># Descargar controladores (enlaces pueden cambiar, verificar en el sitio oficial)</div>
+                            <div class="code-command">curl -L -O "https://download.brother.com/welcome/dlf103945/td4550dnwbcupswrapper-1.0.0-0.armhf.deb"</div>
+                            <div class="code-command">curl -L -O "https://download.brother.com/welcome/dlf103946/td4550dnwblpr-1.0.0-0.armhf.deb"</div>
+                            <div class="code-command"></div>
+                            <div class="code-command"># Instalar (si descargó los archivos manualmente, asegúrese de que los nombres coincidan)</div>
+                            <div class="code-command">sudo dpkg -i --force-all td4550dnwblpr-*.deb</div>
+                            <div class="code-command">sudo dpkg -i --force-all td4550dnwbcupswrapper-*.deb</div>
+                            <div class="code-command"></div>
+                            <div class="code-command"># Si hay errores de dependencias, ejecutar:</div>
+                            <div class="code-command">sudo apt-get -f install -y</div>
+                            <div class="code-command"></div>
+                            <div class="code-command"># Comprobar que CUPS esté funcionando</div>
+                            <div class="code-command">sudo systemctl status cups</div>
+                            <div class="code-command"># Si no está activo, ejecutar:</div>
+                            <div class="code-command">sudo systemctl start cups</div>
+                            <div class="code-command">sudo systemctl enable cups</div>
                         </div>
                     </div>
                     
@@ -190,18 +285,19 @@ sudo systemctl enable cups
                     <div class="step-container">
                         <h5><span class="step-number">6</span> Verificar y Configurar Impresora</h5>
                         <div class="code-block">
-# Verificar que la impresora está conectada
-lsusb | grep Brother
-
-# Configurar la impresora en CUPS
-sudo lpadmin -p TD-4550DNWB -E -v usb://Brother/TD-4550DNWB -m TD-4550DNWB.ppd
-
-# Comprobar la configuración
-lpstat -p -d
-
-# Realizar una impresión de prueba
-echo "Prueba de impresión TD-4550DNWB" > ~/test-print.txt
-lp -d TD-4550DNWB ~/test-print.txt
+                            <button class="copy-button">Copiar todo</button>
+                            <div class="code-command"># Verificar que la impresora está conectada</div>
+                            <div class="code-command">lsusb | grep Brother</div>
+                            <div class="code-command"></div>
+                            <div class="code-command"># Configurar la impresora en CUPS</div>
+                            <div class="code-command">sudo lpadmin -p TD-4550DNWB -E -v usb://Brother/TD-4550DNWB -m TD-4550DNWB.ppd</div>
+                            <div class="code-command"></div>
+                            <div class="code-command"># Comprobar la configuración</div>
+                            <div class="code-command">lpstat -p -d</div>
+                            <div class="code-command"></div>
+                            <div class="code-command"># Realizar una impresión de prueba</div>
+                            <div class="code-command">echo "Prueba de impresión TD-4550DNWB" > ~/test-print.txt</div>
+                            <div class="code-command">lp -d TD-4550DNWB ~/test-print.txt</div>
                         </div>
                     </div>
                     
@@ -210,16 +306,18 @@ lp -d TD-4550DNWB ~/test-print.txt
                         <h5><span class="step-number">7</span> Crear Servidor de Impresión</h5>
                         <p>1. Crear directorio y entorno virtual:</p>
                         <div class="code-block">
-mkdir -p ~/printer_server
-cd ~/printer_server
-python3 -m venv env
-source env/bin/activate
-pip install flask gunicorn pycups
+                            <button class="copy-button">Copiar todo</button>
+                            <div class="code-command">mkdir -p ~/printer_server</div>
+                            <div class="code-command">cd ~/printer_server</div>
+                            <div class="code-command">python3 -m venv env</div>
+                            <div class="code-command">source env/bin/activate</div>
+                            <div class="code-command">pip install flask gunicorn pycups</div>
                         </div>
                         
                         <p>2. Crear archivo de la aplicación:</p>
                         <div class="code-block">
-nano ~/printer_server/app.py
+                            <button class="copy-button">Copiar todo</button>
+                            <div class="code-command">nano ~/printer_server/app.py</div>
                         </div>
                         
                         <p>3. Copie este código en el archivo:</p>
@@ -368,12 +466,13 @@ if __name__ == '__main__':
                         
                         <p>4. Guarde el archivo (Ctrl+O, Enter, Ctrl+X) y pruebe el servidor:</p>
                         <div class="code-block">
-# Asegúrese de estar en el entorno virtual (env)
-python app.py
-
-# En otra terminal, pruebe la conexión
-curl http://localhost:5000/health
-curl http://localhost:5000/status
+                            <button class="copy-button">Copiar todo</button>
+                            <div class="code-command"># Asegúrese de estar en el entorno virtual (env)</div>
+                            <div class="code-command">python app.py</div>
+                            <div class="code-command"></div>
+                            <div class="code-command"># En otra terminal, pruebe la conexión</div>
+                            <div class="code-command">curl http://localhost:5000/health</div>
+                            <div class="code-command">curl http://localhost:5000/status</div>
                         </div>
                     </div>
                     
@@ -381,31 +480,34 @@ curl http://localhost:5000/status
                     <div class="step-container">
                         <h5><span class="step-number">8</span> Configurar Servicio Systemd</h5>
                         <div class="code-block">
-sudo nano /etc/systemd/system/printer-server.service
+                            <button class="copy-button">Copiar todo</button>
+                            <div class="code-command">sudo nano /etc/systemd/system/printer-server.service</div>
                         </div>
                         
                         <p>Copie este contenido (ajuste el nombre de usuario si no es 'pi'):</p>
                         <div class="code-block">
-[Unit]
-Description=Servidor de impresión Brother TD-4550DNWB
-After=network.target
-
-[Service]
-User=pi
-WorkingDirectory=/home/pi/printer_server
-Environment="PATH=/home/pi/printer_server/env/bin"
-ExecStart=/home/pi/printer_server/env/bin/gunicorn --bind 0.0.0.0:5000 app:app
-Restart=always
-
-[Install]
-WantedBy=multi-user.target
+                            <button class="copy-button">Copiar todo</button>
+                            <div class="code-command">[Unit]</div>
+                            <div class="code-command">Description=Servidor de impresión Brother TD-4550DNWB</div>
+                            <div class="code-command">After=network.target</div>
+                            <div class="code-command"></div>
+                            <div class="code-command">[Service]</div>
+                            <div class="code-command">User=pi</div>
+                            <div class="code-command">WorkingDirectory=/home/pi/printer_server</div>
+                            <div class="code-command">Environment="PATH=/home/pi/printer_server/env/bin"</div>
+                            <div class="code-command">ExecStart=/home/pi/printer_server/env/bin/gunicorn --bind 0.0.0.0:5000 app:app</div>
+                            <div class="code-command">Restart=always</div>
+                            <div class="code-command"></div>
+                            <div class="code-command">[Install]</div>
+                            <div class="code-command">WantedBy=multi-user.target</div>
                         </div>
                         
                         <p>Active e inicie el servicio:</p>
                         <div class="code-block">
-sudo systemctl enable printer-server.service
-sudo systemctl start printer-server.service
-sudo systemctl status printer-server.service
+                            <button class="copy-button">Copiar todo</button>
+                            <div class="code-command">sudo systemctl enable printer-server.service</div>
+                            <div class="code-command">sudo systemctl start printer-server.service</div>
+                            <div class="code-command">sudo systemctl status printer-server.service</div>
                         </div>
                     </div>
                     
@@ -413,27 +515,30 @@ sudo systemctl status printer-server.service
                     <div class="step-container">
                         <h5><span class="step-number">9</span> Configurar IP Estática</h5>
                         <div class="code-block">
-sudo nano /etc/dhcpcd.conf
+                            <button class="copy-button">Copiar todo</button>
+                            <div class="code-command">sudo nano /etc/dhcpcd.conf</div>
                         </div>
                         
                         <p>Añada estas líneas al final (ajuste según su red):</p>
                         <div class="code-block">
-# Configuración de IP estática para eth0 (cable)
-interface eth0
-static ip_address=192.168.1.200/24
-static routers=192.168.1.1
-static domain_name_servers=192.168.1.1
-
-# Configuración de IP estática para wlan0 (WiFi)
-interface wlan0
-static ip_address=192.168.1.200/24
-static routers=192.168.1.1
-static domain_name_servers=192.168.1.1
+                            <button class="copy-button">Copiar todo</button>
+                            <div class="code-command"># Configuración de IP estática para eth0 (cable)</div>
+                            <div class="code-command">interface eth0</div>
+                            <div class="code-command">static ip_address=192.168.1.200/24</div>
+                            <div class="code-command">static routers=192.168.1.1</div>
+                            <div class="code-command">static domain_name_servers=192.168.1.1</div>
+                            <div class="code-command"></div>
+                            <div class="code-command"># Configuración de IP estática para wlan0 (WiFi)</div>
+                            <div class="code-command">interface wlan0</div>
+                            <div class="code-command">static ip_address=192.168.1.200/24</div>
+                            <div class="code-command">static routers=192.168.1.1</div>
+                            <div class="code-command">static domain_name_servers=192.168.1.1</div>
                         </div>
                         
                         <p>Reinicie para aplicar la configuración:</p>
                         <div class="code-block">
-sudo reboot
+                            <button class="copy-button">Copiar todo</button>
+                            <div class="code-command">sudo reboot</div>
                         </div>
                     </div>
                     
@@ -494,27 +599,31 @@ sudo reboot
                                 <div class="accordion-body">
                                     <p><strong>Verificar estado del servidor:</strong></p>
                                     <div class="code-block">
-sudo systemctl status printer-server.service
-sudo journalctl -u printer-server.service -f
+                                        <button class="copy-button">Copiar todo</button>
+                                        <div class="code-command">sudo systemctl status printer-server.service</div>
+                                        <div class="code-command">sudo journalctl -u printer-server.service -f</div>
                                     </div>
                                     
                                     <p><strong>Reiniciar servicios:</strong></p>
                                     <div class="code-block">
-sudo systemctl restart cups
-sudo systemctl restart printer-server.service
+                                        <button class="copy-button">Copiar todo</button>
+                                        <div class="code-command">sudo systemctl restart cups</div>
+                                        <div class="code-command">sudo systemctl restart printer-server.service</div>
                                     </div>
                                     
                                     <p><strong>Verificar impresora:</strong></p>
                                     <div class="code-block">
-lsusb | grep Brother
-lpstat -p -d
-lpq -a
+                                        <button class="copy-button">Copiar todo</button>
+                                        <div class="code-command">lsusb | grep Brother</div>
+                                        <div class="code-command">lpstat -p -d</div>
+                                        <div class="code-command">lpq -a</div>
                                     </div>
                                     
                                     <p><strong>Probar impresión directa:</strong></p>
                                     <div class="code-block">
-echo "Test TD-4550DNWB" > test.txt
-lp -d TD-4550DNWB test.txt
+                                        <button class="copy-button">Copiar todo</button>
+                                        <div class="code-command">echo "Test TD-4550DNWB" > test.txt</div>
+                                        <div class="code-command">lp -d TD-4550DNWB test.txt</div>
                                     </div>
                                 </div>
                             </div>

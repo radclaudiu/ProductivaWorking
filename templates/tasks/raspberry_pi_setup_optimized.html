@@ -26,8 +26,45 @@
     }
     
     .code-block {
+        position: relative;
         background-color: #f1f1f1;
         border-left: 4px solid #8D6E63;
+    }
+    
+    .code-command {
+        display: block;
+        padding: 2px 0;
+        white-space: pre;
+        line-height: 1.5;
+    }
+    
+    .copy-button {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        background-color: #e9ecef;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        padding: 3px 8px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        z-index: 10;
+    }
+    
+    .copy-button:hover {
+        background-color: #8D6E63;
+        color: white;
+        border-color: #8D6E63;
+    }
+    
+    .copy-success {
+        background-color: #28a745 !important;
+        color: white !important;
+        border-color: #28a745 !important;
+    }
+    
+    .code-block {
         padding: 10px;
         margin-bottom: 15px;
         font-family: monospace;
@@ -147,7 +184,8 @@
                 const commands = [];
                 codeBlock.querySelectorAll('.code-command').forEach(cmd => {
                     const cmdText = cmd.textContent.trim();
-                    if (!cmdText.startsWith('#')) {
+                    // No incluir líneas vacías o comentarios que empiezan con #
+                    if (cmdText !== '' && !cmdText.startsWith('#')) {
                         commands.push(cmdText);
                     }
                 });
@@ -155,11 +193,13 @@
                 
                 // Cambiar texto del botón temporalmente
                 const originalText = this.textContent;
-                this.textContent = '¡Copiado!';
+                this.textContent = '✓ ¡Copiado!';
+                this.classList.add('copy-success');
                 
                 setTimeout(() => {
                     this.textContent = originalText;
-                }, 1500);
+                    this.classList.remove('copy-success');
+                }, 2000);
             });
         });
     });
@@ -265,6 +305,13 @@
                             <div class="code-command"># Descargar controladores (enlaces pueden cambiar, verificar en el sitio oficial)</div>
                             <div class="code-command">curl -L -O "https://download.brother.com/welcome/dlf103945/td4550dnwbcupswrapper-1.0.0-0.armhf.deb"</div>
                             <div class="code-command">curl -L -O "https://download.brother.com/welcome/dlf103946/td4550dnwblpr-1.0.0-0.armhf.deb"</div>
+                            <div class="code-command"></div>
+                            <div class="code-command"># Verificar si los archivos se descargaron correctamente</div>
+                            <div class="code-command">ls -la *.deb</div>
+                            <div class="code-command"></div>
+                            <div class="code-command"># Si el tamaño de los archivos es muy pequeño (menos de 1MB), la descarga falló</div>
+                            <div class="code-command"># En ese caso, descargue manualmente los archivos del sitio web de Brother</div>
+                            <div class="code-command"># y transfiéralos usando SCP o un dispositivo USB</div>
                             <div class="code-command"></div>
                             <div class="code-command"># Instalar (si descargó los archivos manualmente, asegúrese de que los nombres coincidan)</div>
                             <div class="code-command">sudo dpkg -i --force-all td4550dnwblpr-*.deb</div>
@@ -588,15 +635,38 @@ if __name__ == '__main__':
                     </div>
                     
                     <!-- SOLUCIÓN DE PROBLEMAS -->
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i> 
+                        <strong>¿Problemas con la instalación?</strong> 
+                        <a href="#" id="showTroubleshooting" class="alert-link">Haga clic aquí para ver soluciones</a>
+                    </div>
                     <div class="accordion" id="troubleshootingAccordion">
                         <div class="accordion-item">
                             <h2 class="accordion-header">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#problemHelp" aria-expanded="false" aria-controls="problemHelp">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#problemHelp" aria-expanded="false" aria-controls="problemHelp" id="troubleshootingButton">
                                     <i class="bi bi-question-circle-fill me-2 text-primary"></i> Solución de Problemas
                                 </button>
                             </h2>
                             <div id="problemHelp" class="accordion-collapse collapse" data-bs-parent="#troubleshootingAccordion">
                                 <div class="accordion-body">
+                                    <p><strong>Error en .deb: "No es un archivo en formato Debian"</strong></p>
+                                    <p>Si recibe el error: <code>dpkg-deb: error: 'td4550dnwblpr-*.deb' is not a Debian format archive</code>, es porque el archivo está dañado o no se descargó correctamente. Solución:</p>
+                                    
+                                    <div class="code-block">
+                                        <button class="copy-button">Copiar todo</button>
+                                        <div class="code-command"># Eliminar archivos dañados</div>
+                                        <div class="code-command">rm -f td4550dnwb*.deb</div>
+                                        <div class="code-command"></div>
+                                        <div class="code-command"># Descargar directamente del sitio de Brother</div>
+                                        <div class="code-command">wget "https://download.brother.com/welcome/dlf103945/td4550dnwbcupswrapper-1.0.0-0.armhf.deb"</div>
+                                        <div class="code-command">wget "https://download.brother.com/welcome/dlf103946/td4550dnwblpr-1.0.0-0.armhf.deb"</div>
+                                        <div class="code-command"></div>
+                                        <div class="code-command"># Verificar tamaño (debe ser mayor a 5KB)</div>
+                                        <div class="code-command">ls -lh *.deb</div>
+                                    </div>
+                                    
+                                    <p>Si sigue sin funcionar, descargue manualmente desde <a href="https://support.brother.com/g/b/downloadlist.aspx?c=us&lang=en&prod=td4550dnwb_us_eu_as&os=128" target="_blank">el sitio oficial</a> y transfiéralos a la Raspberry Pi con un dispositivo USB o usando SCP.</p>
+                                    
                                     <p><strong>Verificar estado del servidor:</strong></p>
                                     <div class="code-block">
                                         <button class="copy-button">Copiar todo</button>
@@ -638,6 +708,7 @@ if __name__ == '__main__':
 <script>
 // Script para hacer que los acordeones funcionen
 document.addEventListener('DOMContentLoaded', function() {
+    // Botones de acordeón
     var accordionButtons = document.querySelectorAll('.accordion-button');
     
     accordionButtons.forEach(function(button) {
@@ -668,6 +739,61 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.classList.remove('collapsed');
                 this.setAttribute('aria-expanded', 'true');
             }
+        });
+    });
+    
+    // Botón de solución de problemas
+    document.getElementById('showTroubleshooting').addEventListener('click', function(e) {
+        e.preventDefault();
+        var troubleshootingButton = document.getElementById('troubleshootingButton');
+        var problemHelp = document.getElementById('problemHelp');
+        
+        problemHelp.classList.add('show');
+        troubleshootingButton.classList.remove('collapsed');
+        troubleshootingButton.setAttribute('aria-expanded', 'true');
+        
+        // Desplazar suavemente hasta la sección
+        problemHelp.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    
+    // Botones de copiar
+    var copyButtons = document.querySelectorAll('.copy-button');
+    
+    copyButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+            // Obtener todos los elementos .code-command del bloque
+            var codeBlock = this.closest('.code-block');
+            var commands = codeBlock.querySelectorAll('.code-command');
+            
+            // Filtrar líneas vacías y líneas que comiencen con #
+            var textToCopy = Array.from(commands)
+                .map(function(cmd) {
+                    var text = cmd.textContent;
+                    // Si la línea está vacía o comienza con # (comentario), ignorarla
+                    if (text.trim() === '' || text.trim().startsWith('#')) {
+                        return '';
+                    }
+                    return text;
+                })
+                .filter(function(text) { return text !== ''; })
+                .join('\n');
+            
+            // Copiar al portapapeles
+            navigator.clipboard.writeText(textToCopy).then(function() {
+                // Cambiar estilo del botón para indicar éxito
+                var originalText = button.textContent;
+                button.textContent = '✓ ¡Copiado!';
+                button.classList.add('copy-success');
+                
+                // Restablecer después de 2 segundos
+                setTimeout(function() {
+                    button.textContent = originalText;
+                    button.classList.remove('copy-success');
+                }, 2000);
+            }).catch(function(err) {
+                console.error('No se pudo copiar: ', err);
+                alert('Error al copiar. Intente seleccionar y copiar manualmente.');
+            });
         });
     });
 });

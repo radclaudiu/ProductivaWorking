@@ -140,17 +140,25 @@
                         <div class="code-block">
                             sudo apt install -y python3 python3-pip python3-venv nginx cups libusb-1.0-0-dev
                         </div>
+                        <div class="alert alert-info mb-3">
+                            <i class="bi bi-info-circle-fill me-2"></i>
+                            <strong>Importante:</strong> Usaremos un entorno virtual de Python (venv) para evitar conflictos entre paquetes. Esto mantendrá las dependencias del servidor de impresión aisladas del sistema principal.
+                        </div>
                     </div>
                     
                     <div class="step-container">
                         <h5><span class="step-number">7</span> Instalar Software de Brother</h5>
-                        <p>Instale la biblioteca <code>brother_ql</code> que permite usar las impresoras de etiquetas Brother:</p>
+                        <p>Instale globalmente la biblioteca <code>brother_ql</code> que permite usar las impresoras de etiquetas Brother para las pruebas iniciales:</p>
                         <div class="code-block">
                             sudo pip3 install brother_ql
                         </div>
                         <p class="mb-3">Verifique que la instalación fue correcta:</p>
                         <div class="code-block">
                             brother_ql --version
+                        </div>
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong>Nota:</strong> Instalaremos brother_ql globalmente para facilitar las pruebas iniciales, pero más adelante también lo instalaremos dentro del entorno virtual para la aplicación.
                         </div>
                         <p class="alert alert-info">Esta biblioteca soporta varios modelos de impresoras Brother, incluyendo: QL-500, QL-550, QL-560, QL-570, QL-580N, QL-650TD, QL-700, QL-710W, QL-720NW, QL-800, QL-810W, QL-820NWB, entre otros.</p>
                     </div>
@@ -182,10 +190,18 @@
                             python3 -m venv env<br>
                             source env/bin/activate
                         </div>
-                        <p>Instale las bibliotecas necesarias:</p>
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle-fill me-2"></i>
+                            <strong>Entorno virtual:</strong> Ahora está dentro del entorno virtual de Python. 
+                            Verá <code>(env)</code> al inicio del prompt, indicando que está aislado del sistema principal. 
+                            Todas las bibliotecas que instale ahora sólo afectarán a este entorno específico.
+                        </div>
+                        <p>Instale las bibliotecas necesarias dentro del entorno virtual:</p>
                         <div class="code-block">
                             pip install flask gunicorn brother_ql
                         </div>
+                        <p>Note que aquí usamos <code>pip</code> en lugar de <code>pip3</code> porque dentro del entorno virtual, 
+                        <code>pip</code> ya apunta a la versión de Python 3.</p>
                         <p>Cree el archivo de la aplicación:</p>
                         <div class="code-block">
                             nano ~/printer_server/app.py
@@ -338,8 +354,32 @@ WantedBy=multi-user.target
                                     sudo journalctl -u printer-server.service -f
                                 </div>
                             </li>
+                            <li>Verifique los logs específicos de la aplicación:
+                                <div class="code-block">
+                                    cat ~/printer_server/logs/printer_server.log
+                                </div>
+                            </li>
                             <li>Verifique que la impresora esté conectada y encendida</li>
                             <li>Asegúrese de que la ruta del dispositivo USB es correcta</li>
+                            <li>Verifique permisos del dispositivo USB:
+                                <div class="code-block">
+                                    sudo chmod 666 /dev/usb/lp0
+                                </div>
+                            </li>
+                            <li>Compruebe si puede imprimir desde línea de comandos usando el entorno virtual:
+                                <div class="code-block">
+                                    cd ~/printer_server<br>
+                                    source env/bin/activate<br>
+                                    echo "Test" > test.txt<br>
+                                    brother_ql print --printer /dev/usb/lp0 --model QL-800 test.txt
+                                </div>
+                            </li>
+                            <li>Verifique que el servicio está funcionando correctamente:
+                                <div class="code-block">
+                                    curl http://localhost:5000/health
+                                </div>
+                                Debería devolver <code>{"status":"online"}</code>
+                            </li>
                             <li>Pruebe la conexión desde la aplicación web con el botón "Probar Conexión"</li>
                             <li>Reinicie el servicio si es necesario:
                                 <div class="code-block">
@@ -347,6 +387,10 @@ WantedBy=multi-user.target
                                 </div>
                             </li>
                         </ul>
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle-fill me-2"></i>
+                            <strong>Nota sobre entornos virtuales:</strong> Si el servidor no encuentra el comando <code>brother_ql</code> cuando intenta imprimir, puede ser porque el entorno virtual no está activado correctamente. Compruebe que la configuración del servicio systemd incluye la ruta correcta al entorno virtual.
+                        </div>
                     </div>
 
                     <div class="step-container">
@@ -359,13 +403,36 @@ WantedBy=multi-user.target
                                     sudo apt upgrade -y
                                 </div>
                             </li>
+                            <li>Mantenga actualizadas las bibliotecas del entorno virtual:
+                                <div class="code-block">
+                                    cd ~/printer_server<br>
+                                    source env/bin/activate<br>
+                                    pip install --upgrade flask gunicorn brother_ql
+                                </div>
+                            </li>
+                            <li>Rotación de logs - Si los logs ocupan demasiado espacio:
+                                <div class="code-block">
+                                    cd ~/printer_server<br>
+                                    rm -f logs/printer_server.log.*<br>
+                                    truncate -s 0 logs/printer_server.log
+                                </div>
+                            </li>
                             <li>Revise el espacio en disco periódicamente:
                                 <div class="code-block">
                                     df -h
                                 </div>
                             </li>
-                            <li>Realice copias de seguridad de la configuración en caso de necesitar reinstalar el servidor</li>
+                            <li>Realice copias de seguridad de la configuración para facilitar la recuperación:
+                                <div class="code-block">
+                                    cd ~<br>
+                                    tar -czvf printer_server_backup.tar.gz printer_server/app.py /etc/systemd/system/printer-server.service
+                                </div>
+                            </li>
                         </ul>
+                        <div class="alert alert-info mb-3">
+                            <i class="bi bi-info-circle-fill me-2"></i>
+                            <strong>Recomendación:</strong> Mantenga una copia del código del servidor y estas instrucciones en un lugar seguro. Si necesita reinstalar la Raspberry Pi en el futuro, podrá configurar rápidamente el servidor de impresión de nuevo.
+                        </div>
                     </div>
                 </div>
             </div>

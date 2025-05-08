@@ -95,39 +95,6 @@
                                 {% endif %}
                             </dd>
                             
-                            <dt class="col-sm-4">Estado:</dt>
-                            <dd class="col-sm-8">
-                                <span class="badge 
-                                    {% if employee.status and employee.status.value == 'activo' %}bg-success
-                                    {% elif employee.status and employee.status.value == 'baja_medica' %}bg-warning
-                                    {% elif employee.status and employee.status.value == 'excedencia' %}bg-info
-                                    {% elif employee.status and employee.status.value == 'vacaciones' %}bg-primary
-                                    {% else %}bg-danger
-                                    {% endif %}">
-                                    {{ employee.status.name.capitalize() if employee.status else 'Activo' }}
-                                </span>
-                                {% if employee.status_start_date %}
-                                <small class="d-block mt-1">Desde: 
-                                    {% set date_parts = employee.status_start_date.split('-') if employee.status_start_date and '-' in employee.status_start_date else ['', '', ''] %}
-                                    {% if date_parts|length == 3 %}
-                                        {{ date_parts[2] }}-{{ date_parts[1] }}-{{ date_parts[0] }}
-                                    {% else %}
-                                        {{ employee.status_start_date }}
-                                    {% endif %}
-                                </small>
-                                {% endif %}
-                                {% if employee.status_end_date %}
-                                <small class="d-block">Hasta: 
-                                    {% set date_parts = employee.status_end_date.split('-') if employee.status_end_date and '-' in employee.status_end_date else ['', '', ''] %}
-                                    {% if date_parts|length == 3 %}
-                                        {{ date_parts[2] }}-{{ date_parts[1] }}-{{ date_parts[0] }}
-                                    {% else %}
-                                        {{ employee.status_end_date }}
-                                    {% endif %}
-                                </small>
-                                {% endif %}
-                            </dd>
-                            
                             <dt class="col-sm-4">Fichaje::</dt>
                             <dd class="col-sm-8">
                                 <span class="badge {% if employee.is_active %}bg-success{% else %}bg-danger{% endif %}">

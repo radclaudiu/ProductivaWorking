@@ -163,7 +163,9 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <a href="#" id="deleteTaskButton" class="btn btn-danger">Eliminar</a>
+                <form id="deleteTaskForm" method="POST" style="display: inline;">
+                    <button type="submit" id="deleteTaskButton" class="btn btn-danger">Eliminar</button>
+                </form>
             </div>
         </div>
     </div>
@@ -261,9 +263,9 @@
                 // Actualizar el modal
                 document.getElementById('deleteTaskTitle').textContent = taskTitle;
                 
-                // Actualizar enlace del botón eliminar
-                const deleteButton = document.getElementById('deleteTaskButton');
-                deleteButton.href = '{{ url_for("tasks.delete_task", task_id=0) }}'.replace('0', taskId);
+                // Actualizar formulario para enviar a la URL correcta
+                const deleteForm = document.getElementById('deleteTaskForm');
+                deleteForm.action = '{{ url_for("tasks.delete_task", task_id=0) }}'.replace('0', taskId);
             });
         }
         

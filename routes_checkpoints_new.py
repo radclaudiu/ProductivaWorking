@@ -19,7 +19,8 @@ from models_access import LocationAccessToken, PortalType
 from sqlalchemy import or_
 from forms_checkpoints import (CheckPointForm, CheckPointLoginForm, CheckPointEmployeePinForm, 
                              ContractHoursForm, CheckPointRecordAdjustmentForm,
-                             SignaturePadForm, ExportCheckPointRecordsForm)
+                             SignaturePadForm, ExportCheckPointRecordsForm,
+                             ManualCheckPointRecordForm)
 from utils import log_activity, slugify
 from utils_checkpoints import generate_pdf_report, draw_signature
 
@@ -223,6 +224,130 @@ def view_original_records(slug):
         show_all=show_all,
         title=f"Registros Originales de {company.name if company else ''} (Antes de Ajustes)"
     )
+
+@checkpoints_bp.route('/company/<slug>/manual_record', methods=['GET', 'POST'])
+@login_required
+@manager_required
+def create_manual_record(slug):
+    """Página para crear un fichaje manual para una empresa específica"""
+    try:
+        # Buscar la empresa por slug
+        companies = Company.query.all()
+        company = None
+        company_id = None
+        
+        for comp in companies:
+            if slugify(comp.name) == slug:
+                company = comp
+                company_id = comp.id
+                break
+        
+        if not company:
+            abort(404)
+        
+        # Verificar permisos
+        if not current_user.is_admin() and company not in current_user.companies:
+            flash('No tiene permiso para gestionar esta empresa.', 'danger')
+            return redirect(url_for('main.dashboard'))
+        
+        # Crear formulario
+        form = ManualCheckPointRecordForm()
+        
+        # Cargar opciones de empleados y puntos de fichaje
+        employees = Employee.query.filter_by(company_id=company.id, is_active=True).order_by(Employee.first_name).all()
+        checkpoints = CheckPoint.query.filter_by(company_id=company.id, status=CheckPointStatus.ACTIVE).all()
+        
+        form.employee_id.choices = [(emp.id, f"{emp.first_name} {emp.last_name}") for emp in employees]
+        form.checkpoint_id.choices = [(cp.id, cp.name) for cp in checkpoints]
+        
+        # Establecer fecha actual por defecto
+        if not form.check_in_date.data:
+            form.check_in_date.data = datetime.now().strftime('%Y-%m-%d')
+        
+        # Procesar formulario si se envió
+        if form.validate_on_submit():
+            # Determinar si se guarda como registro original o ajustado
+            is_original = form.is_original.data == '1'
+            
+            # Procesar fecha y hora de entrada
+            check_in_datetime = datetime.strptime(form.check_in_date.data, '%Y-%m-%d')
+            check_in_datetime = datetime.combine(check_in_datetime.date(), form.check_in_time.data)
+            
+            # Procesar hora de salida si se proporcionó
+            check_out_datetime = None
+            if form.check_out_time.data:
+                # Utilizar la misma fecha que la entrada para la salida
+                check_out_datetime = datetime.combine(check_in_datetime.date(), form.check_out_time.data)
+                
+                # Si la hora de salida es anterior a la hora de entrada, asumir que es del día siguiente
+                if check_out_datetime < check_in_datetime:
+                    check_out_datetime = check_out_datetime + timedelta(days=1)
+            
+            # Importar los modelos necesarios
+            from models_checkpoints import CheckPointOriginalRecord
+            
+            # Siempre creamos primero un registro en la tabla CheckPointRecord
+            record = CheckPointRecord()
+            record.checkpoint_id = form.checkpoint_id.data
+            record.employee_id = form.employee_id.data
+            record.check_in_time = check_in_datetime
+            if check_out_datetime:
+                record.check_out_time = check_out_datetime
+            if form.notes.data:
+                record.notes = form.notes.data
+            
+            # Guardar el registro en la base de datos para obtener su ID
+            db.session.add(record)
+            db.session.flush()  # Actualiza el objeto con el ID asignado
+            
+            message_type = 'Fichaje ajustado'
+            
+            # Si se eligió guardar como registro original, crear también un registro en CheckPointOriginalRecord
+            if is_original:
+                # Calcular horas trabajadas si hay checkout
+                hours_worked = 0.0
+                if check_out_datetime:
+                    delta = check_out_datetime - check_in_datetime
+                    hours_worked = delta.total_seconds() / 3600
+                
+                # Crear el registro original
+                original_record = CheckPointOriginalRecord()
+                original_record.record_id = record.id  # Enlaza con el registro recién creado
+                original_record.original_check_in_time = check_in_datetime
+                original_record.original_check_out_time = check_out_datetime
+                original_record.original_notes = form.notes.data
+                original_record.hours_worked = hours_worked
+                original_record.adjustment_reason = "Registro original creado manualmente"
+                
+                # Si hay usuario autenticado, asociarlo como el que realizó el ajuste
+                if current_user.is_authenticated:
+                    original_record.adjusted_by_id = current_user.id
+                
+                # Añadir a la sesión
+                db.session.add(original_record)
+                message_type = 'Fichaje original'
+            
+            # Guardar todos los cambios en la base de datos
+            db.session.commit()
+            
+            # Si hay hora de salida, actualizar las horas trabajadas
+            if check_out_datetime:
+                # Importar la función update_employee_work_hours
+                from utils_work_hours import update_employee_work_hours
+                
+                # Actualizar las horas trabajadas para este empleado
+                update_employee_work_hours(record.employee_id, record.check_in_time, record.check_out_time)
+            
+            flash(f'{message_type} creado correctamente', 'success')
+            return redirect(url_for('checkpoints_slug.view_original_records', slug=slug))
+        
+        return render_template('checkpoints/create_manual_record.html', form=form, company=company)
+    
+    except Exception as e:
+        current_app.logger.error(f"Error en create_manual_record: {e}")
+        db.session.rollback()  # Asegurarse de revertir cualquier cambio parcial
+        flash('Error al crear el fichaje manual. Por favor, inténtelo de nuevo.', 'danger')
+        return redirect(url_for('checkpoints_slug.view_original_records', slug=slug))
 
 @checkpoints_bp.route('/company/<slug>/rrrrrr/new', methods=['GET', 'POST'])
 @login_required

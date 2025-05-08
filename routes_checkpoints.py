@@ -504,17 +504,15 @@ def create_manual_record(slug):
         
         # Procesar formulario si se envió
         if form.validate_on_submit():
-            # Crear objeto CheckPointRecord
-            record = CheckPointRecord()
-            record.checkpoint_id = form.checkpoint_id.data
-            record.employee_id = form.employee_id.data
+            # Determinar si se guarda como registro original o ajustado
+            is_original = form.is_original.data == '1'
             
             # Procesar fecha y hora de entrada
             check_in_datetime = datetime.strptime(form.check_in_date.data, '%Y-%m-%d')
             check_in_datetime = datetime.combine(check_in_datetime.date(), form.check_in_time.data)
-            record.check_in_time = check_in_datetime
             
             # Procesar hora de salida si se proporcionó
+            check_out_datetime = None
             if form.check_out_time.data:
                 # Utilizar la misma fecha que la entrada para la salida
                 check_out_datetime = datetime.combine(check_in_datetime.date(), form.check_out_time.data)
@@ -522,26 +520,50 @@ def create_manual_record(slug):
                 # Si la hora de salida es anterior a la hora de entrada, asumir que es del día siguiente
                 if check_out_datetime < check_in_datetime:
                     check_out_datetime = check_out_datetime + timedelta(days=1)
-                
-                record.check_out_time = check_out_datetime
             
-            # Guardar notas si se proporcionaron
-            if form.notes.data:
-                record.notes = form.notes.data
+            # Crear el registro en la tabla apropiada según la elección del usuario
+            if is_original:
+                # Importar el modelo CheckPointOriginalRecord
+                from models_checkpoints import CheckPointOriginalRecord
+                
+                # Crear objeto CheckPointOriginalRecord
+                record = CheckPointOriginalRecord()
+                record.checkpoint_id = form.checkpoint_id.data
+                record.employee_id = form.employee_id.data
+                record.check_in_time = check_in_datetime
+                if check_out_datetime:
+                    record.check_out_time = check_out_datetime
+                if form.notes.data:
+                    record.notes = form.notes.data
+                
+                message_type = 'Fichaje original'
+            else:
+                # Crear objeto CheckPointRecord (fichaje ajustado)
+                record = CheckPointRecord()
+                record.checkpoint_id = form.checkpoint_id.data
+                record.employee_id = form.employee_id.data
+                record.check_in_time = check_in_datetime
+                if check_out_datetime:
+                    record.check_out_time = check_out_datetime
+                if form.notes.data:
+                    record.notes = form.notes.data
+                
+                message_type = 'Fichaje ajustado'
             
             # Guardar el registro en la base de datos
             db.session.add(record)
             db.session.commit()
             
             # Si hay hora de salida, actualizar las horas trabajadas
-            if record.check_out_time:
+            # Nota: las horas trabajadas solo se actualizan con fichajes ajustados, no con originales
+            if not is_original and check_out_datetime:
                 # Importar la función update_employee_work_hours
                 from utils_work_hours import update_employee_work_hours
                 
                 # Actualizar las horas trabajadas para este empleado
                 update_employee_work_hours(record.employee_id, record.check_in_time, record.check_out_time)
             
-            flash('Fichaje manual creado correctamente', 'success')
+            flash(f'{message_type} creado correctamente', 'success')
             return redirect(url_for('checkpoints.index_company', slug=slug))
         
         return render_template('checkpoints/create_manual_record.html', form=form, company=company)

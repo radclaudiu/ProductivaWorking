@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, SelectField, BooleanField, SubmitField, TimeField
-from wtforms import FloatField, PasswordField, IntegerField, HiddenField, DateField
+from wtforms import FloatField, PasswordField, IntegerField, HiddenField, DateField, RadioField
 from wtforms.validators import DataRequired, Length, Optional, ValidationError, NumberRange
 from flask_wtf.file import FileField, FileAllowed
 from models_checkpoints import CheckPointStatus, CheckPointIncidentType
@@ -175,13 +175,22 @@ class DeleteCheckPointRecordsForm(FlaskForm):
             raise ValidationError('Formato de fecha incorrecto. Use YYYY-MM-DD')
 
 class ManualCheckPointRecordForm(FlaskForm):
-    """Formulario para crear un fichaje manual directamente en la tabla CheckPointRecord"""
+    """Formulario para crear un fichaje manual directamente en la tabla CheckPointRecord o CheckPointOriginalRecord"""
     employee_id = SelectField('Empleado', coerce=int, validators=[DataRequired()])
     checkpoint_id = SelectField('Punto de Fichaje', coerce=int, validators=[DataRequired()])
     check_in_date = StringField('Fecha de entrada', validators=[DataRequired()])
     check_in_time = TimeField('Hora de entrada', validators=[DataRequired()])
     check_out_time = TimeField('Hora de salida', validators=[Optional()])
     notes = TextAreaField('Notas', validators=[Optional(), Length(max=500)])
+    is_original = RadioField(
+        'Tipo de registro', 
+        choices=[
+            ('0', 'Fichaje ajustado (se guarda en tabla principal de fichajes)'),
+            ('1', 'Fichaje original (se guarda en tabla de registros originales)')
+        ],
+        default='0',
+        validators=[DataRequired()]
+    )
     submit = SubmitField('Crear Fichaje')
     
     def validate_check_out_time(self, field):

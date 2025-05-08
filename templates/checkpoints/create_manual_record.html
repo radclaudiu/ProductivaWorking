@@ -122,6 +122,36 @@
                             {% endif %}
                         </div>
                         
+                        <div class="mb-3">
+                            <label class="form-label">Tipo de registro</label>
+                            <div class="alert alert-info mb-2">
+                                <i class="bi bi-info-circle"></i> Seleccione dónde desea guardar este fichaje:
+                                <ul class="mb-0 mt-1">
+                                    <li><strong>Fichaje ajustado</strong>: Se guarda directamente en la tabla principal de fichajes.</li>
+                                    <li><strong>Fichaje original</strong>: Se guarda en la tabla de registros originales (utilizada para auditoría).</li>
+                                </ul>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="is_original" id="is_original_0" value="0" {% if form.is_original.data != '1' %}checked{% endif %}>
+                                <label class="form-check-label" for="is_original_0">
+                                    Fichaje ajustado (tabla principal)
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="is_original" id="is_original_1" value="1" {% if form.is_original.data == '1' %}checked{% endif %}>
+                                <label class="form-check-label" for="is_original_1">
+                                    Fichaje original (tabla de registros originales)
+                                </label>
+                            </div>
+                            {% if form.is_original.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.is_original.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
                         <div class="d-flex justify-content-between mt-4">
                             <a href="{{ url_for('checkpoints.index_company', slug=company.get_slug()) }}" class="btn btn-outline-secondary">
                                 <i class="bi bi-arrow-left"></i> Volver

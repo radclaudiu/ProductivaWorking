@@ -110,9 +110,7 @@
                                     <td>{% if task.end_date %}{{ task.end_date.strftime('%d/%m/%Y') }}{% else %}-{% endif %}</td>
                                     <td>
                                         <div class="btn-group">
-                                            <a href="{{ url_for('tasks.view_task', task_id=task.id) }}" class="btn btn-sm btn-outline-primary">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
+
                                             <a href="{{ url_for('tasks.edit_task', task_id=task.id) }}" class="btn btn-sm btn-outline-secondary">
                                                 <i class="bi bi-pencil"></i>
                                             </a>

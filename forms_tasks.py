@@ -96,15 +96,6 @@ class TaskForm(FlaskForm):
                 
         return True
 
-class DailyScheduleForm(FlaskForm):
-    start_time = TimeField('Hora de inicio', validators=[Optional()])
-    end_time = TimeField('Hora de fin', validators=[Optional()])
-    submit = SubmitField('Guardar Horario')
-    
-    def validate_end_time(form, field):
-        if field.data and form.start_time.data and field.data < form.start_time.data:
-            raise ValidationError('La hora de fin debe ser posterior a la hora de inicio')
-
 class WeeklyScheduleForm(FlaskForm):
     monday = BooleanField('Lunes')
     tuesday = BooleanField('Martes')
@@ -113,13 +104,7 @@ class WeeklyScheduleForm(FlaskForm):
     friday = BooleanField('Viernes')
     saturday = BooleanField('Sábado')
     sunday = BooleanField('Domingo')
-    start_time = TimeField('Hora de inicio', validators=[Optional()])
-    end_time = TimeField('Hora de fin', validators=[Optional()])
-    submit = SubmitField('Guardar Horario')
-    
-    def validate_end_time(form, field):
-        if field.data and form.start_time.data and field.data < form.start_time.data:
-            raise ValidationError('La hora de fin debe ser posterior a la hora de inicio')
+    submit = SubmitField('Guardar Configuración')
     
     def validate(self, **kwargs):
         # Aseguramos que pasamos los argumentos adicionales como extra_validators a la clase padre
@@ -144,13 +129,7 @@ class MonthlyScheduleForm(FlaskForm):
                                      choices=[(str(i), str(i)) for i in range(1, 32)],
                                      validators=[Optional()])
     
-    start_time = TimeField('Hora de inicio', validators=[Optional()])
-    end_time = TimeField('Hora de fin', validators=[Optional()])
-    submit = SubmitField('Guardar Horario')
-    
-    def validate_end_time(form, field):
-        if field.data and form.start_time.data and field.data < form.start_time.data:
-            raise ValidationError('La hora de fin debe ser posterior a la hora de inicio')
+    submit = SubmitField('Guardar Configuración')
             
     def validate(form):
         if not super().validate():
@@ -163,14 +142,13 @@ class MonthlyScheduleForm(FlaskForm):
             
         return True
 
+# Simplificada para mantener compatibilidad
+class DailyScheduleForm(FlaskForm):
+    submit = SubmitField('Guardar Configuración')
+
+# Simplificada para mantener compatibilidad
 class BiweeklyScheduleForm(FlaskForm):
-    start_time = TimeField('Hora de inicio', validators=[Optional()])
-    end_time = TimeField('Hora de fin', validators=[Optional()])
-    submit = SubmitField('Guardar Horario')
-    
-    def validate_end_time(form, field):
-        if field.data and form.start_time.data and field.data < form.start_time.data:
-            raise ValidationError('La hora de fin debe ser posterior a la hora de inicio')
+    submit = SubmitField('Guardar Configuración')
 
 class TaskCompletionForm(FlaskForm):
     notes = TextAreaField('Notas', validators=[Optional(), Length(max=500)])
@@ -200,13 +178,7 @@ class CustomWeekdaysForm(FlaskForm):
     weekdays = MultiCheckboxField('Días de la semana', choices=[
         (day.value, day.name.capitalize()) for day in WeekDay
     ], validators=[DataRequired(message='Debes seleccionar al menos un día de la semana')])
-    start_time = TimeField('Hora de inicio', validators=[Optional()])
-    end_time = TimeField('Hora de fin', validators=[Optional()])
     submit = SubmitField('Guardar Configuración')
-    
-    def validate_end_time(form, field):
-        if field.data and form.start_time.data and field.data < form.start_time.data:
-            raise ValidationError('La hora de fin debe ser posterior a la hora de inicio')
 
 class SearchForm(FlaskForm):
     query = StringField('Buscar', validators=[DataRequired()])

@@ -66,32 +66,7 @@
                             <div class="form-text">Introduce un número entre 1 y 31.</div>
                         </div>
                         {% endif %}
-                        
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    {{ form.start_time.label(class="form-label") }}
-                                    {{ form.start_time(class="form-control" + (" is-invalid" if form.start_time.errors else ""), type="time") }}
-                                    {% for error in form.start_time.errors %}
-                                    <div class="invalid-feedback">{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    {{ form.end_time.label(class="form-label") }}
-                                    {{ form.end_time(class="form-control" + (" is-invalid" if form.end_time.errors else ""), type="time") }}
-                                    {% for error in form.end_time.errors %}
-                                    <div class="invalid-feedback">{{ error }}</div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="alert alert-warning">
-                            <i class="bi bi-exclamation-triangle-fill"></i>
-                            Si no especificas una hora de inicio y fin, la tarea estará activa durante todo el día.
-                        </div>
+                        <!-- Se ha eliminado la configuración de horarios según lo solicitado -->
                         
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                             <a href="{{ url_for('tasks.list_tasks', location_id=task.location_id) }}" class="btn btn-secondary me-md-2">Cancelar</a>

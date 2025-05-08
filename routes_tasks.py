@@ -771,7 +771,7 @@ def create_task(location_id):
 @login_required
 @manager_required
 def configure_daily_schedule(task_id):
-    """Configurar horario diario para una tarea"""
+    """Configurar frecuencia diaria para una tarea"""
     task = Task.query.get_or_404(task_id)
     
     # Verificar permisos (admin o gerente de la empresa)
@@ -784,33 +784,15 @@ def configure_daily_schedule(task_id):
         flash('Esta tarea no es de frecuencia diaria.', 'warning')
         return redirect(url_for('tasks.list_tasks', location_id=task.location_id))
     
-    # Buscar si ya existe un horario
-    schedule = TaskSchedule.query.filter_by(task_id=task.id).first()
-    
-    form = DailyScheduleForm(obj=schedule)
+    form = DailyScheduleForm()
     
     if form.validate_on_submit():
-        if schedule:
-            # Actualizar horario existente
-            schedule.start_time = form.start_time.data
-            schedule.end_time = form.end_time.data
-        else:
-            # Crear nuevo horario
-            schedule = TaskSchedule(
-                task_id=task.id,
-                start_time=form.start_time.data,
-                end_time=form.end_time.data
-            )
-            db.session.add(schedule)
-        
-        db.session.commit()
-        
-        log_activity(f'Horario diario configurado para tarea: {task.title}')
-        flash('Horario configurado correctamente.', 'success')
+        log_activity(f'Frecuencia diaria configurada para tarea: {task.title}')
+        flash('Configuración guardada correctamente.', 'success')
         return redirect(url_for('tasks.list_tasks', location_id=task.location_id))
     
     return render_template('tasks/schedule_form.html',
-                          title=f'Configurar Horario Diario: {task.title}',
+                          title=f'Configurar Tarea Diaria: {task.title}',
                           form=form,
                           task=task,
                           schedule_type='diario')

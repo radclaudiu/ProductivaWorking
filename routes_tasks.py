@@ -179,9 +179,11 @@ def direct_access(token):
     # Actualizar fecha de último uso
     access_token.update_last_used()
     
-    # Guardar información necesaria en la sesión
+    # Guardar información necesaria en la sesión Y MARCAR COMO AUTENTICADO
     session['portal_location_id'] = location.id
     session['portal_access_method'] = 'direct_token'
+    # Marcar como autenticado para evitar que solicite login
+    session['portal_authenticated'] = True
     
     # Redirigir directamente al portal
     log_activity(f'Acceso directo mediante token al portal del local: {location.name}')
@@ -1389,7 +1391,8 @@ def portal_login(location_id):
     form = PortalLoginForm()
     
     # Mostrar información de las credenciales fijas al cargar la página
-    if not request.method == 'POST':
+    # Solo si no estamos accediendo mediante token directo
+    if not request.method == 'POST' and session.get('portal_access_method') != 'direct_token':
         flash(f"Credenciales fijas para este portal: Usuario: {location.portal_fixed_username}, Contraseña: {location.portal_fixed_password}", 
               "info")
     

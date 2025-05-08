@@ -1037,7 +1037,17 @@ def edit_task(task_id):
 def delete_task(task_id):
     """Eliminar una tarea"""
     try:
-        task = Task.query.get_or_404(task_id)
+        # Verificar si la tarea existe
+        task = Task.query.get(task_id)
+        if not task:
+            # La tarea ya ha sido eliminada o no existe
+            flash('La tarea ya ha sido eliminada.', 'info')
+            # Intentar obtener location_id de los argumentos de la solicitud
+            location_id = request.args.get('location_id')
+            if location_id:
+                return redirect(url_for('tasks.list_tasks', location_id=location_id))
+            else:
+                return redirect(url_for('tasks.index'))
         
         # Verificar permisos (admin o gerente de la empresa)
         if not current_user.is_admin() and (not current_user.is_gerente() or current_user.company_id != task.location.company_id):

@@ -1,0 +1,130 @@
+{% extends 'layout.html' %}
+
+{% block title %}Crear Fichaje Manual{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card mb-4">
+                <div class="card-header pb-0">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h3 class="mb-0">Crear Fichaje Manual</h3>
+                            <p class="text-muted">Complete el formulario para crear un nuevo fichaje manualmente</p>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('checkpoints.index_company', slug=company.get_slug()) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Volver
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="post" class="needs-validation">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-group">
+                                    <label for="{{ form.employee_id.id }}" class="form-control-label">{{ form.employee_id.label.text }}</label>
+                                    {{ form.employee_id(class="form-control") }}
+                                    {% if form.employee_id.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.employee_id.errors %}
+                                        <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <div class="form-group">
+                                    <label for="{{ form.checkpoint_id.id }}" class="form-control-label">{{ form.checkpoint_id.label.text }}</label>
+                                    {{ form.checkpoint_id(class="form-control") }}
+                                    {% if form.checkpoint_id.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.checkpoint_id.errors %}
+                                        <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="form-group">
+                                    <label for="{{ form.check_in_date.id }}" class="form-control-label">{{ form.check_in_date.label.text }}</label>
+                                    {{ form.check_in_date(class="form-control", type="date") }}
+                                    {% if form.check_in_date.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.check_in_date.errors %}
+                                        <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <div class="form-group">
+                                    <label for="{{ form.check_in_time.id }}" class="form-control-label">{{ form.check_in_time.label.text }}</label>
+                                    {{ form.check_in_time(class="form-control", type="time") }}
+                                    {% if form.check_in_time.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.check_in_time.errors %}
+                                        <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4 mb-3">
+                                <div class="form-group">
+                                    <label for="{{ form.check_out_time.id }}" class="form-control-label">{{ form.check_out_time.label.text }}</label>
+                                    {{ form.check_out_time(class="form-control", type="time") }}
+                                    {% if form.check_out_time.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.check_out_time.errors %}
+                                        <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">Dejar en blanco si no hay salida registrada</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <div class="form-group">
+                                    <label for="{{ form.notes.id }}" class="form-control-label">{{ form.notes.label.text }}</label>
+                                    {{ form.notes(class="form-control", rows=3) }}
+                                    {% if form.notes.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.notes.errors %}
+                                        <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12 d-flex justify-content-between">
+                                <a href="{{ url_for('checkpoints.index_company', slug=company.get_slug()) }}" class="btn btn-secondary">Cancelar</a>
+                                <button type="submit" class="btn" style="background-color: #8D6E63; color: white;">{{ form.submit.label.text }}</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

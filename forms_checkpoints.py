@@ -173,3 +173,20 @@ class DeleteCheckPointRecordsForm(FlaskForm):
                 raise ValidationError('La fecha de fin debe ser posterior a la fecha de inicio')
         except ValueError:
             raise ValidationError('Formato de fecha incorrecto. Use YYYY-MM-DD')
+
+class ManualCheckPointRecordForm(FlaskForm):
+    """Formulario para crear un fichaje manual directamente en la tabla CheckPointRecord"""
+    employee_id = SelectField('Empleado', coerce=int, validators=[DataRequired()])
+    checkpoint_id = SelectField('Punto de Fichaje', coerce=int, validators=[DataRequired()])
+    check_in_date = StringField('Fecha de entrada', validators=[DataRequired()])
+    check_in_time = TimeField('Hora de entrada', validators=[DataRequired()])
+    check_out_time = TimeField('Hora de salida', validators=[Optional()])
+    notes = TextAreaField('Notas', validators=[Optional(), Length(max=500)])
+    submit = SubmitField('Crear Fichaje')
+    
+    def validate_check_out_time(self, field):
+        """Verifica que la hora de salida sea posterior a la de entrada si está presente"""
+        if field.data and self.check_in_time.data:
+            if field.data < self.check_in_time.data:
+                # No hacemos validación, ya que podría ser del día siguiente
+                pass

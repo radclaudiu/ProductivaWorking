@@ -344,6 +344,9 @@ def create_original_record(slug):
                            company=company, 
                            title='Crear Nuevo Registro Original')
 
+@checkpoints_bp.route('/company/<slug>/rrrrrr/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+@manager_required
 def edit_original_record(slug, id):
     """Edita un registro original"""
     from models_checkpoints import CheckPointOriginalRecord

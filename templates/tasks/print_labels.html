@@ -737,6 +737,7 @@
                     
                     // Construir la URL del servidor de impresión
                     const url = `http://${printer.ip_address}:${printer.port || 5000}${printer.api_path || '/print'}`;
+                    console.log(`Intentando conectar a: ${url}`);
                     
                     // Construir los datos para enviar al servidor de impresión
                     const requestData = {
@@ -771,12 +772,23 @@
                         requestOptions.headers['Authorization'] = `Basic ${btoa(`${printer.username}:${printer.password || ''}`)}`;
                     }
                     
+                    console.log(`Configuración de impresora: IP=${printer.ip_address}, Puerto=${printer.port || 5000}, Ruta=${printer.api_path || '/print'}, Puerto USB=${printer.usb_port || '/dev/usb/lp0'}`);
+                    
                     // Enviar la petición
                     showMessage(`Enviando etiqueta a ${printer.name}...`);
-                    const printResponse = await fetch(url, requestOptions);
-                    
-                    if (!printResponse.ok) {
-                        throw new Error(`Error ${printResponse.status}: ${printResponse.statusText}`);
+                    try {
+                        const printResponse = await fetch(url, requestOptions);
+                        
+                        if (!printResponse.ok) {
+                            throw new Error(`Error ${printResponse.status}: ${printResponse.statusText}`);
+                        }
+                    } catch (fetchError) {
+                        // Este bloque captura errores de red, como cuando el servidor no está disponible
+                        console.error(`Error al conectar con el servidor de impresión: ${fetchError.message}`);
+                        if (fetchError.message === 'Failed to fetch') {
+                            throw new Error(`No se pudo conectar al servidor de impresión en ${printer.ip_address}:${printer.port || 5000}. Verifique que el servidor de impresión esté funcionando y que la IP y el puerto sean correctos.`);
+                        }
+                        throw fetchError;
                     }
                     
                     const result = await printResponse.json();
@@ -789,7 +801,20 @@
                     }
                 } catch (error) {
                     console.error('Error de impresión:', error);
-                    showMessage(`Error: ${error.message}`, true);
+                    
+                    // Mensaje de error más informativo para el "Failed to fetch"
+                    let errorMessage = error.message;
+                    
+                    // Añadir pasos de solución de problemas al mensaje de error
+                    if (error.message.includes('Failed to fetch') || error.message.includes('No se pudo conectar')) {
+                        errorMessage = `${error.message}\n\nPasos para solucionar:\n` +
+                            "1. Verifique que el servidor de impresión esté encendido\n" +
+                            "2. Compruebe que la IP y el puerto sean correctos\n" +
+                            "3. Asegúrese de que no hay un firewall bloqueando la conexión\n" +
+                            "4. Intente acceder a la dirección en su navegador para verificar que el servidor responde";
+                    }
+                    
+                    showMessage(errorMessage, true);
                     return false;
                 }
             };

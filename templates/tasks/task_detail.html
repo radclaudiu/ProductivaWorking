@@ -74,22 +74,14 @@
                     {% endif %}
                     
                     <div class="mb-3">
-                        <h6 class="fw-bold">Horarios Programados:</h6>
+                        <h6 class="fw-bold">Programación:</h6>
                         {% if task.schedule_details %}
                         {% if task.frequency.value == 'diaria' %}
                             {% for schedule in task.schedule_details %}
                             <div class="alert alert-light">
                                 <i class="bi bi-calendar-check"></i> 
                                 <strong>Diaria</strong>: 
-                                {% if schedule.start_time and schedule.end_time %}
-                                De {{ schedule.start_time.strftime('%H:%M') }} a {{ schedule.end_time.strftime('%H:%M') }}
-                                {% elif schedule.start_time %}
-                                A partir de las {{ schedule.start_time.strftime('%H:%M') }}
-                                {% elif schedule.end_time %}
-                                Hasta las {{ schedule.end_time.strftime('%H:%M') }}
-                                {% else %}
-                                Sin horario específico
-                                {% endif %}
+                                Tarea activa todo el día
                                 
                                 <a href="{{ url_for('tasks.configure_daily_schedule', task_id=task.id) }}" class="ms-2 text-primary">
                                     <i class="bi bi-pencil-square"></i>
@@ -101,15 +93,7 @@
                             <div class="alert alert-light">
                                 <i class="bi bi-calendar-week"></i> 
                                 <strong>{{ schedule.day_of_week.name.capitalize() }}</strong>: 
-                                {% if schedule.start_time and schedule.end_time %}
-                                De {{ schedule.start_time.strftime('%H:%M') }} a {{ schedule.end_time.strftime('%H:%M') }}
-                                {% elif schedule.start_time %}
-                                A partir de las {{ schedule.start_time.strftime('%H:%M') }}
-                                {% elif schedule.end_time %}
-                                Hasta las {{ schedule.end_time.strftime('%H:%M') }}
-                                {% else %}
-                                Sin horario específico
-                                {% endif %}
+                                Tarea activa todo el día
                             </div>
                             {% endfor %}
                             <div class="mt-2">
@@ -122,15 +106,7 @@
                             <div class="alert alert-light">
                                 <i class="bi bi-calendar-month"></i> 
                                 <strong>Día {{ schedule.day_of_month }} de cada mes</strong>: 
-                                {% if schedule.start_time and schedule.end_time %}
-                                De {{ schedule.start_time.strftime('%H:%M') }} a {{ schedule.end_time.strftime('%H:%M') }}
-                                {% elif schedule.start_time %}
-                                A partir de las {{ schedule.start_time.strftime('%H:%M') }}
-                                {% elif schedule.end_time %}
-                                Hasta las {{ schedule.end_time.strftime('%H:%M') }}
-                                {% else %}
-                                Sin horario específico
-                                {% endif %}
+                                Tarea activa todo el día
                             </div>
                             {% endfor %}
                             <div class="mt-2">
@@ -143,15 +119,7 @@
                             <div class="alert alert-light">
                                 <i class="bi bi-calendar2-week"></i> 
                                 <strong>Cada dos semanas</strong>: 
-                                {% if schedule.start_time and schedule.end_time %}
-                                De {{ schedule.start_time.strftime('%H:%M') }} a {{ schedule.end_time.strftime('%H:%M') }}
-                                {% elif schedule.start_time %}
-                                A partir de las {{ schedule.start_time.strftime('%H:%M') }}
-                                {% elif schedule.end_time %}
-                                Hasta las {{ schedule.end_time.strftime('%H:%M') }}
-                                {% else %}
-                                Sin horario específico
-                                {% endif %}
+                                Tarea activa todo el día
                                 
                                 <a href="{{ url_for('tasks.configure_biweekly_schedule', task_id=task.id) }}" class="ms-2 text-primary">
                                     <i class="bi bi-pencil-square"></i>
@@ -161,24 +129,24 @@
                         {% endif %}
                         {% else %}
                         <div class="alert alert-warning">
-                            <i class="bi bi-exclamation-triangle"></i> No hay horarios configurados.
+                            <i class="bi bi-exclamation-triangle"></i> No hay configuración para esta tarea.
                             
                             <div class="mt-2">
                                 {% if task.frequency.value == 'diaria' %}
                                 <a href="{{ url_for('tasks.configure_daily_schedule', task_id=task.id) }}" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-plus-circle"></i> Configurar Horario Diario
+                                    <i class="bi bi-plus-circle"></i> Configurar Tarea Diaria
                                 </a>
                                 {% elif task.frequency.value == 'semanal' %}
                                 <a href="{{ url_for('tasks.configure_weekly_schedule', task_id=task.id) }}" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-plus-circle"></i> Configurar Horario Semanal
+                                    <i class="bi bi-plus-circle"></i> Configurar Tarea Semanal
                                 </a>
                                 {% elif task.frequency.value == 'mensual' %}
                                 <a href="{{ url_for('tasks.configure_monthly_schedule', task_id=task.id) }}" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-plus-circle"></i> Configurar Horario Mensual
+                                    <i class="bi bi-plus-circle"></i> Configurar Días del Mes
                                 </a>
                                 {% elif task.frequency.value == 'quincenal' %}
                                 <a href="{{ url_for('tasks.configure_biweekly_schedule', task_id=task.id) }}" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-plus-circle"></i> Configurar Horario Quincenal
+                                    <i class="bi bi-plus-circle"></i> Configurar Tarea Quincenal
                                 </a>
                                 {% endif %}
                             </div>

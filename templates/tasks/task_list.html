@@ -162,6 +162,7 @@
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                 <form id="deleteTaskForm" method="POST" style="display: inline;">
+                    <input type="hidden" name="location_id" id="deleteLocationId" value="{{ location.id }}">
                     <button type="submit" id="deleteTaskButton" class="btn btn-danger">Eliminar</button>
                 </form>
             </div>
@@ -249,6 +250,14 @@
         
         // Configuración del modal para eliminar tarea
         const deleteTaskModal = document.getElementById('deleteTaskModal');
+        const deleteTaskForm = document.getElementById('deleteTaskForm');
+        let modalInstance = null;
+        
+        // Inicializar la instancia del modal si existe
+        if (deleteTaskModal) {
+            modalInstance = new bootstrap.Modal(deleteTaskModal);
+        }
+        
         if (deleteTaskModal) {
             deleteTaskModal.addEventListener('show.bs.modal', function(event) {
                 // Botón que desencadenó el modal
@@ -262,9 +271,28 @@
                 document.getElementById('deleteTaskTitle').textContent = taskTitle;
                 
                 // Actualizar formulario para enviar a la URL correcta
-                const deleteForm = document.getElementById('deleteTaskForm');
-                deleteForm.action = '{{ url_for("tasks.delete_task", task_id=0) }}'.replace('0', taskId);
+                deleteTaskForm.action = '{{ url_for("tasks.delete_task", task_id=0) }}'.replace('0', taskId);
             });
+            
+            // Manejar el envío del formulario para prevenir problemas
+            if (deleteTaskForm) {
+                deleteTaskForm.addEventListener('submit', function(e) {
+                    // Deshabilitar el botón para prevenir múltiples envíos
+                    const submitButton = document.getElementById('deleteTaskButton');
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Eliminando...';
+                    
+                    // Cerrar el modal automáticamente si existe la instancia
+                    setTimeout(function() {
+                        if (modalInstance) {
+                            modalInstance.hide();
+                        }
+                    }, 500);
+                    
+                    // Continuar con el envío normal
+                    return true;
+                });
+            }
         }
         
         // Búsqueda de tareas

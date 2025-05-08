@@ -187,7 +187,8 @@ from models_checkpoints import CheckPoint, CheckPointRecord, CheckPointIncident,
 from models_checkpoints import CheckPointStatus, CheckPointIncidentType, CheckPointOriginalRecord
 from forms_checkpoints import (CheckPointForm, CheckPointLoginForm, CheckPointEmployeePinForm, 
                              ContractHoursForm, CheckPointRecordAdjustmentForm,
-                             SignaturePadForm, ExportCheckPointRecordsForm, DeleteCheckPointRecordsForm)
+                             SignaturePadForm, ExportCheckPointRecordsForm, DeleteCheckPointRecordsForm,
+                             ManualCheckPointRecordForm)
 from utils import log_activity
 from utils_checkpoints import generate_pdf_report, generate_simple_pdf_report, draw_signature, delete_employee_records
 
@@ -459,6 +460,96 @@ def index_company(slug):
         current_app.logger.error(f"Error general en index_company: {e}")
         flash('Se produjo un error al cargar la página. Por favor, inténtelo de nuevo.', 'danger')
         return redirect(url_for('main.dashboard'))
+
+
+@checkpoints_bp.route('/company/<string:slug>/manual_record', methods=['GET', 'POST'])
+@login_required
+@manager_required
+def create_manual_record(slug):
+    """Página para crear un fichaje manual para una empresa específica"""
+    try:
+        # Buscar la empresa por slug
+        from utils import slugify
+        
+        # Buscar por ID si es un número
+        if slug.isdigit():
+            company = Company.query.get_or_404(int(slug))
+        else:
+            # Buscar todas las empresas y comparar slugs
+            all_companies = Company.query.all()
+            company = next((c for c in all_companies if slugify(c.name) == slug), None)
+            
+            if not company:
+                flash('Empresa no encontrada', 'danger')
+                return redirect(url_for('checkpoints.select_company'))
+        
+        # Verificar permisos
+        if not current_user.is_admin() and company not in current_user.companies:
+            flash('No tiene permiso para gestionar esta empresa.', 'danger')
+            return redirect(url_for('main.dashboard'))
+        
+        # Crear formulario
+        form = ManualCheckPointRecordForm()
+        
+        # Cargar opciones de empleados y puntos de fichaje
+        employees = Employee.query.filter_by(company_id=company.id, is_active=True).order_by(Employee.first_name).all()
+        checkpoints = CheckPoint.query.filter_by(company_id=company.id, status=CheckPointStatus.ACTIVE).all()
+        
+        form.employee_id.choices = [(emp.id, f"{emp.first_name} {emp.last_name}") for emp in employees]
+        form.checkpoint_id.choices = [(cp.id, cp.name) for cp in checkpoints]
+        
+        # Establecer fecha actual por defecto
+        if not form.check_in_date.data:
+            form.check_in_date.data = datetime.now().strftime('%Y-%m-%d')
+        
+        # Procesar formulario si se envió
+        if form.validate_on_submit():
+            # Crear objeto CheckPointRecord
+            record = CheckPointRecord()
+            record.checkpoint_id = form.checkpoint_id.data
+            record.employee_id = form.employee_id.data
+            
+            # Procesar fecha y hora de entrada
+            check_in_datetime = datetime.strptime(form.check_in_date.data, '%Y-%m-%d')
+            check_in_datetime = datetime.combine(check_in_datetime.date(), form.check_in_time.data)
+            record.check_in_time = check_in_datetime
+            
+            # Procesar hora de salida si se proporcionó
+            if form.check_out_time.data:
+                # Utilizar la misma fecha que la entrada para la salida
+                check_out_datetime = datetime.combine(check_in_datetime.date(), form.check_out_time.data)
+                
+                # Si la hora de salida es anterior a la hora de entrada, asumir que es del día siguiente
+                if check_out_datetime < check_in_datetime:
+                    check_out_datetime = check_out_datetime + timedelta(days=1)
+                
+                record.check_out_time = check_out_datetime
+            
+            # Guardar notas si se proporcionaron
+            if form.notes.data:
+                record.notes = form.notes.data
+            
+            # Guardar el registro en la base de datos
+            db.session.add(record)
+            db.session.commit()
+            
+            # Si hay hora de salida, actualizar las horas trabajadas
+            if record.check_out_time:
+                # Importar la función update_employee_work_hours
+                from utils_work_hours import update_employee_work_hours
+                
+                # Actualizar las horas trabajadas para este empleado
+                update_employee_work_hours(record.employee_id, record.check_in_time, record.check_out_time)
+            
+            flash('Fichaje manual creado correctamente', 'success')
+            return redirect(url_for('checkpoints.index_company', slug=slug))
+        
+        return render_template('checkpoints/create_manual_record.html', form=form, company=company)
+    
+    except Exception as e:
+        current_app.logger.error(f"Error en create_manual_record: {e}")
+        flash('Error al crear el fichaje manual. Por favor, inténtelo de nuevo.', 'danger')
+        return redirect(url_for('checkpoints.index_company', slug=slug))
 
 
 @checkpoints_bp.route('/checkpoints')

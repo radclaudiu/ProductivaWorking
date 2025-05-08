@@ -226,6 +226,116 @@ def view_original_records(slug):
 @checkpoints_bp.route('/company/<slug>/rrrrrr/edit/<int:id>', methods=['GET', 'POST'])
 @login_required
 @manager_required
+def create_original_record(slug):
+    """Crea un nuevo registro original"""
+    from models_checkpoints import CheckPointOriginalRecord
+    from flask_wtf import FlaskForm
+    from wtforms import StringField, TimeField, TextAreaField, SubmitField, SelectField
+    from wtforms.validators import DataRequired, Optional, Length
+    
+    # Buscar la empresa por slug
+    companies = Company.query.all()
+    company = None
+    company_id = None
+    
+    for comp in companies:
+        if slugify(comp.name) == slug:
+            company = comp
+            company_id = comp.id
+            break
+    
+    if not company:
+        abort(404)
+    
+    # Obtener todos los empleados activos de esta empresa
+    employees = Employee.query.filter_by(company_id=company_id, is_active=True).all()
+    if not employees:
+        flash('No hay empleados activos para esta empresa.', 'warning')
+        return redirect(url_for('checkpoints_slug.view_original_records', slug=slug))
+    
+    # Obtener todos los puntos de fichaje activos
+    checkpoints = CheckPoint.query.filter_by(company_id=company_id, is_active=True).all()
+    if not checkpoints:
+        flash('No hay puntos de fichaje activos para esta empresa.', 'warning')
+        return redirect(url_for('checkpoints_slug.view_original_records', slug=slug))
+    
+    # Crear un formulario para el nuevo registro
+    class CreateOriginalRecordForm(FlaskForm):
+        employee_id = SelectField('Empleado', validators=[DataRequired()], coerce=int)
+        checkpoint_id = SelectField('Punto de Fichaje', validators=[DataRequired()], coerce=int)
+        original_check_in_date = StringField('Fecha de entrada original', validators=[DataRequired()])
+        original_check_in_time = TimeField('Hora de entrada original', validators=[DataRequired()])
+        original_check_out_time = TimeField('Hora de salida original', validators=[Optional()])
+        notes = TextAreaField('Notas', validators=[Optional(), Length(max=500)])
+        submit = SubmitField('Crear Registro')
+    
+    form = CreateOriginalRecordForm()
+    
+    # Llenar las opciones de los selectores
+    form.employee_id.choices = [(emp.id, f"{emp.first_name} {emp.last_name}") for emp in employees]
+    form.checkpoint_id.choices = [(cp.id, cp.name) for cp in checkpoints]
+    
+    # Establecer fecha actual por defecto
+    if request.method == 'GET':
+        form.original_check_in_date.data = datetime.now().strftime('%Y-%m-%d')
+    
+    # Procesar el formulario
+    if form.validate_on_submit():
+        try:
+            # Crear un nuevo registro de punto de control
+            record = CheckPointRecord()
+            record.employee_id = form.employee_id.data
+            record.checkpoint_id = form.checkpoint_id.data
+            
+            # Obtener fecha y hora de entrada
+            check_in_date = datetime.strptime(form.original_check_in_date.data, '%Y-%m-%d').date()
+            check_in_time = datetime.combine(check_in_date, form.original_check_in_time.data)
+            record.check_in_time = check_in_time
+            
+            # Obtener hora de salida si está presente
+            check_out_time = None
+            if form.original_check_out_time.data:
+                # Si la hora de salida es menor que la de entrada, asumimos que es del día siguiente
+                if form.original_check_out_time.data < form.original_check_in_time.data:
+                    check_out_date = check_in_date + timedelta(days=1)
+                else:
+                    check_out_date = check_in_date
+                    
+                check_out_time = datetime.combine(check_out_date, form.original_check_out_time.data)
+                record.check_out_time = check_out_time
+                
+                # Actualizar las horas trabajadas
+                update_employee_work_hours(record)
+            
+            # Guardar el registro
+            db.session.add(record)
+            db.session.flush()  # Para obtener el ID del registro
+            
+            # Crear el registro original correspondiente
+            original_record = CheckPointOriginalRecord()
+            original_record.record_id = record.id
+            original_record.original_check_in_time = check_in_time
+            original_record.original_check_out_time = check_out_time
+            original_record.original_notes = form.notes.data
+            original_record.adjusted_at = datetime.now()
+            original_record.adjustment_reason = "Registro creado manualmente"
+            
+            # Guardar el registro original
+            db.session.add(original_record)
+            db.session.commit()
+            
+            flash('Registro original creado con éxito.', 'success')
+            return redirect(url_for('checkpoints_slug.view_original_records', slug=slug))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error al crear el registro: {str(e)}', 'danger')
+    
+    return render_template('checkpoints/create_original_record.html', 
+                           form=form, 
+                           company=company, 
+                           title='Crear Nuevo Registro Original')
+
 def edit_original_record(slug, id):
     """Edita un registro original"""
     from models_checkpoints import CheckPointOriginalRecord

@@ -156,6 +156,12 @@
                                         </li>
                                         <li><hr class="dropdown-divider"></li>
                                         <li>
+                                            <a href="#" class="dropdown-item" onclick="showAccessTokenModal({{ checkpoint.id }}, '{{ checkpoint.name }}'); return false;">
+                                                <i class="bi bi-key"></i> Gestionar Acceso Directo
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
                                             <button class="dropdown-item text-danger" 
                                                     onclick="confirmDeleteCheckpoint({{ checkpoint.id }}, '{{ checkpoint.name }}')">
                                                 <i class="bi bi-trash"></i> Eliminar
@@ -204,10 +210,95 @@
         </div>
     </div>
 </div>
+
+<!-- Modal para gestionar tokens de acceso directo -->
+<div class="modal fade" id="accessTokenModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Acceso Directo - <span id="token-checkpoint-name"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="token-loading" class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-2">Verificando estado del token...</p>
+                </div>
+                
+                <div id="token-actions" class="d-none">
+                    <!-- Estado del token -->
+                    <div class="alert alert-info mb-4">
+                        <h5 class="alert-heading"><i class="bi bi-info-circle"></i> Información de Acceso Directo</h5>
+                        <p id="token-status-message">El punto de fichaje no tiene un enlace de acceso directo configurado.</p>
+                    </div>
+                    
+                    <!-- Botones de acción según el estado -->
+                    <div id="create-token-container" class="d-none mb-4">
+                        <form id="create-token-form" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-success">
+                                <i class="bi bi-plus-circle"></i> Crear Enlace de Acceso Directo
+                            </button>
+                            <p class="text-muted mt-2">
+                                <small>
+                                    <i class="bi bi-info-circle"></i>
+                                    Al crear un enlace de acceso directo, los usuarios podrán acceder al portal de fichajes
+                                    sin necesidad de introducir credenciales.
+                                </small>
+                            </p>
+                        </form>
+                    </div>
+                    
+                    <div id="manage-token-container" class="d-none mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi bi-link-45deg text-success me-2" style="font-size: 1.5rem;"></i>
+                            <div class="input-group">
+                                <input type="text" id="token-url" class="form-control" readonly>
+                                <button class="btn btn-outline-secondary" type="button" onclick="copyTokenUrl()">
+                                    <i class="bi bi-clipboard"></i> Copiar
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex">
+                            <form id="regenerate-token-form" method="POST" class="me-2">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="bi bi-arrow-repeat"></i> Regenerar Enlace
+                                </button>
+                            </form>
+                            
+                            <form id="deactivate-token-form" method="POST">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-danger">
+                                    <i class="bi bi-x-circle"></i> Desactivar Enlace
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <div class="alert alert-warning mt-3">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <small>
+                                <strong>Nota:</strong> Al regenerar el enlace, el anterior dejará de funcionar inmediatamente.
+                                Al desactivar el enlace, los usuarios no podrán acceder usando este método.
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+    // Función para confirmar eliminación de punto de fichaje
     function confirmDeleteCheckpoint(id, name) {
         // Configurar modal
         document.getElementById('checkpoint-name').textContent = name;
@@ -222,6 +313,76 @@
         // Mostrar modal
         const modal = new bootstrap.Modal(document.getElementById('deleteCheckpointModal'));
         modal.show();
+    }
+    
+    // Función para mostrar el modal de gestión de token de acceso directo
+    function showAccessTokenModal(id, name) {
+        // Configurar título del modal
+        document.getElementById('token-checkpoint-name').textContent = name;
+        
+        // Mostrar indicador de carga
+        document.getElementById('token-loading').classList.remove('d-none');
+        document.getElementById('token-actions').classList.add('d-none');
+        document.getElementById('create-token-container').classList.add('d-none');
+        document.getElementById('manage-token-container').classList.add('d-none');
+        
+        // Configurar formularios
+        document.getElementById('create-token-form').action = "{{ url_for('checkpoints_slug.create_access_token', id=0) }}".replace('0', id);
+        document.getElementById('regenerate-token-form').action = "{{ url_for('checkpoints_slug.regenerate_access_token', id=0) }}".replace('0', id);
+        document.getElementById('deactivate-token-form').action = "{{ url_for('checkpoints_slug.deactivate_access_token', id=0) }}".replace('0', id);
+        
+        // Mostrar modal
+        const modal = new bootstrap.Modal(document.getElementById('accessTokenModal'));
+        modal.show();
+        
+        // Consultar estado del token
+        fetch('/api/checkpoints/' + id + '/token-status')
+            .then(response => response.json())
+            .then(data => {
+                // Ocultar indicador de carga
+                document.getElementById('token-loading').classList.add('d-none');
+                document.getElementById('token-actions').classList.remove('d-none');
+                
+                if (data.has_token) {
+                    // Actualizar mensaje de estado
+                    document.getElementById('token-status-message').textContent = 'Este punto de fichaje tiene un enlace de acceso directo configurado.';
+                    
+                    // Configurar URL del token
+                    const tokenUrl = "{{ url_for('checkpoints_slug.token_direct_access', token='TOKEN_PLACEHOLDER', _external=True) }}".replace('TOKEN_PLACEHOLDER', data.token);
+                    document.getElementById('token-url').value = tokenUrl;
+                    
+                    // Mostrar contenedor de gestión de token
+                    document.getElementById('manage-token-container').classList.remove('d-none');
+                } else {
+                    // Actualizar mensaje de estado
+                    document.getElementById('token-status-message').textContent = 'Este punto de fichaje no tiene un enlace de acceso directo configurado.';
+                    
+                    // Mostrar contenedor de creación de token
+                    document.getElementById('create-token-container').classList.remove('d-none');
+                }
+            })
+            .catch(error => {
+                console.error('Error al consultar estado del token:', error);
+                document.getElementById('token-loading').classList.add('d-none');
+                document.getElementById('token-actions').classList.remove('d-none');
+                document.getElementById('token-status-message').innerHTML = 
+                    '<div class="alert alert-danger">Error al consultar el estado del token. Por favor, inténtelo de nuevo.</div>';
+            });
+    }
+    
+    // Función para copiar URL del token al portapapeles
+    function copyTokenUrl() {
+        const tokenUrl = document.getElementById('token-url');
+        tokenUrl.select();
+        document.execCommand('copy');
+        
+        // Mostrar mensaje de éxito temporal (tooltip o similar)
+        const copyButton = tokenUrl.nextElementSibling;
+        const originalText = copyButton.innerHTML;
+        copyButton.innerHTML = '<i class="bi bi-check"></i> Copiado';
+        setTimeout(() => {
+            copyButton.innerHTML = originalText;
+        }, 2000);
     }
 </script>
 {% endblock %}

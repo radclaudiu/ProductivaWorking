@@ -1603,6 +1603,39 @@ def deactivate_access_token(id):
     
     return redirect(url_for('checkpoints_slug.manage_checkpoints'))
 
+# Endpoint de API para consultar estado del token
+@checkpoints_bp.route('/api/checkpoints/<int:id>/token-status', methods=['GET'])
+@login_required
+@manager_required
+def get_token_status(id):
+    """API para consultar el estado del token de acceso directo de un punto de fichaje"""
+    # Importar modelos necesarios
+    from models_access import LocationAccessToken, PortalType
+    
+    # Verificar que el punto de fichaje existe
+    checkpoint = CheckPoint.query.get_or_404(id)
+    
+    # Verificar permisos (admin o gerente de la empresa)
+    if not current_user.is_admin() and (not current_user.is_gerente() or current_user.company_id != checkpoint.company_id):
+        return jsonify({'error': 'No tienes permiso para consultar tokens de acceso para este punto de fichaje'}), 403
+    
+    # Buscar token activo
+    token = LocationAccessToken.query.filter_by(
+        location_id=id,
+        is_active=True,
+        portal_type=PortalType.CHECKPOINTS
+    ).first()
+    
+    if token:
+        return jsonify({
+            'has_token': True,
+            'token': token.token,
+            'created_at': token.created_at.strftime('%d-%m-%Y %H:%M'),
+            'last_used_at': token.last_used_at.strftime('%d-%m-%Y %H:%M') if token.last_used_at else None
+        })
+    else:
+        return jsonify({'has_token': False})
+
 # Ruta para acceso directo sin login
 @checkpoints_bp.route('/token-access/<token>', methods=['GET'])
 def token_direct_access(token):

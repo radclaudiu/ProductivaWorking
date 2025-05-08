@@ -78,6 +78,114 @@ def index():
     # Si no hay locales, mostrar la página de dashboard con el botón para crear el primer local
     return render_template('tasks/dashboard.html', locations=locations)
 
+# Rutas para gestionar enlaces de acceso directo
+@tasks_bp.route('/locations/<int:id>/access-token/create', methods=['POST'])
+@login_required
+@manager_required
+def create_access_token(id):
+    """Crea un token de acceso directo para una ubicación"""
+    location = Location.query.get_or_404(id)
+    
+    # Verificar permisos (admin o gerente de la empresa)
+    if not current_user.is_admin() and (not current_user.is_gerente() or current_user.company_id != location.company_id):
+        flash('No tienes permiso para gestionar tokens de acceso para este local.', 'danger')
+        return redirect(url_for('tasks.view_location', id=id))
+    
+    # Crear token para la ubicación
+    try:
+        token = LocationAccessToken.create_for_location(location.id)
+        flash('Enlace de acceso directo creado correctamente.', 'success')
+        log_activity(f'Creado token de acceso directo para el local: {location.name}')
+    except Exception as e:
+        flash(f'Error al crear token de acceso: {str(e)}', 'danger')
+    
+    return redirect(url_for('tasks.view_location', id=id))
+    
+@tasks_bp.route('/locations/<int:id>/access-token/regenerate', methods=['POST'])
+@login_required
+@manager_required
+def regenerate_access_token(id):
+    """Regenera el token de acceso directo para una ubicación"""
+    location = Location.query.get_or_404(id)
+    
+    # Verificar permisos (admin o gerente de la empresa)
+    if not current_user.is_admin() and (not current_user.is_gerente() or current_user.company_id != location.company_id):
+        flash('No tienes permiso para gestionar tokens de acceso para este local.', 'danger')
+        return redirect(url_for('tasks.view_location', id=id))
+    
+    # Buscar token existente
+    token = LocationAccessToken.query.filter_by(location_id=id).first()
+    if not token:
+        flash('No existe un token para este local.', 'warning')
+        return redirect(url_for('tasks.view_location', id=id))
+    
+    # Regenerar token
+    try:
+        new_token = token.regenerate()
+        flash('Enlace de acceso directo regenerado correctamente.', 'success')
+        log_activity(f'Regenerado token de acceso directo para el local: {location.name}')
+    except Exception as e:
+        flash(f'Error al regenerar token de acceso: {str(e)}', 'danger')
+    
+    return redirect(url_for('tasks.view_location', id=id))
+    
+@tasks_bp.route('/locations/<int:id>/access-token/deactivate', methods=['POST'])
+@login_required
+@manager_required
+def deactivate_access_token(id):
+    """Desactiva el token de acceso directo para una ubicación"""
+    location = Location.query.get_or_404(id)
+    
+    # Verificar permisos (admin o gerente de la empresa)
+    if not current_user.is_admin() and (not current_user.is_gerente() or current_user.company_id != location.company_id):
+        flash('No tienes permiso para gestionar tokens de acceso para este local.', 'danger')
+        return redirect(url_for('tasks.view_location', id=id))
+    
+    # Buscar token existente
+    token = LocationAccessToken.query.filter_by(location_id=id).first()
+    if not token:
+        flash('No existe un token para este local.', 'warning')
+        return redirect(url_for('tasks.view_location', id=id))
+    
+    # Desactivar token
+    try:
+        token.deactivate()
+        flash('Enlace de acceso directo desactivado correctamente.', 'success')
+        log_activity(f'Desactivado token de acceso directo para el local: {location.name}')
+    except Exception as e:
+        flash(f'Error al desactivar token de acceso: {str(e)}', 'danger')
+    
+    return redirect(url_for('tasks.view_location', id=id))
+
+# Ruta para acceso directo sin login
+@tasks_bp.route('/direct-access/<string:token>')
+def direct_access(token):
+    """Acceso directo al portal mediante token sin necesidad de login"""
+    # Buscar el token en la base de datos
+    access_token = LocationAccessToken.query.filter_by(token=token, is_active=True).first()
+    
+    if not access_token:
+        flash('El enlace de acceso directo no es válido o ha sido desactivado.', 'danger')
+        return redirect(url_for('tasks.portal_selection'))
+    
+    # Obtener la ubicación asociada al token
+    location = access_token.location
+    
+    if not location or not location.is_active:
+        flash('La ubicación asociada a este enlace no está disponible.', 'danger')
+        return redirect(url_for('tasks.portal_selection'))
+    
+    # Actualizar fecha de último uso
+    access_token.update_last_used()
+    
+    # Guardar información necesaria en la sesión
+    session['portal_location_id'] = location.id
+    session['portal_access_method'] = 'direct_token'
+    
+    # Redirigir directamente al portal
+    log_activity(f'Acceso directo mediante token al portal del local: {location.name}')
+    return redirect(url_for('tasks.local_portal', location_id=location.id))
+
 # Rutas para gestión de locales
 @tasks_bp.route('/locations')
 @login_required
@@ -415,7 +523,14 @@ def view_location(id):
         monthly_counts.append(month_count)
     
     # Obtener el enlace directo al portal
-    portal_url = url_for('tasks.local_portal', location_id=location.id, _external=True)
+    portal_url = url_for('tasks.portal_login', location_id=location.id, _external=True)
+    
+    # Obtener token de acceso directo si existe
+    access_token = LocationAccessToken.query.filter_by(location_id=location.id).first()
+    direct_access_url = None
+    
+    if access_token and access_token.is_active:
+        direct_access_url = url_for('tasks.direct_access', token=access_token.token, _external=True)
     
     return render_template('tasks/location_detail.html',
                           title=f'Local: {location.name}',
@@ -427,7 +542,9 @@ def view_location(id):
                           recent_completions=recent_completions,
                           monthly_labels=last_6_months,
                           monthly_counts=monthly_counts,
-                          portal_url=portal_url)
+                          portal_url=portal_url,
+                          access_token=access_token,
+                          direct_access_url=direct_access_url)
 
 # La función sync_employees_to_local_users ha sido movida a utils_tasks.py para mejor organización
 

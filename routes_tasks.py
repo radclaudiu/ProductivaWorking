@@ -16,6 +16,7 @@ from models_tasks import (Location, LocalUser, Task, TaskSchedule, TaskCompletio
                          TaskFrequency, TaskStatus, WeekDay, TaskGroup, TaskWeekday, TaskMonthDay,
                          Product, ProductConservation, ProductLabel, ConservationType, LabelTemplate,
                          NetworkPrinter, TaskInstance)
+from models_checkpoints import CheckPointStatus
 from models_access import LocationAccessToken
 from forms_tasks import (LocationForm, LocalUserForm, TaskForm, DailyScheduleForm, WeeklyScheduleForm, 
                         MonthlyScheduleForm, BiweeklyScheduleForm, TaskCompletionForm, 
@@ -171,7 +172,7 @@ def direct_access(token):
     # Obtener la ubicación asociada al token
     location = access_token.location
     
-    if not location or not location.is_active:
+    if not location or location.status != CheckPointStatus.ACTIVE:
         flash('La ubicación asociada a este enlace no está disponible.', 'danger')
         return redirect(url_for('tasks.portal_selection'))
     

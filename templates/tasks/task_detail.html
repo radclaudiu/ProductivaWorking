@@ -128,28 +128,24 @@
                             {% endfor %}
                         {% endif %}
                         {% else %}
-                        <div class="alert alert-warning">
-                            <i class="bi bi-exclamation-triangle"></i> Esta tarea aún no tiene días asignados.
-                            
-                            <div class="mt-2">
-                                {% if task.frequency.value == 'diaria' %}
-                                <a href="{{ url_for('tasks.configure_daily_schedule', task_id=task.id) }}" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-plus-circle"></i> Configurar Tarea Diaria
-                                </a>
-                                {% elif task.frequency.value == 'semanal' %}
-                                <a href="{{ url_for('tasks.configure_weekly_schedule', task_id=task.id) }}" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-plus-circle"></i> Configurar Tarea Semanal
-                                </a>
-                                {% elif task.frequency.value == 'mensual' %}
-                                <a href="{{ url_for('tasks.configure_monthly_schedule', task_id=task.id) }}" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-plus-circle"></i> Configurar Días del Mes
-                                </a>
-                                {% elif task.frequency.value == 'quincenal' %}
-                                <a href="{{ url_for('tasks.configure_biweekly_schedule', task_id=task.id) }}" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-plus-circle"></i> Configurar Tarea Quincenal
-                                </a>
-                                {% endif %}
-                            </div>
+                        <div class="mt-2">
+                            {% if task.frequency.value == 'diaria' %}
+                            <a href="{{ url_for('tasks.configure_daily_schedule', task_id=task.id) }}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-plus-circle"></i> Configurar Tarea Diaria
+                            </a>
+                            {% elif task.frequency.value == 'semanal' %}
+                            <a href="{{ url_for('tasks.configure_weekly_schedule', task_id=task.id) }}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-plus-circle"></i> Configurar Tarea Semanal
+                            </a>
+                            {% elif task.frequency.value == 'mensual' %}
+                            <a href="{{ url_for('tasks.configure_monthly_schedule', task_id=task.id) }}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-plus-circle"></i> Configurar Días del Mes
+                            </a>
+                            {% elif task.frequency.value == 'quincenal' %}
+                            <a href="{{ url_for('tasks.configure_biweekly_schedule', task_id=task.id) }}" class="btn btn-sm btn-primary">
+                                <i class="bi bi-plus-circle"></i> Configurar Tarea Quincenal
+                            </a>
+                            {% endif %}
                         </div>
                         {% endif %}
                     </div>

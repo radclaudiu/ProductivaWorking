@@ -3,123 +3,132 @@
 {% block title %}Crear Fichaje Manual{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">Inicio</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('checkpoints.select_company') }}">Empresas</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('checkpoints.index_company', slug=company.get_slug()) }}">{{ company.name }}</a></li>
+                    <li class="breadcrumb-item active">Crear Fichaje Manual</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
     <div class="row">
-        <div class="col-12">
-            <div class="card mb-4">
-                <div class="card-header pb-0">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <h3 class="mb-0">Crear Fichaje Manual</h3>
-                            <p class="text-muted">Complete el formulario para crear un nuevo fichaje manualmente</p>
-                        </div>
-                        <div>
-                            <a href="{{ url_for('checkpoints.index_company', slug=company.get_slug()) }}" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left me-2"></i>Volver
-                            </a>
-                        </div>
-                    </div>
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-header" style="background-color: #8D6E63; color: white;">
+                    <h4 class="mb-0">Crear Fichaje Manual</h4>
                 </div>
                 <div class="card-body">
-                    <form method="post" class="needs-validation">
-                        {{ form.hidden_tag() }}
+                    <form method="POST" action="{{ url_for('checkpoints.create_manual_record', slug=company.get_slug()) }}">
+                        {{ form.csrf_token }}
                         
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <div class="form-group">
-                                    <label for="{{ form.employee_id.id }}" class="form-control-label">{{ form.employee_id.label.text }}</label>
-                                    {{ form.employee_id(class="form-control") }}
-                                    {% if form.employee_id.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in form.employee_id.errors %}
-                                        <span>{{ error }}</span>
-                                        {% endfor %}
-                                    </div>
-                                    {% endif %}
-                                </div>
-                            </div>
-                            
-                            <div class="col-md-6 mb-3">
-                                <div class="form-group">
-                                    <label for="{{ form.checkpoint_id.id }}" class="form-control-label">{{ form.checkpoint_id.label.text }}</label>
-                                    {{ form.checkpoint_id(class="form-control") }}
-                                    {% if form.checkpoint_id.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in form.checkpoint_id.errors %}
-                                        <span>{{ error }}</span>
-                                        {% endfor %}
-                                    </div>
-                                    {% endif %}
-                                </div>
-                            </div>
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> Los fichajes manuales permiten registrar entradas y salidas para los empleados. 
+                            Si proporciona hora de salida, se actualizarán automáticamente las horas trabajadas.
                         </div>
                         
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <div class="form-group">
-                                    <label for="{{ form.check_in_date.id }}" class="form-control-label">{{ form.check_in_date.label.text }}</label>
-                                    {{ form.check_in_date(class="form-control", type="date") }}
-                                    {% if form.check_in_date.errors %}
-                                    <div class="invalid-feedback d-block">
+                        <div class="mb-3">
+                            <label for="employee_id" class="form-label">Empleado <span class="text-danger">*</span></label>
+                            <select class="form-select" id="employee_id" name="employee_id" required>
+                                <option value="">-- Seleccione un empleado --</option>
+                                {% for choice in form.employee_id.choices %}
+                                    <option value="{{ choice[0] }}" {% if form.employee_id.data == choice[0] %}selected{% endif %}>{{ choice[1] }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if form.employee_id.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.employee_id.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="checkpoint_id" class="form-label">Punto de Fichaje <span class="text-danger">*</span></label>
+                            <select class="form-select" id="checkpoint_id" name="checkpoint_id" required>
+                                <option value="">-- Seleccione un punto de fichaje --</option>
+                                {% for choice in form.checkpoint_id.choices %}
+                                    <option value="{{ choice[0] }}" {% if form.checkpoint_id.data == choice[0] %}selected{% endif %}>{{ choice[1] }}</option>
+                                {% endfor %}
+                            </select>
+                            {% if form.checkpoint_id.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.checkpoint_id.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="check_in_date" class="form-label">Fecha <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="check_in_date" name="check_in_date" 
+                                       required value="{{ form.check_in_date.data }}">
+                                {% if form.check_in_date.errors %}
+                                    <div class="text-danger">
                                         {% for error in form.check_in_date.errors %}
-                                        <span>{{ error }}</span>
+                                            {{ error }}
                                         {% endfor %}
                                     </div>
-                                    {% endif %}
-                                </div>
+                                {% endif %}
                             </div>
-                            
-                            <div class="col-md-4 mb-3">
-                                <div class="form-group">
-                                    <label for="{{ form.check_in_time.id }}" class="form-control-label">{{ form.check_in_time.label.text }}</label>
-                                    {{ form.check_in_time(class="form-control", type="time") }}
-                                    {% if form.check_in_time.errors %}
-                                    <div class="invalid-feedback d-block">
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="check_in_time" class="form-label">Hora de Entrada <span class="text-danger">*</span></label>
+                                <input type="time" class="form-control" id="check_in_time" name="check_in_time" 
+                                       required value="{{ form.check_in_time.data or '' }}">
+                                {% if form.check_in_time.errors %}
+                                    <div class="text-danger">
                                         {% for error in form.check_in_time.errors %}
-                                        <span>{{ error }}</span>
+                                            {{ error }}
                                         {% endfor %}
                                     </div>
-                                    {% endif %}
-                                </div>
+                                {% endif %}
                             </div>
-                            
-                            <div class="col-md-4 mb-3">
-                                <div class="form-group">
-                                    <label for="{{ form.check_out_time.id }}" class="form-control-label">{{ form.check_out_time.label.text }}</label>
-                                    {{ form.check_out_time(class="form-control", type="time") }}
-                                    {% if form.check_out_time.errors %}
-                                    <div class="invalid-feedback d-block">
+                            <div class="col-md-6">
+                                <label for="check_out_time" class="form-label">Hora de Salida</label>
+                                <input type="time" class="form-control" id="check_out_time" name="check_out_time" 
+                                       value="{{ form.check_out_time.data or '' }}">
+                                <small class="form-text text-muted">Opcional. Si no se proporciona, el fichaje quedará abierto.</small>
+                                {% if form.check_out_time.errors %}
+                                    <div class="text-danger">
                                         {% for error in form.check_out_time.errors %}
-                                        <span>{{ error }}</span>
+                                            {{ error }}
                                         {% endfor %}
                                     </div>
-                                    {% endif %}
-                                    <small class="form-text text-muted">Dejar en blanco si no hay salida registrada</small>
-                                </div>
+                                {% endif %}
                             </div>
                         </div>
                         
-                        <div class="row">
-                            <div class="col-12 mb-3">
-                                <div class="form-group">
-                                    <label for="{{ form.notes.id }}" class="form-control-label">{{ form.notes.label.text }}</label>
-                                    {{ form.notes(class="form-control", rows=3) }}
-                                    {% if form.notes.errors %}
-                                    <div class="invalid-feedback d-block">
-                                        {% for error in form.notes.errors %}
-                                        <span>{{ error }}</span>
-                                        {% endfor %}
-                                    </div>
-                                    {% endif %}
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Notas</label>
+                            <textarea class="form-control" id="notes" name="notes" rows="3">{{ form.notes.data or '' }}</textarea>
+                            <small class="form-text text-muted">Información adicional sobre este fichaje manual.</small>
+                            {% if form.notes.errors %}
+                                <div class="text-danger">
+                                    {% for error in form.notes.errors %}
+                                        {{ error }}
+                                    {% endfor %}
                                 </div>
-                            </div>
+                            {% endif %}
                         </div>
                         
-                        <div class="row">
-                            <div class="col-12 d-flex justify-content-between">
-                                <a href="{{ url_for('checkpoints.index_company', slug=company.get_slug()) }}" class="btn btn-secondary">Cancelar</a>
-                                <button type="submit" class="btn" style="background-color: #8D6E63; color: white;">{{ form.submit.label.text }}</button>
-                            </div>
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{{ url_for('checkpoints.index_company', slug=company.get_slug()) }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left"></i> Volver
+                            </a>
+                            <button type="submit" class="btn" style="background-color: #8D6E63; color: white;">
+                                <i class="bi bi-save"></i> Guardar Fichaje Manual
+                            </button>
                         </div>
                     </form>
                 </div>

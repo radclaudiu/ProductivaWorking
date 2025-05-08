@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, SelectField, BooleanField, SubmitField, TimeField
-from wtforms import FloatField, PasswordField, IntegerField, HiddenField
+from wtforms import FloatField, PasswordField, IntegerField, HiddenField, DateField
 from wtforms.validators import DataRequired, Length, Optional, ValidationError, NumberRange
 from flask_wtf.file import FileField, FileAllowed
 from models_checkpoints import CheckPointStatus, CheckPointIncidentType

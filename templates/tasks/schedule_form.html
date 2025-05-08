@@ -75,7 +75,7 @@
                                 {{ form.selected_days.label(class="form-label") }}
                                 <select multiple class="form-select{{ ' is-invalid' if form.selected_days.errors else '' }}" id="{{ form.selected_days.id }}" name="{{ form.selected_days.name }}">
                                     {% for value, label in form.selected_days.choices %}
-                                    <option value="{{ value }}" {% if value in form.selected_days.data %}selected{% endif %}>{{ label }}</option>
+                                    <option value="{{ value }}" {% if form.selected_days.data and value in form.selected_days.data %}selected{% endif %}>{{ label }}</option>
                                     {% endfor %}
                                 </select>
                                 {% for error in form.selected_days.errors %}

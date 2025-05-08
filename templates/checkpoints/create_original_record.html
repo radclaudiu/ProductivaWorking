@@ -1,6 +1,6 @@
 {% extends 'layout.html' %}
 
-{% block title %}Editar Registro Original{% endblock %}
+{% block title %}Crear Nuevo Registro Original{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
@@ -10,8 +10,8 @@
                 <div class="card-header pb-0">
                     <div class="d-flex justify-content-between">
                         <div>
-                            <h3 class="mb-0">Editar Registro Original</h3>
-                            <p class="text-muted">Modifique los valores del registro original</p>
+                            <h3 class="mb-0">Crear Nuevo Registro Original</h3>
+                            <p class="text-muted">Complete el formulario para crear un nuevo registro</p>
                         </div>
                         <div>
                             <a href="{{ url_for('checkpoints_slug.view_original_records', slug=company.get_slug()) }}" class="btn btn-secondary">
@@ -23,6 +23,36 @@
                 <div class="card-body">
                     <form method="post" class="needs-validation">
                         {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="form-group">
+                                    <label for="{{ form.employee_id.id }}" class="form-control-label">{{ form.employee_id.label.text }}</label>
+                                    {{ form.employee_id(class="form-control") }}
+                                    {% if form.employee_id.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.employee_id.errors %}
+                                        <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <div class="form-group">
+                                    <label for="{{ form.checkpoint_id.id }}" class="form-control-label">{{ form.checkpoint_id.label.text }}</label>
+                                    {{ form.checkpoint_id(class="form-control") }}
+                                    {% if form.checkpoint_id.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {% for error in form.checkpoint_id.errors %}
+                                        <span>{{ error }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
                         
                         <div class="row">
                             <div class="col-md-4 mb-3">
@@ -92,27 +122,6 @@
                             </div>
                         </div>
                     </form>
-                </div>
-            </div>
-            
-            <div class="card mb-4">
-                <div class="card-header pb-0">
-                    <h4 class="mb-0">Información del Registro</h4>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <p><strong>Empleado:</strong> {{ record.employee.first_name }} {{ record.employee.last_name }}</p>
-                            <p><strong>Punto de Fichaje:</strong> {{ record.checkpoint.name if record.checkpoint else 'No disponible' }}</p>
-                            <p><strong>Fecha de Entrada:</strong> {{ record.check_in_time.strftime('%d/%m/%Y %H:%M:%S') if record.check_in_time else 'No disponible' }}</p>
-                            <p><strong>Fecha de Salida:</strong> {{ record.check_out_time.strftime('%d/%m/%Y %H:%M:%S') if record.check_out_time else 'No disponible' }}</p>
-                        </div>
-                        <div class="col-md-6">
-                            <p><strong>Duración:</strong> {% if record.check_out_time %}{{ "%.2f"|format(record.duration()) }} horas{% else %}En curso{% endif %}</p>
-                            <p><strong>Última Modificación:</strong> {{ original_record.adjusted_at.strftime('%d/%m/%Y %H:%M:%S') if original_record.adjusted_at else 'No disponible' }}</p>
-                            <p><strong>Motivo del Ajuste:</strong> {{ original_record.adjustment_reason or 'No especificado' }}</p>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

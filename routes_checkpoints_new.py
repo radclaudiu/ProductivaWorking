@@ -223,7 +223,7 @@ def view_original_records(slug):
         title=f"Registros Originales de {company.name if company else ''} (Antes de Ajustes)"
     )
 
-@checkpoints_bp.route('/company/<slug>/rrrrrr/edit/<int:id>', methods=['GET', 'POST'])
+@checkpoints_bp.route('/company/<slug>/rrrrrr/new', methods=['GET', 'POST'])
 @login_required
 @manager_required
 def create_original_record(slug):
@@ -304,8 +304,15 @@ def create_original_record(slug):
                 check_out_time = datetime.combine(check_out_date, form.original_check_out_time.data)
                 record.check_out_time = check_out_time
                 
+                # Calcular las horas trabajadas
+                from utils_work_hours import update_employee_work_hours
+                
+                # Calcular la duración en horas
+                delta = check_out_time - check_in_time
+                hours_worked = delta.total_seconds() / 3600  # Convertir segundos a horas
+                
                 # Actualizar las horas trabajadas
-                update_employee_work_hours(record)
+                update_employee_work_hours(form.employee_id.data, check_in_time, hours_worked)
             
             # Guardar el registro
             db.session.add(record)

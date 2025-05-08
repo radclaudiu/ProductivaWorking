@@ -15,6 +15,7 @@ from app import db
 from models import User, Employee, Company, UserRole
 from models_checkpoints import CheckPoint, CheckPointRecord, CheckPointIncident, EmployeeContractHours
 from models_checkpoints import CheckPointStatus, CheckPointIncidentType, CheckPointOriginalRecord
+from models_access import LocationAccessToken, PortalType
 from sqlalchemy import or_
 from forms_checkpoints import (CheckPointForm, CheckPointLoginForm, CheckPointEmployeePinForm, 
                              ContractHoursForm, CheckPointRecordAdjustmentForm,
@@ -1445,12 +1446,7 @@ def export_both_records_pdf(records, start_date=None, end_date=None, company=Non
             # Si falla incluso el PDF de error, devuelve un mensaje de error
             return jsonify({'error': f'Error al generar el PDF: {str(e)}'}), 500
 
-# Ruta para acceso directo al portal de fichajes mediante token
-@checkpoints_bp.route('/direct-access/<string:token>')
-def direct_access(token):
-    """Acceso directo al portal de fichajes mediante token sin necesidad de login"""
-    # Importar el modelo y enumeration para tokens de acceso
-    from models_access import LocationAccessToken, PortalType
+# Esta ruta ha sido reemplazada por token_direct_access
     
     # Buscar el token en la base de datos
     access_token = LocationAccessToken.get_token_by_value(token)
@@ -1516,4 +1512,156 @@ def login_to_checkpoint(checkpoint_id):
     
     return render_template('checkpoints/login.html', form=form, checkpoint=checkpoint, show_credentials=show_credentials)
 
-# Resto del código ...
+# Rutas para gestionar tokens de acceso directo
+
+@checkpoints_bp.route('/checkpoint/<int:id>/access-token/create', methods=['POST'])
+@login_required
+@manager_required
+def create_access_token(id):
+    """Crea un token de acceso directo para un punto de fichaje"""
+    checkpoint = CheckPoint.query.get_or_404(id)
+    
+    # Verificar permisos (admin o gerente de la empresa)
+    if not current_user.is_admin() and (not current_user.is_gerente() or current_user.company_id != checkpoint.company_id):
+        flash('No tienes permiso para gestionar tokens de acceso para este punto de fichaje.', 'danger')
+        return redirect(url_for('checkpoints_slug.manage_checkpoints'))
+    
+    # Crear token para el punto de fichaje
+    try:
+        token = LocationAccessToken.create_for_location(
+            location_id=checkpoint.id, 
+            portal_type=PortalType.CHECKPOINTS
+        )
+        flash('Enlace de acceso directo creado correctamente.', 'success')
+        log_activity(f'Creado token de acceso directo para punto de fichaje: {checkpoint.name}')
+    except Exception as e:
+        flash(f'Error al crear token de acceso: {str(e)}', 'danger')
+    
+    return redirect(url_for('checkpoints_slug.manage_checkpoints'))
+
+@checkpoints_bp.route('/checkpoint/<int:id>/access-token/regenerate', methods=['POST'])
+@login_required
+@manager_required
+def regenerate_access_token(id):
+    """Regenera el token de acceso directo para un punto de fichaje"""
+    checkpoint = CheckPoint.query.get_or_404(id)
+    
+    # Verificar permisos (admin o gerente de la empresa)
+    if not current_user.is_admin() and (not current_user.is_gerente() or current_user.company_id != checkpoint.company_id):
+        flash('No tienes permiso para gestionar tokens de acceso para este punto de fichaje.', 'danger')
+        return redirect(url_for('checkpoints_slug.manage_checkpoints'))
+    
+    # Buscar token existente
+    token = LocationAccessToken.query.filter_by(
+        location_id=id, 
+        portal_type=PortalType.CHECKPOINTS
+    ).first()
+    
+    if not token:
+        flash('No existe un token para este punto de fichaje.', 'warning')
+        return redirect(url_for('checkpoints_slug.manage_checkpoints'))
+    
+    # Regenerar token
+    try:
+        new_token = token.regenerate()
+        flash('Enlace de acceso directo regenerado correctamente.', 'success')
+        log_activity(f'Regenerado token de acceso directo para punto de fichaje: {checkpoint.name}')
+    except Exception as e:
+        flash(f'Error al regenerar token de acceso: {str(e)}', 'danger')
+    
+    return redirect(url_for('checkpoints_slug.manage_checkpoints'))
+
+@checkpoints_bp.route('/checkpoint/<int:id>/access-token/deactivate', methods=['POST'])
+@login_required
+@manager_required
+def deactivate_access_token(id):
+    """Desactiva el token de acceso directo para un punto de fichaje"""
+    checkpoint = CheckPoint.query.get_or_404(id)
+    
+    # Verificar permisos (admin o gerente de la empresa)
+    if not current_user.is_admin() and (not current_user.is_gerente() or current_user.company_id != checkpoint.company_id):
+        flash('No tienes permiso para gestionar tokens de acceso para este punto de fichaje.', 'danger')
+        return redirect(url_for('checkpoints_slug.manage_checkpoints'))
+    
+    # Buscar token existente
+    token = LocationAccessToken.query.filter_by(
+        location_id=id, 
+        portal_type=PortalType.CHECKPOINTS
+    ).first()
+    
+    if not token:
+        flash('No existe un token para este punto de fichaje.', 'warning')
+        return redirect(url_for('checkpoints_slug.manage_checkpoints'))
+    
+    # Desactivar token
+    try:
+        token.deactivate()
+        flash('Enlace de acceso directo desactivado correctamente.', 'success')
+        log_activity(f'Desactivado token de acceso directo para punto de fichaje: {checkpoint.name}')
+    except Exception as e:
+        flash(f'Error al desactivar token de acceso: {str(e)}', 'danger')
+    
+    return redirect(url_for('checkpoints_slug.manage_checkpoints'))
+
+# Ruta para acceso directo sin login
+@checkpoints_bp.route('/token-access/<token>', methods=['GET'])
+def token_direct_access(token):
+    """Acceso directo al portal de fichajes mediante token sin necesidad de login"""
+    # Verificar que el token existe y está activo
+    access_token = LocationAccessToken.query.filter_by(
+        token=token, 
+        is_active=True,
+        portal_type=PortalType.CHECKPOINTS
+    ).first()
+    
+    if not access_token:
+        flash('El enlace de acceso directo no es válido o ha caducado.', 'danger')
+        return redirect(url_for('checkpoints_slug.login'))
+    
+    # Obtener el punto de fichaje asociado al token
+    checkpoint = CheckPoint.query.get(access_token.location_id)
+    
+    if not checkpoint or checkpoint.status != CheckPointStatus.ACTIVE:
+        flash('El punto de fichaje asociado a este acceso no está disponible.', 'danger')
+        return redirect(url_for('checkpoints_slug.login'))
+    
+    # Actualizar última fecha de uso
+    access_token.update_last_used()
+    
+    # Establecer la sesión como si hubiera iniciado sesión normalmente
+    session['checkpoint_id'] = checkpoint.id
+    session['company_id'] = checkpoint.company_id
+    session['access_method'] = 'direct_token'  # Marcamos que vino por acceso directo
+    
+    # Redirigir directamente a la página de PIN
+    return redirect(url_for('checkpoints_slug.employee_pin'))
+
+# Ruta para acceder directamente a un punto de fichaje específico por ID
+@checkpoints_bp.route('/checkpoint/<int:checkpoint_id>/direct', methods=['GET', 'POST'])
+def direct_login_to_checkpoint(checkpoint_id):
+    """Acceso directo a un punto de fichaje específico por ID"""
+    # Buscar el punto de fichaje
+    checkpoint = CheckPoint.query.get_or_404(checkpoint_id)
+    
+    # Verificar que el punto de fichaje está activo
+    if checkpoint.status != CheckPointStatus.ACTIVE:
+        flash('Este punto de fichaje no está disponible actualmente.', 'warning')
+        return redirect(url_for('checkpoints_slug.login'))
+    
+    # Crear el formulario
+    form = CheckPointLoginForm()
+    
+    # Procesar el formulario si es una solicitud POST y es válido
+    if form.validate_on_submit():
+        # Verificar contraseña
+        if check_password_hash(checkpoint.password_hash, form.password.data):
+            # Guardar la información del checkpoint en la sesión
+            session['checkpoint_id'] = checkpoint.id
+            session['company_id'] = checkpoint.company_id
+            
+            # Redirigir al formulario de ingreso de PIN
+            return redirect(url_for('checkpoints_slug.employee_pin'))
+        else:
+            flash('Contraseña incorrecta. Por favor, inténtelo de nuevo.', 'danger')
+    
+    return render_template('checkpoints/login.html', form=form, checkpoint=checkpoint)

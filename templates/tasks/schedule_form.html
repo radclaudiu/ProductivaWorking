@@ -25,13 +25,13 @@
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle-fill"></i>
                         {% if schedule_type == 'diario' %}
-                        Esta tarea se ejecutará todos los días a la hora especificada.
+                        Esta tarea se ejecutará todos los días.
                         {% elif schedule_type == 'semanal' %}
                         Esta tarea aparecerá todos los días hasta que se complete. Una vez completada, desaparecerá hasta el próximo lunes.
                         {% elif schedule_type == 'mensual' %}
-                        Esta tarea se ejecutará cada mes en el día seleccionado y la hora especificada.
+                        Esta tarea se ejecutará cada mes en el día o días seleccionados.
                         {% elif schedule_type == 'quincenal' %}
-                        Esta tarea se ejecutará cada quince días a partir de la fecha de inicio, a la hora especificada.
+                        Esta tarea se ejecutará cada quince días a partir de la fecha de inicio.
                         {% endif %}
                     </div>
                     
@@ -58,12 +58,31 @@
                         
                         {% if schedule_type == 'mensual' %}
                         <div class="form-group mb-3">
-                            {{ form.day_of_month.label(class="form-label") }}
-                            {{ form.day_of_month(class="form-control" + (" is-invalid" if form.day_of_month.errors else ""), type="number", min="1", max="31") }}
-                            {% for error in form.day_of_month.errors %}
-                            <div class="invalid-feedback">{{ error }}</div>
-                            {% endfor %}
-                            <div class="form-text">Introduce un número entre 1 y 31.</div>
+                            <label class="form-label">Seleccione los días del mes</label>
+                            
+                            <!-- Campo actual (anterior) para compatibilidad -->
+                            <div class="mb-3">
+                                {{ form.day_of_month.label(class="form-label") }}
+                                {{ form.day_of_month(class="form-control" + (" is-invalid" if form.day_of_month.errors else ""), type="number", min="1", max="31") }}
+                                {% for error in form.day_of_month.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                                <div class="form-text">Sistema anterior: Introduce un número entre 1 y 31.</div>
+                            </div>
+                            
+                            <!-- Nuevo campo de selección múltiple -->
+                            <div class="mb-3">
+                                {{ form.selected_days.label(class="form-label") }}
+                                <select multiple class="form-select{{ ' is-invalid' if form.selected_days.errors else '' }}" id="{{ form.selected_days.id }}" name="{{ form.selected_days.name }}">
+                                    {% for value, label in form.selected_days.choices %}
+                                    <option value="{{ value }}" {% if value in form.selected_days.data %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                                {% for error in form.selected_days.errors %}
+                                <div class="invalid-feedback">{{ error }}</div>
+                                {% endfor %}
+                                <div class="form-text">Seleccione uno o varios días específicos del mes en los que debe aparecer esta tarea (mantenga presionada la tecla Ctrl para seleccionar múltiples días).</div>
+                            </div>
                         </div>
                         {% endif %}
                         <!-- Se ha eliminado la configuración de horarios según lo solicitado -->

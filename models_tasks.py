@@ -353,8 +353,10 @@ class TaskSchedule(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     day_of_week = db.Column(Enum(WeekDay), nullable=True)  # Día de la semana para tareas semanales
     day_of_month = db.Column(db.Integer, nullable=True)    # Día del mes para tareas mensuales
-    start_time = db.Column(db.Time, nullable=True)         # Hora de inicio
-    end_time = db.Column(db.Time, nullable=True)           # Hora de finalización
+    # NOTA: Los siguientes campos ya no se utilizan, pero se mantienen por compatibilidad
+    # con datos existentes. El usuario ha solicitado eliminar las configuraciones de horarios.
+    start_time = db.Column(db.Time, nullable=True)         # Hora de inicio (OBSOLETO)
+    end_time = db.Column(db.Time, nullable=True)           # Hora de finalización (OBSOLETO)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     

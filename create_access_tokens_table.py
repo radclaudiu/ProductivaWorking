@@ -4,6 +4,7 @@ Script para crear la tabla de tokens de acceso directo para ubicaciones.
 import os
 import sys
 from datetime import datetime
+from sqlalchemy import text
 
 from app import create_app, db
 from models_checkpoints import CheckPoint
@@ -30,8 +31,8 @@ def create_access_tokens_table():
     try:
         app = create_app()
         with app.app_context():
-            # Crear la tabla usando SQL directo
-            result = db.session.execute(SQL_CREATE_TABLE)
+            # Crear la tabla usando SQL directo con text() para prepararlo correctamente
+            result = db.session.execute(text(SQL_CREATE_TABLE))
             db.session.commit()
             print(f"✅ Tabla location_access_tokens creada correctamente")
             

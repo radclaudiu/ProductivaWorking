@@ -658,8 +658,17 @@
                         throw new Error('No se pudo determinar la ubicación');
                     }
                     
+                    const apiUrl = `/tasks/api/printers/location/${locationId}`;
+                    console.log(`Consultando API en: ${apiUrl}`);
+                    
                     // Hacer petición al servidor para obtener todas las impresoras disponibles
-                    const response = await fetch(`/tasks/api/printers/location/${locationId}`);
+                    let response;
+                    try {
+                        response = await fetch(apiUrl);
+                    } catch (fetchError) {
+                        console.error('Error de conexión al servidor:', fetchError);
+                        throw new Error('Error de conexión al servidor. Verifique su conexión a internet.');
+                    }
                     
                     if (!response.ok) {
                         throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -677,6 +686,19 @@
                     const availablePrinters = Array.isArray(data.printers) ? data.printers : [];
                     console.log('Impresoras disponibles:', availablePrinters);
                     
+                    // Mostrar información detallada de cada impresora para depuración
+                    if (availablePrinters.length > 0) {
+                        console.log('Detalles de impresoras:');
+                        availablePrinters.forEach(printer => {
+                            console.log(`- ID: ${printer.id}, Nombre: ${printer.name}`);
+                            console.log(`  IP: ${printer.ip_address}, Puerto: ${printer.port || 5000}`);
+                            console.log(`  Tipo: ${printer.printer_type}, Ruta API: ${printer.api_path || '/print'}`);
+                            console.log(`  Puerto USB: ${printer.usb_port || '/dev/usb/lp0'}`);
+                        });
+                    } else {
+                        console.warn('No se encontraron impresoras configuradas para esta ubicación');
+                    }
+                    
                     // Limpiar selector
                     const select = document.getElementById('raspberry-printer-select');
                     select.innerHTML = '<option value="">Seleccione una impresora...</option>';
@@ -686,12 +708,12 @@
                         availablePrinters.forEach(printer => {
                             const option = document.createElement('option');
                             option.value = printer.id;
-                            option.textContent = printer.name;
+                            option.textContent = `${printer.name} (${printer.ip_address}:${printer.port || 5000})`;
                             select.appendChild(option);
                         });
                         showMessage(`${availablePrinters.length} impresora(s) encontrada(s)`);
                     } else {
-                        showMessage('No se encontraron impresoras configuradas', true);
+                        showMessage('No se encontraron impresoras configuradas. Configure una impresora en el panel de administración.', true);
                     }
                     
                     return availablePrinters;
@@ -714,10 +736,19 @@
                     const locationId = {{ user.location_id|default(0) }};
                     
                     // Obtener todas las impresoras para encontrar la seleccionada
-                    const response = await fetch(`/tasks/api/printers/location/${locationId}`);
+                    const apiUrl = `/tasks/api/printers/location/${locationId}`;
+                    console.log(`Consultando API en: ${apiUrl} para obtener detalles de la impresora`);
                     
-                    if (!response.ok) {
-                        throw new Error(`Error ${response.status}: ${response.statusText}`);
+                    let response;
+                    try {
+                        response = await fetch(apiUrl);
+                        
+                        if (!response.ok) {
+                            throw new Error(`Error ${response.status}: ${response.statusText}`);
+                        }
+                    } catch (fetchError) {
+                        console.error('Error consultando API de impresoras:', fetchError);
+                        throw new Error('Error de conexión al servidor. Por favor intente más tarde.');
                     }
                     
                     const data = await response.json();

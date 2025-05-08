@@ -964,6 +964,11 @@ def edit_task(task_id):
     original_frequency = task.frequency
     
     if form.validate_on_submit():
+        # Registrar datos antes
+        app.logger.info(f"Editando tarea ID {task.id}. Antes: título={task.title}, desc={task.description[:20]}, prioridad={task.priority}, frecuencia={task.frequency}")
+        app.logger.info(f"Datos del formulario: título={form.title.data}, desc={form.description.data[:20]}, prioridad={form.priority.data}, frecuencia={form.frequency.data}")
+        
+        # Asignar valores
         task.title = form.title.data
         task.description = form.description.data
         task.priority = TaskPriority(form.priority.data)
@@ -976,8 +981,16 @@ def edit_task(task_id):
             task.group_id = form.group_id.data
         else:
             task.group_id = None
-            
+        
+        # Registrar datos después de la actualización
+        app.logger.info(f"Después de actualizar: título={task.title}, desc={task.description[:20]}, prioridad={task.priority}, frecuencia={task.frequency}")
+        
+        # Confirmar transacción
         db.session.commit()
+        
+        # Verificar que los cambios se guardaron
+        db.session.refresh(task)
+        app.logger.info(f"Después de commit: título={task.title}, desc={task.description[:20]}, prioridad={task.priority}, frecuencia={task.frequency}")
         
         # Si la frecuencia es personalizada, actualizar los días de la semana
         if task.frequency == TaskFrequency.PERSONALIZADA:

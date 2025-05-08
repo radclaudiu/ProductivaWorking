@@ -270,6 +270,8 @@
                                             <td>{{ task.frequency.name.capitalize() }}</td>
                                             <td>{{ task.start_date.strftime('%d/%m/%Y') }}</td>
                                             <td>
+                                                <a href="{{ url_for('tasks.view_task', task_id=task.id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-eye"></i>
                                                 </a>
                                             </td>
                                         </tr>
@@ -310,6 +312,8 @@
                                                 {{ last_completion.completion_date.strftime('%d/%m/%Y %H:%M') if last_completion else '-' }}
                                             </td>
                                             <td>
+                                                <a href="{{ url_for('tasks.view_task', task_id=task.id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-eye"></i>
                                                 </a>
                                             </td>
                                         </tr>
@@ -377,6 +381,8 @@
                                             </td>
                                             <td>{{ task.frequency.name.capitalize() }}</td>
                                             <td>
+                                                <a href="{{ url_for('tasks.view_task', task_id=task.id) }}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-eye"></i>
                                                 </a>
                                             </td>
                                         </tr>
@@ -451,6 +457,8 @@
                                     </td>
                                     <td>{{ task.frequency.name.capitalize() }}</td>
                                     <td>
+                                        <a href="{{ url_for('tasks.view_task', task_id=task.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
                                         </a>
                                     </td>
                                 </tr>
@@ -585,8 +593,12 @@ function togglePasswordVisibility(inputId) {
     
     if (input.type === 'password') {
         input.type = 'text';
+        icon.classList.remove('bi-eye');
+        icon.classList.add('bi-eye-slash');
     } else {
         input.type = 'password';
+        icon.classList.remove('bi-eye-slash');
+        icon.classList.add('bi-eye');
     }
 }
 

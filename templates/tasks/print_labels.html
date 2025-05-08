@@ -767,7 +767,15 @@
                     // No hacemos verificación de tipo para permitir tanto DIRECT_NETWORK como raspberry_pi
                     
                     // Construir la URL del servidor de impresión
-                    const url = `http://${printer.ip_address}:${printer.port || 5000}${printer.api_path || '/print'}`;
+                    // Asegurarse de que la ruta API comience con una barra
+                    let apiPath = printer.api_path || '/print';
+                    if (!apiPath.startsWith('/')) {
+                        apiPath = '/' + apiPath;
+                    }
+                    
+                    // Probar diferente combinación de rutas para aumentar compatibilidad
+                    // Ya que recibimos "Not Found", es probable que la ruta sea incorrecta
+                    const url = `http://${printer.ip_address}:${printer.port || 5000}${apiPath}`;
                     console.log(`Intentando conectar a: ${url}`);
                     
                     // Construir los datos para enviar al servidor de impresión
@@ -842,7 +850,14 @@
                             "1. Verifique que el servidor de impresión esté encendido\n" +
                             "2. Compruebe que la IP y el puerto sean correctos\n" +
                             "3. Asegúrese de que no hay un firewall bloqueando la conexión\n" +
-                            "4. Intente acceder a la dirección en su navegador para verificar que el servidor responde";
+                            "4. Verifique que el servidor Flask está ejecutándose en la Raspberry Pi con 'python app.py'\n" +
+                            "5. Compruebe que la ruta API coincide con la configurada en el servidor Flask ('/print' por defecto)";
+                    } else if (error.message.includes('Not Found')) {
+                        errorMessage = `${error.message}\n\nProblema con la ruta API:\n` +
+                            "1. La conexión con el servidor es posible pero la ruta no existe\n" +
+                            "2. Verifique que la ruta API en la configuración coincide con la del servidor Flask\n" +
+                            "3. Pruebe cambiando la ruta a '/print', '/api/print' o simplemente '/'\n" +
+                            "4. Confirme que el servidor Flask está ejecutando correctamente y tiene la ruta configurada";
                     }
                     
                     showMessage(errorMessage, true);

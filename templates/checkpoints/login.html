@@ -120,45 +120,65 @@
                 {% endwith %}
                 
                 {% if checkpoint %}
-                    <div class="alert mb-4" style="background-color: #EFEBE9; color: #5D4037; border-color: #D7CCC8;">
-                        <i class="bi bi-info-circle me-2"></i> Por favor, introduzca la contraseña para acceder a este punto de fichaje.
-                    </div>
+                    {% if show_credentials is not defined or show_credentials %}
+                        <div class="alert mb-4" style="background-color: #EFEBE9; color: #5D4037; border-color: #D7CCC8;">
+                            <i class="bi bi-info-circle me-2"></i> Por favor, introduzca la contraseña para acceder a este punto de fichaje.
+                        </div>
+                    {% endif %}
                     <div class="alert alert-info mb-4">
                         <strong><i class="bi bi-key-fill me-2"></i> Recordatorio:</strong> El PIN para fichar son las últimas 4 cifras de su DNI/NIE (o "1234" si no tiene DNI).
                     </div>
                 {% endif %}
                 
-                <form method="POST" class="needs-validation" novalidate>
-                    {{ form.csrf_token }}
-                    
-                    <div class="mb-4">
-                        <label for="username" class="form-label">Usuario</label>
-                        {{ form.username(class="form-control form-control-lg" + (" is-invalid" if form.username.errors else ""), autocomplete="username") }}
-                        {% if form.username.errors %}
-                            <div class="invalid-feedback">
-                                {% for error in form.username.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
+                {% if show_credentials is not defined or show_credentials %}
+                    <form method="POST" class="needs-validation" novalidate>
+                        {{ form.csrf_token }}
+                        
+                        <div class="mb-4">
+                            <label for="username" class="form-label">Usuario</label>
+                            {{ form.username(class="form-control form-control-lg" + (" is-invalid" if form.username.errors else ""), autocomplete="username") }}
+                            {% if form.username.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.username.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="password" class="form-label">Contraseña</label>
+                            {{ form.password(class="form-control form-control-lg" + (" is-invalid" if form.password.errors else ""), autocomplete="current-password") }}
+                            {% if form.password.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in form.password.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            {{ form.submit(class="btn btn-lg", style="background-color: #8D6E63; color: white;") }}
+                        </div>
+                    </form>
+                {% else %}
+                    <div class="text-center">
+                        <div class="alert alert-success mb-4">
+                            <i class="bi bi-check-circle-fill me-2"></i> Autenticación directa establecida correctamente.
+                        </div>
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                        <p>Redirigiendo al portal de fichajes...</p>
                     </div>
-                    
-                    <div class="mb-4">
-                        <label for="password" class="form-label">Contraseña</label>
-                        {{ form.password(class="form-control form-control-lg" + (" is-invalid" if form.password.errors else ""), autocomplete="current-password") }}
-                        {% if form.password.errors %}
-                            <div class="invalid-feedback">
-                                {% for error in form.password.errors %}
-                                    {{ error }}
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    
-                    <div class="d-grid gap-2">
-                        {{ form.submit(class="btn btn-lg", style="background-color: #8D6E63; color: white;") }}
-                    </div>
-                </form>
+                    <script>
+                        // Redirigir automáticamente después de un breve retraso
+                        setTimeout(function() {
+                            window.location.href = "{{ url_for('checkpoints_slug.employee_pin') }}";
+                        }, 1500);
+                    </script>
+                {% endif %}
             </div>
         </div>
         

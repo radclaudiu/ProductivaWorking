@@ -521,42 +521,55 @@ def create_manual_record(slug):
                 if check_out_datetime < check_in_datetime:
                     check_out_datetime = check_out_datetime + timedelta(days=1)
             
-            # Crear el registro en la tabla apropiada según la elección del usuario
-            if is_original:
-                # Importar el modelo CheckPointOriginalRecord
-                from models_checkpoints import CheckPointOriginalRecord
-                
-                # Crear objeto CheckPointOriginalRecord
-                record = CheckPointOriginalRecord()
-                record.checkpoint_id = form.checkpoint_id.data
-                record.employee_id = form.employee_id.data
-                record.check_in_time = check_in_datetime
-                if check_out_datetime:
-                    record.check_out_time = check_out_datetime
-                if form.notes.data:
-                    record.notes = form.notes.data
-                
-                message_type = 'Fichaje original'
-            else:
-                # Crear objeto CheckPointRecord (fichaje ajustado)
-                record = CheckPointRecord()
-                record.checkpoint_id = form.checkpoint_id.data
-                record.employee_id = form.employee_id.data
-                record.check_in_time = check_in_datetime
-                if check_out_datetime:
-                    record.check_out_time = check_out_datetime
-                if form.notes.data:
-                    record.notes = form.notes.data
-                
-                message_type = 'Fichaje ajustado'
+            # Importar los modelos necesarios
+            from models_checkpoints import CheckPointOriginalRecord
             
-            # Guardar el registro en la base de datos
+            # Siempre creamos primero un registro en la tabla CheckPointRecord
+            record = CheckPointRecord()
+            record.checkpoint_id = form.checkpoint_id.data
+            record.employee_id = form.employee_id.data
+            record.check_in_time = check_in_datetime
+            if check_out_datetime:
+                record.check_out_time = check_out_datetime
+            if form.notes.data:
+                record.notes = form.notes.data
+            
+            # Guardar el registro en la base de datos para obtener su ID
             db.session.add(record)
+            db.session.flush()  # Actualiza el objeto con el ID asignado
+            
+            message_type = 'Fichaje ajustado'
+            
+            # Si se eligió guardar como registro original, crear también un registro en CheckPointOriginalRecord
+            if is_original:
+                # Calcular horas trabajadas si hay checkout
+                hours_worked = 0.0
+                if check_out_datetime:
+                    delta = check_out_datetime - check_in_datetime
+                    hours_worked = delta.total_seconds() / 3600
+                
+                # Crear el registro original
+                original_record = CheckPointOriginalRecord()
+                original_record.record_id = record.id  # Enlaza con el registro recién creado
+                original_record.original_check_in_time = check_in_datetime
+                original_record.original_check_out_time = check_out_datetime
+                original_record.original_notes = form.notes.data
+                original_record.hours_worked = hours_worked
+                original_record.adjustment_reason = "Registro original creado manualmente"
+                
+                # Si hay usuario autenticado, asociarlo como el que realizó el ajuste
+                if current_user.is_authenticated:
+                    original_record.adjusted_by_id = current_user.id
+                
+                # Añadir a la sesión
+                db.session.add(original_record)
+                message_type = 'Fichaje original'
+            
+            # Guardar todos los cambios en la base de datos
             db.session.commit()
             
             # Si hay hora de salida, actualizar las horas trabajadas
-            # Nota: las horas trabajadas solo se actualizan con fichajes ajustados, no con originales
-            if not is_original and check_out_datetime:
+            if check_out_datetime:
                 # Importar la función update_employee_work_hours
                 from utils_work_hours import update_employee_work_hours
                 

@@ -83,9 +83,6 @@
                                 <strong>Diaria</strong>: 
                                 Tarea activa todo el día
                                 
-                                <a href="{{ url_for('tasks.configure_daily_schedule', task_id=task.id) }}" class="ms-2 text-primary">
-                                    <i class="bi bi-pencil-square"></i>
-                                </a>
                             </div>
                             {% endfor %}
                         {% elif task.frequency.value == 'semanal' %}
@@ -96,11 +93,7 @@
                                 Tarea activa todo el día
                             </div>
                             {% endfor %}
-                            <div class="mt-2">
-                                <a href="{{ url_for('tasks.configure_weekly_schedule', task_id=task.id) }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-plus-circle"></i> Añadir Día
-                                </a>
-                            </div>
+
                         {% elif task.frequency.value == 'mensual' %}
                             {% for schedule in task.schedule_details %}
                             <div class="alert alert-light">
@@ -109,21 +102,14 @@
                                 Tarea activa todo el día
                             </div>
                             {% endfor %}
-                            <div class="mt-2">
-                                <a href="{{ url_for('tasks.configure_monthly_schedule', task_id=task.id) }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-plus-circle"></i> Añadir Día del Mes
-                                </a>
-                            </div>
+
                         {% elif task.frequency.value == 'quincenal' %}
                             {% for schedule in task.schedule_details %}
                             <div class="alert alert-light">
                                 <i class="bi bi-calendar2-week"></i> 
                                 <strong>Cada dos semanas</strong>: 
                                 Tarea activa todo el día
-                                
-                                <a href="{{ url_for('tasks.configure_biweekly_schedule', task_id=task.id) }}" class="ms-2 text-primary">
-                                    <i class="bi bi-pencil-square"></i>
-                                </a>
+
                             </div>
                             {% endfor %}
                         {% endif %}

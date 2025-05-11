@@ -339,6 +339,7 @@ def create_manual_record(slug):
                 update_employee_work_hours(record.employee_id, record.check_in_time, record.check_out_time)
             
             flash(f'{message_type} creado correctamente', 'success')
+            # Siempre redirigir a la vista de registros originales después de crear el registro
             return redirect(url_for('checkpoints_slug.view_original_records', slug=slug))
         
         return render_template('checkpoints/create_manual_record.html', form=form, company=company)
@@ -346,7 +347,9 @@ def create_manual_record(slug):
     except Exception as e:
         current_app.logger.error(f"Error en create_manual_record: {e}")
         db.session.rollback()  # Asegurarse de revertir cualquier cambio parcial
-        flash('Error al crear el fichaje manual. Por favor, inténtelo de nuevo.', 'danger')
+        # Detallamos el error para facilitar la depuración
+        current_app.logger.error(f"Error detallado: {str(e)}")
+        flash(f'Error al crear el fichaje manual: {str(e)}', 'danger')
         return redirect(url_for('checkpoints_slug.view_original_records', slug=slug))
 
 @checkpoints_bp.route('/company/<slug>/rrrrrr/new', methods=['GET', 'POST'])

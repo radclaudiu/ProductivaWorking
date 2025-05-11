@@ -355,42 +355,17 @@ restore_backup() {
     fi
     
     # Verificar si la base de datos ya existe
+    DB_EXISTS=0
     if psql -h "\$DB_HOST" -p "\$DB_PORT" -U "\$DB_USER" -lqt | grep -w "\$DB_NAME" &> /dev/null; then
-        if [ \$FORCE -eq 1 ]; then
-            echo -e "\${YELLOW}La base de datos '\$DB_NAME' ya existe. Se eliminará...\${NC}"
-
-            # Intentar cerrar conexiones activas antes de eliminar la base de datos
-            echo -e "Cerrando conexiones activas a la base de datos '\$DB_NAME'..."
-            psql -h "\$DB_HOST" -p "\$DB_PORT" -U "\$DB_USER" -c "
-                SELECT pg_terminate_backend(pg_stat_activity.pid) 
-                FROM pg_stat_activity 
-                WHERE pg_stat_activity.datname = '\$DB_NAME'
-                AND pid <> pg_backend_pid();" postgres &> /dev/null
-            
-            # Esperar un momento para que las conexiones se cierren
-            sleep 2
-
-            # Intentar eliminar la base de datos
-            if ! psql -h "\$DB_HOST" -p "\$DB_PORT" -U "\$DB_USER" -c "DROP DATABASE IF EXISTS \\"\$DB_NAME\\";" postgres; then
-                echo -e "\${RED}Error al eliminar la base de datos existente.\${NC}"
-                echo -e "\${YELLOW}La base de datos puede estar en uso por otras aplicaciones.\${NC}"
-                echo -e "Sugerencias:"
-                echo -e " 1. Detenga todas las aplicaciones que estén usando la base de datos"
-                echo -e " 2. Intente nuevamente el comando de restauración"
-                echo -e " 3. Si el problema persiste, puede crear una base de datos con otro nombre"
-                exit 1
-            fi
-            echo -e "\${GREEN}Base de datos eliminada exitosamente.\${NC}"
-        else
-            echo -e "\${RED}Error: La base de datos '\$DB_NAME' ya existe.\${NC}"
-            echo "Use --force para sobrescribirla o elija otro nombre con --db"
-            exit 1
-        fi
+        DB_EXISTS=1
+        echo -e "\${YELLOW}La base de datos '\$DB_NAME' ya existe. Se actualizará sin eliminarla...\${NC}"
     fi
     
-    # Crear base de datos
-    echo -e "\${BLUE}Creando base de datos '\$DB_NAME'...\${NC}"
-    if ! psql -h "\$DB_HOST" -p "\$DB_PORT" -U "\$DB_USER" -c "CREATE DATABASE \\"\$DB_NAME\\" WITH ENCODING='UTF8';" postgres; then
+    # Si la base de datos no existe, crearla
+    if [ \$DB_EXISTS -eq 0 ]; then
+        # Crear base de datos
+        echo -e "\${BLUE}Creando base de datos '\$DB_NAME'...\${NC}"
+        if ! psql -h "\$DB_HOST" -p "\$DB_PORT" -U "\$DB_USER" -c "CREATE DATABASE \\"\$DB_NAME\\" WITH ENCODING='UTF8';" postgres; then
         echo -e "\${RED}Error al crear la base de datos\${NC}"
         exit 1
     fi

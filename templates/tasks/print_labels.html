@@ -190,6 +190,15 @@
             </div>
         </div>
         
+        <!-- Botón visible para la app Android -->
+        <div class="row g-2 justify-content-center align-items-center mb-2">
+            <div class="col-auto">
+                <button type="button" id="android-print-btn" class="btn btn-dark btn-lg" style="min-width: 220px; min-height: 54px; background-color: #212529; border-color: #212529;">
+                    <i class="bi bi-android me-2"></i>Imprimir Etiqueta
+                </button>
+            </div>
+        </div>
+        
         <!-- Contenedor oculto para la funcionalidad de impresión -->
         <div id="raspberry-printers-container" style="display: none;">
             <select id="raspberry-printer-select" class="form-select">
@@ -197,9 +206,9 @@
             </select>
         </div>
         
-        <div id="print-message" class="alert alert-info mt-2 mb-0" style="font-size: 14px; display: block;">Imprimiendo automáticamente...</div>
+        <div id="print-message" class="alert alert-info mt-2 mb-0" style="font-size: 14px; display: block;">Selecciona la cantidad de etiquetas y toca en "Imprimir Etiqueta"</div>
         
-        <!-- Botón oculto para funcionamiento interno -->
+        <!-- Botones ocultos para funcionamiento interno -->
         <button type="button" id="raspberry-print-btn" style="display: none;">Raspberry Pi</button>
         <button type="button" id="bluetooth-print-btn" style="display: none;">Bluetooth</button>
     </div>
@@ -293,6 +302,8 @@
     <script src="/static/js/brother-label-pwa.js"></script>
     <!-- Script para Raspberry Pi Print Server -->
     <script src="/static/js/raspberry-print-server.js"></script>
+    <!-- Script para la app Android nativa con Brother -->
+    <script src="/static/js/brother-android-native.js"></script>
     
     <!-- Script para mejorar rendimiento táctil en tablets -->
     <script>

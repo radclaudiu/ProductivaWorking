@@ -2200,7 +2200,7 @@ def record_checkout(id):
         print(f"   Registro ID: {record.id}")
         print(f"   Horas trabajadas: {hours_worked:.2f}h, Actualización de acumulados: {'✓ Exitosa' if update_result else '✗ Fallida'}")
         
-        # Redirigir a la página de firma y asegurarnos que después vaya al dashboard
+        # Redirigir directamente a la página de firma sin mostrar mensaje (eliminado a petición del cliente)
         return redirect(url_for('checkpoints.checkpoint_record_signature', id=record.id))
     except Exception as e:
         # Rollback en caso de error

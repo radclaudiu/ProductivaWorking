@@ -190,14 +190,30 @@
             </div>
         </div>
         
-        <!-- Botón visible para la app Android -->
+        <!-- Botón principal para impresora Brother TD-4550DNWB -->
         <div class="row g-2 justify-content-center align-items-center mb-2">
             <div class="col-auto">
-                <button type="button" id="android-print-btn" class="btn btn-dark btn-lg" style="min-width: 220px; min-height: 54px; background-color: #212529; border-color: #212529;">
-                    <i class="bi bi-android me-2"></i>Imprimir Etiqueta
+                <button type="button" id="direct-print-btn" class="btn btn-primary btn-lg" style="min-width: 220px; min-height: 54px;">
+                    <i class="bi bi-printer me-2"></i>Imprimir en TD-4550DNWB
                 </button>
             </div>
         </div>
+        
+        <!-- Botón para volver a la página de etiquetas -->
+        <div class="row g-2 justify-content-center align-items-center mb-2">
+            <div class="col-auto">
+                <a href="/tasks/local-user/labels" class="btn btn-outline-light btn-lg" style="min-width: 220px;">
+                    <i class="bi bi-arrow-left me-2"></i>Volver a productos
+                </a>
+            </div>
+        </div>
+        
+        <div id="print-message" class="alert alert-info mt-2 mb-0" style="font-size: 14px; display: block;">Selecciona la cantidad de etiquetas y toca en "Imprimir en TD-4550DNWB"</div>
+        
+        <!-- Botones ocultos para mantener compatibilidad -->
+        <button type="button" id="raspberry-print-btn" style="display: none;">Raspberry Pi</button>
+        <button type="button" id="bluetooth-print-btn" style="display: none;">Bluetooth</button>
+        <button type="button" id="android-print-btn" style="display: none;">Android</button>
         
         <!-- Contenedor oculto para la funcionalidad de impresión -->
         <div id="raspberry-printers-container" style="display: none;">
@@ -205,12 +221,6 @@
                 <option value="">Buscando impresora...</option>
             </select>
         </div>
-        
-        <div id="print-message" class="alert alert-info mt-2 mb-0" style="font-size: 14px; display: block;">Selecciona la cantidad de etiquetas y toca en "Imprimir Etiqueta"</div>
-        
-        <!-- Botones ocultos para funcionamiento interno -->
-        <button type="button" id="raspberry-print-btn" style="display: none;">Raspberry Pi</button>
-        <button type="button" id="bluetooth-print-btn" style="display: none;">Bluetooth</button>
     </div>
     
     <!-- Script para adaptar según dispositivo -->
@@ -304,6 +314,8 @@
     <script src="/static/js/raspberry-print-server.js"></script>
     <!-- Script para la app Android nativa con Brother -->
     <script src="/static/js/brother-android-native.js"></script>
+    <!-- Script para impresión directa a Brother TD-4550DNWB y autoretorno -->
+    <script src="/static/js/brother-direct-print.js"></script>
     
     <!-- Script para mejorar rendimiento táctil en tablets -->
     <script>

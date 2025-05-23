@@ -1,0 +1,190 @@
+Creando estructura de la base de datos...
+ERROR:  syntax error at or near "1540"
+LINE 1: DO 1540 BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typ...
+           ^
+ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: END 1540;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: DO 1540 BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typ...
+           ^
+ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: END 1540;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: DO 1540 BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typ...
+           ^
+ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: END 1540;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: DO 1540 BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typ...
+           ^
+ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: END 1540;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: DO 1540 BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typ...
+           ^
+ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: END 1540;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: DO 1540 BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typ...
+           ^
+ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: END 1540;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: DO 1540 BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typ...
+           ^
+ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: END 1540;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: DO 1540 BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typ...
+           ^
+ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: END 1540;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: DO 1540 BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typ...
+           ^
+ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: END 1540;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: DO 1540 BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typ...
+           ^
+ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: END 1540;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: DO 1540 BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typ...
+           ^
+ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: END 1540;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: DO 1540 BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typ...
+           ^
+ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: END 1540;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: DO 1540 BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typ...
+           ^
+ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: END 1540;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: DO 1540 BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typ...
+           ^
+ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: END 1540;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: DO 1540 BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typ...
+           ^
+ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: END 1540;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: DO 1540 BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typ...
+           ^
+ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: END 1540;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: DO 1540 BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typ...
+           ^
+ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: END 1540;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: DO 1540 BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typ...
+           ^
+ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: END 1540;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: DO 1540 BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typ...
+           ^
+ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: END 1540;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: DO 1540 BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typ...
+           ^
+ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: END 1540;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: DO 1540 BEGIN IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typ...
+           ^
+ERROR:  syntax error at or near "IF"
+LINE 1: END IF;
+            ^
+ERROR:  syntax error at or near "1540"
+LINE 1: END 1540;
+            ^

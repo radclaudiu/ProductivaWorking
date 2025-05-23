@@ -1,15 +1,27 @@
 // Script mejorado para impresión Bluetooth con impresoras Brother desde dispositivos móviles
-// Versión optimizada para tablets (2025-04-29)
+// Versión optimizada para impresora TD-4550DNWB con retorno automático (2025-05-23)
 document.addEventListener('DOMContentLoaded', function() {
-    // Verificar si hay un botón de impresión Bluetooth en la página
+    console.log("Inicializando sistema de impresión directa para Brother TD-4550DNWB");
+
+    // Verificar si estamos en la página de impresión de etiquetas
+    const isLabelPage = document.querySelector('.etiqueta') !== null;
+    if (!isLabelPage) return;
+    
+    // Buscar botones de impresión (normal y directo)
     const bluetoothPrintBtn = document.getElementById("bluetooth-print-btn");
-    if (!bluetoothPrintBtn) return;
+    const directPrintBtn = document.getElementById("direct-print-btn");
     
-    // Modificar el botón para destacarlo mejor en tablets
-    bluetoothPrintBtn.classList.add("btn-lg");
-    bluetoothPrintBtn.innerHTML = '<i class="bi bi-bluetooth"></i> Imprimir en Brother';
+    // Si no hay ningún botón, salir
+    if (!bluetoothPrintBtn && !directPrintBtn) return;
     
-    console.log("Inicializando sistema de impresión Bluetooth");
+    // Mostrar el botón Bluetooth si está oculto
+    if (bluetoothPrintBtn) {
+        bluetoothPrintBtn.style.display = "block";
+        bluetoothPrintBtn.classList.add("btn-lg");
+        bluetoothPrintBtn.innerHTML = '<i class="bi bi-printer"></i> Imprimir en TD-4550DNWB';
+    }
+    
+    console.log("Sistema de impresión directa con autoretorno inicializado");
     
     // Función para detectar si estamos en un dispositivo móvil
     const isMobileDevice = () => {
@@ -314,10 +326,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
             
-            showBluetoothMessage(`¡Impresión completada! ${quantity} etiqueta(s) enviada(s) a la impresora Bluetooth`);
+            showBluetoothMessage(`¡Impresión completada! Regresando a productos...`);
             
             // Desconectar
             device.gatt.disconnect();
+            
+            // Redirigir a la página de productos después de 1.5 segundos
+            setTimeout(() => {
+                window.location.href = '/tasks/local-user/labels';
+                // Se agregará un parámetro para mostrar mensaje de éxito en la página de etiquetas
+                localStorage.setItem('print_success', 'true');
+            }, 1500);
         
         } catch (error) {
             console.error("Error de impresión Bluetooth:", error);
@@ -336,7 +355,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 // Mostrar información de diagnóstico más detallada
                 const errorMsg = error.message || "Error desconocido";
-                showBluetoothMessage("Error al conectar: " + errorMsg + ". Intenta reiniciar el dispositivo y la aplicación, luego vuelve a intentarlo.", true);
+                showBluetoothMessage("Error al conectar: " + errorMsg + ". Puedes intentar de nuevo o volver a la lista de productos.", true);
                 
                 // Crear información de diagnóstico
                 const diagnosticInfo = {
@@ -347,6 +366,32 @@ document.addEventListener('DOMContentLoaded', function() {
                     errorStack: error.stack,
                     date: new Date().toISOString()
                 };
+                
+                // Añadir botones para intentar de nuevo o volver a productos
+                const messageArea = document.getElementById("print-message");
+                if (messageArea && messageArea.parentNode) {
+                    // Eliminar botones anteriores si existen
+                    const existingButtons = document.getElementById("error-action-buttons");
+                    if (existingButtons) {
+                        existingButtons.remove();
+                    }
+                    
+                    // Crear contenedor de botones
+                    const buttonsContainer = document.createElement('div');
+                    buttonsContainer.id = "error-action-buttons";
+                    buttonsContainer.className = 'mt-3 d-flex justify-content-center gap-2';
+                    buttonsContainer.innerHTML = `
+                        <button class="btn btn-primary" onclick="window.location.reload()">
+                            <i class="bi bi-arrow-clockwise me-1"></i>Intentar de nuevo
+                        </button>
+                        <a href="/tasks/local-user/labels" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>Volver a productos
+                        </a>
+                    `;
+                    
+                    // Insertar después del mensaje de error
+                    messageArea.parentNode.insertBefore(buttonsContainer, messageArea.nextSibling);
+                }
                 
                 console.error("Detalles completos del error:", error);
                 console.error("Información de diagnóstico:", diagnosticInfo);

@@ -7,6 +7,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
 from flask_migrate import Migrate
+from flask_session import Session
 from sqlalchemy.orm import DeclarativeBase
 
 # Configure logging (ya configurado en config.py)
@@ -23,6 +24,7 @@ db = SQLAlchemy(model_class=Base)
 login_manager = LoginManager()
 csrf = CSRFProtect()
 migrate = Migrate()
+session_manager = Session()
 
 def create_app(config_class='config.Config'):
     """Create and configure the Flask application."""
@@ -43,7 +45,10 @@ def create_app(config_class='config.Config'):
     csrf.init_app(app)
     migrate.init_app(app, db)
     
-    # Using Flask's built-in cookie-based sessions
+    # Initialize session management
+    os.makedirs("flask_session", exist_ok=True)  # Asegurar que el directorio existe
+    app.config["SESSION_FILE_DIR"] = "flask_session"
+    session_manager.init_app(app)
     
     # Configure login
     login_manager.login_view = 'auth.login'

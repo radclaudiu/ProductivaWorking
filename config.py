@@ -47,10 +47,8 @@ class Config:
     JWT_SECRET_KEY = os.environ.get('SESSION_SECRET', 'dev-key-for-development')
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
     
-    # Session configuration
+    # Session configuration - using Flask's default cookie sessions
     PERMANENT_SESSION_LIFETIME = timedelta(days=30)  # Aumentado de 7 a 30 días
-    SESSION_TYPE = 'filesystem'
-    SESSION_USE_SIGNER = True
     SESSION_REFRESH_EACH_REQUEST = True  # Renovar la sesión en cada solicitud
     
     # Ensure upload directory exists

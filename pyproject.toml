@@ -20,4 +20,6 @@ dependencies = [
     "twilio>=9.5.1",
     "pillow>=11.1.0",
     "openai>=1.68.2",
+    "pytz>=2025.2",
+    "flask-session>=0.8.0",
 ]

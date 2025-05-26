@@ -178,3 +178,44 @@
     position: relative !important;
     z-index: auto !important;
 }
+
+/* Eliminar COMPLETAMENTE cualquier efecto visual en botones de tabla */
+.table-action-buttons .btn-danger {
+    transition: none !important;
+    transform: none !important;
+    animation: none !important;
+    box-shadow: none !important;
+    border: 1px solid #dc3545 !important;
+    background-color: #dc3545 !important;
+    color: white !important;
+}
+
+.table-action-buttons .btn-danger:hover {
+    transition: none !important;
+    transform: none !important;
+    animation: none !important;
+    box-shadow: none !important;
+    border: 1px solid #c82333 !important;
+    background-color: #c82333 !important;
+    color: white !important;
+}
+
+.table-action-buttons .btn-danger:focus {
+    transition: none !important;
+    transform: none !important;
+    animation: none !important;
+    box-shadow: none !important;
+    border: 1px solid #c82333 !important;
+    background-color: #c82333 !important;
+    color: white !important;
+}
+
+.table-action-buttons .btn-danger:active {
+    transition: none !important;
+    transform: none !important;
+    animation: none !important;
+    box-shadow: none !important;
+    border: 1px solid #c82333 !important;
+    background-color: #c82333 !important;
+    color: white !important;
+}

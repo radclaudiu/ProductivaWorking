@@ -38,7 +38,33 @@ function setActiveNavItem() {
 document.addEventListener('DOMContentLoaded', function() {
   // Establecer el elemento de navegación activo
   setActiveNavItem();
+  
+  // Manejar confirmaciones de eliminación
+  setupConfirmationHandlers();
 });
+
+// Función para manejar las confirmaciones de eliminación
+function setupConfirmationHandlers() {
+  const confirmButtons = document.querySelectorAll('.confirm-action');
+  
+  confirmButtons.forEach(button => {
+    button.addEventListener('click', function(e) {
+      e.preventDefault();
+      
+      const confirmMessage = this.getAttribute('data-confirm-message') || '¿Estás seguro de que deseas eliminar este elemento?';
+      
+      if (confirm(confirmMessage)) {
+        // Si el usuario confirma, enviar el formulario
+        const form = this.closest('form');
+        if (form) {
+          form.submit();
+        }
+      }
+      
+      return false;
+    });
+  });
+}
 
 
 // Deshabilitar pantallas de carga adicionales durante la navegación

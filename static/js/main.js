@@ -50,17 +50,16 @@ function setupConfirmationHandlers() {
   confirmButtons.forEach(button => {
     button.addEventListener('click', function(e) {
       e.preventDefault();
-      e.stopPropagation();
       
       const confirmMessage = this.getAttribute('data-confirm-message') || '¿Estás seguro de que deseas eliminar este elemento?';
       const form = this.closest('form');
       
-      // Mostrar notificación toast de confirmación
-      showToastConfirmation(confirmMessage, () => {
+      // Usar alert simple y directo
+      if (window.confirm(confirmMessage + '\n\nEsta acción no se puede deshacer.')) {
         if (form) {
           form.submit();
         }
-      });
+      }
       
       return false;
     });

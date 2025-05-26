@@ -48,7 +48,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Función para limpiar overlays problemáticos
 function cleanupModalBackdrops() {
-  const backdrops = document.querySelectorAll('.modal-backdrop');
+  // Eliminar todos los modal-backdrop con cualquier combinación de clases
+  const backdrops = document.querySelectorAll('.modal-backdrop, .modal-backdrop.fade, .modal-backdrop.show, .modal-backdrop.fade.show');
   backdrops.forEach(backdrop => {
     backdrop.remove();
   });
@@ -57,7 +58,20 @@ function cleanupModalBackdrops() {
   document.body.classList.remove('modal-open');
   document.body.style.overflow = '';
   document.body.style.paddingRight = '';
+  
+  // Ejecutar también después de un breve delay para capturar overlays tardíos
+  setTimeout(() => {
+    const lateBackdrops = document.querySelectorAll('.modal-backdrop');
+    lateBackdrops.forEach(backdrop => {
+      backdrop.remove();
+    });
+  }, 100);
 }
+
+// Ejecutar limpieza cada vez que se hace clic en cualquier parte
+document.addEventListener('click', function() {
+  setTimeout(cleanupModalBackdrops, 50);
+});
 
 // Función para manejar las confirmaciones de eliminación
 function setupConfirmationHandlers() {

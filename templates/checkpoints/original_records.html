@@ -218,39 +218,11 @@
                                                 <a href="{{ url_for('checkpoints_slug.edit_original_record', slug=company.get_slug(), id=original.id) }}" class="btn btn-sm" style="background-color: #8D6E63; color: white;" title="Editar registro original">
                                                     <i class="bi bi-pencil"></i> Editar
                                                 </a>
-                                                <button type="button" class="btn btn-sm btn-danger mx-1" data-bs-toggle="modal" data-bs-target="#deleteModal{{ original.id }}" title="Eliminar registro">
+                                                <button type="button" class="btn btn-sm btn-danger mx-1" 
+                                                        onclick="window.scrollTo({top: 0, behavior: 'smooth'}); if(confirm('¿Está seguro de que desea eliminar este registro original?\n\nEmpleado: {{ employee.first_name }} {{ employee.last_name }}\nFecha: {{ original.original_check_in_time.strftime('%d/%m/%Y') if original.original_check_in_time else '-' }}\n\nEsta acción no se puede deshacer.')) { window.location.href = '{{ url_for('checkpoints_slug.delete_original_record', slug=company.get_slug(), id=original.id) }}'; }" 
+                                                        title="Eliminar registro">
                                                     <i class="bi bi-trash"></i> Eliminar
                                                 </button>
-                                            </div>
-                                            
-                                            <!-- Modal de confirmación para eliminar -->
-                                            <div class="modal fade" id="deleteModal{{ original.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ original.id }}" aria-hidden="true">
-                                                <div class="modal-dialog">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title" id="deleteModalLabel{{ original.id }}">Confirmar eliminación</h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                        </div>
-                                                        <div class="modal-body">
-                                                            <p>¿Está seguro de que desea eliminar este registro original?</p>
-                                                            <p><strong>Empleado:</strong> {{ employee.first_name }} {{ employee.last_name }}</p>
-                                                            <p><strong>Fecha:</strong> {{ original.original_check_in_time.strftime('%d/%m/%Y') if original.original_check_in_time else '-' }}</p>
-                                                            <p><strong>Entrada:</strong> {{ original.original_check_in_time.strftime('%H:%M:%S') if original.original_check_in_time else '-' }}</p>
-                                                            <p><strong>Salida:</strong> 
-                                                                {% if original.original_check_out_time %}
-                                                                {{ original.original_check_out_time.strftime('%H:%M:%S') }}
-                                                                {% else %}
-                                                                -
-                                                                {% endif %}
-                                                            </p>
-                                                            <p class="text-danger">Esta acción no se puede deshacer.</p>
-                                                        </div>
-                                                        <div class="modal-footer">
-                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                                            <a href="{{ url_for('checkpoints_slug.delete_original_record', slug=company.get_slug(), id=original.id) }}" class="btn btn-danger">Eliminar</a>
-                                                        </div>
-                                                    </div>
-                                                </div>
                                             </div>
                                         </td>
                                     </tr>

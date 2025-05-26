@@ -893,11 +893,10 @@ def export_original_records_pdf(records, start_date=None, end_date=None, company
                 # Encabezados de la tabla
                 pdf.set_font('Arial', 'B', 9)
                 pdf.set_fill_color(230, 230, 230)
-                pdf.cell(30, 7, 'Fecha', 1, 0, 'C', True)
-                pdf.cell(25, 7, 'Entrada', 1, 0, 'C', True)
-                pdf.cell(25, 7, 'Salida', 1, 0, 'C', True)
-                pdf.cell(25, 7, 'Horas', 1, 0, 'C', True)
-                pdf.cell(25, 7, 'H. Totales', 1, 1, 'C', True)
+                pdf.cell(40, 7, 'Fecha', 1, 0, 'C', True)
+                pdf.cell(30, 7, 'Entrada', 1, 0, 'C', True)
+                pdf.cell(30, 7, 'Salida', 1, 0, 'C', True)
+                pdf.cell(30, 7, 'H. Totales', 1, 1, 'C', True)
                 
                 # Datos de fichajes de esta semana
                 pdf.set_font('Arial', '', 9)
@@ -914,30 +913,23 @@ def export_original_records_pdf(records, start_date=None, end_date=None, company
                         
                     # Fecha
                     fecha = record.original_check_in_time.strftime('%d/%m/%Y') if record.original_check_in_time else '-'
-                    pdf.cell(30, 7, fecha, 1, 0, 'C', True)
+                    pdf.cell(40, 7, fecha, 1, 0, 'C', True)
                     
                     # Hora de entrada original
                     entrada = record.original_check_in_time.strftime('%H:%M') if record.original_check_in_time else '-'
-                    pdf.cell(25, 7, entrada, 1, 0, 'C', True)
+                    pdf.cell(30, 7, entrada, 1, 0, 'C', True)
                     
                     # Hora de salida original
                     if record.original_check_out_time:
                         salida = record.original_check_out_time.strftime('%H:%M')
-                        pdf.cell(25, 7, salida, 1, 0, 'C', True)
+                        pdf.cell(30, 7, salida, 1, 0, 'C', True)
                     else:
                         pdf.set_text_color(255, 0, 0)  # Rojo para destacar
-                        pdf.cell(25, 7, 'SIN SALIDA', 1, 0, 'C', True)
+                        pdf.cell(30, 7, 'SIN SALIDA', 1, 0, 'C', True)
                         pdf.set_text_color(0, 0, 0)  # Restaurar color negro
                     
-                    # Horas trabajadas normales
-                    hours = record.duration() if record.original_check_out_time and record.original_check_in_time else '-'
-                    if isinstance(hours, (int, float)):
-                        hours_str = f"{hours:.2f} h"
-                    else:
-                        hours_str = hours
-                    pdf.cell(25, 7, hours_str, 1, 0, 'C', True)
-                    
                     # Horas totales del día con cálculo especial (minutos × 0.60)
+                    hours = record.duration() if record.original_check_out_time and record.original_check_in_time else '-'
                     if isinstance(hours, (int, float)):
                         # Convertir horas decimales a minutos totales
                         total_minutes = hours * 60
@@ -951,7 +943,7 @@ def export_original_records_pdf(records, start_date=None, end_date=None, company
                         total_hours_str = f"{total_hours_special:.2f}"
                     else:
                         total_hours_str = '-'
-                    pdf.cell(25, 7, total_hours_str, 1, 1, 'C', True)
+                    pdf.cell(30, 7, total_hours_str, 1, 1, 'C', True)
                     
                     row_count += 1
                 
@@ -959,9 +951,9 @@ def export_original_records_pdf(records, start_date=None, end_date=None, company
                 pdf.set_font('Arial', 'B', 10)
                 pdf.set_fill_color(*pdf.primary_color)
                 pdf.set_text_color(255, 255, 255)
-                # Ajustamos el ancho total a 130 (suma del ancho de las columnas: 30+25+25+25+25=130)
-                pdf.cell(80, 8, 'TOTAL SEMANA:', 1, 0, 'R', True)
-                pdf.cell(50, 8, f"{week_total_hours:.2f} h", 1, 1, 'C', True)
+                # Ajustamos el ancho total a 130 (suma del ancho de las columnas: 40+30+30+30=130)
+                pdf.cell(100, 8, 'TOTAL SEMANA:', 1, 0, 'R', True)
+                pdf.cell(30, 8, f"{week_total_hours:.2f} h", 1, 1, 'C', True)
                 pdf.set_text_color(0, 0, 0)  # Restaurar color de texto
                 
                 # Espacio después de cada tabla semanal

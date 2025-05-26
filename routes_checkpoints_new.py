@@ -741,9 +741,9 @@ def export_original_records_pdf(records, start_date=None, end_date=None, company
         def __init__(self):
             super().__init__()
             # Colores corporativos
-            self.primary_color = (31, 79, 121)  # Azul oscuro
-            self.secondary_color = (82, 125, 162)  # Azul medio
-            self.accent_color = (236, 240, 245)  # Azul muy claro para fondos
+            self.primary_color = (128, 128, 128)  # Gris medio
+            self.secondary_color = (169, 169, 169)  # Gris claro
+            self.accent_color = (245, 245, 245)  # Gris muy claro para fondos
             
         def header(self):
             # Fondo de cabecera

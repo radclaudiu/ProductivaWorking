@@ -128,13 +128,50 @@
     box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
 }
 
-/* Prevenir flickering en filas de tabla */
+/* Prevenir flickering en filas de tabla y TODA LA PÁGINA */
 .table tbody tr {
     transition: none !important;
+    will-change: auto !important;
 }
 
 .table tbody tr:hover {
-    background-color: var(--bs-table-hover-bg) !important;
+    background-color: transparent !important;
+    transition: none !important;
+    will-change: auto !important;
+}
+
+/* Eliminar TODOS los efectos hover de la tabla que causan parpadeo global */
+.table:hover,
+.table tbody:hover,
+.table-responsive:hover {
+    transition: none !important;
+    transform: none !important;
+    will-change: auto !important;
+}
+
+/* SOLUCIÓN GLOBAL: Eliminar parpadeo de toda la ventana */
+* {
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+}
+
+body, html {
+    transform: translateZ(0) !important;
+    -webkit-transform: translateZ(0) !important;
+    will-change: auto !important;
+}
+
+/* Desactivar animaciones problemáticas de Bootstrap */
+.fade, .collapse, .collapsing {
+    transition: none !important;
+    -webkit-transition: none !important;
+}
+
+/* Estabilizar el contenedor principal */
+.container-fluid {
+    transform: translateZ(0) !important;
+    -webkit-transform: translateZ(0) !important;
+    backface-visibility: hidden !important;
 }
 
 /* Fijar posición de elementos en celdas de tabla */

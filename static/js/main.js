@@ -41,7 +41,23 @@ document.addEventListener('DOMContentLoaded', function() {
   
   // Manejar confirmaciones de eliminación
   setupConfirmationHandlers();
+  
+  // Limpiar cualquier modal-backdrop que pueda estar activo
+  cleanupModalBackdrops();
 });
+
+// Función para limpiar overlays problemáticos
+function cleanupModalBackdrops() {
+  const backdrops = document.querySelectorAll('.modal-backdrop');
+  backdrops.forEach(backdrop => {
+    backdrop.remove();
+  });
+  
+  // Asegurar que el body no tenga clases de modal
+  document.body.classList.remove('modal-open');
+  document.body.style.overflow = '';
+  document.body.style.paddingRight = '';
+}
 
 // Función para manejar las confirmaciones de eliminación
 function setupConfirmationHandlers() {

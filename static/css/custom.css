@@ -93,3 +93,88 @@
     font-weight: bold !important;
     transform: translateY(2px);
 }
+
+/* Evitar parpadeo en botones de acción en tablas */
+.table-action-buttons {
+    white-space: nowrap;
+}
+
+.table-action-buttons .btn {
+    transition: all 0.15s ease-in-out !important;
+    pointer-events: auto !important;
+    position: relative !important;
+    z-index: 1 !important;
+}
+
+.table-action-buttons .btn:hover {
+    transform: none !important;
+    z-index: 2 !important;
+}
+
+.table-action-buttons form {
+    display: inline-block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Estabilizar botones de confirmación */
+.confirm-action {
+    pointer-events: auto !important;
+    transition: all 0.15s ease-in-out !important;
+}
+
+.confirm-action:hover {
+    transform: none !important;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+}
+
+/* Prevenir flickering en filas de tabla */
+.table tbody tr {
+    transition: none !important;
+}
+
+.table tbody tr:hover {
+    background-color: var(--bs-table-hover-bg) !important;
+}
+
+/* Fijar posición de elementos en celdas de tabla */
+.table td {
+    vertical-align: middle !important;
+    position: relative !important;
+}
+
+/* Eliminar completamente el parpadeo en botones de eliminación */
+.btn-danger.confirm-action {
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+    transform: translateZ(0) !important;
+    -webkit-transform: translateZ(0) !important;
+    will-change: auto !important;
+    transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out !important;
+}
+
+.btn-danger.confirm-action:hover {
+    transform: translateZ(0) !important;
+    -webkit-transform: translateZ(0) !important;
+    backface-visibility: hidden !important;
+    -webkit-backface-visibility: hidden !important;
+}
+
+/* Estabilizar formularios dentro de celdas de tabla */
+.table td form {
+    margin: 0 !important;
+    padding: 0 !important;
+    display: inline-block !important;
+    line-height: normal !important;
+}
+
+/* Prevenir reflow en elementos de acción */
+.table-action-buttons * {
+    box-sizing: border-box !important;
+}
+
+/* Asegurar que no hay cambios de layout al hacer hover */
+.table tbody tr:hover .btn {
+    position: relative !important;
+    z-index: auto !important;
+}

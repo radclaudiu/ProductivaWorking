@@ -52,19 +52,63 @@ function setupConfirmationHandlers() {
       e.preventDefault();
       e.stopPropagation();
       
-      const confirmMessage = this.getAttribute('data-confirm-message') || '¿Estás seguro de que deseas eliminar este elemento?';
-      const form = this.closest('form');
-      
-      // Crear modal de confirmación dinámicamente
-      showConfirmationModal(confirmMessage, () => {
+      // Si ya está en modo confirmación, ejecutar la eliminación
+      if (this.classList.contains('confirming')) {
+        const form = this.closest('form');
         if (form) {
           form.submit();
         }
-      });
+        return false;
+      }
+      
+      // Cambiar a modo confirmación
+      showInlineConfirmation(this);
       
       return false;
     });
   });
+}
+
+// Función para mostrar confirmación inline
+function showInlineConfirmation(button) {
+  const originalHTML = button.innerHTML;
+  const originalClasses = button.className;
+  
+  // Cambiar el botón a modo confirmación
+  button.innerHTML = '<i class="bi bi-check"></i> Confirmar';
+  button.classList.remove('btn-danger');
+  button.classList.add('btn-warning', 'confirming');
+  button.style.minWidth = '100px';
+  
+  // Crear botón de cancelar
+  const cancelBtn = document.createElement('button');
+  cancelBtn.type = 'button';
+  cancelBtn.className = 'btn btn-sm btn-secondary ms-1';
+  cancelBtn.innerHTML = '<i class="bi bi-x"></i>';
+  cancelBtn.style.padding = '0.25rem 0.5rem';
+  
+  // Insertar el botón de cancelar después del botón de confirmar
+  button.parentNode.insertBefore(cancelBtn, button.nextSibling);
+  
+  // Manejar cancelación
+  cancelBtn.addEventListener('click', function() {
+    button.innerHTML = originalHTML;
+    button.className = originalClasses;
+    button.style.minWidth = '';
+    cancelBtn.remove();
+  });
+  
+  // Auto-cancelar después de 5 segundos
+  setTimeout(() => {
+    if (button.classList.contains('confirming')) {
+      button.innerHTML = originalHTML;
+      button.className = originalClasses;
+      button.style.minWidth = '';
+      if (cancelBtn.parentNode) {
+        cancelBtn.remove();
+      }
+    }
+  }, 5000);
 }
 
 // Función para mostrar modal de confirmación personalizado

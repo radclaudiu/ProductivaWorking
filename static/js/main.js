@@ -50,20 +50,86 @@ function setupConfirmationHandlers() {
   confirmButtons.forEach(button => {
     button.addEventListener('click', function(e) {
       e.preventDefault();
+      e.stopPropagation();
       
       const confirmMessage = this.getAttribute('data-confirm-message') || '¿Estás seguro de que deseas eliminar este elemento?';
+      const form = this.closest('form');
       
-      if (confirm(confirmMessage)) {
-        // Si el usuario confirma, enviar el formulario
-        const form = this.closest('form');
+      // Crear modal de confirmación dinámicamente
+      showConfirmationModal(confirmMessage, () => {
         if (form) {
           form.submit();
         }
-      }
+      });
       
       return false;
     });
   });
+}
+
+// Función para mostrar modal de confirmación personalizado
+function showConfirmationModal(message, onConfirm) {
+  // Remover modal existente si lo hay
+  const existingModal = document.getElementById('dynamicConfirmModal');
+  if (existingModal) {
+    existingModal.remove();
+  }
+  
+  // Crear nuevo modal
+  const modalHTML = `
+    <div class="modal fade" id="dynamicConfirmModal" tabindex="-1" aria-labelledby="dynamicConfirmModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title" id="dynamicConfirmModalLabel">Confirmar Eliminación</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="d-flex align-items-center">
+              <i class="bi bi-exclamation-triangle text-warning me-3" style="font-size: 2rem;"></i>
+              <div>
+                <p class="mb-0">${message}</p>
+                <small class="text-muted">Esta acción no se puede deshacer.</small>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+              <i class="bi bi-trash"></i> Eliminar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  // Agregar al DOM
+  document.body.insertAdjacentHTML('beforeend', modalHTML);
+  
+  // Configurar eventos
+  const modal = document.getElementById('dynamicConfirmModal');
+  const confirmBtn = document.getElementById('confirmDeleteBtn');
+  
+  confirmBtn.addEventListener('click', function() {
+    // Cerrar modal
+    const bsModal = bootstrap.Modal.getInstance(modal);
+    if (bsModal) {
+      bsModal.hide();
+    }
+    
+    // Ejecutar acción de confirmación
+    onConfirm();
+  });
+  
+  // Limpiar modal cuando se cierre
+  modal.addEventListener('hidden.bs.modal', function() {
+    modal.remove();
+  });
+  
+  // Mostrar modal
+  const bsModal = new bootstrap.Modal(modal);
+  bsModal.show();
 }
 
 

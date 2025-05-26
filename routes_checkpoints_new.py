@@ -939,14 +939,14 @@ def export_original_records_pdf(records, start_date=None, end_date=None, company
                     
                     # Horas totales del día con cálculo especial (minutos × 0.60)
                     if isinstance(hours, (int, float)):
-                        # Separar horas y minutos
+                        # Convertir horas decimales a minutos totales
                         total_minutes = hours * 60
                         hours_part = int(total_minutes // 60)
                         minutes_part = int(total_minutes % 60)
                         
-                        # Aplicar fórmula: minutos × 0.60
-                        converted_minutes = minutes_part * 0.60
-                        total_hours_special = hours_part + (converted_minutes / 100)
+                        # Aplicar fórmula: minutos × 0.60 / 60 para convertir de vuelta a horas
+                        converted_minutes = (minutes_part * 0.60) / 60
+                        total_hours_special = hours_part + converted_minutes
                         
                         total_hours_str = f"{total_hours_special:.2f}"
                     else:

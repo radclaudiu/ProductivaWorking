@@ -74,9 +74,6 @@
                                 const timestamp = new Date().toISOString();
                                 document.getElementById('client-timestamp').value = timestamp;
                                 console.log('Timestamp capturado (checkout desde detalles):', timestamp);
-                                
-                                // Mostrar un mensaje de confirmación pero no detener el envío
-                                alert('Hora local capturada: ' + new Date().toLocaleString());
                             });
                         </script>
                     {% endif %}

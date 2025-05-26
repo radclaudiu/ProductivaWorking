@@ -52,63 +52,85 @@ function setupConfirmationHandlers() {
       e.preventDefault();
       e.stopPropagation();
       
-      // Si ya está en modo confirmación, ejecutar la eliminación
-      if (this.classList.contains('confirming')) {
-        const form = this.closest('form');
+      const confirmMessage = this.getAttribute('data-confirm-message') || '¿Estás seguro de que deseas eliminar este elemento?';
+      const form = this.closest('form');
+      
+      // Mostrar notificación toast de confirmación
+      showToastConfirmation(confirmMessage, () => {
         if (form) {
           form.submit();
         }
-        return false;
-      }
-      
-      // Cambiar a modo confirmación
-      showInlineConfirmation(this);
+      });
       
       return false;
     });
   });
 }
 
-// Función para mostrar confirmación inline
-function showInlineConfirmation(button) {
-  const originalHTML = button.innerHTML;
-  const originalClasses = button.className;
+// Función para mostrar notificación toast de confirmación
+function showToastConfirmation(message, onConfirm) {
+  // Crear contenedor de toast si no existe
+  let toastContainer = document.getElementById('toast-container');
+  if (!toastContainer) {
+    toastContainer = document.createElement('div');
+    toastContainer.id = 'toast-container';
+    toastContainer.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+      max-width: 350px;
+    `;
+    document.body.appendChild(toastContainer);
+  }
   
-  // Cambiar el botón a modo confirmación
-  button.innerHTML = '<i class="bi bi-check"></i> Confirmar';
-  button.classList.remove('btn-danger');
-  button.classList.add('btn-warning', 'confirming');
-  button.style.minWidth = '100px';
+  // Crear toast
+  const toastId = 'toast-' + Date.now();
+  const toastHTML = `
+    <div id="${toastId}" class="toast show" role="alert" style="margin-bottom: 10px;">
+      <div class="toast-header bg-danger text-white">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        <strong class="me-auto">Confirmar Eliminación</strong>
+        <button type="button" class="btn-close btn-close-white" data-dismiss="toast"></button>
+      </div>
+      <div class="toast-body">
+        <p class="mb-3">${message}</p>
+        <div class="d-flex gap-2">
+          <button type="button" class="btn btn-danger btn-sm flex-fill" data-action="confirm">
+            <i class="bi bi-trash"></i> Eliminar
+          </button>
+          <button type="button" class="btn btn-secondary btn-sm flex-fill" data-action="cancel">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  `;
   
-  // Crear botón de cancelar
-  const cancelBtn = document.createElement('button');
-  cancelBtn.type = 'button';
-  cancelBtn.className = 'btn btn-sm btn-secondary ms-1';
-  cancelBtn.innerHTML = '<i class="bi bi-x"></i>';
-  cancelBtn.style.padding = '0.25rem 0.5rem';
+  toastContainer.insertAdjacentHTML('beforeend', toastHTML);
   
-  // Insertar el botón de cancelar después del botón de confirmar
-  button.parentNode.insertBefore(cancelBtn, button.nextSibling);
+  const toast = document.getElementById(toastId);
+  const confirmBtn = toast.querySelector('[data-action="confirm"]');
+  const cancelBtn = toast.querySelector('[data-action="cancel"]');
+  const closeBtn = toast.querySelector('.btn-close');
   
-  // Manejar cancelación
-  cancelBtn.addEventListener('click', function() {
-    button.innerHTML = originalHTML;
-    button.className = originalClasses;
-    button.style.minWidth = '';
-    cancelBtn.remove();
+  // Manejar confirmación
+  confirmBtn.addEventListener('click', function() {
+    onConfirm();
+    toast.remove();
   });
   
-  // Auto-cancelar después de 5 segundos
+  // Manejar cancelación
+  const cancelHandler = () => toast.remove();
+  cancelBtn.addEventListener('click', cancelHandler);
+  closeBtn.addEventListener('click', cancelHandler);
+  
+  // Auto-cerrar después de 8 segundos
   setTimeout(() => {
-    if (button.classList.contains('confirming')) {
-      button.innerHTML = originalHTML;
-      button.className = originalClasses;
-      button.style.minWidth = '';
-      if (cancelBtn.parentNode) {
-        cancelBtn.remove();
-      }
+    if (toast.parentNode) {
+      toast.remove();
     }
-  }, 5000);
+  }, 8000);
 }
 
 // Función para mostrar modal de confirmación personalizado

@@ -98,11 +98,18 @@ function setupConfirmationHandlers() {
 
 // Función para mostrar notificación toast de confirmación
 function showToastConfirmation(message, onConfirm) {
+  // Subir al inicio de la página suavemente
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
+  
   // Crear contenedor de toast si no existe
   let toastContainer = document.getElementById('toast-container');
   if (!toastContainer) {
     toastContainer = document.createElement('div');
     toastContainer.id = 'toast-container';
+    
     toastContainer.style.cssText = `
       position: fixed;
       top: 20px;

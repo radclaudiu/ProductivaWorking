@@ -107,6 +107,14 @@ def create_app(config_class='config.Config'):
     except ImportError as e:
         help_bp = None
         logger.warning(f"No se pudo importar el blueprint de sistema de ayuda: {str(e)}")
+        
+    # Importar blueprint de exportaciones
+    try:
+        from routes_exportaciones import exportaciones_bp
+        logger.info("Blueprint de exportaciones importado correctamente")
+    except ImportError as e:
+        exportaciones_bp = None
+        logger.warning(f"No se pudo importar el blueprint de exportaciones: {str(e)}")
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -136,6 +144,11 @@ def create_app(config_class='config.Config'):
     if help_bp is not None:
         app.register_blueprint(help_bp)
         logger.info("Blueprint de sistema de ayuda registrado correctamente")
+        
+    # Registrar el blueprint de exportaciones
+    if exportaciones_bp is not None:
+        app.register_blueprint(exportaciones_bp)
+        logger.info("Blueprint de exportaciones registrado correctamente")
     
     # Inicializar el sistema de puntos de fichaje
     init_checkpoints_app(app)

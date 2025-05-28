@@ -186,12 +186,12 @@ def generar_exportacion():
         
         # Procesar cada empleado
         for employee in employees:
-            # Obtener registros del empleado
-            records = table_class.query.filter(
-                table_class.employee_id == employee.id,
-                table_class.check_in_date >= start_date,
-                table_class.check_in_date <= end_date
-            ).order_by(table_class.check_in_date, table_class.check_in_time).all()
+            # Obtener registros del empleado (siempre usar CheckPointRecord)
+            records = CheckPointRecord.query.filter(
+                CheckPointRecord.employee_id == employee.id,
+                db.func.date(CheckPointRecord.check_in_time) >= start_date,
+                db.func.date(CheckPointRecord.check_in_time) <= end_date
+            ).order_by(CheckPointRecord.check_in_time).all()
             
             if not records:
                 continue
@@ -218,35 +218,37 @@ def generar_exportacion():
             # Agrupar registros por fecha
             records_by_date = {}
             for record in records:
-                date_key = record.check_in_date
+                date_key = record.check_in_time.date()
                 if date_key not in records_by_date:
-                    records_by_date[date_key] = []
-                records_by_date[date_key].append(record)
+                    records_by_date[date_key] = {'check_in': None, 'check_out': None}
+                
+                # Determinar si es entrada o salida basándose en si ya hay check_in
+                if records_by_date[date_key]['check_in'] is None:
+                    records_by_date[date_key]['check_in'] = record
+                elif record.check_out_time:
+                    records_by_date[date_key]['check_out'] = record
             
             # Procesar cada día
             for date_key in sorted(records_by_date.keys()):
-                day_records = records_by_date[date_key]
-                
-                # Buscar entrada y salida del día
-                check_in_record = None
-                check_out_record = None
-                
-                for record in day_records:
-                    if record.action == 'check_in' and check_in_record is None:
-                        check_in_record = record
-                    elif record.action == 'check_out':
-                        check_out_record = record
+                day_data = records_by_date[date_key]
+                check_in_record = day_data['check_in']
                 
                 if check_in_record:
+                    # Usar horario original o ajustado según selección
+                    if record_type == 'original' and check_in_record.original_check_in_time:
+                        original_time = check_in_record.original_check_in_time.time()
+                        check_out_time = check_in_record.original_check_out_time
+                    else:
+                        original_time = check_in_record.check_in_time.time()
+                        check_out_time = check_in_record.check_out_time
+                    
                     # Aplicar redondeo si está habilitado
-                    original_time = check_in_record.check_in_time
                     display_time = round_time_entry(original_time, round_minutes) if apply_rounding else original_time
                     
                     # Calcular horas trabajadas
-                    if check_out_record:
-                        # Usar la hora redondeada para el cálculo si aplica
-                        start_datetime = datetime.combine(check_in_record.check_in_date, display_time)
-                        end_datetime = datetime.combine(check_out_record.check_in_date, check_out_record.check_in_time)
+                    if check_out_time:
+                        start_datetime = datetime.combine(date_key, display_time)
+                        end_datetime = check_out_time if isinstance(check_out_time, datetime) else datetime.combine(date_key, check_out_time.time())
                         
                         if end_datetime > start_datetime:
                             worked_minutes = (end_datetime - start_datetime).total_seconds() / 60
@@ -260,11 +262,11 @@ def generar_exportacion():
                     # Escribir fila en PDF
                     pdf.cell(25, 5, date_key.strftime('%d/%m/%Y'), 1, 0, 'C')
                     pdf.cell(20, 5, display_time.strftime('%H:%M'), 1, 0, 'C')
-                    pdf.cell(20, 5, check_out_record.check_in_time.strftime('%H:%M') if check_out_record else '-', 1, 0, 'C')
+                    pdf.cell(20, 5, check_out_time.strftime('%H:%M') if check_out_time else '-', 1, 0, 'C')
                     pdf.cell(20, 5, hours_str, 1, 0, 'C')
                     
-                    # Ubicación (truncar si es muy larga)
-                    location = check_in_record.location_name or 'N/A'
+                    # Ubicación
+                    location = getattr(check_in_record.checkpoint, 'location', 'N/A') or 'N/A'
                     if len(location) > 12:
                         location = location[:12] + '...'
                     pdf.cell(30, 5, location.encode('latin-1', 'replace').decode('latin-1'), 1, 0, 'C')

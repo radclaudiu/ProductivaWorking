@@ -652,6 +652,74 @@ def delete_original_record(slug, id):
     
     return redirect(url_for('checkpoints_slug.view_original_records', slug=slug))
 
+
+def calculate_entry_adjustment(original_time, adjust_minutes):
+    """
+    Calcula el ajuste de hora de entrada según los minutos especificados.
+    Solo ajusta hacia horas en punto (:00) o medias horas (:30).
+    
+    Args:
+        original_time: datetime objeto con la hora original
+        adjust_minutes: int con los minutos de ajuste (5, 10, 15, 30)
+        
+    Returns:
+        datetime objeto con la hora ajustada o la original si no aplica ajuste
+    """
+    if not original_time or not adjust_minutes:
+        return original_time
+    
+    # Obtener minutos actuales
+    current_minutes = original_time.minute
+    current_hour = original_time.hour
+    
+    # Determinar los puntos de ajuste según los minutos configurados
+    if adjust_minutes == 30:
+        # Para 30 minutos: ajustar a :00 o :30
+        if current_minutes <= 30:
+            target_minutes = 30
+            target_hour = current_hour
+        else:
+            # Si son más de 30 minutos, ajustar a la siguiente hora en punto
+            target_minutes = 0
+            target_hour = current_hour + 1
+    else:
+        # Para 5, 10, 15 minutos: solo ajustar a hora en punto (:00)
+        if current_minutes == 0:
+            # Ya está en punto, no ajustar
+            return original_time
+        else:
+            # Ajustar a la siguiente hora en punto
+            target_minutes = 0
+            target_hour = current_hour + 1
+    
+    # Verificar si se debe aplicar el ajuste
+    # Solo ajustar si la diferencia está dentro del rango de minutos especificado
+    if adjust_minutes == 30:
+        if current_minutes <= 30:
+            minutes_to_adjust = 30 - current_minutes
+        else:
+            minutes_to_adjust = 60 - current_minutes
+    else:
+        minutes_to_adjust = 60 - current_minutes if current_minutes > 0 else 0
+    
+    # Solo ajustar si está dentro del rango de minutos especificado
+    if minutes_to_adjust <= adjust_minutes and current_minutes > 0:
+        # Crear nueva hora ajustada
+        adjusted_time = original_time.replace(
+            hour=target_hour % 24,  # Manejar el caso de 23:xx -> 00:xx
+            minute=target_minutes,
+            second=0,
+            microsecond=0
+        )
+        
+        # Si la hora ajustada es del día siguiente, mantener la fecha original por ahora
+        # (esto se manejará en la lógica de la aplicación si es necesario)
+        return adjusted_time
+    
+    # No se aplica ajuste
+    return original_time
+
+
 @checkpoints_bp.route('/company/<slug>/rrrrrr/export', methods=['GET'])
 @login_required
 @manager_required

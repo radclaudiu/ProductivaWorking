@@ -29,6 +29,66 @@ logger = logging.getLogger(__name__)
 # Crear blueprint para exportaciones
 exportaciones_bp = Blueprint('exportaciones', __name__, url_prefix='/exportaciones')
 
+def get_week_start(date_obj):
+    """
+    Obtiene el lunes de la semana para una fecha dada.
+    
+    Args:
+        date_obj: Fecha para calcular el inicio de semana
+        
+    Returns:
+        Fecha del lunes de esa semana
+    """
+    days_since_monday = date_obj.weekday()
+    monday = date_obj - timedelta(days=days_since_monday)
+    return monday
+
+def get_week_end(date_obj):
+    """
+    Obtiene el domingo de la semana para una fecha dada.
+    
+    Args:
+        date_obj: Fecha para calcular el fin de semana
+        
+    Returns:
+        Fecha del domingo de esa semana
+    """
+    days_since_monday = date_obj.weekday()
+    sunday = date_obj + timedelta(days=(6 - days_since_monday))
+    return sunday
+
+def group_records_by_week(records):
+    """
+    Agrupa los registros por semanas de lunes a domingo.
+    
+    Args:
+        records: Lista de registros de fichajes
+        
+    Returns:
+        Diccionario con semanas como clave y registros como valor
+    """
+    weeks = {}
+    
+    for record in records:
+        record_date = record.check_in_time.date()
+        week_start = get_week_start(record_date)
+        week_end = get_week_end(record_date)
+        week_key = (week_start, week_end)
+        
+        if week_key not in weeks:
+            weeks[week_key] = {}
+        
+        if record_date not in weeks[week_key]:
+            weeks[week_key][record_date] = {'check_in': None, 'check_out': None}
+        
+        # Determinar si es entrada o salida
+        if weeks[week_key][record_date]['check_in'] is None:
+            weeks[week_key][record_date]['check_in'] = record
+        elif record.check_out_time:
+            weeks[week_key][record_date]['check_out'] = record
+    
+    return weeks
+
 def round_time_entry(time_obj, round_minutes):
     """
     Redondea la hora de entrada hacia arriba solo en ventanas específicas antes de horas clave.
@@ -224,77 +284,89 @@ def generar_exportacion():
                 pdf.cell(25, 6, 'Entrada Orig.', 1, 0, 'C')
             pdf.cell(40, 6, 'Observaciones', 1, 1, 'C')
             
+            # Agrupar registros por semanas
+            weeks_data = group_records_by_week(records)
+            
+            if not weeks_data:
+                continue
+            
             # Datos del empleado
             pdf.set_font('Arial', '', 8)
             total_minutes = 0
             
-            # Agrupar registros por fecha
-            records_by_date = {}
-            for record in records:
-                date_key = record.check_in_time.date()
-                if date_key not in records_by_date:
-                    records_by_date[date_key] = {'check_in': None, 'check_out': None}
+            # Procesar cada semana
+            for week_key in sorted(weeks_data.keys()):
+                week_start, week_end = week_key
+                week_records = weeks_data[week_key]
                 
-                # Determinar si es entrada o salida basándose en si ya hay check_in
-                if records_by_date[date_key]['check_in'] is None:
-                    records_by_date[date_key]['check_in'] = record
-                elif record.check_out_time:
-                    records_by_date[date_key]['check_out'] = record
-            
-            # Procesar cada día
-            for date_key in sorted(records_by_date.keys()):
-                day_data = records_by_date[date_key]
-                check_in_record = day_data['check_in']
+                # Encabezado de semana
+                pdf.set_font('Arial', 'B', 10)
+                pdf.cell(0, 6, f"Semana: {week_start.strftime('%d/%m/%Y')} - {week_end.strftime('%d/%m/%Y')}", 0, 1, 'L')
+                pdf.set_font('Arial', '', 8)
                 
-                if check_in_record:
-                    # Usar horario original o ajustado según selección
-                    if record_type == 'original' and check_in_record.original_check_in_time:
-                        original_time = check_in_record.original_check_in_time.time()
-                        check_out_time = check_in_record.original_check_out_time
-                    else:
-                        original_time = check_in_record.check_in_time.time()
-                        check_out_time = check_in_record.check_out_time
+                week_minutes = 0
+                
+                # Procesar cada día de la semana
+                for date_key in sorted(week_records.keys()):
+                    day_data = week_records[date_key]
+                    check_in_record = day_data['check_in']
                     
-                    # Aplicar redondeo si está habilitado
-                    display_time = round_time_entry(original_time, round_minutes) if apply_rounding else original_time
-                    
-                    # Calcular horas trabajadas
-                    if check_out_time:
-                        start_datetime = datetime.combine(date_key, display_time)
-                        end_datetime = check_out_time if isinstance(check_out_time, datetime) else datetime.combine(date_key, check_out_time.time())
-                        
-                        if end_datetime > start_datetime:
-                            worked_minutes = (end_datetime - start_datetime).total_seconds() / 60
-                            total_minutes += worked_minutes
-                            hours_str = f"{int(worked_minutes // 60):02d}:{int(worked_minutes % 60):02d}"
+                    if check_in_record:
+                        # Usar horario original o ajustado según selección
+                        if record_type == 'original' and check_in_record.original_check_in_time:
+                            original_time = check_in_record.original_check_in_time.time()
+                            check_out_time = check_in_record.original_check_out_time
                         else:
-                            hours_str = "Error"
-                    else:
-                        hours_str = "Pendiente"
-                    
-                    # Escribir fila en PDF
-                    pdf.cell(25, 5, date_key.strftime('%d/%m/%Y'), 1, 0, 'C')
-                    pdf.cell(20, 5, display_time.strftime('%H:%M'), 1, 0, 'C')
-                    pdf.cell(20, 5, check_out_time.strftime('%H:%M') if check_out_time else '-', 1, 0, 'C')
-                    pdf.cell(20, 5, hours_str, 1, 0, 'C')
-                    
-                    # Ubicación
-                    location = getattr(check_in_record.checkpoint, 'location', 'N/A') or 'N/A'
-                    if len(location) > 12:
-                        location = location[:12] + '...'
-                    pdf.cell(30, 5, location.encode('latin-1', 'replace').decode('latin-1'), 1, 0, 'C')
-                    
-                    # Mostrar hora original si aplica redondeo
-                    if apply_rounding:
-                        pdf.cell(25, 5, original_time.strftime('%H:%M'), 1, 0, 'C')
-                    
-                    # Observaciones
-                    obs = ""
-                    if apply_rounding and original_time != display_time:
-                        diff_minutes = (datetime.combine(date_key, display_time) - datetime.combine(date_key, original_time)).total_seconds() / 60
-                        obs = f"Ajuste: +{int(diff_minutes)}min"
-                    
-                    pdf.cell(40, 5, obs.encode('latin-1', 'replace').decode('latin-1'), 1, 1, 'C')
+                            original_time = check_in_record.check_in_time.time()
+                            check_out_time = check_in_record.check_out_time
+                        
+                        # Aplicar redondeo si está habilitado
+                        display_time = round_time_entry(original_time, round_minutes) if apply_rounding else original_time
+                        
+                        # Calcular horas trabajadas
+                        if check_out_time:
+                            start_datetime = datetime.combine(date_key, display_time)
+                            end_datetime = check_out_time if isinstance(check_out_time, datetime) else datetime.combine(date_key, check_out_time.time())
+                            
+                            if end_datetime > start_datetime:
+                                worked_minutes = (end_datetime - start_datetime).total_seconds() / 60
+                                total_minutes += worked_minutes
+                                week_minutes += worked_minutes
+                                hours_str = f"{int(worked_minutes // 60):02d}:{int(worked_minutes % 60):02d}"
+                            else:
+                                hours_str = "Error"
+                        else:
+                            hours_str = "Pendiente"
+                        
+                        # Escribir fila en PDF
+                        pdf.cell(25, 5, date_key.strftime('%d/%m/%Y'), 1, 0, 'C')
+                        pdf.cell(20, 5, display_time.strftime('%H:%M'), 1, 0, 'C')
+                        pdf.cell(20, 5, check_out_time.strftime('%H:%M') if check_out_time else '-', 1, 0, 'C')
+                        pdf.cell(20, 5, hours_str, 1, 0, 'C')
+                        
+                        # Ubicación
+                        location = getattr(check_in_record.checkpoint, 'location', 'N/A') or 'N/A'
+                        if len(location) > 12:
+                            location = location[:12] + '...'
+                        pdf.cell(30, 5, location.encode('latin-1', 'replace').decode('latin-1'), 1, 0, 'C')
+                        
+                        # Mostrar hora original si aplica redondeo
+                        if apply_rounding:
+                            pdf.cell(25, 5, original_time.strftime('%H:%M'), 1, 0, 'C')
+                        
+                        # Observaciones
+                        obs = ""
+                        if apply_rounding and original_time != display_time:
+                            diff_minutes = (datetime.combine(date_key, display_time) - datetime.combine(date_key, original_time)).total_seconds() / 60
+                            obs = f"Ajuste: +{int(diff_minutes)}min"
+                        
+                        pdf.cell(40, 5, obs.encode('latin-1', 'replace').decode('latin-1'), 1, 1, 'C')
+                
+                # Total de horas de la semana
+                week_hours = f"{int(week_minutes // 60):02d}:{int(week_minutes % 60):02d}"
+                pdf.set_font('Arial', 'B', 9)
+                pdf.cell(0, 5, f"Total semana: {week_hours}", 0, 1, 'R')
+                pdf.ln(2)
             
             # Total de horas del empleado
             total_hours = f"{int(total_minutes // 60):02d}:{int(total_minutes % 60):02d}"

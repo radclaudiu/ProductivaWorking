@@ -652,65 +652,6 @@ def delete_original_record(slug, id):
     
     return redirect(url_for('checkpoints_slug.view_original_records', slug=slug))
 
-
-def calculate_entry_adjustment(original_time, adjust_minutes):
-    """
-    Calcula el ajuste de hora de entrada según los minutos especificados.
-    Solo ajusta hacia horas en punto (:00) o medias horas (:30).
-    
-    Args:
-        original_time: datetime objeto con la hora original
-        adjust_minutes: int con los minutos de ajuste (5, 10, 15, 30)
-        
-    Returns:
-        datetime objeto con la hora ajustada o la original si no aplica ajuste
-    """
-    import logging
-    
-    if not original_time or not adjust_minutes:
-        logging.info(f"No adjustment: original_time={original_time}, adjust_minutes={adjust_minutes}")
-        return original_time
-    
-    current_minutes = original_time.minute
-    current_hour = original_time.hour
-    
-    logging.info(f"Procesando ajuste: {original_time.strftime('%H:%M')} con {adjust_minutes} minutos")
-    
-    # Lógica simplificada: siempre ajustar hacia adelante si los minutos están dentro del rango
-    if adjust_minutes == 30:
-        # Para 30 minutos: ajustar a :00 o :30
-        if current_minutes == 0 or current_minutes == 30:
-            logging.info(f"Ya está en punto exacto: {current_minutes}")
-            return original_time
-        elif current_minutes < 30:
-            # Ajustar a :30
-            if (30 - current_minutes) <= adjust_minutes:
-                adjusted_time = original_time.replace(minute=30, second=0, microsecond=0)
-                logging.info(f"Ajustado de {original_time.strftime('%H:%M')} a {adjusted_time.strftime('%H:%M')}")
-                return adjusted_time
-        else:
-            # Ajustar a la siguiente hora en punto
-            if (60 - current_minutes) <= adjust_minutes:
-                adjusted_time = original_time.replace(hour=(current_hour + 1) % 24, minute=0, second=0, microsecond=0)
-                logging.info(f"Ajustado de {original_time.strftime('%H:%M')} a {adjusted_time.strftime('%H:%M')}")
-                return adjusted_time
-    else:
-        # Para 5, 10, 15 minutos: solo ajustar a hora en punto (:00)
-        if current_minutes == 0:
-            logging.info(f"Ya está en punto exacto: {current_minutes}")
-            return original_time
-        else:
-            # Ajustar a la siguiente hora en punto si está dentro del rango
-            minutes_to_next_hour = 60 - current_minutes
-            if minutes_to_next_hour <= adjust_minutes:
-                adjusted_time = original_time.replace(hour=(current_hour + 1) % 24, minute=0, second=0, microsecond=0)
-                logging.info(f"Ajustado de {original_time.strftime('%H:%M')} a {adjusted_time.strftime('%H:%M')}")
-                return adjusted_time
-    
-    logging.info(f"Sin ajuste aplicado para {original_time.strftime('%H:%M')}")
-    return original_time
-
-
 @checkpoints_bp.route('/company/<slug>/rrrrrr/export', methods=['GET'])
 @login_required
 @manager_required
@@ -737,13 +678,6 @@ def export_original_records(slug):
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     employee_id = request.args.get('employee_id', type=int)
-    
-    # Obtener parámetros de ajuste de entrada
-    adjust_entry = request.args.get('adjust_entry', 'false').lower() == 'true'
-    adjust_minutes = int(request.args.get('adjust_minutes', 15)) if adjust_entry else None
-    
-    # Debug: log de los parámetros de ajuste
-    logging.info(f"Parámetros de ajuste: adjust_entry={adjust_entry}, adjust_minutes={adjust_minutes}")
     
     # Construir la consulta directamente con la tabla CheckPointOriginalRecord y Employee
     query = db.session.query(
@@ -789,9 +723,9 @@ def export_original_records(slug):
         return redirect(url_for('checkpoints_slug.view_original_records', slug=slug))
     
     # Generar PDF con los registros
-    return export_original_records_pdf(records, start_date, end_date, company, adjust_entry, adjust_minutes)
+    return export_original_records_pdf(records, start_date, end_date, company)
 
-def export_original_records_pdf(records, start_date=None, end_date=None, company=None, adjust_entry=False, adjust_minutes=None):
+def export_original_records_pdf(records, start_date=None, end_date=None, company=None):
     """Genera un PDF con los registros originales por empleado agrupados por semanas"""
     import logging
     from fpdf import FPDF
@@ -917,17 +851,8 @@ def export_original_records_pdf(records, start_date=None, end_date=None, company
                 
                 weeks_records[week_key]['records'].append(record)
                 
-                # Sumar horas si el registro tiene duración (considerando ajuste si aplica)
-                if record.original_check_out_time and record.original_check_in_time:
-                    if adjust_entry and adjust_minutes:
-                        adjusted_entry_time = calculate_entry_adjustment(record.original_check_in_time, adjust_minutes)
-                        time_diff = record.original_check_out_time - adjusted_entry_time
-                        hours = time_diff.total_seconds() / 3600.0
-                    else:
-                        hours = record.duration()
-                else:
-                    hours = 0
-                    
+                # Sumar horas si el registro tiene duración
+                hours = record.duration() if record.original_check_out_time and record.original_check_in_time else 0
                 if isinstance(hours, (int, float)):
                     weeks_records[week_key]['total_hours'] += hours
             
@@ -990,14 +915,8 @@ def export_original_records_pdf(records, start_date=None, end_date=None, company
                     fecha = record.original_check_in_time.strftime('%d/%m/%Y') if record.original_check_in_time else '-'
                     pdf.cell(45, 7, fecha, 1, 0, 'C', True)
                     
-                    # Calcular hora de entrada ajustada si aplica
-                    if adjust_entry and adjust_minutes and record.original_check_in_time:
-                        adjusted_entry_time = calculate_entry_adjustment(record.original_check_in_time, adjust_minutes)
-                        entrada = adjusted_entry_time.strftime('%H:%M')
-                        logging.info(f"PDF: Mostrando entrada ajustada {entrada} (original: {record.original_check_in_time.strftime('%H:%M')})")
-                    else:
-                        entrada = record.original_check_in_time.strftime('%H:%M') if record.original_check_in_time else '-'
-                        logging.info(f"PDF: Mostrando entrada original {entrada}")
+                    # Hora de entrada original
+                    entrada = record.original_check_in_time.strftime('%H:%M') if record.original_check_in_time else '-'
                     pdf.cell(35, 7, entrada, 1, 0, 'C', True)
                     
                     # Hora de salida original
@@ -1010,13 +929,7 @@ def export_original_records_pdf(records, start_date=None, end_date=None, company
                         pdf.set_text_color(0, 0, 0)  # Restaurar color negro
                     
                     # Horas totales del día con cálculo especial (minutos × 0.60)
-                    # Si hay ajuste de entrada, calcular duración con hora ajustada
-                    if adjust_entry and adjust_minutes and record.original_check_in_time and record.original_check_out_time:
-                        adjusted_entry_time = calculate_entry_adjustment(record.original_check_in_time, adjust_minutes)
-                        time_diff = record.original_check_out_time - adjusted_entry_time
-                        hours = time_diff.total_seconds() / 3600.0
-                    else:
-                        hours = record.duration() if record.original_check_out_time and record.original_check_in_time else '-'
+                    hours = record.duration() if record.original_check_out_time and record.original_check_in_time else '-'
                     if isinstance(hours, (int, float)):
                         # Convertir horas decimales a minutos totales
                         total_minutes = hours * 60

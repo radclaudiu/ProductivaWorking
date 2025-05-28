@@ -30,10 +30,14 @@
                            class="btn btn-sm me-2" style="background-color: #4CAF50; color: white;">
                             <i class="bi bi-plus-circle"></i> Nuevo Registro Original
                         </a>
-                        <button type="button" class="btn btn-sm" style="background-color: #8D6E63; color: white;" 
-                                data-bs-toggle="modal" data-bs-target="#exportModal">
+                        <a href="{{ url_for('checkpoints_slug.export_original_records', 
+                                slug=company.get_slug(),
+                                start_date=filters.start_date, 
+                                end_date=filters.end_date, 
+                                employee_id=filters.employee_id) }}" 
+                           class="btn btn-sm" style="background-color: #8D6E63; color: white;">
                             <i class="bi bi-file-earmark-pdf"></i> Exportar a PDF
-                        </button>
+                        </a>
                     </div>
                 </div>
                 
@@ -297,104 +301,4 @@
         </div>
     </div>
 </div>
-
-<!-- Modal de opciones de exportación -->
-<div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="exportModalLabel">Opciones de Exportación</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <form id="exportForm">
-                    <div class="mb-3">
-                        <label class="form-label"><strong>¿Aplicar ajuste de entrada en la exportación?</strong></label>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="adjustEntry" id="noAdjust" value="false" checked>
-                            <label class="form-check-label" for="noAdjust">
-                                Sin ajuste (horas originales exactas)
-                            </label>
-                        </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="adjustEntry" id="withAdjust" value="true">
-                            <label class="form-check-label" for="withAdjust">
-                                Con ajuste de entrada
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3" id="adjustMinutesDiv" style="display: none;">
-                        <label for="adjustMinutes" class="form-label">Minutos de ajuste:</label>
-                        <select class="form-select" id="adjustMinutes" name="adjustMinutes">
-                            <option value="5">5 minutos</option>
-                            <option value="10">10 minutos</option>
-                            <option value="15" selected>15 minutos</option>
-                            <option value="30">30 minutos</option>
-                        </select>
-                        <div class="form-text">
-                            <small>
-                                <strong>Ejemplos:</strong><br>
-                                • 19:54 → 20:00 (redondea hacia adelante)<br>
-                                • 19:25 → 19:30 (para ajuste de 30 min)<br>
-                                • 20:01 → sin cambio (ya pasó la hora en punto)
-                            </small>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn" style="background-color: #8D6E63; color: white;" onclick="exportWithOptions()">
-                    <i class="bi bi-file-earmark-pdf"></i> Generar PDF
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-// Mostrar/ocultar opciones de ajuste
-document.addEventListener('DOMContentLoaded', function() {
-    const adjustRadios = document.querySelectorAll('input[name="adjustEntry"]');
-    const adjustMinutesDiv = document.getElementById('adjustMinutesDiv');
-    
-    adjustRadios.forEach(radio => {
-        radio.addEventListener('change', function() {
-            if (this.value === 'true') {
-                adjustMinutesDiv.style.display = 'block';
-            } else {
-                adjustMinutesDiv.style.display = 'none';
-            }
-        });
-    });
-});
-
-// Función para exportar con las opciones seleccionadas
-function exportWithOptions() {
-    const adjustEntry = document.querySelector('input[name="adjustEntry"]:checked').value;
-    const adjustMinutes = document.getElementById('adjustMinutes').value;
-    
-    // Construir URL de exportación
-    let exportUrl = "{{ url_for('checkpoints_slug.export_original_records', 
-                        slug=company.get_slug(),
-                        start_date=filters.start_date, 
-                        end_date=filters.end_date, 
-                        employee_id=filters.employee_id) }}";
-    
-    // Añadir parámetros de ajuste
-    exportUrl += (exportUrl.includes('?') ? '&' : '?') + 'adjust_entry=' + adjustEntry;
-    if (adjustEntry === 'true') {
-        exportUrl += '&adjust_minutes=' + adjustMinutes;
-    }
-    
-    // Redirigir para descargar
-    window.location.href = exportUrl;
-    
-    // Cerrar modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('exportModal'));
-    modal.hide();
-}
-</script>
-
 {% endblock %}

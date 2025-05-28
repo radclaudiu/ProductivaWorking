@@ -1123,6 +1123,7 @@ def export_both_records(slug):
     end_date = request.args.get('end_date')
     employee_id = request.args.get('employee_id', type=int)
     adjustment_interval = request.args.get('adjustment_interval', type=int)
+    round_to_minutes = request.args.get('round_to_minutes', type=int)
     
     # Construir consulta base para todos los registros
     query = db.session.query(
@@ -1161,45 +1162,49 @@ def export_both_records(slug):
         return redirect(url_for('checkpoints_slug.view_both_records', slug=slug))
     
     # Generar PDF con los registros filtrados
-    return export_both_records_pdf(filtered_records, start_date, end_date, company, adjustment_interval)
+    return export_both_records_pdf(filtered_records, start_date, end_date, company, adjustment_interval, round_to_minutes)
 
-def adjust_entry_time(original_time, adjustment_interval):
+def adjust_entry_time(original_time, adjustment_interval, round_to_minutes=5):
     """
-    Ajusta la hora de entrada al siguiente punto o media hora si está dentro del intervalo especificado.
-    Ejemplo: 19:57 con intervalo de 4+ minutos se ajusta a 20:00
+    Ajusta la hora de entrada al siguiente múltiplo especificado si está dentro del intervalo de tolerancia.
+    Ejemplo: 19:57 con tolerancia de 4+ minutos y redondeo a 5 se ajusta a 20:00
     """
-    if not original_time or not adjustment_interval:
+    if not original_time or not adjustment_interval or not round_to_minutes:
         return original_time
     
     # Obtener minutos actuales
     current_minutes = original_time.minute
+    current_hour = original_time.hour
     
-    # Calcular el siguiente punto (:00) o media (:30)
-    if current_minutes <= 30:
-        # Próximo objetivo es :30
-        target_minutes = 30
-        target_hour = original_time.hour
-    else:
-        # Próximo objetivo es :00 de la siguiente hora
-        target_minutes = 0
-        target_hour = original_time.hour + 1
+    # Calcular el siguiente múltiplo de round_to_minutes
+    next_multiple = ((current_minutes // round_to_minutes) + 1) * round_to_minutes
+    
+    # Si el próximo múltiplo excede 60 minutos, ir a la siguiente hora
+    if next_multiple >= 60:
+        target_minutes = next_multiple - 60
+        target_hour = current_hour + 1
         if target_hour >= 24:
             target_hour = 0
+    else:
+        target_minutes = next_multiple
+        target_hour = current_hour
     
     # Calcular diferencia en minutos
-    if target_minutes == 30:
-        difference = 30 - current_minutes
+    if target_hour > current_hour:
+        # Cambio de hora
+        difference = (60 - current_minutes) + target_minutes
     else:
-        difference = 60 - current_minutes
+        # Misma hora
+        difference = target_minutes - current_minutes
     
-    # Si la diferencia es menor o igual al intervalo, ajustar
+    # Si la diferencia es menor o igual al intervalo de tolerancia, ajustar
     if difference <= adjustment_interval:
         adjusted_time = original_time.replace(hour=target_hour, minute=target_minutes, second=0, microsecond=0)
         return adjusted_time
     
     return original_time
 
-def export_both_records_pdf(records, start_date=None, end_date=None, company=None, adjustment_interval=None):
+def export_both_records_pdf(records, start_date=None, end_date=None, company=None, adjustment_interval=None, round_to_minutes=None):
     """Genera un PDF con todos los registros agrupados por empleado"""
     from fpdf import FPDF
     from tempfile import NamedTemporaryFile
@@ -1225,9 +1230,9 @@ def export_both_records_pdf(records, start_date=None, end_date=None, company=Non
             self.cell(0, 10, filter_text, 0, 1, 'C')
             
             # Agregar información de ajuste si se aplicó
-            if adjustment_interval:
+            if adjustment_interval and round_to_minutes:
                 self.set_font('Arial', 'I', 9)
-                self.cell(0, 8, f"AJUSTE APLICADO: Intervalo de {adjustment_interval} minutos - Horarios redondeados a :00 o :30", 0, 1, 'C')
+                self.cell(0, 8, f"AJUSTE APLICADO: Tolerancia {adjustment_interval} min - Redondeo a múltiplos de {round_to_minutes} min", 0, 1, 'C')
             
             self.ln(5)
         
@@ -1282,10 +1287,10 @@ def export_both_records_pdf(records, start_date=None, end_date=None, company=Non
             
             # Hora entrada (aplicar ajuste si se especifica)
             if record.check_in_time:
-                adjusted_time = adjust_entry_time(record.check_in_time, adjustment_interval)
+                adjusted_time = adjust_entry_time(record.check_in_time, adjustment_interval, round_to_minutes)
                 display_time = adjusted_time.strftime('%H:%M:%S')
                 # Si se aplicó ajuste, mostrar también la hora original
-                if adjustment_interval and adjusted_time != record.check_in_time:
+                if adjustment_interval and round_to_minutes and adjusted_time != record.check_in_time:
                     display_time += f" (Orig: {record.check_in_time.strftime('%H:%M')})"
                 pdf.cell(25, 7, display_time, 1)
             else:

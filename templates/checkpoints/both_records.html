@@ -195,12 +195,21 @@
                 <p>Antes de exportar, puedes ajustar automáticamente las horas de entrada al minuto más cercano:</p>
                 
                 <div class="mb-3">
-                    <label for="adjustmentInterval" class="form-label">Intervalo de ajuste (minutos):</label>
+                    <label for="adjustmentInterval" class="form-label">Tolerancia de ajuste (minutos):</label>
                     <input type="number" class="form-control" id="adjustmentInterval" 
                            min="1" max="30" value="5" placeholder="1-30 minutos">
                     <div class="form-text">
-                        Los fichajes se ajustarán hacia arriba al siguiente punto o media hora.
-                        <br><strong>Ejemplo:</strong> Si un fichaje es a las 19:57 y el intervalo es de 4 minutos o más, se ajustará a las 20:00.
+                        Si la diferencia es menor o igual a este valor, se ajustará automáticamente.
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="roundToMinutes" class="form-label">Redondear a (minutos):</label>
+                    <input type="number" class="form-control" id="roundToMinutes" 
+                           min="1" max="30" value="5" placeholder="2, 4, 6, 8, 10, 15...">
+                    <div class="form-text">
+                        Los horarios se redondearán hacia arriba a múltiplos de este valor.
+                        <br><strong>Ejemplo:</strong> Con valor 5: 19:57 → 20:00, 19:52 → 19:55
                     </div>
                 </div>
                 
@@ -208,9 +217,9 @@
                     <i class="fas fa-info-circle"></i> 
                     <strong>¿Cómo funciona?</strong>
                     <ul class="mb-0 mt-2">
-                        <li>Si la diferencia entre la hora real y el siguiente punto o media es menor o igual al intervalo seleccionado, se ajusta automáticamente.</li>
+                        <li>Si la diferencia entre la hora real y el siguiente múltiplo es menor o igual a la tolerancia, se ajusta automáticamente.</li>
                         <li>Siempre se redondea hacia arriba (nunca hacia atrás).</li>
-                        <li>Se ajusta solo a en punto (:00) o y media (:30).</li>
+                        <li>Puedes usar cualquier valor: 2, 4, 5, 6, 8, 10, 15, etc.</li>
                     </ul>
                 </div>
             </div>
@@ -235,8 +244,15 @@ function showAdjustmentDialog() {
 
 function exportWithAdjustment() {
     const interval = document.getElementById('adjustmentInterval').value;
+    const roundTo = document.getElementById('roundToMinutes').value;
+    
     if (!interval || interval < 1 || interval > 30) {
-        alert('Por favor, ingresa un intervalo válido entre 1 y 30 minutos.');
+        alert('Por favor, ingresa una tolerancia válida entre 1 y 30 minutos.');
+        return;
+    }
+    
+    if (!roundTo || roundTo < 1 || roundTo > 30) {
+        alert('Por favor, ingresa un valor de redondeo válido entre 1 y 30 minutos.');
         return;
     }
     
@@ -244,7 +260,7 @@ function exportWithAdjustment() {
                         slug=company.get_slug(),
                         start_date=filters.start_date, 
                         end_date=filters.end_date, 
-                        employee_id=filters.employee_id) }}" + "&adjustment_interval=" + interval;
+                        employee_id=filters.employee_id) }}" + "&adjustment_interval=" + interval + "&round_to_minutes=" + roundTo;
     
     window.location.href = exportUrl;
     

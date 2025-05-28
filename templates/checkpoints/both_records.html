@@ -18,6 +18,14 @@
                         <button type="button" class="btn btn-sm btn-info" onclick="showAdjustmentDialog()">
                             <i class="fas fa-file-pdf"></i> Exportar a PDF
                         </button>
+                        <a href="{{ url_for('checkpoints_slug.export_both_records', 
+                                            slug=company.get_slug(),
+                                            start_date=filters.start_date, 
+                                            end_date=filters.end_date, 
+                                            employee_id=filters.employee_id) }}" 
+                           class="btn btn-sm btn-outline-info ms-2">
+                            <i class="fas fa-download"></i> Exportar Directo
+                        </a>
                     </div>
                 </div>
                 
@@ -238,8 +246,24 @@
 
 <script>
 function showAdjustmentDialog() {
-    const modal = new bootstrap.Modal(document.getElementById('adjustmentModal'));
-    modal.show();
+    // Mostrar diálogo personalizado
+    if (confirm('¿Quieres ajustar las horas de entrada antes de exportar?')) {
+        let tolerancia = prompt('Tolerancia de ajuste (minutos entre 1-30):', '5');
+        let redondeo = prompt('Redondear a múltiplos de (minutos):', '5');
+        
+        if (tolerancia && redondeo && tolerancia >= 1 && tolerancia <= 30 && redondeo >= 1 && redondeo <= 30) {
+            const exportUrl = "{{ url_for('checkpoints_slug.export_both_records', 
+                                slug=company.get_slug(),
+                                start_date=filters.start_date, 
+                                end_date=filters.end_date, 
+                                employee_id=filters.employee_id) }}" + "&adjustment_interval=" + tolerancia + "&round_to_minutes=" + redondeo;
+            window.location.href = exportUrl;
+        } else {
+            alert('Valores inválidos. Usa valores entre 1 y 30.');
+        }
+    } else {
+        exportWithoutAdjustment();
+    }
 }
 
 function exportWithAdjustment() {

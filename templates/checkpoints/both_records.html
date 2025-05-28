@@ -15,14 +15,9 @@
                         </p>
                     </div>
                     <div>
-                        <a href="{{ url_for('checkpoints_slug.export_both_records', 
-                                slug=company.get_slug(),
-                                start_date=filters.start_date, 
-                                end_date=filters.end_date, 
-                                employee_id=filters.employee_id) }}" 
-                           class="btn btn-sm btn-info">
+                        <button type="button" class="btn btn-sm btn-info" onclick="showAdjustmentDialog()">
                             <i class="fas fa-file-pdf"></i> Exportar a PDF
-                        </a>
+                        </button>
                     </div>
                 </div>
                 
@@ -187,4 +182,90 @@
         </div>
     </div>
 </div>
+
+<!-- Diálogo de ajuste de horarios -->
+<div class="modal fade" id="adjustmentModal" tabindex="-1" aria-labelledby="adjustmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="adjustmentModalLabel">Ajustar Horarios de Entrada</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Antes de exportar, puedes ajustar automáticamente las horas de entrada al minuto más cercano:</p>
+                
+                <div class="mb-3">
+                    <label for="adjustmentInterval" class="form-label">Intervalo de ajuste (minutos):</label>
+                    <input type="number" class="form-control" id="adjustmentInterval" 
+                           min="1" max="30" value="5" placeholder="1-30 minutos">
+                    <div class="form-text">
+                        Los fichajes se ajustarán hacia arriba al siguiente punto o media hora.
+                        <br><strong>Ejemplo:</strong> Si un fichaje es a las 19:57 y el intervalo es de 4 minutos o más, se ajustará a las 20:00.
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> 
+                    <strong>¿Cómo funciona?</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Si la diferencia entre la hora real y el siguiente punto o media es menor o igual al intervalo seleccionado, se ajusta automáticamente.</li>
+                        <li>Siempre se redondea hacia arriba (nunca hacia atrás).</li>
+                        <li>Se ajusta solo a en punto (:00) o y media (:30).</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="exportWithAdjustment()">
+                    <i class="fas fa-file-pdf"></i> Exportar con Ajuste
+                </button>
+                <button type="button" class="btn btn-outline-primary" onclick="exportWithoutAdjustment()">
+                    Exportar Sin Ajuste
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function showAdjustmentDialog() {
+    const modal = new bootstrap.Modal(document.getElementById('adjustmentModal'));
+    modal.show();
+}
+
+function exportWithAdjustment() {
+    const interval = document.getElementById('adjustmentInterval').value;
+    if (!interval || interval < 1 || interval > 30) {
+        alert('Por favor, ingresa un intervalo válido entre 1 y 30 minutos.');
+        return;
+    }
+    
+    const exportUrl = "{{ url_for('checkpoints_slug.export_both_records', 
+                        slug=company.get_slug(),
+                        start_date=filters.start_date, 
+                        end_date=filters.end_date, 
+                        employee_id=filters.employee_id) }}" + "&adjustment_interval=" + interval;
+    
+    window.location.href = exportUrl;
+    
+    // Cerrar el modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('adjustmentModal'));
+    modal.hide();
+}
+
+function exportWithoutAdjustment() {
+    const exportUrl = "{{ url_for('checkpoints_slug.export_both_records', 
+                        slug=company.get_slug(),
+                        start_date=filters.start_date, 
+                        end_date=filters.end_date, 
+                        employee_id=filters.employee_id) }}";
+    
+    window.location.href = exportUrl;
+    
+    // Cerrar el modal
+    const modal = bootstrap.Modal.getInstance(document.getElementById('adjustmentModal'));
+    modal.hide();
+}
+</script>
+
 {% endblock %}

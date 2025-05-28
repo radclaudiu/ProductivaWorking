@@ -1333,15 +1333,15 @@ def export_both_records_pdf(records, start_date=None, end_date=None, company=Non
         for record in employee_records:
             if record.check_out_time:
                 # Calcular duración con hora ajustada si se especifica
-                if adjustment_interval:
-                    adjusted_check_in = adjust_entry_time(record.check_in_time, adjustment_interval)
+                if adjustment_interval and round_to_minutes:
+                    adjusted_check_in = adjust_entry_time(record.check_in_time, adjustment_interval, round_to_minutes)
                     duration_minutes = (record.check_out_time - adjusted_check_in).total_seconds() / 60
                     total_hours += duration_minutes * 0.60 / 60  # Aplicar la fórmula especial
                 else:
                     total_hours += record.duration()
         
         pdf.set_font('Arial', 'B', 9)
-        if adjustment_interval:
+        if adjustment_interval and round_to_minutes:
             pdf.cell(80, 7, f"H. Totales: {total_hours:.2f} h (con ajuste)", 1, 1, 'R')
         else:
             pdf.cell(80, 7, f"Total de horas: {total_hours:.2f} h", 1, 1, 'R')

@@ -1,0 +1,152 @@
+{% extends 'layout.html' %}
+
+{% block title %}Configurar Exportación - {{ company.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header pb-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">Configurar Exportación PDF</h3>
+                            <p class="text-muted mb-0">{{ company.name }}</p>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('checkpoints_slug.view_both_records', slug=company.get_slug()) }}" 
+                               class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-arrow-left"></i> Volver
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <form method="post" action="{{ url_for('checkpoints_slug.export_both_records', slug=company.get_slug()) }}">
+                        <!-- Filtros de datos -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-info mb-3">
+                                    <i class="fas fa-filter"></i> Filtros de Datos
+                                </h5>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Fecha de inicio</label>
+                                <input type="date" name="start_date" class="form-control" 
+                                       value="{{ request.args.get('start_date', '') }}">
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Fecha de fin</label>
+                                <input type="date" name="end_date" class="form-control" 
+                                       value="{{ request.args.get('end_date', '') }}">
+                            </div>
+                            
+                            <div class="col-12 mb-3">
+                                <label class="form-label">Empleado</label>
+                                <select name="employee_id" class="form-control">
+                                    <option value="">Todos los empleados</option>
+                                    {% for employee in employees %}
+                                    <option value="{{ employee.id }}" 
+                                            {% if request.args.get('employee_id')|int == employee.id %}selected{% endif %}>
+                                        {{ employee.first_name }} {{ employee.last_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Configuración de ajuste -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h5 class="text-warning mb-3">
+                                    <i class="fas fa-cogs"></i> Ajuste de Horarios
+                                </h5>
+                            </div>
+                            
+                            <div class="col-12 mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="enableAdjustment" 
+                                           name="enable_adjustment" onchange="toggleAdjustmentOptions()">
+                                    <label class="form-check-label" for="enableAdjustment">
+                                        <strong>Aplicar ajuste automático de horarios de entrada</strong>
+                                    </label>
+                                </div>
+                                <small class="text-muted">
+                                    El ajuste redondea las horas de entrada hacia arriba según tu configuración
+                                </small>
+                            </div>
+                            
+                            <div id="adjustmentOptions" style="display: none;">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Tolerancia de ajuste (minutos)</label>
+                                    <input type="number" name="adjustment_interval" class="form-control" 
+                                           min="1" max="30" value="5" placeholder="1-30 minutos">
+                                    <small class="text-muted">
+                                        Si la diferencia es menor o igual a este valor, se ajustará automáticamente
+                                    </small>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Redondear a múltiplos de (minutos)</label>
+                                    <input type="number" name="round_to_minutes" class="form-control" 
+                                           min="1" max="30" value="5" placeholder="2, 4, 6, 8, 10, 15...">
+                                    <small class="text-muted">
+                                        Los horarios se redondearán hacia arriba a múltiplos de este valor
+                                    </small>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle"></i> 
+                                        <strong>Ejemplo de funcionamiento:</strong>
+                                        <ul class="mb-0 mt-2">
+                                            <li>Con tolerancia de 5 minutos y redondeo a múltiplos de 5:</li>
+                                            <li>19:57 → 20:00 (diferencia de 3 min ≤ 5 min de tolerancia)</li>
+                                            <li>19:52 → 19:55 (diferencia de 3 min ≤ 5 min de tolerancia)</li>
+                                            <li>19:48 → 19:48 (diferencia de 7 min > 5 min de tolerancia, no se ajusta)</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Botones de acción -->
+                        <div class="row">
+                            <div class="col-12 text-center">
+                                <button type="submit" class="btn btn-success btn-lg me-3">
+                                    <i class="fas fa-file-pdf"></i> Generar PDF
+                                </button>
+                                <a href="{{ url_for('checkpoints_slug.view_both_records', slug=company.get_slug()) }}" 
+                                   class="btn btn-outline-secondary btn-lg">
+                                    <i class="fas fa-times"></i> Cancelar
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleAdjustmentOptions() {
+    const checkbox = document.getElementById('enableAdjustment');
+    const options = document.getElementById('adjustmentOptions');
+    
+    if (checkbox.checked) {
+        options.style.display = 'block';
+    } else {
+        options.style.display = 'none';
+    }
+}
+
+// Inicializar el estado al cargar la página
+document.addEventListener('DOMContentLoaded', function() {
+    toggleAdjustmentOptions();
+});
+</script>
+{% endblock %}

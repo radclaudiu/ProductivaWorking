@@ -1099,7 +1099,32 @@ def view_both_records(slug):
         title=f"Todos los Registros de {company.name if company else ''}"
     )
 
-@checkpoints_bp.route('/company/<slug>/both/export', methods=['GET'])
+@checkpoints_bp.route('/company/<slug>/export-config')
+@login_required
+@manager_required
+def export_config_page(slug):
+    """Página de configuración para exportar registros a PDF"""
+    # Buscar la empresa por slug
+    companies = Company.query.all()
+    company = None
+    
+    for comp in companies:
+        if slugify(comp.name) == slug:
+            company = comp
+            break
+    
+    if not company:
+        abort(404)
+    
+    # Obtener lista de empleados para el filtro
+    employees = Employee.query.filter_by(company_id=company.id).order_by(Employee.first_name, Employee.last_name).all()
+    
+    return render_template('checkpoints/export_config.html',
+                         company=company,
+                         employees=employees,
+                         title=f'Configurar Exportación - {company.name}')
+
+@checkpoints_bp.route('/company/<slug>/both/export', methods=['GET', 'POST'])
 @login_required
 @manager_required
 def export_both_records(slug):
@@ -1118,12 +1143,21 @@ def export_both_records(slug):
     if not company:
         abort(404)
     
-    # Obtener parámetros de filtro
-    start_date = request.args.get('start_date')
-    end_date = request.args.get('end_date')
-    employee_id = request.args.get('employee_id', type=int)
-    adjustment_interval = request.args.get('adjustment_interval', type=int)
-    round_to_minutes = request.args.get('round_to_minutes', type=int)
+    # Obtener parámetros de filtro (desde formulario POST o URL GET)
+    if request.method == 'POST':
+        start_date = request.form.get('start_date')
+        end_date = request.form.get('end_date')
+        employee_id = request.form.get('employee_id', type=int)
+        # Verificar si el ajuste está habilitado
+        enable_adjustment = request.form.get('enable_adjustment')
+        adjustment_interval = request.form.get('adjustment_interval', type=int) if enable_adjustment else None
+        round_to_minutes = request.form.get('round_to_minutes', type=int) if enable_adjustment else None
+    else:
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        employee_id = request.args.get('employee_id', type=int)
+        adjustment_interval = request.args.get('adjustment_interval', type=int)
+        round_to_minutes = request.args.get('round_to_minutes', type=int)
     
     # Construir consulta base para todos los registros
     query = db.session.query(

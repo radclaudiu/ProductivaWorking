@@ -1122,6 +1122,7 @@ def export_both_records(slug):
     start_date = request.args.get('start_date')
     end_date = request.args.get('end_date')
     employee_id = request.args.get('employee_id', type=int)
+    adjustment_interval = request.args.get('adjustment_interval', type=int)
     
     # Construir consulta base para todos los registros
     query = db.session.query(
@@ -1160,9 +1161,45 @@ def export_both_records(slug):
         return redirect(url_for('checkpoints_slug.view_both_records', slug=slug))
     
     # Generar PDF con los registros filtrados
-    return export_both_records_pdf(filtered_records, start_date, end_date, company)
+    return export_both_records_pdf(filtered_records, start_date, end_date, company, adjustment_interval)
 
-def export_both_records_pdf(records, start_date=None, end_date=None, company=None):
+def adjust_entry_time(original_time, adjustment_interval):
+    """
+    Ajusta la hora de entrada al siguiente punto o media hora si está dentro del intervalo especificado.
+    Ejemplo: 19:57 con intervalo de 4+ minutos se ajusta a 20:00
+    """
+    if not original_time or not adjustment_interval:
+        return original_time
+    
+    # Obtener minutos actuales
+    current_minutes = original_time.minute
+    
+    # Calcular el siguiente punto (:00) o media (:30)
+    if current_minutes <= 30:
+        # Próximo objetivo es :30
+        target_minutes = 30
+        target_hour = original_time.hour
+    else:
+        # Próximo objetivo es :00 de la siguiente hora
+        target_minutes = 0
+        target_hour = original_time.hour + 1
+        if target_hour >= 24:
+            target_hour = 0
+    
+    # Calcular diferencia en minutos
+    if target_minutes == 30:
+        difference = 30 - current_minutes
+    else:
+        difference = 60 - current_minutes
+    
+    # Si la diferencia es menor o igual al intervalo, ajustar
+    if difference <= adjustment_interval:
+        adjusted_time = original_time.replace(hour=target_hour, minute=target_minutes, second=0, microsecond=0)
+        return adjusted_time
+    
+    return original_time
+
+def export_both_records_pdf(records, start_date=None, end_date=None, company=None, adjustment_interval=None):
     """Genera un PDF con todos los registros agrupados por empleado"""
     from fpdf import FPDF
     from tempfile import NamedTemporaryFile
@@ -1186,6 +1223,12 @@ def export_both_records_pdf(records, start_date=None, end_date=None, company=Non
                 filter_text += "Todos los registros"
                 
             self.cell(0, 10, filter_text, 0, 1, 'C')
+            
+            # Agregar información de ajuste si se aplicó
+            if adjustment_interval:
+                self.set_font('Arial', 'I', 9)
+                self.cell(0, 8, f"AJUSTE APLICADO: Intervalo de {adjustment_interval} minutos - Horarios redondeados a :00 o :30", 0, 1, 'C')
+            
             self.ln(5)
         
         def footer(self):
@@ -1237,8 +1280,16 @@ def export_both_records_pdf(records, start_date=None, end_date=None, company=Non
             # Fecha
             pdf.cell(30, 7, record.check_in_time.strftime('%d/%m/%Y') if record.check_in_time else '-', 1)
             
-            # Hora entrada
-            pdf.cell(25, 7, record.check_in_time.strftime('%H:%M:%S') if record.check_in_time else '-', 1)
+            # Hora entrada (aplicar ajuste si se especifica)
+            if record.check_in_time:
+                adjusted_time = adjust_entry_time(record.check_in_time, adjustment_interval)
+                display_time = adjusted_time.strftime('%H:%M:%S')
+                # Si se aplicó ajuste, mostrar también la hora original
+                if adjustment_interval and adjusted_time != record.check_in_time:
+                    display_time += f" (Orig: {record.check_in_time.strftime('%H:%M')})"
+                pdf.cell(25, 7, display_time, 1)
+            else:
+                pdf.cell(25, 7, '-', 1)
             
             # Hora salida
             if record.check_out_time:
@@ -1272,10 +1323,23 @@ def export_both_records_pdf(records, start_date=None, end_date=None, company=Non
             
             pdf.ln()
         
-        # Total de horas para este empleado
-        total_hours = sum(record.duration() for record in employee_records if record.check_out_time)
+        # Total de horas para este empleado (con ajuste si se especifica)
+        total_hours = 0
+        for record in employee_records:
+            if record.check_out_time:
+                # Calcular duración con hora ajustada si se especifica
+                if adjustment_interval:
+                    adjusted_check_in = adjust_entry_time(record.check_in_time, adjustment_interval)
+                    duration_minutes = (record.check_out_time - adjusted_check_in).total_seconds() / 60
+                    total_hours += duration_minutes * 0.60 / 60  # Aplicar la fórmula especial
+                else:
+                    total_hours += record.duration()
+        
         pdf.set_font('Arial', 'B', 9)
-        pdf.cell(80, 7, f"Total de horas: {total_hours:.2f} h", 1, 1, 'R')
+        if adjustment_interval:
+            pdf.cell(80, 7, f"H. Totales: {total_hours:.2f} h (con ajuste)", 1, 1, 'R')
+        else:
+            pdf.cell(80, 7, f"Total de horas: {total_hours:.2f} h", 1, 1, 'R')
         
         # Espacio entre empleados
         pdf.ln(5)

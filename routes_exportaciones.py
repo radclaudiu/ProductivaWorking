@@ -31,37 +31,50 @@ exportaciones_bp = Blueprint('exportaciones', __name__, url_prefix='/exportacion
 
 def round_time_entry(time_obj, round_minutes):
     """
-    Redondea la hora de entrada hacia arriba según los minutos especificados.
+    Redondea la hora de entrada hacia arriba solo en ventanas específicas antes de horas clave.
     
     Args:
         time_obj: Objeto time con la hora original
         round_minutes: Minutos para redondear (ej: 10, 15, 30)
         
     Returns:
-        Objeto time con la hora redondeada
+        Objeto time con la hora redondeada o la original si no está en ventana de redondeo
     """
     if not time_obj or round_minutes <= 0:
         return time_obj
     
-    # Convertir a minutos totales
-    total_minutes = time_obj.hour * 60 + time_obj.minute
+    current_minute = time_obj.minute
+    current_hour = time_obj.hour
     
-    # Calcular el siguiente múltiplo de round_minutes
-    if total_minutes % round_minutes != 0:
-        rounded_minutes = ceil(total_minutes / round_minutes) * round_minutes
-    else:
-        rounded_minutes = total_minutes
+    # Determinar si está en una ventana de redondeo
+    should_round = False
+    target_minute = current_minute
+    target_hour = current_hour
     
-    # Convertir de vuelta a horas y minutos
-    hours = rounded_minutes // 60
-    minutes = rounded_minutes % 60
+    # Para redondeo a hora en punto (X:00)
+    # Ventana: desde (60 - round_minutes) hasta 59
+    if current_minute >= (60 - round_minutes):
+        should_round = True
+        target_minute = 0
+        target_hour = current_hour + 1
+    
+    # Para redondeo a media hora (X:30)
+    # Ventana: desde (30 - round_minutes) hasta 29
+    elif current_minute >= (30 - round_minutes) and current_minute <= 29:
+        should_round = True
+        target_minute = 30
+        target_hour = current_hour
+    
+    # Si no está en ventana de redondeo, devolver hora original
+    if not should_round:
+        return time_obj
     
     # Manejar overflow de 24 horas
-    if hours >= 24:
-        hours = 23
-        minutes = 59
+    if target_hour >= 24:
+        target_hour = 23
+        target_minute = 59
     
-    return time_obj.replace(hour=hours, minute=minutes, second=0, microsecond=0)
+    return time_obj.replace(hour=target_hour, minute=target_minute, second=0, microsecond=0)
 
 @exportaciones_bp.route('/')
 @login_required

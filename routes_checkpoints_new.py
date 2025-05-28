@@ -665,58 +665,49 @@ def calculate_entry_adjustment(original_time, adjust_minutes):
     Returns:
         datetime objeto con la hora ajustada o la original si no aplica ajuste
     """
+    import logging
+    
     if not original_time or not adjust_minutes:
+        logging.info(f"No adjustment: original_time={original_time}, adjust_minutes={adjust_minutes}")
         return original_time
     
-    # Obtener minutos actuales
     current_minutes = original_time.minute
     current_hour = original_time.hour
     
-    # Determinar los puntos de ajuste según los minutos configurados
+    logging.info(f"Procesando ajuste: {original_time.strftime('%H:%M')} con {adjust_minutes} minutos")
+    
+    # Lógica simplificada: siempre ajustar hacia adelante si los minutos están dentro del rango
     if adjust_minutes == 30:
         # Para 30 minutos: ajustar a :00 o :30
-        if current_minutes <= 30:
-            target_minutes = 30
-            target_hour = current_hour
+        if current_minutes == 0 or current_minutes == 30:
+            logging.info(f"Ya está en punto exacto: {current_minutes}")
+            return original_time
+        elif current_minutes < 30:
+            # Ajustar a :30
+            if (30 - current_minutes) <= adjust_minutes:
+                adjusted_time = original_time.replace(minute=30, second=0, microsecond=0)
+                logging.info(f"Ajustado de {original_time.strftime('%H:%M')} a {adjusted_time.strftime('%H:%M')}")
+                return adjusted_time
         else:
-            # Si son más de 30 minutos, ajustar a la siguiente hora en punto
-            target_minutes = 0
-            target_hour = current_hour + 1
+            # Ajustar a la siguiente hora en punto
+            if (60 - current_minutes) <= adjust_minutes:
+                adjusted_time = original_time.replace(hour=(current_hour + 1) % 24, minute=0, second=0, microsecond=0)
+                logging.info(f"Ajustado de {original_time.strftime('%H:%M')} a {adjusted_time.strftime('%H:%M')}")
+                return adjusted_time
     else:
         # Para 5, 10, 15 minutos: solo ajustar a hora en punto (:00)
         if current_minutes == 0:
-            # Ya está en punto, no ajustar
+            logging.info(f"Ya está en punto exacto: {current_minutes}")
             return original_time
         else:
-            # Ajustar a la siguiente hora en punto
-            target_minutes = 0
-            target_hour = current_hour + 1
+            # Ajustar a la siguiente hora en punto si está dentro del rango
+            minutes_to_next_hour = 60 - current_minutes
+            if minutes_to_next_hour <= adjust_minutes:
+                adjusted_time = original_time.replace(hour=(current_hour + 1) % 24, minute=0, second=0, microsecond=0)
+                logging.info(f"Ajustado de {original_time.strftime('%H:%M')} a {adjusted_time.strftime('%H:%M')}")
+                return adjusted_time
     
-    # Verificar si se debe aplicar el ajuste
-    # Solo ajustar si la diferencia está dentro del rango de minutos especificado
-    if adjust_minutes == 30:
-        if current_minutes <= 30:
-            minutes_to_adjust = 30 - current_minutes
-        else:
-            minutes_to_adjust = 60 - current_minutes
-    else:
-        minutes_to_adjust = 60 - current_minutes if current_minutes > 0 else 0
-    
-    # Solo ajustar si está dentro del rango de minutos especificado
-    if minutes_to_adjust <= adjust_minutes and current_minutes > 0:
-        # Crear nueva hora ajustada
-        adjusted_time = original_time.replace(
-            hour=target_hour % 24,  # Manejar el caso de 23:xx -> 00:xx
-            minute=target_minutes,
-            second=0,
-            microsecond=0
-        )
-        
-        # Si la hora ajustada es del día siguiente, mantener la fecha original por ahora
-        # (esto se manejará en la lógica de la aplicación si es necesario)
-        return adjusted_time
-    
-    # No se aplica ajuste
+    logging.info(f"Sin ajuste aplicado para {original_time.strftime('%H:%M')}")
     return original_time
 
 
@@ -750,6 +741,9 @@ def export_original_records(slug):
     # Obtener parámetros de ajuste de entrada
     adjust_entry = request.args.get('adjust_entry', 'false').lower() == 'true'
     adjust_minutes = int(request.args.get('adjust_minutes', 15)) if adjust_entry else None
+    
+    # Debug: log de los parámetros de ajuste
+    logging.info(f"Parámetros de ajuste: adjust_entry={adjust_entry}, adjust_minutes={adjust_minutes}")
     
     # Construir la consulta directamente con la tabla CheckPointOriginalRecord y Employee
     query = db.session.query(

@@ -15,7 +15,11 @@
                         </p>
                     </div>
                     <div>
-                        <a href="{{ url_for('checkpoints_slug.export_config_page', slug=company.get_slug()) }}" 
+                        <a href="{{ url_for('checkpoints_slug.export_both_records', 
+                                slug=company.get_slug(),
+                                start_date=filters.start_date, 
+                                end_date=filters.end_date, 
+                                employee_id=filters.employee_id) }}" 
                            class="btn btn-sm btn-info">
                             <i class="fas fa-file-pdf"></i> Exportar a PDF
                         </a>
@@ -183,122 +187,4 @@
         </div>
     </div>
 </div>
-
-<!-- Diálogo de ajuste de horarios -->
-<div class="modal fade" id="adjustmentModal" tabindex="-1" aria-labelledby="adjustmentModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="adjustmentModalLabel">Ajustar Horarios de Entrada</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>Antes de exportar, puedes ajustar automáticamente las horas de entrada al minuto más cercano:</p>
-                
-                <div class="mb-3">
-                    <label for="adjustmentInterval" class="form-label">Tolerancia de ajuste (minutos):</label>
-                    <input type="number" class="form-control" id="adjustmentInterval" 
-                           min="1" max="30" value="5" placeholder="1-30 minutos">
-                    <div class="form-text">
-                        Si la diferencia es menor o igual a este valor, se ajustará automáticamente.
-                    </div>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="roundToMinutes" class="form-label">Redondear a (minutos):</label>
-                    <input type="number" class="form-control" id="roundToMinutes" 
-                           min="1" max="30" value="5" placeholder="2, 4, 6, 8, 10, 15...">
-                    <div class="form-text">
-                        Los horarios se redondearán hacia arriba a múltiplos de este valor.
-                        <br><strong>Ejemplo:</strong> Con valor 5: 19:57 → 20:00, 19:52 → 19:55
-                    </div>
-                </div>
-                
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> 
-                    <strong>¿Cómo funciona?</strong>
-                    <ul class="mb-0 mt-2">
-                        <li>Si la diferencia entre la hora real y el siguiente múltiplo es menor o igual a la tolerancia, se ajusta automáticamente.</li>
-                        <li>Siempre se redondea hacia arriba (nunca hacia atrás).</li>
-                        <li>Puedes usar cualquier valor: 2, 4, 5, 6, 8, 10, 15, etc.</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <button type="button" class="btn btn-primary" onclick="exportWithAdjustment()">
-                    <i class="fas fa-file-pdf"></i> Exportar con Ajuste
-                </button>
-                <button type="button" class="btn btn-outline-primary" onclick="exportWithoutAdjustment()">
-                    Exportar Sin Ajuste
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-function showAdjustmentDialog() {
-    // Mostrar diálogo personalizado
-    if (confirm('¿Quieres ajustar las horas de entrada antes de exportar?')) {
-        let tolerancia = prompt('Tolerancia de ajuste (minutos entre 1-30):', '5');
-        let redondeo = prompt('Redondear a múltiplos de (minutos):', '5');
-        
-        if (tolerancia && redondeo && tolerancia >= 1 && tolerancia <= 30 && redondeo >= 1 && redondeo <= 30) {
-            const exportUrl = "{{ url_for('checkpoints_slug.export_both_records', 
-                                slug=company.get_slug(),
-                                start_date=filters.start_date, 
-                                end_date=filters.end_date, 
-                                employee_id=filters.employee_id) }}" + "&adjustment_interval=" + tolerancia + "&round_to_minutes=" + redondeo;
-            window.location.href = exportUrl;
-        } else {
-            alert('Valores inválidos. Usa valores entre 1 y 30.');
-        }
-    } else {
-        exportWithoutAdjustment();
-    }
-}
-
-function exportWithAdjustment() {
-    const interval = document.getElementById('adjustmentInterval').value;
-    const roundTo = document.getElementById('roundToMinutes').value;
-    
-    if (!interval || interval < 1 || interval > 30) {
-        alert('Por favor, ingresa una tolerancia válida entre 1 y 30 minutos.');
-        return;
-    }
-    
-    if (!roundTo || roundTo < 1 || roundTo > 30) {
-        alert('Por favor, ingresa un valor de redondeo válido entre 1 y 30 minutos.');
-        return;
-    }
-    
-    const exportUrl = "{{ url_for('checkpoints_slug.export_both_records', 
-                        slug=company.get_slug(),
-                        start_date=filters.start_date, 
-                        end_date=filters.end_date, 
-                        employee_id=filters.employee_id) }}" + "&adjustment_interval=" + interval + "&round_to_minutes=" + roundTo;
-    
-    window.location.href = exportUrl;
-    
-    // Cerrar el modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('adjustmentModal'));
-    modal.hide();
-}
-
-function exportWithoutAdjustment() {
-    const exportUrl = "{{ url_for('checkpoints_slug.export_both_records', 
-                        slug=company.get_slug(),
-                        start_date=filters.start_date, 
-                        end_date=filters.end_date, 
-                        employee_id=filters.employee_id) }}";
-    
-    window.location.href = exportUrl;
-    
-    // Cerrar el modal
-    const modal = bootstrap.Modal.getInstance(document.getElementById('adjustmentModal'));
-    modal.hide();
-}
-</script>
-
 {% endblock %}

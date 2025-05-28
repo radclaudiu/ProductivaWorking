@@ -1,0 +1,406 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-download"></i> Exportaciones de Fichajes
+                    </h4>
+                    <p class="mb-0 mt-1">Genera reportes personalizados de fichajes con opciones de redondeo</p>
+                </div>
+                
+                <div class="card-body">
+                    <form id="exportForm" method="POST" action="{{ url_for('exportaciones.generar_exportacion') }}">
+                        
+                        <!-- Selección de Empresa -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card border-left-primary">
+                                    <div class="card-body">
+                                        <h5 class="card-title text-primary">
+                                            <i class="fas fa-building"></i> Paso 1: Seleccionar Empresa
+                                        </h5>
+                                        <div class="form-group">
+                                            <label for="company_id" class="form-label fw-bold">Empresa:</label>
+                                            <select id="company_id" name="company_id" class="form-select" required>
+                                                <option value="">Seleccione una empresa...</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Información de la empresa seleccionada -->
+                            <div class="col-md-6">
+                                <div id="companyInfo" class="card border-left-info d-none">
+                                    <div class="card-body">
+                                        <h6 class="text-info">
+                                            <i class="fas fa-info-circle"></i> Información de la Empresa
+                                        </h6>
+                                        <div id="companyDetails"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Selección de Empleados -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card border-left-success">
+                                    <div class="card-body">
+                                        <h5 class="card-title text-success">
+                                            <i class="fas fa-users"></i> Paso 2: Seleccionar Empleados
+                                        </h5>
+                                        
+                                        <div class="mb-3">
+                                            <button type="button" id="selectAllEmployees" class="btn btn-outline-success btn-sm me-2">
+                                                <i class="fas fa-check-double"></i> Seleccionar Todos
+                                            </button>
+                                            <button type="button" id="deselectAllEmployees" class="btn btn-outline-secondary btn-sm">
+                                                <i class="fas fa-times"></i> Deseleccionar Todos
+                                            </button>
+                                        </div>
+                                        
+                                        <div id="employeesList" class="row">
+                                            <div class="col-12 text-muted text-center py-4">
+                                                <i class="fas fa-arrow-up"></i> 
+                                                Primero seleccione una empresa para ver los empleados disponibles
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Configuración de Exportación -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="card border-left-warning">
+                                    <div class="card-body">
+                                        <h5 class="card-title text-warning">
+                                            <i class="fas fa-cog"></i> Paso 3: Configuración
+                                        </h5>
+                                        
+                                        <!-- Tipo de Fichajes -->
+                                        <div class="form-group mb-3">
+                                            <label class="form-label fw-bold">Tipo de Fichajes:</label>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="record_type" id="original_records" value="original" checked>
+                                                <label class="form-check-label" for="original_records">
+                                                    <i class="fas fa-file-alt"></i> Fichajes Originales
+                                                    <small class="text-muted d-block">Registros sin modificaciones</small>
+                                                </label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="record_type" id="adjusted_records" value="adjusted">
+                                                <label class="form-check-label" for="adjusted_records">
+                                                    <i class="fas fa-edit"></i> Fichajes Ajustados
+                                                    <small class="text-muted d-block">Registros con modificaciones aplicadas</small>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Fechas -->
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <div class="form-group">
+                                                    <label for="start_date" class="form-label fw-bold">Fecha Inicio:</label>
+                                                    <input type="date" id="start_date" name="start_date" class="form-control" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-6">
+                                                <div class="form-group">
+                                                    <label for="end_date" class="form-label fw-bold">Fecha Fin:</label>
+                                                    <input type="date" id="end_date" name="end_date" class="form-control" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card border-left-danger">
+                                    <div class="card-body">
+                                        <h5 class="card-title text-danger">
+                                            <i class="fas fa-clock"></i> Redondeo de Horarios
+                                        </h5>
+                                        
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" id="apply_rounding" name="apply_rounding">
+                                            <label class="form-check-label fw-bold" for="apply_rounding">
+                                                Aplicar redondeo de entrada
+                                            </label>
+                                        </div>
+                                        
+                                        <div id="roundingOptions" style="display: none;">
+                                            <div class="form-group mb-3">
+                                                <label for="round_minutes" class="form-label">Redondear cada:</label>
+                                                <select id="round_minutes" name="round_minutes" class="form-select">
+                                                    <option value="5">5 minutos</option>
+                                                    <option value="10" selected>10 minutos</option>
+                                                    <option value="15">15 minutos</option>
+                                                    <option value="30">30 minutos</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <div class="alert alert-info">
+                                                <i class="fas fa-info-circle"></i>
+                                                <strong>Ejemplo:</strong> Con 10 minutos, si un empleado ficha a las 19:56, se redondeará a las 20:00. Si ficha a las 20:01, se mantendrá hasta las 20:30.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Botón de Exportación -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card border-left-primary">
+                                    <div class="card-body text-center">
+                                        <button type="submit" id="exportBtn" class="btn btn-primary btn-lg" disabled>
+                                            <i class="fas fa-file-pdf"></i> Generar Exportación PDF
+                                        </button>
+                                        <div class="text-muted mt-2">
+                                            <small>El archivo PDF se descargará automáticamente</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-body text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Cargando...</span>
+                </div>
+                <div class="mt-2">Generando exportación...</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const companySelect = document.getElementById('company_id');
+    const employeesList = document.getElementById('employeesList');
+    const exportBtn = document.getElementById('exportBtn');
+    const applyRounding = document.getElementById('apply_rounding');
+    const roundingOptions = document.getElementById('roundingOptions');
+    const selectAllBtn = document.getElementById('selectAllEmployees');
+    const deselectAllBtn = document.getElementById('deselectAllEmployees');
+    const exportForm = document.getElementById('exportForm');
+    const companyInfo = document.getElementById('companyInfo');
+    const companyDetails = document.getElementById('companyDetails');
+    
+    // Configurar fechas por defecto (último mes)
+    const today = new Date();
+    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+    
+    document.getElementById('start_date').value = lastMonth.toISOString().split('T')[0];
+    document.getElementById('end_date').value = endOfLastMonth.toISOString().split('T')[0];
+    
+    // Cargar empresas al inicializar
+    loadCompanies();
+    
+    // Event listeners
+    companySelect.addEventListener('change', function() {
+        if (this.value) {
+            loadEmployees(this.value);
+            showCompanyInfo(this.value);
+        } else {
+            clearEmployees();
+            hideCompanyInfo();
+        }
+    });
+    
+    applyRounding.addEventListener('change', function() {
+        roundingOptions.style.display = this.checked ? 'block' : 'none';
+    });
+    
+    selectAllBtn.addEventListener('click', function() {
+        const checkboxes = employeesList.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(cb => cb.checked = true);
+        validateForm();
+    });
+    
+    deselectAllBtn.addEventListener('click', function() {
+        const checkboxes = employeesList.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(cb => cb.checked = false);
+        validateForm();
+    });
+    
+    exportForm.addEventListener('submit', function() {
+        const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+        loadingModal.show();
+        
+        // Ocultar modal después de 3 segundos (tiempo estimado de generación)
+        setTimeout(() => {
+            loadingModal.hide();
+        }, 3000);
+    });
+    
+    async function loadCompanies() {
+        try {
+            const response = await fetch('/exportaciones/api/companies');
+            const data = await response.json();
+            
+            if (data.success) {
+                companySelect.innerHTML = '<option value="">Seleccione una empresa...</option>';
+                data.companies.forEach(company => {
+                    const option = document.createElement('option');
+                    option.value = company.id;
+                    option.textContent = company.name;
+                    companySelect.appendChild(option);
+                });
+            } else {
+                console.error('Error al cargar empresas:', data.error);
+            }
+        } catch (error) {
+            console.error('Error al cargar empresas:', error);
+        }
+    }
+    
+    async function loadEmployees(companyId) {
+        try {
+            const response = await fetch(`/exportaciones/api/employees/${companyId}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                displayEmployees(data.employees);
+            } else {
+                console.error('Error al cargar empleados:', data.error);
+                clearEmployees();
+            }
+        } catch (error) {
+            console.error('Error al cargar empleados:', error);
+            clearEmployees();
+        }
+    }
+    
+    function displayEmployees(employees) {
+        if (employees.length === 0) {
+            employeesList.innerHTML = `
+                <div class="col-12 text-center text-muted py-4">
+                    <i class="fas fa-user-slash"></i>
+                    No hay empleados activos en esta empresa
+                </div>
+            `;
+            return;
+        }
+        
+        employeesList.innerHTML = '';
+        employees.forEach(employee => {
+            const div = document.createElement('div');
+            div.className = 'col-md-4 col-sm-6 mb-2';
+            div.innerHTML = `
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="employee_ids" value="${employee.id}" id="emp_${employee.id}">
+                    <label class="form-check-label" for="emp_${employee.id}">
+                        <strong>${employee.name}</strong>
+                        <small class="text-muted d-block">DNI: ${employee.dni}</small>
+                    </label>
+                </div>
+            `;
+            employeesList.appendChild(div);
+            
+            // Agregar event listener para validación
+            div.querySelector('input').addEventListener('change', validateForm);
+        });
+        
+        validateForm();
+    }
+    
+    function clearEmployees() {
+        employeesList.innerHTML = `
+            <div class="col-12 text-muted text-center py-4">
+                <i class="fas fa-arrow-up"></i> 
+                Primero seleccione una empresa para ver los empleados disponibles
+            </div>
+        `;
+        validateForm();
+    }
+    
+    function showCompanyInfo(companyId) {
+        const companyName = companySelect.options[companySelect.selectedIndex].text;
+        companyDetails.innerHTML = `
+            <p class="mb-1"><strong>Empresa:</strong> ${companyName}</p>
+            <p class="mb-0"><strong>ID:</strong> ${companyId}</p>
+        `;
+        companyInfo.classList.remove('d-none');
+    }
+    
+    function hideCompanyInfo() {
+        companyInfo.classList.add('d-none');
+    }
+    
+    function validateForm() {
+        const companySelected = companySelect.value !== '';
+        const employeesSelected = employeesList.querySelectorAll('input[name="employee_ids"]:checked').length > 0;
+        const datesValid = document.getElementById('start_date').value && document.getElementById('end_date').value;
+        
+        exportBtn.disabled = !(companySelected && employeesSelected && datesValid);
+    }
+    
+    // Validar fechas
+    document.getElementById('start_date').addEventListener('change', validateForm);
+    document.getElementById('end_date').addEventListener('change', validateForm);
+});
+</script>
+
+<style>
+.border-left-primary {
+    border-left: 0.25rem solid #4e73df;
+}
+
+.border-left-success {
+    border-left: 0.25rem solid #1cc88a;
+}
+
+.border-left-info {
+    border-left: 0.25rem solid #36b9cc;
+}
+
+.border-left-warning {
+    border-left: 0.25rem solid #f6c23e;
+}
+
+.border-left-danger {
+    border-left: 0.25rem solid #e74a3b;
+}
+
+.form-check-label {
+    cursor: pointer;
+}
+
+.card-title {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+
+#exportBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+    color: #0c5460;
+}
+</style>
+{% endblock %}

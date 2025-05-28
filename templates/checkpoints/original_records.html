@@ -383,7 +383,7 @@ function exportWithOptions() {
                         employee_id=filters.employee_id) }}";
     
     // Añadir parámetros de ajuste
-    exportUrl += '&adjust_entry=' + adjustEntry;
+    exportUrl += (exportUrl.includes('?') ? '&' : '?') + 'adjust_entry=' + adjustEntry;
     if (adjustEntry === 'true') {
         exportUrl += '&adjust_minutes=' + adjustMinutes;
     }

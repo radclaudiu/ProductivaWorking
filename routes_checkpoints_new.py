@@ -994,8 +994,10 @@ def export_original_records_pdf(records, start_date=None, end_date=None, company
                     if adjust_entry and adjust_minutes and record.original_check_in_time:
                         adjusted_entry_time = calculate_entry_adjustment(record.original_check_in_time, adjust_minutes)
                         entrada = adjusted_entry_time.strftime('%H:%M')
+                        logging.info(f"PDF: Mostrando entrada ajustada {entrada} (original: {record.original_check_in_time.strftime('%H:%M')})")
                     else:
                         entrada = record.original_check_in_time.strftime('%H:%M') if record.original_check_in_time else '-'
+                        logging.info(f"PDF: Mostrando entrada original {entrada}")
                     pdf.cell(35, 7, entrada, 1, 0, 'C', True)
                     
                     # Hora de salida original

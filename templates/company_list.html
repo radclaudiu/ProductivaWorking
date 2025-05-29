@@ -44,7 +44,7 @@
                                 <td>{{ company.tax_id }}</td>
                                 <td>{{ company.city }}</td>
                                 <td>{{ company.sector }}</td>
-                                <td>{{ company.employees|length }}</td>
+                                <td>{{ company.employees|selectattr('is_active')|list|length }}</td>
                                 <td>
                                     <span class="badge {% if company.is_active %}bg-success{% else %}bg-danger{% endif %}">
                                         {{ 'Activa' if company.is_active else 'Inactiva' }}
@@ -95,4 +95,23 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Hacer las filas de la tabla clickeables
+    document.addEventListener('DOMContentLoaded', function() {
+        const rows = document.querySelectorAll('tr[data-href]');
+        rows.forEach(row => {
+            row.style.cursor = 'pointer';
+            row.addEventListener('click', function(e) {
+                // No redirigir si se hace click en un botón o enlace
+                if (e.target.closest('.table-action-buttons') || e.target.closest('a') || e.target.closest('button')) {
+                    return;
+                }
+                window.location = this.dataset.href;
+            });
+        });
+    });
+</script>
 {% endblock %}

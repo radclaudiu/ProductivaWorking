@@ -68,7 +68,6 @@ def get_employee_week_hours(employee_id, date_time):
         float: Horas acumuladas en la semana
     """
     try:
-        from utils_work_hours import get_iso_week_number
         from models_work_hours import EmployeeWorkHours
         
         week_number = get_iso_week_number(date_time)

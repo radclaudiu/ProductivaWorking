@@ -208,3 +208,124 @@ def update_company_work_hours(company_id, check_in_time, hours_worked):
     except Exception as e:
         logger.error(f"❌ Error al actualizar horas de la empresa {company_id}: {str(e)}")
         return False
+
+def check_weekly_hours_limit(employee_id, check_in_time, new_hours_worked):
+    """
+    Verifica si agregar las nuevas horas trabajadas excede el límite semanal del empleado.
+    
+    Args:
+        employee_id (int): ID del empleado
+        check_in_time (datetime): Fecha y hora de entrada (para determinar la semana)
+        new_hours_worked (float): Nuevas horas a agregar
+        
+    Returns:
+        tuple: (bool, dict) - (cumple_limite, info_detallada)
+    """
+    logger.info("========== INICIO COMPROBACIÓN HORAS SEMANALES ==========")
+    
+    try:
+        # Obtener información del empleado y su contrato
+        from models import Employee
+        from models_checkpoints import EmployeeContractHours
+        
+        employee = Employee.query.get(employee_id)
+        if not employee:
+            logger.error(f"❌ Empleado {employee_id} no encontrado")
+            return False, {"error": "Empleado no encontrado"}
+        
+        logger.info(f"📋 Empleado: {employee.first_name} {employee.last_name} (ID: {employee_id})")
+        
+        # Obtener configuración de horas de contrato
+        contract_hours = EmployeeContractHours.query.filter_by(employee_id=employee_id).first()
+        if not contract_hours or not contract_hours.weekly_hours:
+            logger.info("✅ No hay límite semanal configurado - APROBADO")
+            return True, {
+                "limite_semanal": None,
+                "horas_actuales": 0,
+                "nuevas_horas": new_hours_worked,
+                "total_propuesto": new_hours_worked,
+                "cumple": True,
+                "razon": "Sin límite semanal configurado"
+            }
+        
+        weekly_limit = contract_hours.weekly_hours
+        logger.info(f"⏰ Límite semanal configurado: {weekly_limit} horas")
+        
+        # Obtener año y semana de la fecha de entrada
+        year = check_in_time.year
+        week_number = get_iso_week_number(check_in_time)
+        logger.info(f"📅 Verificando semana {week_number} del año {year}")
+        
+        # Buscar horas acumuladas actuales para esta semana
+        current_hours = EmployeeWorkHours.query.filter_by(
+            employee_id=employee_id,
+            year=year,
+            week_number=week_number
+        ).first()
+        
+        current_weekly_hours = current_hours.weekly_hours if current_hours else 0.0
+        proposed_total = current_weekly_hours + new_hours_worked
+        
+        logger.info(f"📊 Horas actuales esta semana: {current_weekly_hours}")
+        logger.info(f"➕ Nuevas horas a agregar: {new_hours_worked}")
+        logger.info(f"🎯 Total propuesto: {proposed_total}")
+        logger.info(f"🚦 Límite semanal: {weekly_limit}")
+        
+        if proposed_total > weekly_limit:
+            exceso = proposed_total - weekly_limit
+            logger.warning(f"❌ LÍMITE EXCEDIDO: {exceso} horas por encima del límite")
+            logger.info("🚫 RESULTADO: NO CUMPLE - Fichaje será rechazado")
+            
+            return False, {
+                "limite_semanal": weekly_limit,
+                "horas_actuales": current_weekly_hours,
+                "nuevas_horas": new_hours_worked,
+                "total_propuesto": proposed_total,
+                "exceso": exceso,
+                "cumple": False,
+                "razon": f"Excede límite semanal por {exceso} horas"
+            }
+        else:
+            margen = weekly_limit - proposed_total
+            logger.info(f"✅ DENTRO DEL LÍMITE: {margen} horas de margen restante")
+            logger.info("✅ RESULTADO: CUMPLE - Fichaje aprobado")
+            
+            return True, {
+                "limite_semanal": weekly_limit,
+                "horas_actuales": current_weekly_hours,
+                "nuevas_horas": new_hours_worked,
+                "total_propuesto": proposed_total,
+                "margen_restante": margen,
+                "cumple": True,
+                "razon": f"Dentro del límite con {margen} horas de margen"
+            }
+            
+    except Exception as e:
+        logger.error(f"❌ Error en verificación de horas semanales: {str(e)}")
+        return False, {"error": str(e)}
+    
+    finally:
+        logger.info("========== FIN COMPROBACIÓN HORAS SEMANALES ==========")
+
+def apply_weekly_hours_control(employee_id, check_in_time, check_out_time):
+    """
+    Aplica el control de horas semanales al cerrar un fichaje.
+    
+    Args:
+        employee_id (int): ID del empleado
+        check_in_time (datetime): Hora de entrada
+        check_out_time (datetime): Hora de salida
+        
+    Returns:
+        tuple: (bool, dict) - (permitir_fichaje, info_verificacion)
+    """
+    if not check_out_time:
+        return True, {"razon": "Fichaje sin hora de salida, no requiere verificación"}
+    
+    # Calcular horas trabajadas
+    hours_worked = calculate_hours_worked(check_in_time, check_out_time)
+    
+    # Verificar límite semanal
+    cumple_limite, info = check_weekly_hours_limit(employee_id, check_in_time, hours_worked)
+    
+    return cumple_limite, info

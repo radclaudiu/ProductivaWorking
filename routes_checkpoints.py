@@ -1833,21 +1833,27 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
                     original_checkin, original_checkout, employee.id
                 )
                 
-                # Control semanal temporalmente deshabilitado (por reorganización de importaciones)
-                # if adjusted_checkin is None and adjusted_checkout is None:
-                #     # Eliminar el fichaje por límite semanal, pero mantener el registro original
-                #     db.session.delete(pending_record)
-                #     employee.is_on_shift = False
-                #     db.session.add(employee)
-                #     
-                #     # Confirmar transacción
-                #     db.session.commit()
-                #     
-                #     print(f"🚫 FICHAJE ELIMINADO: Empleado ID {employee.id} - Límite semanal alcanzado")
-                #     print(f"   Registro original conservado para auditoría")
-                #     
-                #     flash('Fichaje cancelado: límite semanal de horas alcanzado. Registro original conservado para auditoría.', 'warning')
-                #     return redirect(url_for('checkpoints.checkpoint_dashboard'))
+                # Verificar límite semanal de horas antes de cerrar el fichaje
+                from utils_work_hours import apply_weekly_hours_control
+                
+                cumple_limite, info_verificacion = apply_weekly_hours_control(
+                    employee.id, original_checkin, original_checkout
+                )
+                
+                if not cumple_limite:
+                    # Eliminar el fichaje por límite semanal, pero mantener el registro original
+                    db.session.delete(pending_record)
+                    employee.is_on_shift = False
+                    db.session.add(employee)
+                    
+                    # Confirmar transacción
+                    db.session.commit()
+                    
+                    print(f"🚫 FICHAJE ELIMINADO: Empleado ID {employee.id} - {info_verificacion.get('razon', 'Límite semanal alcanzado')}")
+                    print(f"   Registro original conservado para auditoría")
+                    
+                    flash(f'Fichaje cancelado: {info_verificacion.get("razon", "límite semanal de horas alcanzado")}. Registro original conservado para auditoría.', 'warning')
+                    return redirect(url_for('checkpoints.checkpoint_dashboard'))
                 
                 # Verificar si hay ajustes a realizar
                 needs_adjustment = (adjusted_checkin and adjusted_checkin != original_checkin) or \

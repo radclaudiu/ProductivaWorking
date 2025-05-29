@@ -57,12 +57,13 @@ def get_week_end(date_obj):
     sunday = date_obj + timedelta(days=(6 - days_since_monday))
     return sunday
 
-def group_records_by_week(records):
+def group_records_by_week(records, record_type='adjusted'):
     """
     Agrupa los registros por semanas de lunes a domingo.
     
     Args:
         records: Lista de registros de fichajes
+        record_type: Tipo de registro ('original' o 'adjusted')
         
     Returns:
         Diccionario con semanas como clave y registros como valor
@@ -70,7 +71,12 @@ def group_records_by_week(records):
     weeks = {}
     
     for record in records:
-        record_date = record.check_in_time.date()
+        # Obtener fecha según el tipo de registro
+        if record_type == 'original':
+            record_date = record.original_check_in_time.date()
+        else:
+            record_date = record.check_in_time.date()
+            
         week_start = get_week_start(record_date)
         week_end = get_week_end(record_date)
         week_key = (week_start, week_end)
@@ -81,11 +87,15 @@ def group_records_by_week(records):
         if record_date not in weeks[week_key]:
             weeks[week_key][record_date] = {'check_in': None, 'check_out': None}
         
-        # Determinar si es entrada o salida
-        if weeks[week_key][record_date]['check_in'] is None:
+        # Para registros originales, siempre es el registro completo
+        if record_type == 'original':
             weeks[week_key][record_date]['check_in'] = record
-        elif record.check_out_time:
-            weeks[week_key][record_date]['check_out'] = record
+        else:
+            # Determinar si es entrada o salida para registros ajustados
+            if weeks[week_key][record_date]['check_in'] is None:
+                weeks[week_key][record_date]['check_in'] = record
+            elif record.check_out_time:
+                weeks[week_key][record_date]['check_out'] = record
     
     return weeks
 
@@ -259,12 +269,24 @@ def generar_exportacion():
         
         # Procesar cada empleado
         for employee in employees:
-            # Obtener registros del empleado (siempre usar CheckPointRecord)
-            records = CheckPointRecord.query.filter(
-                CheckPointRecord.employee_id == employee.id,
-                db.func.date(CheckPointRecord.check_in_time) >= start_date,
-                db.func.date(CheckPointRecord.check_in_time) <= end_date
-            ).order_by(CheckPointRecord.check_in_time).all()
+            # Obtener registros según el tipo seleccionado
+            if record_type == 'original':
+                # Para fichajes originales, obtener de CheckPointOriginalRecord con join a CheckPointRecord
+                records_query = db.session.query(CheckPointOriginalRecord).join(
+                    CheckPointRecord, CheckPointOriginalRecord.record_id == CheckPointRecord.id
+                ).filter(
+                    CheckPointRecord.employee_id == employee.id,
+                    db.func.date(CheckPointOriginalRecord.original_check_in_time) >= start_date,
+                    db.func.date(CheckPointOriginalRecord.original_check_in_time) <= end_date
+                ).order_by(CheckPointOriginalRecord.original_check_in_time).all()
+                records = records_query
+            else:
+                # Para fichajes ajustados, usar CheckPointRecord directamente
+                records = CheckPointRecord.query.filter(
+                    CheckPointRecord.employee_id == employee.id,
+                    db.func.date(CheckPointRecord.check_in_time) >= start_date,
+                    db.func.date(CheckPointRecord.check_in_time) <= end_date
+                ).order_by(CheckPointRecord.check_in_time).all()
             
             if not records:
                 continue
@@ -289,7 +311,7 @@ def generar_exportacion():
             pdf.cell(40, 6, 'Observaciones', 1, 1, 'C')
             
             # Agrupar registros por semanas
-            weeks_data = group_records_by_week(records)
+            weeks_data = group_records_by_week(records, record_type)
             
             if not weeks_data:
                 continue
@@ -316,11 +338,13 @@ def generar_exportacion():
                     check_in_record = day_data['check_in']
                     
                     if check_in_record:
-                        # Usar horario original o ajustado según selección
-                        if record_type == 'original' and check_in_record.original_check_in_time:
+                        # Usar horarios según el tipo de registro seleccionado
+                        if record_type == 'original':
+                            # Para registros originales, usar directamente los campos original_*
                             original_time = check_in_record.original_check_in_time.time()
                             check_out_time = check_in_record.original_check_out_time
                         else:
+                            # Para registros ajustados, usar los campos normales
                             original_time = check_in_record.check_in_time.time()
                             check_out_time = check_in_record.check_out_time
                         

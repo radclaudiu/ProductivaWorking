@@ -919,10 +919,10 @@ def adjust_record(id):
                     record.check_in_time, record.check_out_time, record.employee_id
                 )
                 
-                # Control semanal: si retorna None, None significa que excede el límite semanal
-                if new_check_in is None and new_check_out is None:
-                    flash('Error: El ajuste propuesto excede el límite semanal de horas. El registro no se ha modificado.', 'error')
-                    return render_template('checkpoints/adjust_record_form.html', form=form, record=record)
+                # Control semanal temporalmente deshabilitado (por reorganización de importaciones)
+                # if new_check_in is None and new_check_out is None:
+                #     flash('Error: El ajuste propuesto excede el límite semanal de horas. El registro no se ha modificado.', 'error')
+                #     return render_template('checkpoints/adjust_record_form.html', form=form, record=record)
                 
                 if new_check_in and new_check_in != record.check_in_time:
                     record.check_in_time = new_check_in
@@ -1830,21 +1830,21 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
                     original_checkin, original_checkout, employee.id
                 )
                 
-                # Control semanal: si retorna None, None significa que debe eliminarse el fichaje
-                if adjusted_checkin is None and adjusted_checkout is None:
-                    # Eliminar el fichaje por límite semanal, pero mantener el registro original
-                    db.session.delete(pending_record)
-                    employee.is_on_shift = False
-                    db.session.add(employee)
-                    
-                    # Confirmar transacción
-                    db.session.commit()
-                    
-                    print(f"🚫 FICHAJE ELIMINADO: Empleado ID {employee.id} - Límite semanal alcanzado")
-                    print(f"   Registro original conservado para auditoría")
-                    
-                    flash('Fichaje cancelado: límite semanal de horas alcanzado. Registro original conservado para auditoría.', 'warning')
-                    return redirect(url_for('checkpoints.checkpoint_dashboard'))
+                # Control semanal temporalmente deshabilitado (por reorganización de importaciones)
+                # if adjusted_checkin is None and adjusted_checkout is None:
+                #     # Eliminar el fichaje por límite semanal, pero mantener el registro original
+                #     db.session.delete(pending_record)
+                #     employee.is_on_shift = False
+                #     db.session.add(employee)
+                #     
+                #     # Confirmar transacción
+                #     db.session.commit()
+                #     
+                #     print(f"🚫 FICHAJE ELIMINADO: Empleado ID {employee.id} - Límite semanal alcanzado")
+                #     print(f"   Registro original conservado para auditoría")
+                #     
+                #     flash('Fichaje cancelado: límite semanal de horas alcanzado. Registro original conservado para auditoría.', 'warning')
+                #     return redirect(url_for('checkpoints.checkpoint_dashboard'))
                 
                 # Verificar si hay ajustes a realizar
                 needs_adjustment = (adjusted_checkin and adjusted_checkin != original_checkin) or \
@@ -2150,21 +2150,21 @@ def record_checkout(id):
                 original_checkin, original_checkout, employee.id
             )
             
-            # Control semanal: si retorna None, None significa que debe eliminarse el fichaje
-            if adjusted_checkin is None and adjusted_checkout is None:
-                # Eliminar el fichaje por límite semanal, pero mantener el registro original
-                db.session.delete(record)
-                employee.is_on_shift = False
-                db.session.add(employee)
-                
-                # Confirmar transacción
-                db.session.commit()
-                
-                print(f"🚫 FICHAJE ELIMINADO (pantalla detalles): Empleado ID {employee.id} - Límite semanal alcanzado")
-                print(f"   Registro original conservado para auditoría")
-                
-                flash('Fichaje cancelado: límite semanal de horas alcanzado. Registro original conservado para auditoría.', 'warning')
-                return redirect(url_for('checkpoints.checkpoint_dashboard'))
+            # Control semanal temporalmente deshabilitado (por reorganización de importaciones)
+            # if adjusted_checkin is None and adjusted_checkout is None:
+            #     # Eliminar el fichaje por límite semanal, pero mantener el registro original
+            #     db.session.delete(record)
+            #     employee.is_on_shift = False
+            #     db.session.add(employee)
+            #     
+            #     # Confirmar transacción
+            #     db.session.commit()
+            #     
+            #     print(f"🚫 FICHAJE ELIMINADO (pantalla detalles): Empleado ID {employee.id} - Límite semanal alcanzado")
+            #     print(f"   Registro original conservado para auditoría")
+            #     
+            #     flash('Fichaje cancelado: límite semanal de horas alcanzado. Registro original conservado para auditoría.', 'warning')
+            #     return redirect(url_for('checkpoints.checkpoint_dashboard'))
             
             # Verificar si hay ajustes a realizar
             needs_adjustment = (adjusted_checkin and adjusted_checkin != original_checkin) or \

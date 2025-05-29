@@ -416,28 +416,9 @@ class EmployeeContractHours(db.Model):
             
             return adjusted_in, new_check_out_time
         
-        # 5. Control de límite semanal (después de todos los demás ajustes)
-        if employee_id and self.weekly_hours > 0:
-            from utils_work_hours import get_employee_week_hours
-            
-            # Obtener horas acumuladas esta semana (sin incluir este fichaje)
-            week_accumulated = get_employee_week_hours(employee_id, check_in_time)
-            
-            # Calcular duración del fichaje actual después de ajustes
-            current_duration = (adjusted_out - adjusted_in).total_seconds() / 3600
-            
-            # Verificar si supera el límite semanal
-            if (week_accumulated + current_duration) > self.weekly_hours:
-                remaining_weekly_hours = self.weekly_hours - week_accumulated
-                
-                if remaining_weekly_hours <= 0:
-                    # Caso 1: Ya se alcanzó el límite semanal - señalar para eliminar fichaje
-                    return None, None
-                else:
-                    # Caso 2: Ajustar la salida para no superar el límite semanal
-                    # Añadir 1-5 minutos aleatorios para naturalidad
-                    random_minutes = random.randint(1, 5)
-                    max_checkout = adjusted_in + timedelta(hours=remaining_weekly_hours, minutes=random_minutes)
-                    return adjusted_in, max_checkout
+        # 5. Control de límite semanal (temporalmente deshabilitado por importaciones circulares)
+        # TODO: Reactivar cuando se resuelvan las importaciones circulares
+        # if employee_id and self.weekly_hours > 0:
+        #     # Lógica de control semanal aquí
             
         return adjusted_in, adjusted_out

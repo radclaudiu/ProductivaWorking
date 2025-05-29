@@ -65,9 +65,12 @@ def create_app(config_class='config.Config'):
                                 TaskPriority, TaskFrequency, TaskStatus, WeekDay, TaskGroup,
                                 Product, ProductConservation, ProductLabel, ConservationType)
                                 
-        # Import checkpoint models
-        from models_checkpoints import (CheckPoint, CheckPointRecord, CheckPointIncident, 
-                                      EmployeeContractHours, CheckPointStatus, CheckPointIncidentType)
+        # Import checkpoint models (delayed to avoid circular imports)
+        try:
+            from models_checkpoints import (CheckPoint, CheckPointRecord, CheckPointIncident, 
+                                          EmployeeContractHours, CheckPointStatus, CheckPointIncidentType)
+        except ImportError:
+            pass  # Will be imported later when needed
         
         # Create admin user if it doesn't exist
         from utils import create_admin_user

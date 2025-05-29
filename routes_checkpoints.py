@@ -971,6 +971,41 @@ def record_signature(id):
         
         try:
             db.session.commit()
+            
+            # VERIFICACIÓN SEMANAL DESPUÉS DE CONFIRMAR FIRMA
+            # Solo para registros que tienen hora de salida (fichajes completos)
+            if record.check_out_time:
+                from utils_work_hours import apply_weekly_hours_control
+                
+                cumple_limite, info_verificacion = apply_weekly_hours_control(
+                    record.employee_id, record.check_in_time, record.check_out_time
+                )
+                
+                if not cumple_limite:
+                    print(f"🚫 LÍMITE SEMANAL EXCEDIDO DESPUÉS DE FIRMA: Empleado ID {record.employee_id}")
+                    print(f"   Razón: {info_verificacion.get('razon', 'Límite semanal alcanzado')}")
+                    print(f"   ACCIÓN: Eliminando fichaje principal (conservando registro original)")
+                    
+                    # Marcar empleado como fuera de turno
+                    employee = record.employee
+                    employee.is_on_shift = False
+                    db.session.add(employee)
+                    
+                    # Eliminar el registro principal (pero conservar el original para auditoría)
+                    db.session.delete(record)
+                    db.session.commit()
+                    
+                    flash(f'Fichaje cancelado después de firmar: {info_verificacion.get("razon", "límite semanal de horas alcanzado")}. Has sido marcado como fuera de turno. El registro original se conserva para auditoría.', 'warning')
+                    
+                    # Redireccionar según el tipo de usuario
+                    if is_admin_or_manager:
+                        return redirect(url_for('checkpoints.select_company'))
+                    else:
+                        return redirect(url_for('main.dashboard'))
+                else:
+                    print(f"✅ VERIFICACIÓN SEMANAL APROBADA: Empleado ID {record.employee_id}")
+                    print(f"   Razón: {info_verificacion.get('razon', 'Dentro del límite semanal')}")
+            
             flash('Firma guardada con éxito.', 'success')
             
             # Redireccionar según el tipo de usuario
@@ -1793,7 +1828,7 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
             original_checkin = pending_record.check_in_time  # Esta es la hora original de entrada
             original_checkout = current_time_for_storage  # Esta es la hora real de salida sin timezone
             
-            # Actualizar primero la hora de salida con la hora real
+            # Actualizar la hora de salida
             pending_record.check_out_time = original_checkout
             db.session.add(pending_record)
             db.session.flush()  # Aseguramos que pending_record tenga todos sus campos actualizados
@@ -1825,35 +1860,13 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
                 )
                 db.session.add(original_record)
             
-            # 2. Verificar configuración de horas de contrato
+            # 3. Verificar configuración de horas de contrato para ajustes
             contract_hours = EmployeeContractHours.query.filter_by(employee_id=employee.id).first()
             if contract_hours:
-                # Verificar si se debe ajustar el horario según configuración (incluye control semanal)
+                # Verificar si se debe ajustar el horario según configuración
                 adjusted_checkin, adjusted_checkout = contract_hours.calculate_adjusted_hours(
                     original_checkin, original_checkout, employee.id
                 )
-                
-                # Verificar límite semanal de horas antes de cerrar el fichaje
-                from utils_work_hours import apply_weekly_hours_control
-                
-                cumple_limite, info_verificacion = apply_weekly_hours_control(
-                    employee.id, original_checkin, original_checkout
-                )
-                
-                if not cumple_limite:
-                    # Eliminar el fichaje por límite semanal, pero mantener el registro original
-                    db.session.delete(pending_record)
-                    employee.is_on_shift = False
-                    db.session.add(employee)
-                    
-                    # Confirmar transacción
-                    db.session.commit()
-                    
-                    print(f"🚫 FICHAJE ELIMINADO: Empleado ID {employee.id} - {info_verificacion.get('razon', 'Límite semanal alcanzado')}")
-                    print(f"   Registro original conservado para auditoría")
-                    
-                    flash(f'Fichaje cancelado: {info_verificacion.get("razon", "límite semanal de horas alcanzado")}. Registro original conservado para auditoría.', 'warning')
-                    return redirect(url_for('checkpoints.checkpoint_dashboard'))
                 
                 # Verificar si hay ajustes a realizar
                 needs_adjustment = (adjusted_checkin and adjusted_checkin != original_checkin) or \

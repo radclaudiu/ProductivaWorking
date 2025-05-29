@@ -279,7 +279,11 @@ def generar_exportacion():
             pdf.cell(20, 6, 'Entrada', 1, 0, 'C')
             pdf.cell(20, 6, 'Salida', 1, 0, 'C')
             pdf.cell(20, 6, 'Horas', 1, 0, 'C')
-            pdf.cell(30, 6, 'Ubicación', 1, 0, 'C')
+            
+            # Solo mostrar ubicación si NO son fichajes originales
+            if record_type != 'original':
+                pdf.cell(30, 6, 'Ubicación', 1, 0, 'C')
+            
             if apply_rounding:
                 pdf.cell(25, 6, 'Entrada Orig.', 1, 0, 'C')
             pdf.cell(40, 6, 'Observaciones', 1, 1, 'C')
@@ -344,11 +348,12 @@ def generar_exportacion():
                         pdf.cell(20, 5, check_out_time.strftime('%H:%M') if check_out_time else '-', 1, 0, 'C')
                         pdf.cell(20, 5, hours_str, 1, 0, 'C')
                         
-                        # Ubicación
-                        location = getattr(check_in_record.checkpoint, 'location', 'N/A') or 'N/A'
-                        if len(location) > 12:
-                            location = location[:12] + '...'
-                        pdf.cell(30, 5, location.encode('latin-1', 'replace').decode('latin-1'), 1, 0, 'C')
+                        # Solo mostrar ubicación si NO son fichajes originales
+                        if record_type != 'original':
+                            location = getattr(check_in_record.checkpoint, 'location', 'N/A') or 'N/A'
+                            if len(location) > 12:
+                                location = location[:12] + '...'
+                            pdf.cell(30, 5, location.encode('latin-1', 'replace').decode('latin-1'), 1, 0, 'C')
                         
                         # Mostrar hora original si aplica redondeo
                         if apply_rounding:

@@ -206,13 +206,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const companyInfo = document.getElementById('companyInfo');
     const companyDetails = document.getElementById('companyDetails');
     
-    // Configurar fechas por defecto (último mes)
+    // Configurar fechas por defecto (31 días atrás hasta hoy)
     const today = new Date();
-    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-    const endOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+    const thirtyOneDaysAgo = new Date(today);
+    thirtyOneDaysAgo.setDate(today.getDate() - 31);
     
-    document.getElementById('start_date').value = lastMonth.toISOString().split('T')[0];
-    document.getElementById('end_date').value = endOfLastMonth.toISOString().split('T')[0];
+    document.getElementById('start_date').value = thirtyOneDaysAgo.toISOString().split('T')[0];
+    document.getElementById('end_date').value = today.toISOString().split('T')[0];
     
     // Cargar empresas al inicializar
     loadCompanies();

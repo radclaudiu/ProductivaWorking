@@ -393,7 +393,18 @@ def generar_exportacion():
         
         pdf.output(filepath, 'F')
         
-        return send_file(filepath, as_attachment=True, download_name=filename)
+        # Crear y enviar archivo temporal, eliminándolo después
+        try:
+            response = send_file(filepath, as_attachment=True, download_name=filename)
+            return response
+        finally:
+            # Eliminar archivo temporal después de enviarlo
+            try:
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+                    logger.info(f"Archivo temporal eliminado: {filepath}")
+            except Exception as e:
+                logger.warning(f"No se pudo eliminar archivo temporal {filepath}: {str(e)}")
         
     except Exception as e:
         logger.error(f"Error al generar exportación: {str(e)}")

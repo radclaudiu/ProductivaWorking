@@ -206,12 +206,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const companyInfo = document.getElementById('companyInfo');
     const companyDetails = document.getElementById('companyDetails');
     
-    // Configurar fechas por defecto (31 días atrás hasta hoy)
+    // Configurar fechas por defecto (inicio vacío, fin hoy)
     const today = new Date();
-    const thirtyOneDaysAgo = new Date(today);
-    thirtyOneDaysAgo.setDate(today.getDate() - 31);
     
-    document.getElementById('start_date').value = thirtyOneDaysAgo.toISOString().split('T')[0];
+    document.getElementById('start_date').value = '';
     document.getElementById('end_date').value = today.toISOString().split('T')[0];
     
     // Cargar empresas al inicializar

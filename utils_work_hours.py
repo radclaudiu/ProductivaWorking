@@ -56,6 +56,37 @@ def get_iso_week_number(dt):
     """
     return dt.isocalendar()[1]
 
+def get_employee_week_hours(employee_id, date_time):
+    """
+    Obtiene las horas acumuladas del empleado en la semana actual (excluyendo el fichaje en proceso).
+    
+    Args:
+        employee_id (int): ID del empleado
+        date_time (datetime): Fecha para determinar la semana
+        
+    Returns:
+        float: Horas acumuladas en la semana
+    """
+    try:
+        from utils_work_hours import get_iso_week_number
+        from models_work_hours import EmployeeWorkHours
+        
+        week_number = get_iso_week_number(date_time)
+        year = date_time.year
+        
+        week_record = EmployeeWorkHours.query.filter_by(
+            employee_id=employee_id,
+            year=year,
+            week_number=week_number
+        ).first()
+        
+        return week_record.weekly_hours if week_record else 0.0
+        
+    except Exception as e:
+        logger.error(f"Error al obtener horas semanales para empleado {employee_id}: {str(e)}")
+        return 0.0
+
+
 def update_employee_work_hours(employee_id, check_in_time, hours_worked):
     """
     Actualiza las horas trabajadas acumuladas para un empleado.

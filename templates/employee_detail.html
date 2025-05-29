@@ -7,6 +7,9 @@
             <i class="bi bi-person"></i> {{ employee.first_name }} {{ employee.last_name }}
         </h1>
         <div>
+            <a href="{{ url_for('company.view_company', slug=employee.company.get_slug()) }}" class="btn btn-secondary me-2">
+                <i class="bi bi-arrow-left"></i> Volver a la Empresa
+            </a>
             {% if can_manage_activation %}
             <a href="{{ url_for('employee.edit_employee', id=employee.id) }}" class="btn btn-warning">
                 <i class="bi bi-pencil"></i> Editar Empleado

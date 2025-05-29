@@ -342,8 +342,8 @@ def create_manual_record(slug):
                 update_employee_work_hours(record.employee_id, record.check_in_time, hours_worked)
             
             flash(f'{message_type} creado correctamente', 'success')
-            # Siempre redirigir a la vista de registros originales después de crear el registro
-            return redirect(url_for('checkpoints_slug.view_original_records', slug=slug))
+            # Redirigir de vuelta a la página de la empresa
+            return redirect(url_for('checkpoints.index_company', slug=slug))
         
         return render_template('checkpoints/create_manual_record.html', form=form, company=company)
     

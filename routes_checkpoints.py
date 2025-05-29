@@ -914,16 +914,24 @@ def adjust_record(id):
             contract_hours = EmployeeContractHours.query.filter_by(employee_id=record.employee_id).first()
             
             if contract_hours:
-                # Ajustar el fichaje según las horas de contrato
+                # Ajustar el fichaje según las horas de contrato (incluye control semanal)
                 new_check_in, new_check_out = contract_hours.calculate_adjusted_hours(
-                    record.check_in_time, record.check_out_time
+                    record.check_in_time, record.check_out_time, record.employee_id
                 )
+                
+                # Control semanal: si retorna None, None significa que excede el límite semanal
+                if new_check_in is None and new_check_out is None:
+                    flash('Error: El ajuste propuesto excede el límite semanal de horas. El registro no se ha modificado.', 'error')
+                    return render_template('checkpoints/adjust_record_form.html', form=form, record=record)
                 
                 if new_check_in and new_check_in != record.check_in_time:
                     record.check_in_time = new_check_in
                     
+                if new_check_out and new_check_out != record.check_out_time:
+                    record.check_out_time = new_check_out
+                    
                     # Marcar con R en lugar de crear incidencia por ajuste de contrato
-                    record.notes = (record.notes or "") + " [R] Ajustado para cumplir límite de horas."
+                    record.notes = (record.notes or "") + " [R] Ajustado para cumplir límites de horas."
         
         try:
             db.session.commit()

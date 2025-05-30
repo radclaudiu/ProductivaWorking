@@ -335,27 +335,48 @@
             mostrarEstado('Impresoras encontradas, procesando...', 'info');
             
             try {
-                const printers = JSON.parse(data);
-                console.log('Impresoras parseadas:', printers.length);
+                let printers;
+                
+                // Manejar tanto objetos como cadenas JSON
+                if (typeof data === 'object' && data !== null) {
+                    printers = Array.isArray(data) ? data : [data];
+                    console.log('Data es array/objeto directo:', printers);
+                } else {
+                    printers = JSON.parse(data);
+                    console.log('Data parseada como JSON:', printers);
+                }
+                
+                console.log('Impresoras encontradas:', printers.length);
                 console.log('Lista completa:', printers);
                 
                 if (printers.length === 0) {
-                    console.log('No se encontraron impresoras');
-                    mostrarEstado('No se encontraron impresoras Brother TD-4550DNWB', 'error');
+                    console.log('❌ No se encontraron impresoras');
+                    mostrarEstado('No se encontraron impresoras. Encienda la impresora TD-4550DNWB.', 'error');
                     actualizarEstadoUI(false, '', '');
                     return;
                 }
                 
-                // Auto-conectar con la primera impresora TD-4550DNWB encontrada
-                const brotherPrinter = printers.find(p => p.name && p.name.includes('TD-4550')) || printers[0];
+                // Buscar específicamente TD-4550DNWB o conectar a la primera disponible
+                const brotherPrinter = printers.find(p => 
+                    p.name && (p.name.includes('TD-4550') || p.name.includes('Brother'))
+                ) || printers[0];
+                
                 if (brotherPrinter) {
-                    console.log('Conectando automáticamente con:', brotherPrinter);
-                    mostrarEstado('Conectando con ' + brotherPrinter.name + '...', 'info');
+                    console.log('🔄 Conectando automáticamente con:', brotherPrinter);
+                    console.log('- Nombre:', brotherPrinter.name);
+                    console.log('- Dirección:', brotherPrinter.address);
+                    
+                    mostrarEstado('Reconectando con ' + brotherPrinter.name + '...', 'info');
                     AndroidBridge.connectPrinter(brotherPrinter.address);
+                } else {
+                    console.log('❌ No se encontró impresora compatible');
+                    mostrarEstado('No se encontró impresora TD-4550DNWB compatible', 'error');
+                    actualizarEstadoUI(false, '', '');
                 }
             } catch (e) {
-                console.error('Error parseando impresoras:', e);
+                console.error('Error procesando impresoras:', e);
                 console.log('Data original que falló:', data);
+                console.log('Tipo de data que falló:', typeof data);
                 mostrarEstado('Error al procesar lista de impresoras: ' + e.message, 'error');
                 actualizarEstadoUI(false, '', '');
             }
@@ -367,29 +388,46 @@
             console.log('Tipo de data:', typeof data);
             
             try {
-                const result = JSON.parse(data);
-                console.log('Resultado parseado:', result);
+                let result;
+                
+                // Manejar tanto objetos como cadenas JSON
+                if (typeof data === 'object' && data !== null) {
+                    result = data;
+                    console.log('Data es objeto directo:', result);
+                } else {
+                    result = JSON.parse(data);
+                    console.log('Data parseada como JSON:', result);
+                }
                 
                 printerConnected = true;
                 printerAddress = result.mac || result.address || '';
-                printerName = result.name || 'Brother TD-4550DNWB';
+                printerName = result.name || 'TD-4550DNWB_5707';
                 
+                console.log('✅ Reconectado automáticamente');
                 console.log('Estado actualizado:');
                 console.log('- printerConnected:', printerConnected);
                 console.log('- printerName:', printerName);
                 console.log('- printerAddress:', printerAddress);
                 
-                mostrarEstado('Conectado exitosamente: ' + printerAddress, 'success');
+                const mensaje = printerAddress ? 
+                    `Reconectada exitosamente: ${printerName} (${printerAddress})` :
+                    `Reconectada exitosamente: ${printerName}`;
+                    
+                mostrarEstado(mensaje, 'success');
                 actualizarEstadoUI(true, printerName, printerAddress);
+                
             } catch (e) {
                 console.log('Error parseando, usando datos por defecto');
                 console.log('Data original:', data);
+                console.log('Tipo de data que falló:', typeof data);
                 
+                // Fallback para reconexión exitosa
                 printerConnected = true;
-                printerName = 'Brother TD-4550DNWB';
+                printerName = 'TD-4550DNWB_5707';
                 printerAddress = '';
                 
-                mostrarEstado('Impresora Brother TD-4550DNWB conectada correctamente', 'success');
+                console.log('✅ Reconectado automáticamente (modo fallback)');
+                mostrarEstado('Impresora TD-4550DNWB reconectada correctamente', 'success');
                 actualizarEstadoUI(true, printerName, '');
             }
         },
@@ -454,7 +492,15 @@
                     console.log('❌ IMPRESORA DETECTADA COMO DESCONECTADA');
                     console.log('- Valor de connected:', status.connected);
                     actualizarEstadoUI(false, '', '');
-                    mostrarEstado('Estado verificado: No conectada', 'info');
+                    mostrarEstado('No conectada - Intentando reconexión automática...', 'info');
+                    
+                    // Reconexión automática cuando no está conectada
+                    console.log('Iniciando búsqueda automática de impresoras...');
+                    setTimeout(() => {
+                        if (typeof AndroidBridge !== 'undefined' && typeof AndroidBridge.searchPrinters === 'function') {
+                            AndroidBridge.searchPrinters();
+                        }
+                    }, 1000);
                 }
             } catch (e) {
                 console.error('Error procesando status:', e);

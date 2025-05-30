@@ -145,6 +145,32 @@
                     </div>
                 </div>
                 <div class="card-body">
+                    <!-- Barra de Estado de Impresora Brother TD-4550DNWB -->
+                    <div class="alert alert-light border mb-4" style="border-left: 4px solid #007bff !important;">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-bluetooth fs-4 text-primary me-3"></i>
+                                    <div>
+                                        <h6 class="mb-1">Brother TD-4550DNWB</h6>
+                                        <p id="printer-status-bar" class="mb-0 text-muted">Verificando estado...</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <span id="printer-badge-bar" class="badge bg-secondary me-2">
+                                    <i class="bi bi-bluetooth me-1"></i>Verificando...
+                                </span>
+                                <button type="button" class="btn btn-outline-primary btn-sm me-2" onclick="verificarEstadoImpresora()">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>Verificar
+                                </button>
+                                <button type="button" class="btn btn-success btn-sm" onclick="enviarEtiquetaPrueba()">
+                                    <i class="bi bi-printer me-1"></i>Prueba
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- Mensaje de confirmación de impresión (oculto por defecto) -->
                     <div id="print-success-message" class="alert alert-success mb-3" style="display: none;">
                         <i class="bi bi-check-circle-fill me-2"></i>
@@ -426,12 +452,20 @@
     function verificarEstadoImpresora() {
         const statusElement = document.getElementById('printerStatus');
         const badgeElement = document.getElementById('printerStatusBadge');
+        const statusBarElement = document.getElementById('printer-status-bar');
+        const badgeBarElement = document.getElementById('printer-badge-bar');
         
         if (typeof AndroidBridge === 'undefined') {
-            if (statusElement) statusElement.textContent = 'No disponible (ejecutar en app Android)';
+            const mensaje = 'No disponible (ejecutar en app Android)';
+            if (statusElement) statusElement.textContent = mensaje;
+            if (statusBarElement) statusBarElement.textContent = mensaje;
             if (badgeElement) {
                 badgeElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> No disponible';
                 badgeElement.className = 'badge bg-secondary me-1';
+            }
+            if (badgeBarElement) {
+                badgeBarElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> No disponible';
+                badgeBarElement.className = 'badge bg-secondary me-2';
             }
             return;
         }
@@ -449,9 +483,17 @@
                         statusElement.textContent = mensaje;
                         statusElement.style.color = '#28a745';
                     }
+                    if (statusBarElement) {
+                        statusBarElement.textContent = `Conectada: ${status.printerName}`;
+                        statusBarElement.style.color = '#28a745';
+                    }
                     if (badgeElement) {
                         badgeElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> Conectada';
                         badgeElement.className = 'badge bg-success me-1';
+                    }
+                    if (badgeBarElement) {
+                        badgeBarElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> Conectada';
+                        badgeBarElement.className = 'badge bg-success me-2';
                     }
                 } else if (status.configured) {
                     const mensaje = `Configurada pero desconectada: ${status.savedPrinterName}`;
@@ -459,21 +501,37 @@
                         statusElement.textContent = mensaje;
                         statusElement.style.color = '#ffc107';
                     }
+                    if (statusBarElement) {
+                        statusBarElement.textContent = `Desconectada: ${status.savedPrinterName}`;
+                        statusBarElement.style.color = '#ffc107';
+                    }
                     if (badgeElement) {
                         badgeElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> Configurada';
                         badgeElement.className = 'badge bg-warning me-1';
                     }
-            } else {
-                const mensaje = 'No configurada (pulsa "Buscar Impresoras")';
-                if (statusElement) {
-                    statusElement.textContent = mensaje;
-                    statusElement.style.color = '#dc3545';
+                    if (badgeBarElement) {
+                        badgeBarElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> Desconectada';
+                        badgeBarElement.className = 'badge bg-warning me-2';
+                    }
+                } else {
+                    const mensaje = 'No configurada (pulsa "Buscar Impresoras")';
+                    if (statusElement) {
+                        statusElement.textContent = mensaje;
+                        statusElement.style.color = '#dc3545';
+                    }
+                    if (statusBarElement) {
+                        statusBarElement.textContent = 'No configurada';
+                        statusBarElement.style.color = '#dc3545';
+                    }
+                    if (badgeElement) {
+                        badgeElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> No configurada';
+                        badgeElement.className = 'badge bg-danger me-1';
+                    }
+                    if (badgeBarElement) {
+                        badgeBarElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> No configurada';
+                        badgeBarElement.className = 'badge bg-danger me-2';
+                    }
                 }
-                if (badgeElement) {
-                    badgeElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> No configurada';
-                    badgeElement.className = 'badge bg-danger me-1';
-                }
-            }
         } catch (e) {
             const mensaje = 'Error al verificar estado';
             if (statusElement) statusElement.textContent = mensaje;
@@ -492,6 +550,42 @@
         
         mostrarEstado('Buscando impresoras Brother...', 'info');
         AndroidBridge.searchPrinters();
+    }
+
+    function enviarEtiquetaPrueba() {
+        if (typeof AndroidBridge === 'undefined') {
+            mostrarEstado('Esta función solo está disponible en la aplicación Android', 'error');
+            return;
+        }
+
+        if (typeof AndroidBridge.printImage !== 'function') {
+            mostrarEstado('Método de impresión no disponible', 'error');
+            return;
+        }
+
+        // Datos de etiqueta de prueba
+        const datosEtiquetaPrueba = {
+            productName: 'ETIQUETA DE PRUEBA',
+            conservationType: 'Brother TD-4550DNWB',
+            preparedBy: 'Preparado por: Sistema',
+            startDate: 'Fecha: ' + new Date().toLocaleDateString('es-ES'),
+            expiryDate: 'Hora: ' + new Date().toLocaleTimeString('es-ES')
+        };
+
+        try {
+            // Generar canvas de prueba
+            const canvas = createLabelCanvas(datosEtiquetaPrueba);
+            const base64 = canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, '');
+            
+            console.log('Enviando etiqueta de prueba...');
+            mostrarEstado('Enviando etiqueta de prueba a Brother TD-4550DNWB...', 'info');
+            
+            AndroidBridge.printImage(base64);
+            
+        } catch (error) {
+            console.error('Error enviando etiqueta de prueba:', error);
+            mostrarEstado('Error al enviar etiqueta de prueba: ' + error.message, 'error');
+        }
     }
 
     function calcularFechaCaducidad(fechaInicio, diasVidaUtil) {

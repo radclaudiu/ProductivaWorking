@@ -1,0 +1,289 @@
+<body>
+    <div class="container">
+        <h1>Test Impresora Brother TD-4550DNWB</h1>
+        
+        <div id="status" class="status-info">
+            Estado: Sin conexión
+        </div>
+        
+        <!-- Sección de búsqueda y conexión -->
+        <div class="section">
+            <h2>1. Búsqueda y Conexión</h2>
+            <button onclick="searchPrinters()">Buscar Impresoras</button>
+            <button onclick="checkStatus()">Verificar Estado</button>
+            <button onclick="disconnect()">Desconectar</button>
+            
+            <div id="printerList"></div>
+        </div>
+        
+        <!-- Sección de diseño de etiqueta -->
+        <div class="section">
+            <h2>2. Diseño de Etiqueta (44mm x 38mm)</h2>
+            
+            <div class="input-group">
+                <label for="labelText">Texto principal:</label>
+                <input type="text" id="labelText" value="ETIQUETA DE PRUEBA" />
+            </div>
+            
+            <div class="input-group">
+                <label for="labelSubtext">Texto secundario:</label>
+                <input type="text" id="labelSubtext" value="Brother TD-4550DNWB" />
+            </div>
+            
+            <div class="input-group">
+                <label for="labelCode">Código:</label>
+                <input type="text" id="labelCode" value="123456789" />
+            </div>
+            
+            <button onclick="generateLabel()">Generar Etiqueta</button>
+            
+            <canvas id="labelCanvas" width="520" height="449"></canvas>
+        </div>
+        
+        <!-- Sección de impresión -->
+        <div class="section">
+            <h2>3. Impresión</h2>
+            <button onclick="printLabel()" id="printButton" disabled>Imprimir Etiqueta</button>
+        </div>
+        
+        <!-- Log de eventos -->
+        <div class="section">
+            <h2>Log de Eventos</h2>
+            <button onclick="clearLog()">Limpiar Log</button>
+            <div id="log"></div>
+        </div>
+    </div>
+
+    <script>
+        let selectedPrinter = null;
+        let isConnected = false;
+        
+        // Registrar callbacks para la impresora Brother
+        window.BrotherPrint = {
+            onPrintersFound: function(data) {
+                const printers = JSON.parse(data);
+                log('Impresoras encontradas: ' + printers.length);
+                displayPrinters(printers);
+            },
+            
+            onPrinterConnected: function(data) {
+                const result = JSON.parse(data);
+                log('Conectado a impresora: ' + result.mac);
+                updateStatus('Conectado a ' + selectedPrinter.name, 'success');
+                isConnected = true;
+                document.getElementById('printButton').disabled = false;
+            },
+            
+            onPrintSuccess: function(data) {
+                const result = JSON.parse(data);
+                log('Impresión exitosa: ' + result.message);
+                updateStatus('Impresión completada', 'success');
+            },
+            
+            onPrintError: function(data) {
+                const error = JSON.parse(data);
+                log('Error: ' + error.error);
+                updateStatus('Error: ' + error.error, 'error');
+                if (error.error.includes('No hay impresora conectada')) {
+                    isConnected = false;
+                    document.getElementById('printButton').disabled = true;
+                }
+            },
+            
+            onStatusUpdate: function(data) {
+                const status = JSON.parse(data);
+                log('Estado actualizado: conectado=' + status.connected);
+                if (status.connected) {
+                    updateStatus('Impresora conectada y lista', 'success');
+                    isConnected = true;
+                    document.getElementById('printButton').disabled = false;
+                } else {
+                    updateStatus('Impresora no conectada', 'info');
+                    isConnected = false;
+                    document.getElementById('printButton').disabled = true;
+                }
+            },
+            
+            onPrinterDisconnected: function(data) {
+                log('Impresora desconectada');
+                updateStatus('Impresora desconectada', 'info');
+                isConnected = false;
+                selectedPrinter = null;
+                document.getElementById('printButton').disabled = true;
+                clearPrinterList();
+            }
+        };
+        
+        // Funciones de utilidad
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<div class="log-entry">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        function updateStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = 'Estado: ' + message;
+            statusDiv.className = 'status-' + type;
+        }
+        
+        // Funciones de impresora
+        function searchPrinters() {
+            if (typeof AndroidBridge === 'undefined') {
+                log('ERROR: AndroidBridge no está disponible');
+                updateStatus('Error: Interface Android no disponible', 'error');
+                return;
+            }
+            
+            log('Buscando impresoras...');
+            updateStatus('Buscando impresoras...', 'info');
+            AndroidBridge.searchPrinters();
+        }
+        
+        function displayPrinters(printers) {
+            const listDiv = document.getElementById('printerList');
+            listDiv.innerHTML = '';
+            
+            if (printers.length === 0) {
+                listDiv.innerHTML = '<p>No se encontraron impresoras Brother</p>';
+                return;
+            }
+            
+            printers.forEach(printer => {
+                const div = document.createElement('div');
+                div.className = 'printer-item';
+                div.innerHTML = `
+                    <strong>${printer.name}</strong><br>
+                    MAC: ${printer.address}<br>
+                    Modelo: ${printer.model}
+                `;
+                div.onclick = () => selectPrinter(printer);
+                listDiv.appendChild(div);
+            });
+        }
+        
+        function clearPrinterList() {
+            document.getElementById('printerList').innerHTML = '';
+        }
+        
+        function selectPrinter(printer) {
+            selectedPrinter = printer;
+            log('Impresora seleccionada: ' + printer.name);
+            
+            // Actualizar UI
+            document.querySelectorAll('.printer-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+            
+            // Conectar a la impresora
+            log('Conectando a ' + printer.address + '...');
+            updateStatus('Conectando...', 'info');
+            AndroidBridge.connectPrinter(printer.address);
+        }
+        
+        function checkStatus() {
+            if (typeof AndroidBridge === 'undefined') {
+                log('ERROR: AndroidBridge no está disponible');
+                return;
+            }
+            
+            log('Verificando estado...');
+            AndroidBridge.getPrinterStatus();
+        }
+        
+        function disconnect() {
+            if (typeof AndroidBridge === 'undefined') {
+                log('ERROR: AndroidBridge no está disponible');
+                return;
+            }
+            
+            log('Desconectando...');
+            AndroidBridge.disconnectPrinter();
+        }
+        
+        // Funciones de etiqueta
+        function generateLabel() {
+            const canvas = document.getElementById('labelCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Limpiar canvas
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Obtener valores de entrada
+            const mainText = document.getElementById('labelText').value;
+            const subText = document.getElementById('labelSubtext').value;
+            const code = document.getElementById('labelCode').value;
+            
+            // Dibujar borde
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+            
+            // Texto principal
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 48px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(mainText, canvas.width / 2, 120);
+            
+            // Texto secundario
+            ctx.font = '32px Arial';
+            ctx.fillText(subText, canvas.width / 2, 200);
+            
+            // Línea divisoria
+            ctx.beginPath();
+            ctx.moveTo(50, 250);
+            ctx.lineTo(canvas.width - 50, 250);
+            ctx.stroke();
+            
+            // Código
+            ctx.font = 'bold 36px monospace';
+            ctx.fillText(code, canvas.width / 2, 320);
+            
+            // Fecha y hora
+            ctx.font = '20px Arial';
+            const now = new Date();
+            const dateStr = now.toLocaleDateString('es-ES');
+            const timeStr = now.toLocaleTimeString('es-ES');
+            ctx.fillText(dateStr + ' ' + timeStr, canvas.width / 2, 400);
+            
+            log('Etiqueta generada');
+        }
+        
+        function printLabel() {
+            if (!isConnected) {
+                log('ERROR: No hay impresora conectada');
+                updateStatus('Error: Conecte una impresora primero', 'error');
+                return;
+            }
+            
+            const canvas = document.getElementById('labelCanvas');
+            
+            // Convertir canvas a base64 (sin el prefijo data:image/png;base64,)
+            const base64Data = canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, '');
+            
+            log('Enviando etiqueta a imprimir...');
+            updateStatus('Imprimiendo...', 'info');
+            
+            try {
+                AndroidBridge.printImage(base64Data);
+            } catch (e) {
+                log('ERROR al imprimir: ' + e.message);
+                updateStatus('Error al imprimir', 'error');
+            }
+        }
+        
+        // Generar etiqueta de ejemplo al cargar
+        window.onload = function() {
+            generateLabel();
+            log('Página cargada. Use "Buscar Impresoras" para comenzar.');
+        };
+    </script>
+</body>
+</html> 

@@ -21,19 +21,23 @@ function printBrotherLabel(labelData, quantity = 1) {
         // Generar canvas con dimensiones Brother TD-4550DNWB
         const canvas = createLabelCanvas(labelData);
         
-        // Convertir a base64
-        const base64Image = canvas.toDataURL('image/png').replace('data:image/png;base64,', '');
+        // Convertir a base64 (sin el prefijo data:image/png;base64,)
+        const base64Image = canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, '');
         
         console.log('Generando etiqueta:', labelData.productName);
         console.log('Cantidad:', quantity);
         console.log('Tamaño canvas:', canvas.width + 'x' + canvas.height);
+        console.log('Base64 generado, longitud:', base64Image.length);
         
-        // Enviar a impresora (una por una)
-        for (let i = 0; i < quantity; i++) {
+        // Enviar a impresora
+        try {
             AndroidBridge.printImage(base64Image);
+            console.log('Etiqueta enviada a impresora Brother TD-4550DNWB');
+            return true;
+        } catch (printError) {
+            console.error('Error al enviar a impresora:', printError);
+            return false;
         }
-        
-        return true;
         
     } catch (error) {
         console.error('Error en printBrotherLabel:', error);

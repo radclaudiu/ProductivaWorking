@@ -321,16 +321,18 @@
         }
     }
     
-    // Configurar callbacks globales para Brother Print
+    // Configurar callbacks globales para Brother Print - Exactamente como especificado
     window.BrotherPrint = {
         onPrintersFound: function(data) {
-            console.log('Impresoras encontradas:', data);
+            console.log('Callback onPrintersFound recibido:', data);
+            mostrarEstado('Impresoras encontradas, procesando...', 'info');
+            
             try {
                 const printers = JSON.parse(data);
                 console.log('Impresoras parseadas:', printers.length);
                 
                 if (printers.length === 0) {
-                    mostrarEstado('No se encontraron impresoras Brother', 'error');
+                    mostrarEstado('No se encontraron impresoras Brother TD-4550DNWB', 'error');
                     return;
                 }
                 
@@ -343,24 +345,37 @@
                 }
             } catch (e) {
                 console.error('Error parseando impresoras:', e);
-                mostrarEstado('Error al procesar lista de impresoras', 'error');
+                mostrarEstado('Error al procesar lista de impresoras: ' + e.message, 'error');
             }
         },
         
         onPrinterConnected: function(data) {
-            console.log('Impresora conectada exitosamente:', data);
+            console.log('Callback onPrinterConnected recibido:', data);
+            
             try {
                 const result = JSON.parse(data);
-                mostrarEstado('Conectado a impresora: ' + result.mac, 'success');
+                mostrarEstado('Conectado exitosamente: ' + result.mac, 'success');
+                console.log('Impresora conectada - MAC:', result.mac);
             } catch (e) {
-                mostrarEstado('Impresora conectada correctamente', 'success');
+                mostrarEstado('Impresora Brother TD-4550DNWB conectada correctamente', 'success');
             }
-            verificarEstadoImpresora();
+            
+            // Actualizar estado después de conexión exitosa
+            setTimeout(() => {
+                verificarEstadoImpresora();
+            }, 500);
         },
         
-        onPrintSuccess: function() {
-            console.log('Impresión exitosa');
-            mostrarEstado('Etiqueta impresa correctamente', 'success');
+        onPrintSuccess: function(data) {
+            console.log('Callback onPrintSuccess recibido:', data);
+            
+            try {
+                const result = JSON.parse(data);
+                mostrarEstado('Impresión completada: ' + result.message, 'success');
+                console.log('Impresión exitosa - Mensaje:', result.message);
+            } catch (e) {
+                mostrarEstado('Etiqueta Brother TD-4550DNWB impresa correctamente', 'success');
+            }
             
             // Si hay más etiquetas pendientes, continuar
             if (etiquetasPendientes > 1) {
@@ -372,37 +387,22 @@
         },
         
         onPrintError: function(data) {
-            console.error('Error de impresión:', data);
+            console.log('Callback onPrintError recibido:', data);
+            
             try {
                 const error = JSON.parse(data);
-                mostrarEstado('Error: ' + error.error, 'error');
+                mostrarEstado('Error de impresión: ' + error.error, 'error');
+                console.log('Error detallado:', error.error);
+                
                 if (error.error.includes('No hay impresora conectada')) {
-                    verificarEstadoImpresora();
+                    setTimeout(() => {
+                        verificarEstadoImpresora();
+                    }, 500);
                 }
             } catch (e) {
                 mostrarEstado('Error de impresión: ' + data, 'error');
             }
             etiquetasPendientes = 0;
-        },
-        
-        onStatusUpdate: function(data) {
-            console.log('Estado actualizado:', data);
-            try {
-                const status = JSON.parse(data);
-                if (status.connected) {
-                    mostrarEstado('Impresora conectada y lista', 'success');
-                } else {
-                    mostrarEstado('Impresora no conectada', 'warning');
-                }
-            } catch (e) {
-                console.error('Error parseando estado:', e);
-            }
-        },
-        
-        onPrinterDisconnected: function(data) {
-            console.log('Impresora desconectada:', data);
-            mostrarEstado('Impresora desconectada', 'warning');
-            verificarEstadoImpresora();
         }
     };
 
@@ -471,10 +471,11 @@
         }
         
         try {
-            // Usar el método que activa el callback onStatusUpdate
+            // Usar AndroidBridge.getPrinterStatus() exactamente como especificado
+            console.log('Llamando AndroidBridge.getPrinterStatus()');
             AndroidBridge.getPrinterStatus();
             
-            // También intentar obtener estado sincrónico si está disponible
+            // Intentar obtener estado sincrónico si está disponible
             try {
                 const status = JSON.parse(AndroidBridge.getPrinterStatus());
                 if (status.connected) {
@@ -544,12 +545,24 @@
 
     function buscarImpresoras() {
         if (typeof AndroidBridge === 'undefined') {
-            alert('Esta función solo está disponible en la aplicación Android');
+            mostrarEstado('AndroidBridge no disponible - Ejecutar en aplicación Android', 'error');
             return;
         }
         
-        mostrarEstado('Buscando impresoras Brother...', 'info');
+        console.log('Llamando AndroidBridge.searchPrinters()');
+        mostrarEstado('Buscando impresoras Brother TD-4550DNWB...', 'info');
         AndroidBridge.searchPrinters();
+    }
+
+    function desconectarImpresora() {
+        if (typeof AndroidBridge === 'undefined') {
+            mostrarEstado('AndroidBridge no disponible', 'error');
+            return;
+        }
+
+        console.log('Llamando AndroidBridge.disconnectPrinter()');
+        mostrarEstado('Desconectando impresora Brother...', 'info');
+        AndroidBridge.disconnectPrinter();
     }
 
     function enviarEtiquetaPrueba() {
@@ -573,11 +586,12 @@
         };
 
         try {
-            // Generar canvas de prueba
+            // Generar canvas de prueba usando el script brother-simple-print.js
             const canvas = createLabelCanvas(datosEtiquetaPrueba);
             const base64 = canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, '');
             
-            console.log('Enviando etiqueta de prueba...');
+            console.log('Llamando AndroidBridge.printImage() con etiqueta de prueba');
+            console.log('Base64 generado, longitud:', base64.length);
             mostrarEstado('Enviando etiqueta de prueba a Brother TD-4550DNWB...', 'info');
             
             AndroidBridge.printImage(base64);

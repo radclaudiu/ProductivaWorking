@@ -133,8 +133,12 @@
     
     // Función para imprimir etiquetas directamente
     function printLabels(productId, conservationType) {
+        console.log('printLabels llamada con:', productId, conservationType);
+        
         const quantityElement = document.getElementById('quantity-' + conservationType);
         const quantity = parseInt(quantityElement.textContent);
+        
+        console.log('Cantidad seleccionada:', quantity);
         
         // Mostrar indicador de carga
         const button = event.target;
@@ -155,25 +159,37 @@
                 'quantity': quantity
             })
         })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                // Mostrar mensaje de éxito
-                showMessage('Etiquetas enviadas a la impresora Brother TD-4550DNWB', 'success');
-                
-                // Resetear cantidad a 1
-                quantityElement.textContent = '1';
-                
-                // Opcional: Regresar a la lista de productos después de un breve delay
-                setTimeout(() => {
-                    window.location.href = '{{ url_for("tasks.local_user_labels") }}';
-                }, 2000);
-            } else {
-                showMessage('Error: ' + data.message, 'error');
+        .then(response => {
+            console.log('Respuesta HTTP:', response.status, response.statusText);
+            return response.text();
+        })
+        .then(text => {
+            console.log('Respuesta del servidor:', text);
+            try {
+                const data = JSON.parse(text);
+                console.log('JSON parseado:', data);
+                if (data.success) {
+                    // Mostrar mensaje de éxito
+                    showMessage('Etiquetas enviadas a la impresora Brother TD-4550DNWB', 'success');
+                    
+                    // Resetear cantidad a 1
+                    quantityElement.textContent = '1';
+                    
+                    // Opcional: Regresar a la lista de productos después de un breve delay
+                    setTimeout(() => {
+                        window.location.href = '{{ url_for("tasks.local_user_labels") }}';
+                    }, 2000);
+                } else {
+                    showMessage('Error: ' + data.message, 'error');
+                }
+            } catch (e) {
+                console.error('Error parseando JSON:', e);
+                console.log('Respuesta recibida no es JSON válido:', text);
+                showMessage('Error: Respuesta del servidor no válida', 'error');
             }
         })
         .catch(error => {
-            console.error('Error:', error);
+            console.error('Error en fetch:', error);
             showMessage('Error de conexión al imprimir etiquetas', 'error');
         })
         .finally(() => {

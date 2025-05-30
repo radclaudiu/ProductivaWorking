@@ -358,37 +358,16 @@
         let currentQuantity = 1;
         let isAndroidApp = typeof AndroidBridge !== 'undefined';
         
-        // Callbacks globales para Brother Print
+        // Callbacks globales simplificados para Brother Print
         window.BrotherPrint = {
-            onPrintersFound: function(printersJsonString) {
-                console.log('Impresoras encontradas:', printersJsonString);
-                try {
-                    const printers = JSON.parse(printersJsonString);
-                    if (printers.length > 0) {
-                        AndroidBridge.connectPrinter(printers[0].address);
-                        showMessage('Conectando con ' + printers[0].name + '...', false);
-                    } else {
-                        showMessage('No se encontraron impresoras Brother', true);
-                    }
-                } catch (e) {
-                    showMessage('Error al procesar lista de impresoras', true);
-                }
-            },
-            
-            onPrinterConnected: function() {
-                console.log('Impresora conectada exitosamente');
-                showMessage('Impresora conectada. Iniciando impresión...', false);
-                imprimirEtiquetas();
-            },
-            
             onPrintSuccess: function() {
                 console.log('Impresión exitosa');
-                showMessage('Etiqueta impresa correctamente', false);
+                showMessage('Etiquetas enviadas correctamente a la impresora', false);
             },
             
             onPrintError: function(errorMessage) {
                 console.error('Error de impresión:', errorMessage);
-                showMessage('Error: ' + errorMessage, true);
+                showMessage('Error de impresión: ' + errorMessage, true);
             }
         };
         
@@ -447,48 +426,64 @@
                 const printBtn = document.getElementById('brother-print-btn');
                 if (printBtn) {
                     printBtn.addEventListener('click', function() {
-                        if (!isAndroidApp) {
+                        // Verificar si estamos en Android
+                        if (typeof AndroidBridge === 'undefined') {
                             showMessage('Esta función solo está disponible en la aplicación Android', true);
+                            return;
+                        }
+                        
+                        // Verificar que el método printImage existe
+                        if (typeof AndroidBridge.printImage !== 'function') {
+                            showMessage('Método de impresión no disponible', true);
                             return;
                         }
                         
                         showMessage('Preparando impresión de ' + currentQuantity + ' etiqueta(s)...', false);
                         
-                        // Verificar estado de impresora y buscar si es necesario
-                        try {
-                            const status = JSON.parse(AndroidBridge.getPrinterStatus());
-                            if (status.connected) {
-                                imprimirEtiquetas();
-                            } else {
-                                showMessage('Buscando impresora Brother...', false);
-                                AndroidBridge.searchPrinters();
-                            }
-                        } catch (e) {
-                            showMessage('Buscando impresora Brother...', false);
-                            AndroidBridge.searchPrinters();
-                        }
+                        // Imprimir directamente
+                        imprimirEtiquetas();
                     });
                 }
             }
             
             // Función para imprimir las etiquetas
             function imprimirEtiquetas() {
-                const labelData = getLabelData();
-                if (!labelData) {
-                    showMessage('Error al obtener datos de la etiqueta', true);
-                    return;
-                }
-                
-                for (let i = 0; i < currentQuantity; i++) {
-                    setTimeout(() => {
-                        const canvas = generateLabelCanvas(labelData);
-                        const base64 = canvas.toDataURL('image/png').replace('data:image/png;base64,', '');
-                        AndroidBridge.printImage(base64);
+                try {
+                    const labelData = getLabelData();
+                    if (!labelData) {
+                        showMessage('Error al obtener datos de la etiqueta', true);
+                        return;
+                    }
+                    
+                    // Generar canvas con los datos de la etiqueta
+                    const canvas = generateLabelCanvas(labelData);
+                    const base64 = canvas.toDataURL('image/png').replace('data:image/png;base64,', '');
+                    
+                    console.log('Datos de etiqueta generados:', labelData);
+                    console.log('Canvas generado, tamaño:', canvas.width + 'x' + canvas.height);
+                    
+                    // Verificar que AndroidBridge tenga el método printImage
+                    if (typeof AndroidBridge.printImage === 'function') {
+                        showMessage(`Enviando ${currentQuantity} etiqueta(s) a impresora Brother...`, false);
                         
-                        if (i === 0) {
-                            showMessage(`Imprimiendo ${currentQuantity} etiqueta(s)...`, false);
+                        // Imprimir cada etiqueta
+                        for (let i = 0; i < currentQuantity; i++) {
+                            AndroidBridge.printImage(base64);
                         }
-                    }, i * 1000); // Delay de 1 segundo entre etiquetas
+                        
+                        // Mostrar mensaje de éxito después de un breve delay
+                        setTimeout(() => {
+                            showMessage(`${currentQuantity} etiqueta(s) enviada(s) correctamente`, false);
+                        }, 1000);
+                        
+                    } else {
+                        showMessage('Error: Método de impresión no disponible en AndroidBridge', true);
+                        console.error('AndroidBridge.printImage no está disponible');
+                    }
+                    
+                } catch (error) {
+                    console.error('Error en impresión:', error);
+                    showMessage('Error de impresión: ' + error.toString(), true);
                 }
             }
             

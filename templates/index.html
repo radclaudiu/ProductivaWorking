@@ -180,8 +180,17 @@
                         {{ form.remember_me(class="form-check-input") }}
                         {{ form.remember_me.label(class="form-check-label") }}
                     </div>
+                    <div class="mb-3 form-check">
+                        {{ form.accept_privacy(class="form-check-input", required=true) }}
+                        <label class="form-check-label" for="accept_privacy">
+                            Acepto la <a href="{{ url_for('auth.privacy_policy') }}" target="_blank" class="text-primary">política de privacidad y protección de datos</a>
+                        </label>
+                        {% for error in form.accept_privacy.errors %}
+                            <div class="text-danger">{{ error }}</div>
+                        {% endfor %}
+                    </div>
                     <div class="d-grid gap-2">
-                        {{ form.submit(class="btn btn-primary") }}
+                        {{ form.submit(class="btn btn-primary", id="loginSubmitIndex") }}
                     </div>
                 </form>
                 
@@ -367,6 +376,21 @@
         // Habilitar funcionalidad de mostrar/ocultar contraseña
         if (typeof togglePasswordVisibility === 'function') {
             togglePasswordVisibility('password', 'togglePassword');
+        }
+        
+        // Validación del formulario de login en la página principal
+        const form = document.querySelector('form[action*="main.index"]');
+        const privacyCheckbox = document.getElementById('accept_privacy');
+        
+        if (form && privacyCheckbox) {
+            form.addEventListener('submit', function(e) {
+                if (!privacyCheckbox.checked) {
+                    e.preventDefault();
+                    alert('Debe aceptar la política de privacidad y protección de datos para continuar.');
+                    privacyCheckbox.focus();
+                    return false;
+                }
+            });
         }
         
         // Gestión de la instalación PWA

@@ -11,8 +11,16 @@ window.BrotherPrint = {
     // Se llama cuando se encuentran impresoras
     onPrintersFound: function(printersJsonString) {
         const printers = JSON.parse(printersJsonString);
-        // printers = [{ name: "Brother TD-4550DNWB", address: "XX:XX:XX:XX:XX:XX" }]
-        console.log('Impresoras encontradas:', printers);
+        if (printers.length > 0) {
+            // Mostrar lista al usuario o conectar automáticamente
+            printers.forEach(printer => {
+                console.log(`Encontrada: ${printer.name} - ${printer.address}`);
+            });
+            
+            // Conectar a la primera
+            AndroidBridge.connectPrinter(printers[0].address);
+        }
+        
         if (brotherBridge) {
             brotherBridge.handlePrintersFound(printersJsonString);
         }
@@ -56,13 +64,7 @@ class BrotherPrintBridge {
         this.availablePrinters = [];
         this.isSearching = false;
         
-        // Configurar callbacks globales para comunicación con Android
-        window.BrotherPrint = {
-            onPrintersFound: (printersJson) => this.handlePrintersFound(printersJson),
-            onPrinterConnected: () => this.handlePrinterConnected(),
-            onPrintSuccess: () => this.handlePrintSuccess(),
-            onPrintError: (error) => this.handlePrintError(error)
-        };
+        // Los callbacks globales ya están definidos arriba
         
         console.log("Brother Print Bridge inicializado", {
             isAndroidApp: this.isAndroidApp,
@@ -285,7 +287,12 @@ class BrotherPrintBridge {
             this.availablePrinters = JSON.parse(printersJson);
             this.isSearching = false;
             console.log("Impresoras encontradas:", this.availablePrinters);
-            this.showPrinterSelection();
+            
+            // Flujo de primera conexión automática - ya implementado en window.BrotherPrint.onPrintersFound
+            // Este método es para compatibilidad con el bridge interno
+            if (this.availablePrinters.length === 0) {
+                this.showMessage('No se encontraron impresoras Brother TD-4550DNWB disponibles', true);
+            }
         } catch (e) {
             console.error('Error parsing printers:', e);
             this.showMessage('Error al procesar lista de impresoras', true);

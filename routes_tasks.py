@@ -2865,6 +2865,11 @@ def api_get_printers(location_id):
         'printers': printer_list
     })
 
+@tasks_bp.route('/test-label')
+def test_label():
+    """Página de test simple para impresora Brother TD-4550DNWB."""
+    return render_template('test_laber.html')
+
 
 @tasks_bp.route('/api/printer/<int:printer_id>')
 @login_required

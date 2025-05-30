@@ -188,19 +188,28 @@
                     
                     console.log('🖨️ Enviando etiqueta a la impresora Brother TD-4550DNWB...');
                     
-                    // Imprimir las etiquetas según la cantidad solicitada
-                    for (let i = 0; i < quantity; i++) {
-                        setTimeout(() => {
+                    // Función para imprimir etiquetas secuencialmente con mayor delay
+                    const printSequentially = async () => {
+                        for (let i = 0; i < quantity; i++) {
                             console.log(`🏷️ Imprimiendo etiqueta ${i + 1} de ${quantity}`);
                             try {
                                 // Enviar imagen a la impresora (sin el prefijo data:image/png;base64,)
                                 AndroidBridge.printImage(data.label_image);
                                 console.log(`✅ Etiqueta ${i + 1} enviada correctamente`);
+                                
+                                // Esperar más tiempo entre etiquetas (especialmente importante para múltiples impresiones)
+                                if (i < quantity - 1) {
+                                    await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5 segundos entre etiquetas
+                                }
                             } catch (printError) {
                                 console.error(`❌ Error imprimiendo etiqueta ${i + 1}:`, printError);
+                                break; // Detener si hay error
                             }
-                        }, i * 500); // Delay de 500ms entre etiquetas
-                    }
+                        }
+                    };
+                    
+                    // Ejecutar la impresión secuencial
+                    printSequentially();
                     
                     // Mostrar mensaje de éxito
                     showMessage(`${quantity} etiqueta(s) enviadas a la impresora Brother TD-4550DNWB`, 'success');

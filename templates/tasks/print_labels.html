@@ -315,9 +315,7 @@
     <!-- Script para Raspberry Pi Print Server -->
     <script src="/static/js/raspberry-print-server.js"></script>
     <!-- Script para la app Android nativa con Brother -->
-    <script src="/static/js/brother-android-native.js"></script>
-    <!-- Script para impresión directa a Brother TD-4550DNWB y autoretorno -->
-    <script src="/static/js/brother-direct-print.js"></script>
+    <script src="/static/js/brother-simple-print.js"></script>
     
     <!-- Script para mejorar rendimiento táctil en tablets -->
     <script>
@@ -448,42 +446,13 @@
             
             // Función para imprimir las etiquetas
             function imprimirEtiquetas() {
-                try {
-                    const labelData = getLabelData();
-                    if (!labelData) {
-                        showMessage('Error al obtener datos de la etiqueta', true);
-                        return;
-                    }
-                    
-                    // Generar canvas con los datos de la etiqueta
-                    const canvas = generateLabelCanvas(labelData);
-                    const base64 = canvas.toDataURL('image/png').replace('data:image/png;base64,', '');
-                    
-                    console.log('Datos de etiqueta generados:', labelData);
-                    console.log('Canvas generado, tamaño:', canvas.width + 'x' + canvas.height);
-                    
-                    // Verificar que AndroidBridge tenga el método printImage
-                    if (typeof AndroidBridge.printImage === 'function') {
-                        showMessage(`Enviando ${currentQuantity} etiqueta(s) a impresora Brother...`, false);
-                        
-                        // Imprimir cada etiqueta
-                        for (let i = 0; i < currentQuantity; i++) {
-                            AndroidBridge.printImage(base64);
-                        }
-                        
-                        // Mostrar mensaje de éxito después de un breve delay
-                        setTimeout(() => {
-                            showMessage(`${currentQuantity} etiqueta(s) enviada(s) correctamente`, false);
-                        }, 1000);
-                        
-                    } else {
-                        showMessage('Error: Método de impresión no disponible en AndroidBridge', true);
-                        console.error('AndroidBridge.printImage no está disponible');
-                    }
-                    
-                } catch (error) {
-                    console.error('Error en impresión:', error);
-                    showMessage('Error de impresión: ' + error.toString(), true);
+                const labelData = getLabelData();
+                const success = printBrotherLabel(labelData, currentQuantity);
+                
+                if (success) {
+                    showMessage(`${currentQuantity} etiqueta(s) enviada(s) a la impresora Brother`, false);
+                } else {
+                    showMessage('Error al enviar etiquetas a la impresora', true);
                 }
             }
             

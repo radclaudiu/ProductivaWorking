@@ -333,17 +333,14 @@ def create_manual_record(slug):
             # Si hay hora de salida, actualizar las horas trabajadas
             if check_out_datetime:
                 # Importar la función update_employee_work_hours
-                from utils_work_hours import update_employee_work_hours, calculate_hours_worked
-                
-                # Calcular las horas trabajadas
-                hours_worked = calculate_hours_worked(record.check_in_time, record.check_out_time)
+                from utils_work_hours import update_employee_work_hours
                 
                 # Actualizar las horas trabajadas para este empleado
-                update_employee_work_hours(record.employee_id, record.check_in_time, hours_worked)
+                update_employee_work_hours(record.employee_id, record.check_in_time, record.check_out_time)
             
             flash(f'{message_type} creado correctamente', 'success')
-            # Redirigir de vuelta a la página de la empresa
-            return redirect(url_for('checkpoints.index_company', slug=slug))
+            # Siempre redirigir a la vista de registros originales después de crear el registro
+            return redirect(url_for('checkpoints_slug.view_original_records', slug=slug))
         
         return render_template('checkpoints/create_manual_record.html', form=form, company=company)
     

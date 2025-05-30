@@ -331,7 +331,7 @@ class EmployeeContractHours(db.Model):
         """Comprueba si una duración de horas supera el máximo diario"""
         return duration_hours > self.daily_hours
     
-    def calculate_adjusted_hours(self, check_in_time, check_out_time, employee_id=None):
+    def calculate_adjusted_hours(self, check_in_time, check_out_time):
         """Calcula el tiempo ajustado según el contrato y configuración"""
         if not check_out_time:
             return None, None
@@ -415,10 +415,5 @@ class EmployeeContractHours(db.Model):
             new_check_out_time = adjusted_in + timedelta(hours=max_hours, minutes=random_minutes)
             
             return adjusted_in, new_check_out_time
-        
-        # 5. Control de límite semanal (temporalmente deshabilitado por importaciones circulares)
-        # TODO: Reactivar cuando se resuelvan las importaciones circulares
-        # if employee_id and self.weekly_hours > 0:
-        #     # Lógica de control semanal aquí
             
         return adjusted_in, adjusted_out

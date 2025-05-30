@@ -266,16 +266,9 @@
                             </div>
                         </div>
                         <div class="mt-auto">
-                            <div class="d-grid gap-2">
-                                <a href="{{ url_for('tasks.product_conservation_selection', product_id=product.id) }}" class="btn btn-primary">
-                                    <i class="bi bi-tag-fill me-2"></i>Generar Etiqueta
-                                </a>
-                                <button type="button" class="btn btn-success brother-print-btn" 
-                                        data-product-id="{{ product.id }}" 
-                                        data-product-name="{{ product.name }}">
-                                    <i class="bi bi-printer-fill me-2"></i>Mandar a Brother
-                                </button>
-                            </div>
+                            <a href="{{ url_for('tasks.product_conservation_selection', product_id=product.id) }}" class="btn btn-primary w-100">
+                                <i class="bi bi-tag-fill me-2"></i>Generar Etiqueta
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -806,132 +799,6 @@
                 </div>
             `;
         }
-    }
-    
-    // Función para manejar los botones "Mandar a Brother"
-    document.addEventListener('DOMContentLoaded', function() {
-        const brotherButtons = document.querySelectorAll('.brother-print-btn');
-        
-        brotherButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const productId = this.getAttribute('data-product-id');
-                const productName = this.getAttribute('data-product-name');
-                
-                // Mostrar modal de selección de tipo de conservación
-                showConservationTypeModal(productId, productName);
-            });
-        });
-    });
-    
-    // Función para mostrar modal de selección de tipo de conservación
-    function showConservationTypeModal(productId, productName) {
-        // Crear el modal dinámicamente
-        const modalHtml = `
-            <div id="conservationModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 2000; background: rgba(0,0,0,0.5);">
-                <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 20px; border-radius: 8px; max-width: 400px; width: 90%;">
-                    <h5><i class="bi bi-printer-fill me-2"></i>Imprimir en Brother TD-4550DNWB</h5>
-                    <p><strong>Producto:</strong> ${productName}</p>
-                    <div class="mb-3">
-                        <label class="form-label">Tipo de conservación:</label>
-                        <select id="conservationTypeSelect" class="form-select">
-                            <option value="descongelacion">Descongelación</option>
-                            <option value="refrigeracion">Refrigeración</option>
-                            <option value="gastro">Gastro</option>
-                            <option value="caliente">Caliente</option>
-                            <option value="seco">Seco</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Cantidad:</label>
-                        <select id="quantitySelect" class="form-select">
-                            <option value="1" selected>1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="10">10</option>
-                        </select>
-                    </div>
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-secondary" onclick="closeConservationModal()">Cancelar</button>
-                        <button type="button" class="btn btn-success" onclick="sendToBrother(${productId}, '${productName}')">
-                            <i class="bi bi-printer-fill me-1"></i>Enviar a Brother
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        // Agregar modal al DOM
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-    }
-    
-    // Función para cerrar el modal de conservación
-    function closeConservationModal() {
-        const modal = document.getElementById('conservationModal');
-        if (modal) {
-            modal.remove();
-        }
-    }
-    
-    // Función para enviar directamente a la impresora Brother
-    function sendToBrother(productId, productName) {
-        const conservationType = document.getElementById('conservationTypeSelect').value;
-        const quantity = document.getElementById('quantitySelect').value;
-        
-        // Mostrar estado de procesamiento
-        const sendButton = document.querySelector('#conservationModal .btn-success');
-        if (sendButton) {
-            sendButton.innerHTML = '<i class="bi bi-hourglass-split me-1"></i>Procesando...';
-            sendButton.disabled = true;
-        }
-        
-        // Crear formulario y enviarlo a la ruta de generación de etiquetas
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/tasks/local-user/generate-labels';
-        form.target = '_blank'; // Abrir en nueva ventana
-        
-        // Agregar campos ocultos
-        const fields = {
-            'product_id': productId,
-            'conservation_type': conservationType,
-            'quantity': quantity,
-            'autoprint': 'true' // Parámetro para activar impresión automática
-        };
-        
-        for (const [name, value] of Object.entries(fields)) {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = name;
-            input.value = value;
-            form.appendChild(input);
-        }
-        
-        // Agregar formulario al DOM y enviarlo
-        document.body.appendChild(form);
-        form.submit();
-        document.body.removeChild(form);
-        
-        // Cerrar modal después de un momento
-        setTimeout(() => {
-            closeConservationModal();
-            
-            // Mostrar mensaje de éxito
-            const successMessage = document.getElementById('print-success-message');
-            if (successMessage) {
-                successMessage.style.display = 'block';
-                successMessage.innerHTML = `
-                    <i class="bi bi-check-circle-fill me-2"></i>
-                    <strong>¡Enviado a Brother TD-4550DNWB!</strong> ${quantity} etiqueta(s) de "${productName}" enviadas para impresión.
-                `;
-                
-                // Ocultar mensaje después de 5 segundos
-                setTimeout(() => {
-                    successMessage.style.display = 'none';
-                }, 5000);
-            }
-        }, 1000);
     }
 </script>
 {% endblock %}

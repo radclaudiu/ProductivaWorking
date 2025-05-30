@@ -13,7 +13,7 @@ from app import db
 from models import (User, Company, Employee, EmployeeDocument, EmployeeNote, UserRole, 
                    ContractType, EmployeeStatus, EmployeeSchedule, EmployeeCheckIn, 
                    EmployeeVacation, VacationStatus, WeekDay)
-# from models_checkpoints import CheckPoint  # Moved inside function to avoid circular import
+from models_checkpoints import CheckPoint
 from forms import (LoginForm, RegistrationForm, UserUpdateForm, PasswordChangeForm, 
                   CompanyForm, EmployeeForm, EmployeeDocumentForm, EmployeeNoteForm, SearchForm,
                   EmployeeStatusForm, EmployeeScheduleForm, EmployeeWeeklyScheduleForm, EmployeeCheckInForm, 
@@ -716,8 +716,6 @@ def create_employee():
         
         # Asignar automáticamente el empleado a todos los puntos de fichaje de su empresa
         try:
-            # Importar aquí para evitar circular imports
-            from models_checkpoints import CheckPoint
             # Obtener todos los puntos de fichaje de la empresa
             checkpoints = CheckPoint.query.filter_by(company_id=employee.company_id).all()
             if checkpoints:

@@ -571,13 +571,10 @@ def create_manual_record(slug):
             # Si hay hora de salida, actualizar las horas trabajadas
             if check_out_datetime:
                 # Importar la función update_employee_work_hours
-                from utils_work_hours import update_employee_work_hours, calculate_hours_worked
-                
-                # Calcular las horas trabajadas
-                hours_worked = calculate_hours_worked(record.check_in_time, record.check_out_time)
+                from utils_work_hours import update_employee_work_hours
                 
                 # Actualizar las horas trabajadas para este empleado
-                update_employee_work_hours(record.employee_id, record.check_in_time, hours_worked)
+                update_employee_work_hours(record.employee_id, record.check_in_time, record.check_out_time)
             
             flash(f'{message_type} creado correctamente', 'success')
             return redirect(url_for('checkpoints.index_company', slug=slug))
@@ -917,24 +914,16 @@ def adjust_record(id):
             contract_hours = EmployeeContractHours.query.filter_by(employee_id=record.employee_id).first()
             
             if contract_hours:
-                # Ajustar el fichaje según las horas de contrato (incluye control semanal)
+                # Ajustar el fichaje según las horas de contrato
                 new_check_in, new_check_out = contract_hours.calculate_adjusted_hours(
-                    record.check_in_time, record.check_out_time, record.employee_id
+                    record.check_in_time, record.check_out_time
                 )
-                
-                # Control semanal temporalmente deshabilitado (por reorganización de importaciones)
-                # if new_check_in is None and new_check_out is None:
-                #     flash('Error: El ajuste propuesto excede el límite semanal de horas. El registro no se ha modificado.', 'error')
-                #     return render_template('checkpoints/adjust_record_form.html', form=form, record=record)
                 
                 if new_check_in and new_check_in != record.check_in_time:
                     record.check_in_time = new_check_in
                     
-                if new_check_out and new_check_out != record.check_out_time:
-                    record.check_out_time = new_check_out
-                    
                     # Marcar con R en lugar de crear incidencia por ajuste de contrato
-                    record.notes = (record.notes or "") + " [R] Ajustado para cumplir límites de horas."
+                    record.notes = (record.notes or "") + " [R] Ajustado para cumplir límite de horas."
         
         try:
             db.session.commit()
@@ -971,41 +960,6 @@ def record_signature(id):
         
         try:
             db.session.commit()
-            
-            # VERIFICACIÓN SEMANAL DESPUÉS DE CONFIRMAR FIRMA
-            # Solo para registros que tienen hora de salida (fichajes completos)
-            if record.check_out_time:
-                from utils_work_hours import apply_weekly_hours_control
-                
-                cumple_limite, info_verificacion = apply_weekly_hours_control(
-                    record.employee_id, record.check_in_time, record.check_out_time
-                )
-                
-                if not cumple_limite:
-                    print(f"🚫 LÍMITE SEMANAL EXCEDIDO DESPUÉS DE FIRMA: Empleado ID {record.employee_id}")
-                    print(f"   Razón: {info_verificacion.get('razon', 'Límite semanal alcanzado')}")
-                    print(f"   ACCIÓN: Eliminando fichaje principal (conservando registro original)")
-                    
-                    # Marcar empleado como fuera de turno
-                    employee = record.employee
-                    employee.is_on_shift = False
-                    db.session.add(employee)
-                    
-                    # Eliminar el registro principal (pero conservar el original para auditoría)
-                    db.session.delete(record)
-                    db.session.commit()
-                    
-                    flash(f'Fichaje cancelado después de firmar: {info_verificacion.get("razon", "límite semanal de horas alcanzado")}. Has sido marcado como fuera de turno. El registro original se conserva para auditoría.', 'warning')
-                    
-                    # Redireccionar según el tipo de usuario
-                    if is_admin_or_manager:
-                        return redirect(url_for('checkpoints.select_company'))
-                    else:
-                        return redirect(url_for('main.dashboard'))
-                else:
-                    print(f"✅ VERIFICACIÓN SEMANAL APROBADA: Empleado ID {record.employee_id}")
-                    print(f"   Razón: {info_verificacion.get('razon', 'Dentro del límite semanal')}")
-            
             flash('Firma guardada con éxito.', 'success')
             
             # Redireccionar según el tipo de usuario
@@ -1828,7 +1782,7 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
             original_checkin = pending_record.check_in_time  # Esta es la hora original de entrada
             original_checkout = current_time_for_storage  # Esta es la hora real de salida sin timezone
             
-            # Actualizar la hora de salida
+            # Actualizar primero la hora de salida con la hora real
             pending_record.check_out_time = original_checkout
             db.session.add(pending_record)
             db.session.flush()  # Aseguramos que pending_record tenga todos sus campos actualizados
@@ -1860,12 +1814,12 @@ def process_employee_action(employee, checkpoint_id, action, pending_record):
                 )
                 db.session.add(original_record)
             
-            # 3. Verificar configuración de horas de contrato para ajustes
+            # 2. Verificar configuración de horas de contrato
             contract_hours = EmployeeContractHours.query.filter_by(employee_id=employee.id).first()
             if contract_hours:
                 # Verificar si se debe ajustar el horario según configuración
                 adjusted_checkin, adjusted_checkout = contract_hours.calculate_adjusted_hours(
-                    original_checkin, original_checkout, employee.id
+                    original_checkin, original_checkout
                 )
                 
                 # Verificar si hay ajustes a realizar
@@ -2167,26 +2121,10 @@ def record_checkout(id):
         # 2. Verificar configuración de horas de contrato
         contract_hours = EmployeeContractHours.query.filter_by(employee_id=employee.id).first()
         if contract_hours:
-            # Verificar si se debe ajustar el horario según configuración (incluye control semanal)
+            # Verificar si se debe ajustar el horario según configuración
             adjusted_checkin, adjusted_checkout = contract_hours.calculate_adjusted_hours(
-                original_checkin, original_checkout, employee.id
+                original_checkin, original_checkout
             )
-            
-            # Control semanal temporalmente deshabilitado (por reorganización de importaciones)
-            # if adjusted_checkin is None and adjusted_checkout is None:
-            #     # Eliminar el fichaje por límite semanal, pero mantener el registro original
-            #     db.session.delete(record)
-            #     employee.is_on_shift = False
-            #     db.session.add(employee)
-            #     
-            #     # Confirmar transacción
-            #     db.session.commit()
-            #     
-            #     print(f"🚫 FICHAJE ELIMINADO (pantalla detalles): Empleado ID {employee.id} - Límite semanal alcanzado")
-            #     print(f"   Registro original conservado para auditoría")
-            #     
-            #     flash('Fichaje cancelado: límite semanal de horas alcanzado. Registro original conservado para auditoría.', 'warning')
-            #     return redirect(url_for('checkpoints.checkpoint_dashboard'))
             
             # Verificar si hay ajustes a realizar
             needs_adjustment = (adjusted_checkin and adjusted_checkin != original_checkin) or \

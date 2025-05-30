@@ -16,7 +16,7 @@ from models_tasks import (Location, LocalUser, Task, TaskSchedule, TaskCompletio
                          TaskFrequency, TaskStatus, WeekDay, TaskGroup, TaskWeekday, TaskMonthDay,
                          Product, ProductConservation, ProductLabel, ConservationType, LabelTemplate,
                          NetworkPrinter, TaskInstance)
-# from models_checkpoints import CheckPointStatus  # Moved inside function to avoid circular import
+from models_checkpoints import CheckPointStatus
 from models_access import LocationAccessToken
 from forms_tasks import (LocationForm, LocalUserForm, TaskForm, DailyScheduleForm, WeeklyScheduleForm, 
                         MonthlyScheduleForm, BiweeklyScheduleForm, TaskCompletionForm, 

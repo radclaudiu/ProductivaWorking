@@ -321,6 +321,11 @@
         }
     }
     
+    // Variables globales para estado
+    let printerConnected = false;
+    let printerName = '';
+    let printerAddress = '';
+    
     // Configurar callbacks globales para Brother Print - Exactamente como especificado
     window.BrotherPrint = {
         onPrintersFound: function(data) {
@@ -333,6 +338,7 @@
                 
                 if (printers.length === 0) {
                     mostrarEstado('No se encontraron impresoras Brother TD-4550DNWB', 'error');
+                    actualizarEstadoUI(false, '', '');
                     return;
                 }
                 
@@ -346,6 +352,7 @@
             } catch (e) {
                 console.error('Error parseando impresoras:', e);
                 mostrarEstado('Error al procesar lista de impresoras: ' + e.message, 'error');
+                actualizarEstadoUI(false, '', '');
             }
         },
         
@@ -354,16 +361,20 @@
             
             try {
                 const result = JSON.parse(data);
-                mostrarEstado('Conectado exitosamente: ' + result.mac, 'success');
-                console.log('Impresora conectada - MAC:', result.mac);
+                printerConnected = true;
+                printerAddress = result.mac || '';
+                printerName = result.name || 'Brother TD-4550DNWB';
+                
+                mostrarEstado('Conectado exitosamente: ' + printerAddress, 'success');
+                console.log('Impresora conectada - MAC:', printerAddress);
+                
+                actualizarEstadoUI(true, printerName, printerAddress);
             } catch (e) {
+                printerConnected = true;
+                printerName = 'Brother TD-4550DNWB';
                 mostrarEstado('Impresora Brother TD-4550DNWB conectada correctamente', 'success');
+                actualizarEstadoUI(true, printerName, '');
             }
-            
-            // Actualizar estado después de conexión exitosa
-            setTimeout(() => {
-                verificarEstadoImpresora();
-            }, 500);
         },
         
         onPrintSuccess: function(data) {
@@ -395,9 +406,8 @@
                 console.log('Error detallado:', error.error);
                 
                 if (error.error.includes('No hay impresora conectada')) {
-                    setTimeout(() => {
-                        verificarEstadoImpresora();
-                    }, 500);
+                    printerConnected = false;
+                    actualizarEstadoUI(false, '', '');
                 }
             } catch (e) {
                 mostrarEstado('Error de impresión: ' + data, 'error');
@@ -449,14 +459,63 @@
         }
     });
 
-    function verificarEstadoImpresora() {
+    // Función para actualizar la UI con el estado de la impresora
+    function actualizarEstadoUI(conectada, nombre, direccion) {
         const statusElement = document.getElementById('printerStatus');
         const badgeElement = document.getElementById('printerStatusBadge');
         const statusBarElement = document.getElementById('printer-status-bar');
         const badgeBarElement = document.getElementById('printer-badge-bar');
         
+        if (conectada) {
+            const mensaje = `Conectada: ${nombre}${direccion ? ' (' + direccion + ')' : ''}`;
+            const mensajeCorto = `Conectada: ${nombre}`;
+            
+            if (statusElement) {
+                statusElement.textContent = mensaje;
+                statusElement.style.color = '#28a745';
+            }
+            if (statusBarElement) {
+                statusBarElement.textContent = mensajeCorto;
+                statusBarElement.style.color = '#28a745';
+            }
+            if (badgeElement) {
+                badgeElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> Conectada';
+                badgeElement.className = 'badge bg-success me-1';
+            }
+            if (badgeBarElement) {
+                badgeBarElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> Conectada';
+                badgeBarElement.className = 'badge bg-success me-2';
+            }
+        } else {
+            const mensaje = 'No conectada (buscar impresoras)';
+            
+            if (statusElement) {
+                statusElement.textContent = mensaje;
+                statusElement.style.color = '#dc3545';
+            }
+            if (statusBarElement) {
+                statusBarElement.textContent = 'No conectada';
+                statusBarElement.style.color = '#dc3545';
+            }
+            if (badgeElement) {
+                badgeElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> No conectada';
+                badgeElement.className = 'badge bg-danger me-1';
+            }
+            if (badgeBarElement) {
+                badgeBarElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> No conectada';
+                badgeBarElement.className = 'badge bg-danger me-2';
+            }
+        }
+    }
+
+    function verificarEstadoImpresora() {
         if (typeof AndroidBridge === 'undefined') {
             const mensaje = 'No disponible (ejecutar en app Android)';
+            const statusElement = document.getElementById('printerStatus');
+            const badgeElement = document.getElementById('printerStatusBadge');
+            const statusBarElement = document.getElementById('printer-status-bar');
+            const badgeBarElement = document.getElementById('printer-badge-bar');
+            
             if (statusElement) statusElement.textContent = mensaje;
             if (statusBarElement) statusBarElement.textContent = mensaje;
             if (badgeElement) {
@@ -470,76 +529,16 @@
             return;
         }
         
+        // Mostrar estado actual desde variables globales
+        actualizarEstadoUI(printerConnected, printerName, printerAddress);
+        
+        // Llamar a AndroidBridge.getPrinterStatus() para obtener estado actualizado vía callback
+        console.log('Llamando AndroidBridge.getPrinterStatus()');
         try {
-            // Usar AndroidBridge.getPrinterStatus() exactamente como especificado
-            console.log('Llamando AndroidBridge.getPrinterStatus()');
             AndroidBridge.getPrinterStatus();
-            
-            // Intentar obtener estado sincrónico si está disponible
-            try {
-                const status = JSON.parse(AndroidBridge.getPrinterStatus());
-                if (status.connected) {
-                    const mensaje = `Conectada: ${status.printerName} (${status.printerAddress})`;
-                    if (statusElement) {
-                        statusElement.textContent = mensaje;
-                        statusElement.style.color = '#28a745';
-                    }
-                    if (statusBarElement) {
-                        statusBarElement.textContent = `Conectada: ${status.printerName}`;
-                        statusBarElement.style.color = '#28a745';
-                    }
-                    if (badgeElement) {
-                        badgeElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> Conectada';
-                        badgeElement.className = 'badge bg-success me-1';
-                    }
-                    if (badgeBarElement) {
-                        badgeBarElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> Conectada';
-                        badgeBarElement.className = 'badge bg-success me-2';
-                    }
-                } else if (status.configured) {
-                    const mensaje = `Configurada pero desconectada: ${status.savedPrinterName}`;
-                    if (statusElement) {
-                        statusElement.textContent = mensaje;
-                        statusElement.style.color = '#ffc107';
-                    }
-                    if (statusBarElement) {
-                        statusBarElement.textContent = `Desconectada: ${status.savedPrinterName}`;
-                        statusBarElement.style.color = '#ffc107';
-                    }
-                    if (badgeElement) {
-                        badgeElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> Configurada';
-                        badgeElement.className = 'badge bg-warning me-1';
-                    }
-                    if (badgeBarElement) {
-                        badgeBarElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> Desconectada';
-                        badgeBarElement.className = 'badge bg-warning me-2';
-                    }
-                } else {
-                    const mensaje = 'No configurada (pulsa "Buscar Impresoras")';
-                    if (statusElement) {
-                        statusElement.textContent = mensaje;
-                        statusElement.style.color = '#dc3545';
-                    }
-                    if (statusBarElement) {
-                        statusBarElement.textContent = 'No configurada';
-                        statusBarElement.style.color = '#dc3545';
-                    }
-                    if (badgeElement) {
-                        badgeElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> No configurada';
-                        badgeElement.className = 'badge bg-danger me-1';
-                    }
-                    if (badgeBarElement) {
-                        badgeBarElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> No configurada';
-                        badgeBarElement.className = 'badge bg-danger me-2';
-                    }
-                }
         } catch (e) {
-            const mensaje = 'Error al verificar estado';
-            if (statusElement) statusElement.textContent = mensaje;
-            if (badgeElement) {
-                badgeElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> Error';
-                badgeElement.className = 'badge bg-danger me-1';
-            }
+            console.error('Error llamando getPrinterStatus:', e);
+            mostrarEstado('Error verificando estado de impresora', 'error');
         }
     }
 
@@ -586,8 +585,47 @@
         };
 
         try {
-            // Generar canvas de prueba usando el script brother-simple-print.js
-            const canvas = createLabelCanvas(datosEtiquetaPrueba);
+            // Verificar que la impresora esté conectada
+            if (!printerConnected) {
+                mostrarEstado('Error: No hay impresora conectada. Busque impresoras primero.', 'error');
+                return;
+            }
+            
+            // Generar canvas de prueba
+            const canvas = document.createElement('canvas');
+            canvas.width = 520;   // 44mm a 300 DPI
+            canvas.height = 449;  // 38mm a 300 DPI
+            const ctx = canvas.getContext('2d');
+            
+            // Fondo blanco
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Configuración de texto
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            
+            // Título
+            ctx.font = 'bold 32px Arial';
+            ctx.fillText('ETIQUETA DE PRUEBA', canvas.width / 2, 80);
+            
+            // Subtítulo
+            ctx.font = 'bold 24px Arial';
+            ctx.fillText('Brother TD-4550DNWB', canvas.width / 2, 130);
+            
+            // Información adicional
+            ctx.textAlign = 'left';
+            const margin = 35;
+            ctx.font = '18px Arial';
+            ctx.fillText('Preparado por: Sistema', margin, 200);
+            ctx.fillText('Fecha: ' + new Date().toLocaleDateString('es-ES'), margin, 240);
+            ctx.fillText('Hora: ' + new Date().toLocaleTimeString('es-ES'), margin, 280);
+            
+            // Borde
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(10, 10, 500, 429);
+            
             const base64 = canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, '');
             
             console.log('Llamando AndroidBridge.printImage() con etiqueta de prueba');

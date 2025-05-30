@@ -250,7 +250,7 @@
                             {% if product.conservation_types %}
                                 {% for ct in product.conservation_types %}
                                 <div class="mb-2">
-                                    <a href="{{ url_for('tasks.generate_label', product_id=product.id, conservation_type_id=ct.conservation_type.id) }}" 
+                                    <a href="{{ url_for('tasks.generate_labels', product_id=product.id, conservation_type_id=ct.conservation_type.id) }}" 
                                        class="btn btn-olive btn-sm w-100">
                                         <i class="bi bi-tag-fill me-1"></i>
                                         Etiqueta {{ ct.conservation_type.value|capitalize }}

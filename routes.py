@@ -83,6 +83,11 @@ def login():
     
     return render_template('login.html', title='Iniciar Sesión', form=form)
 
+@auth_bp.route('/privacy-policy')
+def privacy_policy():
+    """Página de política de privacidad y términos y condiciones"""
+    return render_template('privacy_policy.html', title='Política de Privacidad y Protección de Datos')
+
 @auth_bp.route('/logout')
 @login_required
 def logout():

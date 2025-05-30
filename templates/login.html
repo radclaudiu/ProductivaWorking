@@ -42,7 +42,9 @@
                         
                         <div class="mb-3 form-check">
                             {{ form.accept_privacy(class="form-check-input", required=true) }}
-                            {{ form.accept_privacy.label(class="form-check-label") }}
+                            <label class="form-check-label" for="accept_privacy">
+                                Acepto la <a href="{{ url_for('auth.privacy_policy') }}" target="_blank" class="text-primary">política de privacidad y protección de datos</a>
+                            </label>
                             {% for error in form.accept_privacy.errors %}
                                 <div class="text-danger">{{ error }}</div>
                             {% endfor %}

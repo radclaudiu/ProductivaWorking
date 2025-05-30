@@ -40,7 +40,15 @@
                             {{ form.remember_me.label(class="form-check-label") }}
                         </div>
                         
-                        {{ form.submit(class="btn btn-primary w-100") }}
+                        <div class="mb-3 form-check">
+                            {{ form.accept_privacy(class="form-check-input", required=true) }}
+                            {{ form.accept_privacy.label(class="form-check-label") }}
+                            {% for error in form.accept_privacy.errors %}
+                                <div class="text-danger">{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        
+                        {{ form.submit(class="btn btn-primary w-100", id="loginSubmit") }}
                     </form>
                 </div>
                 <div class="card-footer py-3" id="pwa-install-container" style="display: none; background-color: #f5f0e3; border-top: 1px solid #e0d8c0;">
@@ -67,6 +75,20 @@
     document.addEventListener('DOMContentLoaded', function() {
         // La función togglePasswordVisibility ya está definida en main.js
         togglePasswordVisibility('password', 'togglePassword');
+        
+        // Validación del formulario de login
+        const form = document.querySelector('form');
+        const submitButton = document.getElementById('loginSubmit');
+        const privacyCheckbox = document.getElementById('accept_privacy');
+        
+        form.addEventListener('submit', function(e) {
+            if (!privacyCheckbox.checked) {
+                e.preventDefault();
+                alert('Debe aceptar la política de privacidad y protección de datos para continuar.');
+                privacyCheckbox.focus();
+                return false;
+            }
+        });
         
         // Gestión de la instalación PWA
         let deferredPrompt;

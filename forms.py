@@ -18,6 +18,7 @@ class LoginForm(FlaskForm):
     username = StringField('Usuario', validators=[DataRequired(), Length(min=3, max=64)])
     password = PasswordField('Contraseña', validators=[DataRequired()])
     remember_me = BooleanField('Recordarme')
+    accept_privacy = BooleanField('Acepto la política de privacidad y protección de datos', validators=[DataRequired(message="Debe aceptar la política de privacidad para continuar")])
     submit = SubmitField('Iniciar Sesión')
 
 class RegistrationForm(FlaskForm):

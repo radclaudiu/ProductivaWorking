@@ -120,40 +120,87 @@ class BrotherPrintBridge {
     
     // Imprimir etiqueta usando datos del DOM
     printLabel() {
-        if (!this.isAndroidApp) {
-            this.showMessage('Esta función solo está disponible en la app Android', true);
+        // 1. Verificar si AndroidBridge está disponible
+        if (typeof AndroidBridge === 'undefined') {
+            alert('Esta función solo está disponible en la app Android');
             return;
         }
         
-        if (!this.connectedPrinter) {
-            this.showMessage('Conecte una impresora Brother TD-4550DNWB primero', true);
-            this.showPrinterSelection();
+        // 2. Verificar estado de la impresora
+        try {
+            const status = JSON.parse(AndroidBridge.getPrinterStatus());
+            if (!status.connected && !status.configured) {
+                // No hay impresora, buscar una
+                AndroidBridge.searchPrinters();
+                // Esperar callback onPrintersFound
+                return;
+            }
+        } catch (error) {
+            // Si no existe getPrinterStatus, buscar impresoras directamente
+            AndroidBridge.searchPrinters();
             return;
         }
         
-        // Obtener datos de la etiqueta
+        // 3. Obtener datos y generar etiqueta
         const labelData = this.getLabelData();
         if (!labelData) {
             this.showMessage('Error al obtener datos de la etiqueta', true);
             return;
         }
         
-        // Generar imagen de la etiqueta (44x38mm)
-        this.generateLabelImage(labelData)
-            .then(base64 => {
-                this.showMessage('Enviando etiqueta a impresora...');
-                try {
-                    // PASO 4: Enviar a imprimir
-                    AndroidBridge.printImage(base64);
-                } catch (error) {
-                    console.error('Error al enviar a impresora:', error);
-                    this.showMessage('Error al imprimir: ' + error.message, true);
-                }
-            })
-            .catch(error => {
-                console.error('Error al generar imagen:', error);
-                this.showMessage('Error al generar imagen de etiqueta: ' + error.message, true);
-            });
+        // 4. Imprimir
+        this.imprimirEtiqueta(labelData);
+    }
+    
+    // Función para imprimir etiqueta con el flujo completo
+    imprimirEtiqueta(datos) {
+        const canvas = this.generarEtiqueta(datos);
+        const base64 = canvas.toDataURL('image/png').replace('data:image/png;base64,', '');
+        
+        // Enviar a imprimir
+        try {
+            this.showMessage('Enviando etiqueta a impresora...');
+            AndroidBridge.printImage(base64);
+        } catch (error) {
+            console.error('Error al enviar a impresora:', error);
+            this.showMessage('Error al imprimir: ' + error.message, true);
+        }
+    }
+    
+    // Función para generar etiqueta según especificaciones
+    generarEtiqueta(datos) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 520;
+        canvas.height = 449;
+        const ctx = canvas.getContext('2d');
+        
+        // Fondo blanco
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Dibujar etiqueta
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 32px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(datos.productName, canvas.width / 2, 80);
+        
+        ctx.font = 'bold 24px Arial';
+        ctx.fillText(datos.conservationType, canvas.width / 2, 130);
+        
+        ctx.font = '18px Arial';
+        ctx.textAlign = 'left';
+        ctx.fillText(datos.preparedBy, 40, 200);
+        ctx.fillText(datos.startDate, 40, 240);
+        
+        ctx.font = 'bold 20px Arial';
+        ctx.fillText(datos.expiryDate, 40, 290);
+        
+        // Borde
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(10, 10, 500, 429);
+        
+        return canvas;
     }
     
     // Obtener datos de la etiqueta desde el DOM

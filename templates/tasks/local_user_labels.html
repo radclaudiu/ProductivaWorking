@@ -1,118 +1,115 @@
 {% extends "tasks/portal_layout.html" %}
 
 {% block content %}
-<!-- Modal de Configuración de Impresora - Versión personalizada, sin clases Bootstrap modal -->
+<!-- Modal de Configuración de Impresora Brother Bluetooth -->
 <div id="printerSettingsModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1050; overflow-y: auto;">
     <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1040;"></div>
     <div style="position: relative; width: 80%; max-width: 800px; margin: 30px auto; margin-bottom: 50px; z-index: 1050;">
         <div class="card">
             <div class="card-header bg-earth-dark text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="bi bi-printer-fill me-2"></i>Configuración de Impresora</h5>
+                <h5 class="mb-0"><i class="bi bi-bluetooth me-2"></i>Brother TD-4550DNWB</h5>
                 <button type="button" class="btn-close btn-close-white" onclick="closeModal()" aria-label="Close"></button>
             </div>
             <div class="card-body">
                 <div class="row mb-3">
                     <div class="col-12">
                         <div class="alert alert-info">
-                            <i class="bi bi-info-circle-fill me-2"></i>Configure su impresora Brother conectada a un servidor Raspberry Pi para imprimir etiquetas. Esta configuración utiliza exclusivamente servidores Raspberry Pi como intermediarios para la impresión.
+                            <i class="bi bi-bluetooth me-2"></i>Impresora Brother TD-4550DNWB conectada vía Bluetooth. Esta función solo está disponible en la aplicación Android con el SDK Brother integrado.
                         </div>
                     </div>
                 </div>
                 
-                <!-- Formulario de Configuración -->
-                <form id="printerSettingsForm">
-                    <!-- Información general de la impresora -->
-                    <div class="mb-4">
-                        <h6 class="border-bottom pb-2 mb-3">Información General</h6>
-                        <div class="mb-3">
-                            <label for="printerName" class="form-label">Nombre de la impresora</label>
-                            <input type="text" class="form-control" id="printerName" name="name" placeholder="Ej: Impresora Brother QL-820NWB" required>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="printerModel" class="form-label">Modelo de impresora</label>
-                            <input type="text" class="form-control" id="printerModel" name="model" placeholder="Ej: QL-820NWB">
-                            <div class="form-text">Opcional: Ayuda a identificar el tipo de impresora</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Tipo de conexión -->
-                    <input type="hidden" id="printerType" name="printer_type" value="raspberry_pi">
-
-                    <!-- Configuración de red común -->
-                    <div class="mb-4">
-                        <h6 class="border-bottom pb-2 mb-3">Configuración de Red</h6>
-                        <div class="row">
-                            <div class="col-md-8 mb-3">
-                                <label for="printerIp" class="form-label">Dirección IP</label>
-                                <input type="text" class="form-control" id="printerIp" name="ip_address" placeholder="Ej: 192.168.1.100" required 
-                                       pattern="^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$">
-                                <div class="form-text" id="ipAddressHelp">Dirección IP del servidor Raspberry Pi que gestiona la impresora Brother</div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="printerPort" class="form-label">Puerto</label>
-                                <input type="number" class="form-control" id="printerPort" name="port" placeholder="5000" min="1" max="65535" value="5000" required>
-                            </div>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="apiPath" class="form-label">Ruta de la API</label>
-                            <input type="text" class="form-control" id="apiPath" name="api_path" value="/print">
-                            <div class="form-text" id="apiPathHelp">Ruta API en el Raspberry Pi para enviar trabajos de impresión (por defecto: /print)</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Configuración específica de Raspberry Pi -->
-                    <div class="mb-4" id="usbPortContainer">
-                        <h6 class="border-bottom pb-2 mb-3">Configuración Raspberry Pi</h6>
-                        <div class="mb-3">
-                            <label for="usbPort" class="form-label">Puerto USB</label>
-                            <input type="text" class="form-control" id="usbPort" name="usb_port" value="/dev/usb/lp0">
-                            <div class="form-text">Ruta al dispositivo USB en Raspberry Pi (ej: /dev/usb/lp0)</div>
-                        </div>
-                    </div>
-                    
-                    <!-- Autenticación -->
-                    <div class="mb-4">
-                        <h6 class="border-bottom pb-2 mb-3">Seguridad</h6>
-                        <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="requiresAuth" name="requires_auth">
-                            <label class="form-check-label" for="requiresAuth">La impresora requiere autenticación</label>
-                        </div>
-                        
-                        <div id="authFields" style="display: none;">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="printerUsername" class="form-label">Usuario</label>
-                                    <input type="text" class="form-control" id="printerUsername" name="username">
+                <!-- Estado de Conexión Brother -->
+                <div class="mb-4">
+                    <h6 class="border-bottom pb-2 mb-3">Estado de Conexión</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-bluetooth display-4 text-primary mb-2"></i>
+                                    <h6>Estado de Impresora</h6>
+                                    <p id="printerStatus" class="mb-2">No disponible (ejecutar en app Android)</p>
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="verificarEstadoImpresora()">
+                                        <i class="bi bi-arrow-clockwise me-1"></i>Verificar
+                                    </button>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="printerPassword" class="form-label">Contraseña</label>
-                                    <input type="password" class="form-control" id="printerPassword" name="password">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <i class="bi bi-search display-4 text-success mb-2"></i>
+                                    <h6>Buscar Impresoras</h6>
+                                    <p class="mb-2">Buscar impresoras Brother disponibles</p>
+                                    <button type="button" class="btn btn-success btn-sm" onclick="buscarImpresoras()">
+                                        <i class="bi bi-search me-1"></i>Buscar
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Opciones adicionales -->
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input type="checkbox" class="form-check-input" id="isDefault" name="is_default" checked>
-                            <label class="form-check-label" for="isDefault">Establecer como impresora predeterminada</label>
-                        </div>
-                    </div>
-                </form>
+                </div>
                 
-                <!-- Estado de la configuración -->
+                <!-- Vista Previa de Etiqueta -->
+                <div class="mb-4">
+                    <h6 class="border-bottom pb-2 mb-3">Vista Previa de Etiqueta (520x449px)</h6>
+                    <div class="text-center">
+                        <canvas id="labelCanvas" width="520" height="449" style="border: 2px solid #ddd; max-width: 100%; height: auto;"></canvas>
+                    </div>
+                    <div class="mt-3">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="productName" class="form-label">Producto</label>
+                                <input type="text" class="form-control" id="productName" value="POLLO EMPANADO" onchange="generarVistaPrevia()">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="conservationType" class="form-label">Conservación</label>
+                                <select class="form-select" id="conservationType" onchange="generarVistaPrevia()">
+                                    <option value="REFRIGERACIÓN" selected>REFRIGERACIÓN</option>
+                                    <option value="DESCONGELACIÓN">DESCONGELACIÓN</option>
+                                    <option value="GASTRO">GASTRO</option>
+                                    <option value="CALIENTE">CALIENTE</option>
+                                    <option value="SECO">SECO</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-4">
+                                <label for="employee" class="form-label">Empleado</label>
+                                <input type="text" class="form-control" id="employee" value="Juan Pérez" onchange="generarVistaPrevia()">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="startDateTime" class="form-label">Fecha/Hora Inicio</label>
+                                <input type="datetime-local" class="form-control" id="startDateTime" onchange="generarVistaPrevia()">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="shelfLife" class="form-label">Vida Útil (días)</label>
+                                <input type="number" class="form-control" id="shelfLife" value="3" min="1" max="30" onchange="generarVistaPrevia()">
+                            </div>
+                        </div>
+                        <div class="row mt-2">
+                            <div class="col-md-6">
+                                <label for="quantity" class="form-label">Cantidad</label>
+                                <input type="number" class="form-control" id="quantity" value="1" min="1" max="10" onchange="generarVistaPrevia()">
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <button type="button" class="btn btn-primary w-100" onclick="imprimirEtiquetas()">
+                                    <i class="bi bi-printer me-1"></i>Imprimir Etiquetas
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Mensajes de Estado -->
                 <div class="row mt-4">
                     <div class="col-12">
                         <div class="card bg-light">
                             <div class="card-body">
-                                <h6><i class="bi bi-info-circle me-2"></i>Estado actual</h6>
-                                <div id="printerConfigStatus">
-                                    <div class="alert alert-secondary">
-                                        No hay impresora configurada. Complete el formulario y haga clic en Guardar.
-                                    </div>
+                                <h6><i class="bi bi-info-circle me-2"></i>Mensajes del Sistema</h6>
+                                <div id="statusMessage" class="status" style="display: none;"></div>
+                                <div class="alert alert-info">
+                                    <i class="bi bi-bluetooth me-2"></i>La impresora Brother TD-4550DNWB se conecta automáticamente vía Bluetooth cuando se ejecuta desde la aplicación Android.
                                 </div>
                             </div>
                         </div>
@@ -120,21 +117,12 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-                <div class="dropdown">
-                    <button class="btn btn-danger dropdown-toggle" type="button" id="piConfigDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-raspberry-pi me-1"></i>Pi Config
-                    </button>
-                    <ul class="dropdown-menu" aria-labelledby="piConfigDropdown">
-                        <li><a class="dropdown-item" href="{{ url_for('tasks.raspberry_pi_setup') }}" target="_blank">Guía Completa</a></li>
-                        <li><a class="dropdown-item" href="{{ url_for('tasks.raspberry_pi_setup_optimized') }}" target="_blank">Guía Concisa</a></li>
-                    </ul>
-                </div>
-                <button type="button" class="btn btn-info" id="testPrinterBtn">
-                    <i class="bi bi-arrow-clockwise me-1"></i>Probar Conexión
+                <button type="button" class="btn btn-secondary" onclick="closeModal()">Cerrar</button>
+                <button type="button" class="btn btn-success" onclick="buscarImpresoras()">
+                    <i class="bi bi-search me-1"></i>Buscar Impresoras
                 </button>
-                <button type="button" class="btn btn-olive" id="savePrinterBtn">
-                    <i class="bi bi-save me-1"></i>Guardar Configuración
+                <button type="button" class="btn btn-primary" onclick="generarVistaPrevia()">
+                    <i class="bi bi-eye me-1"></i>Actualizar Vista Previa
                 </button>
             </div>
         </div>
@@ -148,17 +136,8 @@
                 <div class="card-header bg-earth-dark text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="bi bi-tag-fill me-2"></i>Etiquetas de Productos - {{ location.name }}</h5>
                     <div>
-                        <div class="dropdown d-inline-block me-2">
-                            <button class="btn btn-danger btn-sm dropdown-toggle" type="button" id="piConfigHeaderDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="bi bi-raspberry-pi me-1"></i> Pi Config
-                            </button>
-                            <ul class="dropdown-menu" aria-labelledby="piConfigHeaderDropdown">
-                                <li><a class="dropdown-item" href="{{ url_for('tasks.raspberry_pi_setup') }}" target="_blank">Guía Completa</a></li>
-                                <li><a class="dropdown-item" href="{{ url_for('tasks.raspberry_pi_setup_optimized') }}" target="_blank">Guía Concisa</a></li>
-                            </ul>
-                        </div>
-                        <button type="button" class="btn btn-olive btn-sm me-2" id="openPrinterModal">
-                            <i class="bi bi-printer-fill me-1"></i> Configurar Impresora
+                        <button type="button" class="btn btn-primary btn-sm me-2" id="openPrinterModal">
+                            <i class="bi bi-bluetooth me-1"></i> Brother TD-4550DNWB
                         </button>
                         <a href="{{ url_for('tasks.local_user_tasks') }}" class="btn btn-light btn-sm">
                             <i class="bi bi-list-check me-1"></i> Volver a Tareas
@@ -369,6 +348,63 @@
 <!-- Script para mostrar mensaje de confirmación después de imprimir -->
 <script src="/static/js/label-success-message.js"></script>
 <script>
+    // Configurar callbacks globales para Brother Print
+    window.BrotherPrint = {
+        onPrintersFound: function(printersJsonString) {
+            console.log('Impresoras encontradas:', printersJsonString);
+            try {
+                const printers = JSON.parse(printersJsonString);
+                if (printers.length === 0) {
+                    mostrarEstado('No se encontraron impresoras Brother', 'error');
+                    return;
+                }
+                
+                // Mostrar lista de impresoras
+                let mensaje = 'Impresoras encontradas:\n';
+                printers.forEach((printer, index) => {
+                    mensaje += `${index + 1}. ${printer.name} (${printer.address})\n`;
+                });
+                
+                // Preguntar al usuario cuál conectar
+                if (confirm(mensaje + '\n¿Conectar con la primera impresora?')) {
+                    AndroidBridge.connectPrinter(printers[0].address);
+                    mostrarEstado('Conectando con ' + printers[0].name + '...', 'info');
+                }
+            } catch (e) {
+                console.error('Error parseando impresoras:', e);
+                mostrarEstado('Error al procesar lista de impresoras', 'error');
+            }
+        },
+        
+        onPrinterConnected: function() {
+            console.log('Impresora conectada exitosamente');
+            mostrarEstado('Impresora conectada correctamente', 'success');
+            verificarEstadoImpresora();
+        },
+        
+        onPrintSuccess: function() {
+            console.log('Impresión exitosa');
+            mostrarEstado('Etiqueta impresa correctamente', 'success');
+            
+            // Si hay más etiquetas pendientes, continuar
+            if (etiquetasPendientes > 1) {
+                etiquetasPendientes--;
+                setTimeout(() => {
+                    imprimirSiguienteEtiqueta();
+                }, 1000);
+            }
+        },
+        
+        onPrintError: function(errorMessage) {
+            console.error('Error de impresión:', errorMessage);
+            mostrarEstado('Error: ' + errorMessage, 'error');
+            etiquetasPendientes = 0;
+        }
+    };
+
+    let etiquetasPendientes = 0;
+    let datosEtiqueta = null;
+
     // Función para cerrar el modal
     function closeModal() {
         const modalElement = document.getElementById('printerSettingsModal');
@@ -380,13 +416,250 @@
     
     // Añadir la función closeModal al objeto global window
     window.closeModal = closeModal;
-    // Inicialización del script
+    // Establecer fecha y hora actual
     document.addEventListener('DOMContentLoaded', function() {
-        console.log("Inicializando componentes de la página de etiquetas...");
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('startDateTime').value = now.toISOString().slice(0, 16);
         
-        // Referencias a botones y elementos del formulario
-        const checkPrinterBtn = document.getElementById('checkPrinterBtn');
-        const testPrinterBtn = document.getElementById('testPrinterBtn');
+        // Generar vista previa inicial
+        generarVistaPrevia();
+        
+        // Verificar estado de la impresora
+        verificarEstadoImpresora();
+    });
+
+    function verificarEstadoImpresora() {
+        if (typeof AndroidBridge === 'undefined') {
+            document.getElementById('printerStatus').textContent = 'No disponible (ejecutar en app Android)';
+            return;
+        }
+        
+        try {
+            const status = JSON.parse(AndroidBridge.getPrinterStatus());
+            if (status.connected) {
+                document.getElementById('printerStatus').textContent = 
+                    `Conectada: ${status.printerName} (${status.printerAddress})`;
+                document.getElementById('printerStatus').style.color = '#28a745';
+            } else if (status.configured) {
+                document.getElementById('printerStatus').textContent = 
+                    `Configurada pero desconectada: ${status.savedPrinterName}`;
+                document.getElementById('printerStatus').style.color = '#ffc107';
+            } else {
+                document.getElementById('printerStatus').textContent = 
+                    'No configurada (pulsa "Buscar Impresoras")';
+                document.getElementById('printerStatus').style.color = '#dc3545';
+            }
+        } catch (e) {
+            document.getElementById('printerStatus').textContent = 'Error al verificar estado';
+        }
+    }
+
+    function buscarImpresoras() {
+        if (typeof AndroidBridge === 'undefined') {
+            alert('Esta función solo está disponible en la aplicación Android');
+            return;
+        }
+        
+        mostrarEstado('Buscando impresoras Brother...', 'info');
+        AndroidBridge.searchPrinters();
+    }
+
+    function calcularFechaCaducidad(fechaInicio, diasVidaUtil) {
+        const fecha = new Date(fechaInicio);
+        fecha.setDate(fecha.getDate() + parseInt(diasVidaUtil));
+        return fecha;
+    }
+
+    function formatearFecha(fecha) {
+        const opciones = { 
+            day: '2-digit', 
+            month: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        };
+        return fecha.toLocaleString('es-ES', opciones);
+    }
+
+    function generarVistaPrevia() {
+        const productName = document.getElementById('productName').value;
+        const conservationType = document.getElementById('conservationType').value;
+        const employee = document.getElementById('employee').value;
+        const startDateTime = new Date(document.getElementById('startDateTime').value);
+        const shelfLife = document.getElementById('shelfLife').value;
+        
+        const fechaCaducidad = calcularFechaCaducidad(startDateTime, shelfLife);
+        
+        datosEtiqueta = {
+            productName: productName,
+            conservationType: conservationType,
+            preparedBy: `EMP: ${employee}`,
+            startDate: `INICIO: ${formatearFecha(startDateTime)}`,
+            expiryDate: `Caducidad: ${formatearFecha(fechaCaducidad)}`,
+            quantity: parseInt(document.getElementById('quantity').value)
+        };
+        
+        dibujarEtiqueta(datosEtiqueta);
+    }
+
+    function dibujarEtiqueta(datos) {
+        const canvas = document.getElementById('labelCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Limpiar canvas con fondo blanco
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Configurar estilos base
+        ctx.fillStyle = 'black';
+        ctx.textAlign = 'center';
+        
+        // NOMBRE DEL PRODUCTO (más grande y centrado)
+        ctx.font = 'bold 36px Arial';
+        const nombreProducto = datos.productName.toUpperCase();
+        
+        // Si el texto es muy largo, reducir tamaño de fuente
+        if (nombreProducto.length > 15) {
+            ctx.font = 'bold 28px Arial';
+        }
+        ctx.fillText(nombreProducto, canvas.width / 2, 60);
+        
+        // TIPO DE CONSERVACIÓN
+        ctx.font = 'bold 26px Arial';
+        ctx.fillText(datos.conservationType, canvas.width / 2, 110);
+        
+        // Línea divisoria
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(30, 140);
+        ctx.lineTo(canvas.width - 30, 140);
+        ctx.stroke();
+        
+        // Información adicional (alineada a la izquierda)
+        ctx.textAlign = 'left';
+        const leftMargin = 35;
+        
+        // Empleado
+        ctx.font = '20px Arial';
+        ctx.fillText(datos.preparedBy, leftMargin, 185);
+        
+        // Fecha de inicio
+        ctx.font = '20px Arial';
+        ctx.fillText(datos.startDate, leftMargin, 225);
+        
+        // Línea divisoria antes de caducidad
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(30, 250);
+        ctx.lineTo(canvas.width - 30, 250);
+        ctx.stroke();
+        
+        // FECHA DE CADUCIDAD (más prominente)
+        ctx.font = 'bold 24px Arial';
+        ctx.fillStyle = '#d32f2f'; // Rojo para destacar
+        
+        // Dividir la fecha de caducidad si es muy larga
+        const caducidadTexto = datos.expiryDate;
+        if (caducidadTexto.length > 30) {
+            const partes = caducidadTexto.split(' ');
+            ctx.fillText(partes.slice(0, 2).join(' '), leftMargin, 290);
+            ctx.fillText(partes.slice(2).join(' '), leftMargin, 320);
+        } else {
+            ctx.fillText(caducidadTexto, leftMargin, 300);
+        }
+        
+        // Código QR o identificador (opcional)
+        ctx.fillStyle = 'black';
+        ctx.font = '14px monospace';
+        ctx.textAlign = 'right';
+        const codigoLote = `LOT${Date.now().toString().slice(-6)}`;
+        ctx.fillText(codigoLote, canvas.width - 35, canvas.height - 20);
+        
+        // Borde de la etiqueta
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(5, 5, canvas.width - 10, canvas.height - 10);
+        
+        // Agregar esquinas redondeadas simuladas
+        ctx.lineWidth = 2;
+        const cornerSize = 15;
+        
+        // Esquina superior izquierda
+        ctx.beginPath();
+        ctx.moveTo(5 + cornerSize, 5);
+        ctx.arcTo(5, 5, 5, 5 + cornerSize, cornerSize);
+        ctx.stroke();
+        
+        // Esquina superior derecha
+        ctx.beginPath();
+        ctx.moveTo(canvas.width - 5 - cornerSize, 5);
+        ctx.arcTo(canvas.width - 5, 5, canvas.width - 5, 5 + cornerSize, cornerSize);
+        ctx.stroke();
+    }
+
+    function imprimirEtiquetas() {
+        if (typeof AndroidBridge === 'undefined') {
+            alert('Esta función solo está disponible en la aplicación Android');
+            return;
+        }
+        
+        if (!datosEtiqueta) {
+            generarVistaPrevia();
+        }
+        
+        etiquetasPendientes = datosEtiqueta.quantity;
+        mostrarEstado(`Imprimiendo ${etiquetasPendientes} etiqueta(s)...`, 'info');
+        
+        imprimirSiguienteEtiqueta();
+    }
+
+    function imprimirSiguienteEtiqueta() {
+        if (etiquetasPendientes <= 0) {
+            return;
+        }
+        
+        const canvas = document.getElementById('labelCanvas');
+        const base64 = canvas.toDataURL('image/png').replace('data:image/png;base64,', '');
+        
+        // Actualizar estado
+        if (etiquetasPendientes > 1) {
+            mostrarEstado(`Imprimiendo etiqueta ${datosEtiqueta.quantity - etiquetasPendientes + 1} de ${datosEtiqueta.quantity}...`, 'info');
+        }
+        
+        // Enviar a imprimir
+        AndroidBridge.printImage(base64);
+    }
+
+    function mostrarEstado(mensaje, tipo) {
+        const statusDiv = document.getElementById('statusMessage');
+        statusDiv.textContent = mensaje;
+        statusDiv.className = 'status ' + tipo;
+        statusDiv.style.display = 'block';
+        
+        // Ocultar después de 5 segundos si es éxito
+        if (tipo === 'success') {
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+    }
+
+    // Configurar evento para abrir modal
+    document.addEventListener('DOMContentLoaded', function() {
+        const openPrinterModalBtn = document.getElementById('openPrinterModal');
+        if (openPrinterModalBtn) {
+            openPrinterModalBtn.addEventListener('click', function() {
+                const modalElement = document.getElementById('printerSettingsModal');
+                if (modalElement) {
+                    modalElement.style.display = 'block';
+                    document.body.style.overflow = 'hidden';
+                }
+            });
+        }
+    });
         const savePrinterBtn = document.getElementById('savePrinterBtn');
         const openModalBtn = document.getElementById('openPrinterModal');
         const modalElement = document.getElementById('printerSettingsModal');

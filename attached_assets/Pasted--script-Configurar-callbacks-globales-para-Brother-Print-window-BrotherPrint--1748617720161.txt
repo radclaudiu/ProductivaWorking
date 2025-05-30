@@ -1,0 +1,289 @@
+<script>
+        // Configurar callbacks globales para Brother Print
+        window.BrotherPrint = {
+            onPrintersFound: function(printersJsonString) {
+                console.log('Impresoras encontradas:', printersJsonString);
+                try {
+                    const printers = JSON.parse(printersJsonString);
+                    if (printers.length === 0) {
+                        mostrarEstado('No se encontraron impresoras Brother', 'error');
+                        return;
+                    }
+                    
+                    // Mostrar lista de impresoras
+                    let mensaje = 'Impresoras encontradas:\n';
+                    printers.forEach((printer, index) => {
+                        mensaje += `${index + 1}. ${printer.name} (${printer.address})\n`;
+                    });
+                    
+                    // Preguntar al usuario cuál conectar
+                    if (confirm(mensaje + '\n¿Conectar con la primera impresora?')) {
+                        AndroidBridge.connectPrinter(printers[0].address);
+                        mostrarEstado('Conectando con ' + printers[0].name + '...', 'info');
+                    }
+                } catch (e) {
+                    console.error('Error parseando impresoras:', e);
+                    mostrarEstado('Error al procesar lista de impresoras', 'error');
+                }
+            },
+            
+            onPrinterConnected: function() {
+                console.log('Impresora conectada exitosamente');
+                mostrarEstado('Impresora conectada correctamente', 'success');
+                verificarEstadoImpresora();
+            },
+            
+            onPrintSuccess: function() {
+                console.log('Impresión exitosa');
+                mostrarEstado('Etiqueta impresa correctamente', 'success');
+                
+                // Si hay más etiquetas pendientes, continuar
+                if (etiquetasPendientes > 1) {
+                    etiquetasPendientes--;
+                    setTimeout(() => {
+                        imprimirSiguienteEtiqueta();
+                    }, 1000);
+                }
+            },
+            
+            onPrintError: function(errorMessage) {
+                console.error('Error de impresión:', errorMessage);
+                mostrarEstado('Error: ' + errorMessage, 'error');
+                etiquetasPendientes = 0;
+            }
+        };
+
+        let etiquetasPendientes = 0;
+        let datosEtiqueta = null;
+
+        // Establecer fecha y hora actual
+        document.addEventListener('DOMContentLoaded', function() {
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('startDateTime').value = now.toISOString().slice(0, 16);
+            
+            // Generar vista previa inicial
+            generarVistaPrevia();
+            
+            // Verificar estado de la impresora
+            verificarEstadoImpresora();
+        });
+
+        function verificarEstadoImpresora() {
+            if (typeof AndroidBridge === 'undefined') {
+                document.getElementById('printerStatus').textContent = 'No disponible (ejecutar en app Android)';
+                return;
+            }
+            
+            try {
+                const status = JSON.parse(AndroidBridge.getPrinterStatus());
+                if (status.connected) {
+                    document.getElementById('printerStatus').textContent = 
+                        `Conectada: ${status.printerName} (${status.printerAddress})`;
+                    document.getElementById('printerStatus').style.color = '#28a745';
+                } else if (status.configured) {
+                    document.getElementById('printerStatus').textContent = 
+                        `Configurada pero desconectada: ${status.savedPrinterName}`;
+                    document.getElementById('printerStatus').style.color = '#ffc107';
+                } else {
+                    document.getElementById('printerStatus').textContent = 
+                        'No configurada (pulsa "Buscar Impresoras")';
+                    document.getElementById('printerStatus').style.color = '#dc3545';
+                }
+            } catch (e) {
+                document.getElementById('printerStatus').textContent = 'Error al verificar estado';
+            }
+        }
+
+        function buscarImpresoras() {
+            if (typeof AndroidBridge === 'undefined') {
+                alert('Esta función solo está disponible en la aplicación Android');
+                return;
+            }
+            
+            mostrarEstado('Buscando impresoras Brother...', 'info');
+            AndroidBridge.searchPrinters();
+        }
+
+        function calcularFechaCaducidad(fechaInicio, diasVidaUtil) {
+            const fecha = new Date(fechaInicio);
+            fecha.setDate(fecha.getDate() + parseInt(diasVidaUtil));
+            return fecha;
+        }
+
+        function formatearFecha(fecha) {
+            const opciones = { 
+                day: '2-digit', 
+                month: '2-digit', 
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            return fecha.toLocaleString('es-ES', opciones);
+        }
+
+        function generarVistaPrevia() {
+            const productName = document.getElementById('productName').value;
+            const conservationType = document.getElementById('conservationType').value;
+            const employee = document.getElementById('employee').value;
+            const startDateTime = new Date(document.getElementById('startDateTime').value);
+            const shelfLife = document.getElementById('shelfLife').value;
+            
+            const fechaCaducidad = calcularFechaCaducidad(startDateTime, shelfLife);
+            
+            datosEtiqueta = {
+                productName: productName,
+                conservationType: conservationType,
+                preparedBy: `EMP: ${employee}`,
+                startDate: `INICIO: ${formatearFecha(startDateTime)}`,
+                expiryDate: `Caducidad: ${formatearFecha(fechaCaducidad)}`,
+                quantity: parseInt(document.getElementById('quantity').value)
+            };
+            
+            dibujarEtiqueta(datosEtiqueta);
+        }
+
+        function dibujarEtiqueta(datos) {
+            const canvas = document.getElementById('labelCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Limpiar canvas con fondo blanco
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Configurar estilos base
+            ctx.fillStyle = 'black';
+            ctx.textAlign = 'center';
+            
+            // NOMBRE DEL PRODUCTO (más grande y centrado)
+            ctx.font = 'bold 36px Arial';
+            const nombreProducto = datos.productName.toUpperCase();
+            
+            // Si el texto es muy largo, reducir tamaño de fuente
+            if (nombreProducto.length > 15) {
+                ctx.font = 'bold 28px Arial';
+            }
+            ctx.fillText(nombreProducto, canvas.width / 2, 60);
+            
+            // TIPO DE CONSERVACIÓN
+            ctx.font = 'bold 26px Arial';
+            ctx.fillText(datos.conservationType, canvas.width / 2, 110);
+            
+            // Línea divisoria
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(30, 140);
+            ctx.lineTo(canvas.width - 30, 140);
+            ctx.stroke();
+            
+            // Información adicional (alineada a la izquierda)
+            ctx.textAlign = 'left';
+            const leftMargin = 35;
+            
+            // Empleado
+            ctx.font = '20px Arial';
+            ctx.fillText(datos.preparedBy, leftMargin, 185);
+            
+            // Fecha de inicio
+            ctx.font = '20px Arial';
+            ctx.fillText(datos.startDate, leftMargin, 225);
+            
+            // Línea divisoria antes de caducidad
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(30, 250);
+            ctx.lineTo(canvas.width - 30, 250);
+            ctx.stroke();
+            
+            // FECHA DE CADUCIDAD (más prominente)
+            ctx.font = 'bold 24px Arial';
+            ctx.fillStyle = '#d32f2f'; // Rojo para destacar
+            
+            // Dividir la fecha de caducidad si es muy larga
+            const caducidadTexto = datos.expiryDate;
+            if (caducidadTexto.length > 30) {
+                const partes = caducidadTexto.split(' ');
+                ctx.fillText(partes.slice(0, 2).join(' '), leftMargin, 290);
+                ctx.fillText(partes.slice(2).join(' '), leftMargin, 320);
+            } else {
+                ctx.fillText(caducidadTexto, leftMargin, 300);
+            }
+            
+            // Código QR o identificador (opcional)
+            ctx.fillStyle = 'black';
+            ctx.font = '14px monospace';
+            ctx.textAlign = 'right';
+            const codigoLote = `LOT${Date.now().toString().slice(-6)}`;
+            ctx.fillText(codigoLote, canvas.width - 35, canvas.height - 20);
+            
+            // Borde de la etiqueta
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(5, 5, canvas.width - 10, canvas.height - 10);
+            
+            // Agregar esquinas redondeadas simuladas
+            ctx.lineWidth = 2;
+            const cornerSize = 15;
+            
+            // Esquina superior izquierda
+            ctx.beginPath();
+            ctx.moveTo(5 + cornerSize, 5);
+            ctx.arcTo(5, 5, 5, 5 + cornerSize, cornerSize);
+            ctx.stroke();
+            
+            // Esquina superior derecha
+            ctx.beginPath();
+            ctx.moveTo(canvas.width - 5 - cornerSize, 5);
+            ctx.arcTo(canvas.width - 5, 5, canvas.width - 5, 5 + cornerSize, cornerSize);
+            ctx.stroke();
+        }
+
+        function imprimirEtiquetas() {
+            if (typeof AndroidBridge === 'undefined') {
+                alert('Esta función solo está disponible en la aplicación Android');
+                return;
+            }
+            
+            if (!datosEtiqueta) {
+                generarVistaPrevia();
+            }
+            
+            etiquetasPendientes = datosEtiqueta.quantity;
+            mostrarEstado(`Imprimiendo ${etiquetasPendientes} etiqueta(s)...`, 'info');
+            
+            imprimirSiguienteEtiqueta();
+        }
+
+        function imprimirSiguienteEtiqueta() {
+            if (etiquetasPendientes <= 0) {
+                return;
+            }
+            
+            const canvas = document.getElementById('labelCanvas');
+            const base64 = canvas.toDataURL('image/png').replace('data:image/png;base64,', '');
+            
+            // Actualizar estado
+            if (etiquetasPendientes > 1) {
+                mostrarEstado(`Imprimiendo etiqueta ${datosEtiqueta.quantity - etiquetasPendientes + 1} de ${datosEtiqueta.quantity}...`, 'info');
+            }
+            
+            // Enviar a imprimir
+            AndroidBridge.printImage(base64);
+        }
+
+        function mostrarEstado(mensaje, tipo) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = mensaje;
+            statusDiv.className = 'status ' + tipo;
+            statusDiv.style.display = 'block';
+            
+            // Ocultar después de 5 segundos si es éxito
+            if (tipo === 'success') {
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+    </script>

@@ -394,8 +394,8 @@
             }
         },
         
-        onPrinterStatus: function(data) {
-            console.log('=== CALLBACK onPrinterStatus ===');
+        onStatusUpdate: function(data) {
+            console.log('=== CALLBACK onStatusUpdate ===');
             console.log('Data recibida:', data);
             console.log('Tipo de data:', typeof data);
             
@@ -407,7 +407,7 @@
                     console.log(`- ${key}:`, status[key]);
                 });
                 
-                if (status.connected || status.isConnected) {
+                if (status.connected === true) {
                     printerConnected = true;
                     printerName = status.printerName || status.name || 'Brother TD-4550DNWB';
                     printerAddress = status.printerAddress || status.mac || status.address || '';
@@ -415,9 +415,15 @@
                     console.log('Impresora detectada como CONECTADA');
                     console.log('- Nombre:', printerName);
                     console.log('- Dirección:', printerAddress);
+                    console.log('- Ready:', status.ready);
                     
                     actualizarEstadoUI(true, printerName, printerAddress);
-                    mostrarEstado('Estado verificado: Conectada', 'success');
+                    
+                    if (status.ready === true) {
+                        mostrarEstado('Estado verificado: Conectada y lista para imprimir', 'success');
+                    } else {
+                        mostrarEstado('Estado verificado: Conectada pero no lista', 'info');
+                    }
                 } else {
                     printerConnected = false;
                     printerName = '';

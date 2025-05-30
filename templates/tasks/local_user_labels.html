@@ -118,9 +118,6 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" onclick="closeModal()">Cerrar</button>
-                <button type="button" class="btn btn-success" onclick="buscarImpresoras()">
-                    <i class="bi bi-search me-1"></i>Buscar Impresoras
-                </button>
                 <button type="button" class="btn btn-primary" onclick="generarVistaPrevia()">
                     <i class="bi bi-eye me-1"></i>Actualizar Vista Previa
                 </button>
@@ -185,14 +182,9 @@
                         </div>
                         <div class="col-md-6">
                             <div class="text-md-end">
-                                <div class="printer-status d-inline-block">
-                                    <span class="badge bg-secondary me-1" id="printerStatusBadge">
-                                        <i class="bi bi-bluetooth me-1"></i> Brother TD-4550DNWB
-                                    </span>
-                                    <button type="button" class="btn btn-sm btn-info" onclick="verificarEstadoImpresora()">
-                                        <i class="bi bi-arrow-clockwise"></i>
-                                    </button>
-                                </div>
+                                <button type="button" class="btn btn-outline-success btn-sm" onclick="buscarImpresoras()">
+                                    <i class="bi bi-search me-1"></i>Buscar Impresoras
+                                </button>
                             </div>
                         </div>
                     </div>

@@ -3606,52 +3606,67 @@ def generate_labels():
                 image = Image.new('RGB', (width, height), 'white')
                 draw = ImageDraw.Draw(image)
                 
-                # Intentar cargar fuente, si no está disponible usar la por defecto
+                # Usar fuentes más grandes para etiquetas de 4cm x 3cm
                 try:
-                    font_large = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
-                    font_medium = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18)
-                    font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
+                    font_xlarge = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 42)  # Título muy grande
+                    font_large = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 32)   # Subtítulos
+                    font_medium = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 24)       # Fechas
+                    font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18)        # Detalles
                 except:
+                    font_xlarge = ImageFont.load_default()
                     font_large = ImageFont.load_default()
                     font_medium = ImageFont.load_default()
                     font_small = ImageFont.load_default()
                 
-                # Dibujar contenido de la etiqueta
-                y_pos = 10
+                # Dibujar contenido de la etiqueta optimizado para 4cm x 3cm
+                y_pos = 15
                 
-                # Nombre del producto (centrado, negrita)
-                product_name = product.name[:30]  # Limitar caracteres
-                bbox = draw.textbbox((0, 0), product_name, font=font_large)
+                # Nombre del producto (centrado, muy grande y en negrita)
+                product_name = product.name[:20].upper()  # Limitar y convertir a mayúsculas
+                # Ajustar tamaño de fuente si el texto es muy largo
+                current_font = font_xlarge
+                if len(product_name) > 12:
+                    current_font = font_large
+                
+                bbox = draw.textbbox((0, 0), product_name, font=current_font)
                 text_width = bbox[2] - bbox[0]
                 x_centered = (width - text_width) // 2
-                draw.text((x_centered, y_pos), product_name, fill='black', font=font_large)
+                draw.text((x_centered, y_pos), product_name, fill='black', font=current_font)
+                y_pos += 55
+                
+                # Tipo de conservación (centrado y grande)
+                conservation_text = conservation_type.value.upper()
+                bbox = draw.textbbox((0, 0), conservation_text, font=font_large)
+                text_width = bbox[2] - bbox[0]
+                x_centered = (width - text_width) // 2
+                draw.text((x_centered, y_pos), conservation_text, fill='black', font=font_large)
+                y_pos += 45
+                
+                # Fecha de elaboración (centrada)
+                now_str = now.strftime('%d/%m/%Y')
+                elaboration_text = f"ELAB: {now_str}"
+                bbox = draw.textbbox((0, 0), elaboration_text, font=font_medium)
+                text_width = bbox[2] - bbox[0]
+                x_centered = (width - text_width) // 2
+                draw.text((x_centered, y_pos), elaboration_text, fill='black', font=font_medium)
                 y_pos += 35
                 
-                # Tipo de conservación
-                conservation_text = f"Conservación: {conservation_type.value}"
-                draw.text((10, y_pos), conservation_text, fill='black', font=font_medium)
-                y_pos += 25
-                
-                # Fecha de elaboración
-                now_str = now.strftime('%d/%m/%Y %H:%M')
-                elaboration_text = f"Elaborado: {now_str}"
-                draw.text((10, y_pos), elaboration_text, fill='black', font=font_small)
-                y_pos += 20
-                
-                # Fecha de caducidad si existe
+                # Fecha de caducidad si existe (centrada)
                 if expiry_datetime:
-                    expiry_str = expiry_datetime.strftime('%d/%m/%Y %H:%M')
-                    expiry_text = f"Caduca: {expiry_str}"
-                    draw.text((10, y_pos), expiry_text, fill='black', font=font_small)
-                    y_pos += 20
+                    expiry_str = expiry_datetime.strftime('%d/%m/%Y')
+                    expiry_text = f"CAD: {expiry_str}"
+                    bbox = draw.textbbox((0, 0), expiry_text, font=font_medium)
+                    text_width = bbox[2] - bbox[0]
+                    x_centered = (width - text_width) // 2
+                    draw.text((x_centered, y_pos), expiry_text, fill='black', font=font_medium)
+                    y_pos += 35
                 
-                # Usuario y ubicación
-                user_text = f"Usuario: {user.username}"
-                draw.text((10, y_pos), user_text, fill='black', font=font_small)
-                y_pos += 15
-                
-                location_text = f"Ubicación: {user.location.name}"
-                draw.text((10, y_pos), location_text, fill='black', font=font_small)
+                # Usuario (centrado, en la parte inferior)
+                user_text = f"USR: {user.username[:8]}"  # Limitar usuario
+                bbox = draw.textbbox((0, 0), user_text, font=font_small)
+                text_width = bbox[2] - bbox[0]
+                x_centered = (width - text_width) // 2
+                draw.text((x_centered, height - 25), user_text, fill='black', font=font_small)
                 
                 # Convertir imagen a base64
                 buffer = io.BytesIO()

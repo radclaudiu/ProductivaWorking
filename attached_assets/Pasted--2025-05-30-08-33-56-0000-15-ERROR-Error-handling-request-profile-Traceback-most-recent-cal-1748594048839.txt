@@ -1,0 +1,44 @@
+[2025-05-30 08:33:56 +0000] [15] [ERROR] Error handling request /profile
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.9/site-packages/gunicorn/workers/gthread.py", line 281, in handle
+    keepalive = self.handle_request(req, conn)
+  File "/usr/local/lib/python3.9/site-packages/gunicorn/workers/gthread.py", line 333, in handle_request
+    respiter = self.wsgi(environ, resp.start_response)
+  File "/usr/local/lib/python3.9/site-packages/flask/app.py", line 1536, in __call__
+    return self.wsgi_app(environ, start_response)
+  File "/usr/local/lib/python3.9/site-packages/flask/app.py", line 1514, in wsgi_app
+    response = self.handle_exception(e)
+  File "/usr/local/lib/python3.9/site-packages/flask/app.py", line 1511, in wsgi_app
+    response = self.full_dispatch_request()
+  File "/usr/local/lib/python3.9/site-packages/flask/app.py", line 919, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+  File "/usr/local/lib/python3.9/site-packages/flask/app.py", line 917, in full_dispatch_request
+    rv = self.dispatch_request()
+  File "/usr/local/lib/python3.9/site-packages/flask/app.py", line 902, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+  File "/usr/local/lib/python3.9/site-packages/flask_login/utils.py", line 290, in decorated_view
+    return current_app.ensure_sync(func)(*args, **kwargs)
+  File "/app/routes.py", line 192, in profile
+    return render_template('profile.html', title='Mi Perfil', form=form)
+  File "/usr/local/lib/python3.9/site-packages/flask/templating.py", line 150, in render_template
+    return _render(app, template, context)
+  File "/usr/local/lib/python3.9/site-packages/flask/templating.py", line 131, in _render
+    rv = template.render(context)
+  File "/usr/local/lib/python3.9/site-packages/jinja2/environment.py", line 1295, in render
+    self.environment.handle_exception()
+  File "/usr/local/lib/python3.9/site-packages/jinja2/environment.py", line 942, in handle_exception
+    raise rewrite_traceback_stack(source=source)
+  File "/app/templates/profile.html", line 1, in top-level template code
+    {% extends "layout.html" %}
+  File "/app/templates/layout.html", line 164, in top-level template code
+    {% block content %}{% endblock %}
+  File "/app/templates/profile.html", line 36, in block 'content'
+    <a href="{{ url_for('company.view_company', id=current_user.company_id) }}">
+  File "/usr/local/lib/python3.9/site-packages/flask/app.py", line 1121, in url_for
+    return self.handle_url_build_error(error, endpoint, values)
+  File "/usr/local/lib/python3.9/site-packages/flask/app.py", line 1110, in url_for
+    rv = url_adapter.build(  # type: ignore[union-attr]
+  File "/usr/local/lib/python3.9/site-packages/werkzeug/routing/map.py", line 924, in build
+    raise BuildError(endpoint, values, method, self)
+werkzeug.routing.exceptions.BuildError: Could not build url for endpoint 'company.view_company' with values ['id']. Did you forget to specify values ['slug']?
+172.21.0.1 - - [30/May/2025:08:33:56 +0000] "GET /profile HTTP/1.0" 500 0 "-" "-"

@@ -33,9 +33,13 @@
                             <dt class="col-sm-4">Empresa:</dt>
                             <dd class="col-sm-8">
                                 {% if current_user.company %}
-                                    <a href="{{ url_for('company.view_company', id=current_user.company_id) }}">
+                                    {% if current_user.is_admin() or current_user.is_gerente() %}
+                                        <a href="{{ url_for('company.view_company', slug=current_user.company.get_slug()) }}">
+                                            {{ current_user.company.name }}
+                                        </a>
+                                    {% else %}
                                         {{ current_user.company.name }}
-                                    </a>
+                                    {% endif %}
                                 {% else %}
                                     <span class="text-muted">No asignada</span>
                                 {% endif %}

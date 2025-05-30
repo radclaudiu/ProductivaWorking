@@ -329,14 +329,18 @@
     // Configurar callbacks globales para Brother Print - Exactamente como especificado
     window.BrotherPrint = {
         onPrintersFound: function(data) {
-            console.log('Callback onPrintersFound recibido:', data);
+            console.log('=== CALLBACK onPrintersFound ===');
+            console.log('Data recibida:', data);
+            console.log('Tipo de data:', typeof data);
             mostrarEstado('Impresoras encontradas, procesando...', 'info');
             
             try {
                 const printers = JSON.parse(data);
                 console.log('Impresoras parseadas:', printers.length);
+                console.log('Lista completa:', printers);
                 
                 if (printers.length === 0) {
+                    console.log('No se encontraron impresoras');
                     mostrarEstado('No se encontraron impresoras Brother TD-4550DNWB', 'error');
                     actualizarEstadoUI(false, '', '');
                     return;
@@ -345,40 +349,94 @@
                 // Auto-conectar con la primera impresora TD-4550DNWB encontrada
                 const brotherPrinter = printers.find(p => p.name && p.name.includes('TD-4550')) || printers[0];
                 if (brotherPrinter) {
-                    console.log('Conectando automáticamente con:', brotherPrinter.name);
+                    console.log('Conectando automáticamente con:', brotherPrinter);
                     mostrarEstado('Conectando con ' + brotherPrinter.name + '...', 'info');
                     AndroidBridge.connectPrinter(brotherPrinter.address);
                 }
             } catch (e) {
                 console.error('Error parseando impresoras:', e);
+                console.log('Data original que falló:', data);
                 mostrarEstado('Error al procesar lista de impresoras: ' + e.message, 'error');
                 actualizarEstadoUI(false, '', '');
             }
         },
         
         onPrinterConnected: function(data) {
-            console.log('Callback onPrinterConnected recibido:', data);
+            console.log('=== CALLBACK onPrinterConnected ===');
+            console.log('Data recibida:', data);
+            console.log('Tipo de data:', typeof data);
             
             try {
                 const result = JSON.parse(data);
+                console.log('Resultado parseado:', result);
+                
                 printerConnected = true;
-                printerAddress = result.mac || '';
+                printerAddress = result.mac || result.address || '';
                 printerName = result.name || 'Brother TD-4550DNWB';
                 
-                mostrarEstado('Conectado exitosamente: ' + printerAddress, 'success');
-                console.log('Impresora conectada - MAC:', printerAddress);
+                console.log('Estado actualizado:');
+                console.log('- printerConnected:', printerConnected);
+                console.log('- printerName:', printerName);
+                console.log('- printerAddress:', printerAddress);
                 
+                mostrarEstado('Conectado exitosamente: ' + printerAddress, 'success');
                 actualizarEstadoUI(true, printerName, printerAddress);
             } catch (e) {
+                console.log('Error parseando, usando datos por defecto');
+                console.log('Data original:', data);
+                
                 printerConnected = true;
                 printerName = 'Brother TD-4550DNWB';
+                printerAddress = '';
+                
                 mostrarEstado('Impresora Brother TD-4550DNWB conectada correctamente', 'success');
                 actualizarEstadoUI(true, printerName, '');
             }
         },
         
+        onPrinterStatus: function(data) {
+            console.log('=== CALLBACK onPrinterStatus ===');
+            console.log('Data recibida:', data);
+            console.log('Tipo de data:', typeof data);
+            
+            try {
+                const status = JSON.parse(data);
+                console.log('Status parseado:', status);
+                console.log('Status properties:');
+                Object.keys(status).forEach(key => {
+                    console.log(`- ${key}:`, status[key]);
+                });
+                
+                if (status.connected || status.isConnected) {
+                    printerConnected = true;
+                    printerName = status.printerName || status.name || 'Brother TD-4550DNWB';
+                    printerAddress = status.printerAddress || status.mac || status.address || '';
+                    
+                    console.log('Impresora detectada como CONECTADA');
+                    console.log('- Nombre:', printerName);
+                    console.log('- Dirección:', printerAddress);
+                    
+                    actualizarEstadoUI(true, printerName, printerAddress);
+                    mostrarEstado('Estado verificado: Conectada', 'success');
+                } else {
+                    printerConnected = false;
+                    printerName = '';
+                    printerAddress = '';
+                    
+                    console.log('Impresora detectada como DESCONECTADA');
+                    actualizarEstadoUI(false, '', '');
+                    mostrarEstado('Estado verificado: No conectada', 'info');
+                }
+            } catch (e) {
+                console.error('Error parseando status:', e);
+                console.log('Data original que falló:', data);
+                mostrarEstado('Error verificando estado: ' + e.message, 'error');
+            }
+        },
+        
         onPrintSuccess: function(data) {
-            console.log('Callback onPrintSuccess recibido:', data);
+            console.log('=== CALLBACK onPrintSuccess ===');
+            console.log('Data recibida:', data);
             
             try {
                 const result = JSON.parse(data);
@@ -398,18 +456,23 @@
         },
         
         onPrintError: function(data) {
-            console.log('Callback onPrintError recibido:', data);
+            console.log('=== CALLBACK onPrintError ===');
+            console.log('Data recibida:', data);
             
             try {
                 const error = JSON.parse(data);
                 mostrarEstado('Error de impresión: ' + error.error, 'error');
                 console.log('Error detallado:', error.error);
                 
-                if (error.error.includes('No hay impresora conectada')) {
+                if (error.error.includes('No hay impresora conectada') || error.error.includes('not connected')) {
+                    console.log('Detectado error de conexión, actualizando estado');
                     printerConnected = false;
+                    printerName = '';
+                    printerAddress = '';
                     actualizarEstadoUI(false, '', '');
                 }
             } catch (e) {
+                console.log('Error parseando error, data original:', data);
                 mostrarEstado('Error de impresión: ' + data, 'error');
             }
             etiquetasPendientes = 0;
@@ -533,12 +596,20 @@
         actualizarEstadoUI(printerConnected, printerName, printerAddress);
         
         // Llamar a AndroidBridge.getPrinterStatus() para obtener estado actualizado vía callback
-        console.log('Llamando AndroidBridge.getPrinterStatus()');
+        console.log('=== VERIFICANDO ESTADO DE IMPRESORA ===');
+        console.log('Estado actual en web:');
+        console.log('- printerConnected:', printerConnected);
+        console.log('- printerName:', printerName);
+        console.log('- printerAddress:', printerAddress);
+        console.log('Llamando AndroidBridge.getPrinterStatus()...');
+        
         try {
             AndroidBridge.getPrinterStatus();
+            console.log('Llamada a getPrinterStatus() ejecutada correctamente');
+            console.log('Esperando callback con estado actualizado...');
         } catch (e) {
             console.error('Error llamando getPrinterStatus:', e);
-            mostrarEstado('Error verificando estado de impresora', 'error');
+            mostrarEstado('Error verificando estado de impresora: ' + e.message, 'error');
         }
     }
 

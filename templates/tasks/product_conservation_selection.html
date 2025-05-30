@@ -76,7 +76,18 @@
                                         </div>
                                     </div>
                                     <div class="card-footer bg-transparent border-0 py-3">
-                                        <button type="submit" name="conservation_type" value="{{ ct.conservation_type.value }}" class="btn btn-primary w-100">
+                                        <!-- Controles de cantidad -->
+                                        <div class="d-flex align-items-center justify-content-center mb-3">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="decreaseQuantity('{{ ct.conservation_type.value }}')">
+                                                <i class="bi bi-dash"></i>
+                                            </button>
+                                            <span class="mx-3 fw-bold" id="quantity-{{ ct.conservation_type.value }}">1</span>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="increaseQuantity('{{ ct.conservation_type.value }}')">
+                                                <i class="bi bi-plus"></i>
+                                            </button>
+                                        </div>
+                                        <!-- Botón de imprimir -->
+                                        <button type="button" onclick="printLabels('{{ product.id }}', '{{ ct.conservation_type.value }}')" class="btn btn-primary w-100">
                                             <i class="bi bi-printer me-2"></i>Imprimir
                                         </button>
                                     </div>
@@ -99,6 +110,113 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Funciones para controlar la cantidad
+    function increaseQuantity(conservationType) {
+        const quantityElement = document.getElementById('quantity-' + conservationType);
+        let currentQuantity = parseInt(quantityElement.textContent);
+        if (currentQuantity < 10) { // Máximo 10 etiquetas
+            quantityElement.textContent = currentQuantity + 1;
+        }
+    }
+    
+    function decreaseQuantity(conservationType) {
+        const quantityElement = document.getElementById('quantity-' + conservationType);
+        let currentQuantity = parseInt(quantityElement.textContent);
+        if (currentQuantity > 1) { // Mínimo 1 etiqueta
+            quantityElement.textContent = currentQuantity - 1;
+        }
+    }
+    
+    // Función para imprimir etiquetas directamente
+    function printLabels(productId, conservationType) {
+        const quantityElement = document.getElementById('quantity-' + conservationType);
+        const quantity = parseInt(quantityElement.textContent);
+        
+        // Mostrar indicador de carga
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="bi bi-arrow-clockwise spin me-2"></i>Imprimiendo...';
+        button.disabled = true;
+        
+        // Enviar datos al servidor
+        fetch('{{ url_for("tasks.generate_labels") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'csrf_token': '{{ csrf_token() }}',
+                'product_id': productId,
+                'conservation_type': conservationType,
+                'quantity': quantity
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Mostrar mensaje de éxito
+                showMessage('Etiquetas enviadas a la impresora Brother TD-4550DNWB', 'success');
+                
+                // Resetear cantidad a 1
+                quantityElement.textContent = '1';
+                
+                // Opcional: Regresar a la lista de productos después de un breve delay
+                setTimeout(() => {
+                    window.location.href = '{{ url_for("tasks.local_user_labels") }}';
+                }, 2000);
+            } else {
+                showMessage('Error: ' + data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showMessage('Error de conexión al imprimir etiquetas', 'error');
+        })
+        .finally(() => {
+            // Restaurar botón
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+    }
+    
+    // Función para mostrar mensajes
+    function showMessage(message, type) {
+        // Crear elemento de mensaje
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            <i class="bi bi-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}-fill me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        // Insertar al principio del contenido
+        const container = document.querySelector('.container-fluid');
+        container.insertBefore(alertDiv, container.firstChild);
+        
+        // Auto-remover después de 5 segundos
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+</script>
+
+<style>
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+</style>
 {% endblock %}
 
 {% block styles %}

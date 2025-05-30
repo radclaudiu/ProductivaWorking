@@ -3,166 +3,380 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Impresión Simple</title>
+    <title>Test Brother Printer - Simple con Logs Detallados</title>
     <style>
-        body { font-family: Arial; padding: 20px; }
-        button { padding: 10px 20px; margin: 10px; font-size: 16px; }
-        #status { padding: 10px; margin: 10px 0; border: 1px solid #ccc; }
-        .success { color: green; }
-        .error { color: red; }
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f0f0f0; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        button { padding: 10px 20px; margin: 5px; font-size: 16px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; border: none; border-radius: 4px; }
+        .btn-success { background: #28a745; color: white; border: none; border-radius: 4px; }
+        .log { background: #f8f9fa; padding: 10px; margin-top: 20px; border-radius: 4px; font-family: monospace; font-size: 12px; max-height: 400px; overflow-y: auto; }
+        .log-entry { margin: 2px 0; }
+        .log-error { color: #dc3545; }
+        .log-success { color: #28a745; }
+        .log-info { color: #17a2b8; }
+        .log-warning { color: #ffc107; }
+        #printerList { margin: 20px 0; }
+        .printer-item { padding: 10px; background: #e9ecef; margin: 5px 0; cursor: pointer; border-radius: 4px; }
+        .printer-item:hover { background: #dee2e6; }
     </style>
 </head>
 <body>
-    <h1>Test Impresión Brother TD-4550DNWB</h1>
 
-    <div id="status">Estado: Sin verificar</div>
+<div class="container">
+    <h1>Test Brother TD-4550DNWB - Logs Detallados</h1>
 
-    <button onclick="verificarEstado()">1. Verificar Estado</button>
-    <button onclick="buscarImpresoras()">2. Buscar Impresoras</button>
-    <button onclick="imprimirPrueba()">3. Imprimir Prueba</button>
+    <div>
+        <h3>1. Verificar Estado</h3>
+        <button class="btn-primary" onclick="checkStatus()">Verificar Estado</button>
+        <button class="btn-primary" onclick="tryReconnect()">Reconectar</button>
+    </div>
 
-    <div id="impresoras"></div>
-    <div id="log"></div>
+    <div>
+        <h3>2. Buscar Impresoras</h3>
+        <button class="btn-primary" onclick="searchPrinters()">Buscar Impresoras</button>
+        <small style="display: block; margin-top: 5px; color: #666;">
+            Asegúrate de que la impresora esté encendida y visible por Bluetooth
+        </small>
+    </div>
 
-    <script>
-        // IMPORTANTE: Definir callbacks ANTES de usarlos
-        window.BrotherPrint = {
-            onStatusUpdate: function(data) {
-                log('onStatusUpdate recibido: ' + data);
-                try {
-                    const status = JSON.parse(data);
-                    document.getElementById('status').innerHTML = 
-                        status.connected ? 
-                        '<span class="success">✅ Conectado</span>' : 
-                        '<span class="error">❌ No conectado</span>';
-                } catch(e) {
-                    log('Error parseando status: ' + e.message);
-                }
-            },
+    <div id="printerList"></div>
 
-            onPrintersFound: function(data) {
-                log('onPrintersFound recibido: ' + data);
-                try {
-                    const printers = JSON.parse(data);
-                    let html = '<h3>Impresoras encontradas:</h3>';
-                    if (printers.length === 0) {
-                        html += '<p>No se encontraron impresoras</p>';
+    <div>
+        <h3>3. Imprimir Prueba</h3>
+        <button class="btn-success" onclick="testPrint()">Imprimir Etiqueta de Prueba</button>
+    </div>
+
+    <h3>Logs:</h3>
+    <div id="log" class="log"></div>
+</div>
+
+<script>
+// Sistema de logs mejorado
+function log(message, type = 'info') {
+    const logDiv = document.getElementById('log');
+    const time = new Date().toLocaleTimeString('es-ES');
+    const className = `log-${type}`;
+    const entry = document.createElement('div');
+    entry.className = `log-entry ${className}`;
+    entry.textContent = `${time} - ${message}`;
+    logDiv.appendChild(entry);
+    logDiv.scrollTop = logDiv.scrollHeight;
+
+    // También mostrar en consola
+    console.log(`[${type.toUpperCase()}] ${time} - ${message}`);
+}
+
+// Definir callbacks ANTES de cualquier llamada
+window.BrotherPrint = {
+    onStatusUpdate: function(data) {
+        log('onStatusUpdate recibido: ' + data, 'info');
+        try {
+            // Log del tipo de datos recibido
+            log('Tipo de datos: ' + typeof data, 'info');
+
+            // Si es string, intentar parsearlo
+            if (typeof data === 'string') {
+                const status = JSON.parse(data);
+                log('Estado parseado: connected=' + status.connected + ', ready=' + status.ready, 'success');
+
+                if (status.connected) {
+                    if (status.message) {
+                        log('✅ ' + status.message, 'success');
                     } else {
-                        printers.forEach(p => {
-                            html += `<button onclick="conectar('${p.address}')">${p.name} - ${p.address}</button><br>`;
-                        });
+                        log('✅ Impresora conectada y lista', 'success');
                     }
-                    document.getElementById('impresoras').innerHTML = html;
-                } catch(e) {
-                    log('Error parseando impresoras: ' + e.message);
+                } else {
+                    log('❌ Impresora no conectada', 'warning');
+                    log('Tip: Verifica que la impresora esté encendida y emparejada por Bluetooth', 'info');
                 }
-            },
-
-            onPrinterConnected: function(data) {
-                log('onPrinterConnected recibido: ' + data);
-                alert('✅ Impresora conectada');
-                verificarEstado();
-            },
-
-            onPrintSuccess: function(data) {
-                log('onPrintSuccess recibido: ' + data);
-                alert('✅ Impresión exitosa');
-            },
-
-            onPrintError: function(data) {
-                log('onPrintError recibido: ' + data);
-                try {
-                    const error = JSON.parse(data);
-                    alert('❌ Error: ' + error.error);
-                } catch(e) {
-                    alert('❌ Error al imprimir');
-                }
-            }
-        };
-
-        function log(mensaje) {
-            const div = document.getElementById('log');
-            div.innerHTML += '<p>' + new Date().toLocaleTimeString() + ' - ' + mensaje + '</p>';
-            console.log(mensaje);
-        }
-
-        function verificarEstado() {
-            if (typeof AndroidBridge === 'undefined') {
-                alert('AndroidBridge no disponible. Ejecute desde la app Android.');
-                return;
-            }
-            log('Llamando getPrinterStatus()...');
-            AndroidBridge.getPrinterStatus();
-        }
-
-        function buscarImpresoras() {
-            if (typeof AndroidBridge === 'undefined') {
-                alert('AndroidBridge no disponible. Ejecute desde la app Android.');
-                return;
-            }
-            log('Llamando searchPrinters()...');
-            AndroidBridge.searchPrinters();
-        }
-
-        function conectar(mac) {
-            log('Llamando connectPrinter(' + mac + ')...');
-            AndroidBridge.connectPrinter(mac);
-        }
-
-        function imprimirPrueba() {
-            if (typeof AndroidBridge === 'undefined') {
-                alert('AndroidBridge no disponible. Ejecute desde la app Android.');
-                return;
-            }
-
-            log('Creando imagen de prueba...');
-
-            // Crear canvas 520x449
-            const canvas = document.createElement('canvas');
-            canvas.width = 520;
-            canvas.height = 449;
-            const ctx = canvas.getContext('2d');
-
-            // Fondo blanco
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, 520, 449);
-
-            // Borde
-            ctx.strokeStyle = 'black';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(10, 10, 500, 429);
-
-            // Texto
-            ctx.fillStyle = 'black';
-            ctx.font = 'bold 48px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('PRUEBA WEB', 260, 150);
-
-            ctx.font = '32px Arial';
-            ctx.fillText('Productiva App', 260, 220);
-
-            ctx.font = '24px Arial';
-            ctx.fillText(new Date().toLocaleString(), 260, 300);
-
-            // Convertir a base64 SIN prefijo
-            const dataUrl = canvas.toDataURL('image/png');
-            const base64 = dataUrl.split(',')[1];
-
-            log('Base64 generado, longitud: ' + base64.length);
-            log('Llamando printImage()...');
-
-            AndroidBridge.printImage(base64);
-        }
-
-        // Verificar al cargar
-        window.onload = function() {
-            log('Página cargada');
-            if (typeof AndroidBridge !== 'undefined') {
-                log('✅ AndroidBridge disponible');
             } else {
-                log('❌ AndroidBridge NO disponible');
+                log('Error: Se esperaba string pero se recibió ' + typeof data, 'error');
             }
-        };
-    </script>
+        } catch (e) {
+            log('Error parseando status: ' + e.message, 'error');
+            log('Datos recibidos: "' + data + '"', 'error');
+        }
+    },
+
+    onPrintersFound: function(data) {
+        log('onPrintersFound recibido: ' + data, 'info');
+        try {
+            log('Tipo de datos: ' + typeof data, 'info');
+
+            if (typeof data === 'string') {
+                const printers = JSON.parse(data);
+                log('Se encontraron ' + printers.length + ' impresoras', 'success');
+
+                const listDiv = document.getElementById('printerList');
+                listDiv.innerHTML = '';
+
+                if (printers.length === 0) {
+                    listDiv.innerHTML = '<p style="color: #666;">No se encontraron impresoras. Asegúrate de que:<br>' +
+                        '- La impresora esté encendida<br>' +
+                        '- El Bluetooth esté activado<br>' +
+                        '- La impresora esté emparejada en Configuración de Android</p>';
+                } else {
+                    printers.forEach((printer, index) => {
+                        log('Impresora ' + (index + 1) + ': ' + printer.name + ' (' + printer.address + ')', 'info');
+
+                        const item = document.createElement('div');
+                        item.className = 'printer-item';
+                        item.innerHTML = `
+                            <strong>${printer.name}</strong><br>
+                            MAC: ${printer.address}<br>
+                            Modelo: ${printer.model || 'N/A'}
+                        `;
+                        item.onclick = function() {
+                            connectPrinter(printer.address);
+                        };
+                        listDiv.appendChild(item);
+                    });
+                }
+            } else {
+                log('Error: Se esperaba string pero se recibió ' + typeof data, 'error');
+            }
+        } catch (e) {
+            log('Error parseando impresoras: ' + e.message, 'error');
+            log('Datos recibidos: "' + data + '"', 'error');
+        }
+    },
+
+    onPrinterConnected: function(data) {
+        log('onPrinterConnected recibido: ' + data, 'info');
+        try {
+            log('Tipo de datos: ' + typeof data, 'info');
+
+            if (typeof data === 'string') {
+                const result = JSON.parse(data);
+                log('✅ Conectado exitosamente a ' + result.mac, 'success');
+            } else {
+                log('Error: Se esperaba string pero se recibió ' + typeof data, 'error');
+            }
+        } catch (e) {
+            log('Error parseando conexión: ' + e.message, 'error');
+        }
+    },
+
+    onPrintSuccess: function(data) {
+        log('onPrintSuccess recibido: ' + data, 'info');
+        try {
+            log('Tipo de datos: ' + typeof data, 'info');
+
+            if (typeof data === 'string') {
+                const result = JSON.parse(data);
+                log('✅ Impresión exitosa: ' + result.message, 'success');
+            } else {
+                log('Error: Se esperaba string pero se recibió ' + typeof data, 'error');
+            }
+        } catch (e) {
+            log('Error parseando éxito: ' + e.message, 'error');
+        }
+    },
+
+    onPrintError: function(data) {
+        log('onPrintError recibido: ' + data, 'error');
+        try {
+            log('Tipo de datos: ' + typeof data, 'info');
+
+            if (typeof data === 'string') {
+                const error = JSON.parse(data);
+                log('❌ Error: ' + error.error, 'error');
+                if (error.mac) {
+                    log('MAC: ' + error.mac, 'error');
+                }
+            } else {
+                log('Error: Se esperaba string pero se recibió ' + typeof data, 'error');
+            }
+        } catch (e) {
+            log('Error parseando error: ' + e.message, 'error');
+            log('Datos recibidos: "' + data + '"', 'error');
+        }
+    },
+
+    onPrinterDisconnected: function(data) {
+        log('onPrinterDisconnected recibido: ' + data, 'info');
+        try {
+            if (typeof data === 'string') {
+                const result = JSON.parse(data);
+                log('Impresora desconectada', 'info');
+            }
+        } catch (e) {
+            log('Error parseando desconexión: ' + e.message, 'error');
+        }
+    }
+};
+
+// Funciones principales
+function checkStatus() {
+    if (typeof AndroidBridge === 'undefined') {
+        log('❌ AndroidBridge no está disponible', 'error');
+        return;
+    }
+
+    log('Llamando getPrinterStatus()...', 'info');
+    try {
+        AndroidBridge.getPrinterStatus();
+    } catch (e) {
+        log('Error al llamar getPrinterStatus: ' + e.message, 'error');
+    }
+}
+
+function searchPrinters() {
+    if (typeof AndroidBridge === 'undefined') {
+        log('❌ AndroidBridge no está disponible', 'error');
+        return;
+    }
+
+    log('Llamando searchPrinters()...', 'info');
+    document.getElementById('printerList').innerHTML = '<p>Buscando...</p>';
+
+    try {
+        AndroidBridge.searchPrinters();
+    } catch (e) {
+        log('Error al llamar searchPrinters: ' + e.message, 'error');
+    }
+}
+
+function connectPrinter(mac) {
+    if (typeof AndroidBridge === 'undefined') {
+        log('❌ AndroidBridge no está disponible', 'error');
+        return;
+    }
+
+    log('Conectando a impresora: ' + mac, 'info');
+    try {
+        AndroidBridge.connectPrinter(mac);
+    } catch (e) {
+        log('Error al llamar connectPrinter: ' + e.message, 'error');
+    }
+}
+
+function testPrint() {
+    if (typeof AndroidBridge === 'undefined') {
+        log('❌ AndroidBridge no está disponible', 'error');
+        return;
+    }
+
+    log('Creando imagen de prueba...', 'info');
+
+    try {
+        // Crear canvas exacto para TD-4550DNWB
+        const canvas = document.createElement('canvas');
+        canvas.width = 520;  // 44mm a 300 DPI
+        canvas.height = 449; // 38mm a 300 DPI
+        const ctx = canvas.getContext('2d');
+
+        // Fondo blanco
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, 520, 449);
+
+        // Borde negro
+        ctx.strokeStyle = 'black';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(10, 10, 500, 429);
+
+        // Título
+        ctx.fillStyle = 'black';
+        ctx.font = 'bold 36px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('TEST BROTHER', 260, 80);
+        ctx.fillText('TD-4550DNWB', 260, 130);
+
+        // Línea
+        ctx.beginPath();
+        ctx.moveTo(50, 150);
+        ctx.lineTo(470, 150);
+        ctx.stroke();
+
+        // Información
+        ctx.font = '24px Arial';
+        ctx.fillText('44mm x 38mm', 260, 200);
+        ctx.fillText('520 x 449 px', 260, 240);
+
+        // Timestamp
+        ctx.font = '20px Arial';
+        const now = new Date();
+        ctx.fillText(now.toLocaleString('es-ES'), 260, 300);
+
+        // Test de logs
+        ctx.font = '16px Arial';
+        ctx.fillText('Test con logs detallados', 260, 350);
+        ctx.fillText('WebView Productiva', 260, 380);
+
+        // Convertir a base64 SIN el prefijo
+        const dataUrl = canvas.toDataURL('image/png');
+        const base64 = dataUrl.split(',')[1];
+
+        log('Canvas creado: ' + canvas.width + 'x' + canvas.height, 'info');
+        log('Base64 generado, longitud: ' + base64.length, 'info');
+
+        // Verificar que tenemos base64 válido
+        if (!base64 || base64.length === 0) {
+            log('Error: Base64 vacío', 'error');
+            return;
+        }
+
+        // Log de los primeros caracteres del base64
+        log('Primeros 50 chars del base64: ' + base64.substring(0, 50) + '...', 'info');
+
+        log('Llamando printImage()...', 'info');
+        AndroidBridge.printImage(base64);
+
+    } catch (e) {
+        log('Error al crear/enviar imagen: ' + e.message, 'error');
+        log('Stack trace: ' + e.stack, 'error');
+    }
+}
+
+// Función para intentar reconectar manualmente
+function tryReconnect() {
+    if (typeof AndroidBridge === 'undefined') {
+        log('❌ AndroidBridge no está disponible', 'error');
+        return;
+    }
+
+    log('Intentando reconectar con la impresora configurada...', 'info');
+
+    // Primero verificar el estado, lo que activará la reconexión automática
+    checkStatus();
+}
+
+// Al cargar la página
+window.onload = function() {
+    log('Página cargada', 'info');
+
+    if (typeof AndroidBridge !== 'undefined') {
+        log('✅ AndroidBridge disponible', 'success');
+
+        // Verificar métodos disponibles
+        const methods = ['searchPrinters', 'connectPrinter', 'printImage', 'getPrinterStatus', 'disconnectPrinter'];
+        methods.forEach(method => {
+            if (typeof AndroidBridge[method] === 'function') {
+                log('✓ AndroidBridge.' + method + ' disponible', 'success');
+            } else {
+                log('✗ AndroidBridge.' + method + ' NO disponible', 'error');
+            }
+        });
+
+        // Verificar estado inicial
+        setTimeout(() => {
+            log('Verificando estado inicial...', 'info');
+            checkStatus();
+        }, 1000);
+
+    } else {
+        log('❌ AndroidBridge NO disponible', 'error');
+        log('Esta página debe ejecutarse dentro de la app Android', 'warning');
+    }
+};
+
+// Log de errores globales
+window.onerror = function(msg, url, lineNo, columnNo, error) {
+    log('Error global: ' + msg + ' en línea ' + lineNo, 'error');
+    return false;
+};
+</script>
+
 </body>
-</html>
+</html> 

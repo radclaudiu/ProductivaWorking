@@ -3589,27 +3589,46 @@ def generate_labels():
                 current_app.logger.error(f"Error al registrar etiquetas de refrigeración: {str(e)}")
                 # Continuar de todos modos
         
-        # Generar HTML para impresión directa, incluyendo las etiquetas de refrigeración si corresponde
-        return render_template(
-            'tasks/print_labels.html',
-            product=product,
-            user=user,
-            location=user.location,
-            conservation_type=conservation_type,
-            now=now,
-            expiry_datetime=expiry_datetime,
-            secondary_expiry_date=secondary_expiry_date,
-            quantity=quantity,
-            template=template,
-            auto_generate_refrigeration=auto_generate_refrigeration,
-            refrigeration_conservation_type=refrigeration_conservation_type,
-            refrigeration_expiry_datetime=refrigeration_expiry_datetime,
-            refrigeration_start_time=expiry_datetime  # La hora de inicio de refrigeración es la hora de fin de descongelación
-        )
+        # Detectar si es una solicitud AJAX (para impresión directa)
+        if request.headers.get('Content-Type') == 'application/x-www-form-urlencoded' and request.method == 'POST':
+            # Respuesta JSON para impresión directa
+            return jsonify({
+                'success': True,
+                'message': f'Se generaron {quantity} etiqueta(s) para {product.name}',
+                'product_name': product.name,
+                'conservation_type': conservation_type.value,
+                'quantity': quantity,
+                'expiry_datetime': expiry_datetime.strftime('%d/%m/%Y %H:%M') if expiry_datetime else None
+            })
+        else:
+            # Generar HTML para impresión directa, incluyendo las etiquetas de refrigeración si corresponde
+            return render_template(
+                'tasks/print_labels.html',
+                product=product,
+                user=user,
+                location=user.location,
+                conservation_type=conservation_type,
+                now=now,
+                expiry_datetime=expiry_datetime,
+                secondary_expiry_date=secondary_expiry_date,
+                quantity=quantity,
+                template=template,
+                auto_generate_refrigeration=auto_generate_refrigeration,
+                refrigeration_conservation_type=refrigeration_conservation_type,
+                refrigeration_expiry_datetime=refrigeration_expiry_datetime,
+                refrigeration_start_time=expiry_datetime  # La hora de inicio de refrigeración es la hora de fin de descongelación
+            )
         
     except Exception as e:
         current_app.logger.error(f"Error en generate_labels: {str(e)}")
-        return "Error al generar etiquetas. Inténtelo nuevamente.", 500
+        # Detectar si es una solicitud AJAX para devolver JSON de error
+        if request.headers.get('Content-Type') == 'application/x-www-form-urlencoded' and request.method == 'POST':
+            return jsonify({
+                'success': False,
+                'message': 'Error al generar etiquetas. Inténtelo nuevamente.'
+            }), 500
+        else:
+            return "Error al generar etiquetas. Inténtelo nuevamente.", 500
 
 @tasks_bp.route('/admin/products')
 @tasks_bp.route('/admin/products/<int:location_id>')

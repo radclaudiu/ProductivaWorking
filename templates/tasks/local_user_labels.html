@@ -400,8 +400,18 @@
             console.log('Tipo de data:', typeof data);
             
             try {
-                const status = JSON.parse(data);
-                console.log('Status parseado:', status);
+                let status;
+                
+                // Si ya es un objeto, usarlo directamente
+                if (typeof data === 'object' && data !== null) {
+                    status = data;
+                    console.log('Data es objeto directo:', status);
+                } else {
+                    // Si es string, intentar parsearlo como JSON
+                    status = JSON.parse(data);
+                    console.log('Data parseada como JSON:', status);
+                }
+                
                 console.log('Status properties:');
                 Object.keys(status).forEach(key => {
                     console.log(`- ${key}:`, status[key]);
@@ -434,9 +444,26 @@
                     mostrarEstado('Estado verificado: No conectada', 'info');
                 }
             } catch (e) {
-                console.error('Error parseando status:', e);
+                console.error('Error procesando status:', e);
                 console.log('Data original que falló:', data);
-                mostrarEstado('Error verificando estado: ' + e.message, 'error');
+                console.log('Tipo de data que falló:', typeof data);
+                
+                // Intentar acceso directo si es un objeto con propiedades conocidas
+                if (typeof data === 'object' && data !== null && data.hasOwnProperty('connected')) {
+                    console.log('Intentando acceso directo a propiedades');
+                    if (data.connected === true) {
+                        printerConnected = true;
+                        printerName = 'Brother TD-4550DNWB';
+                        actualizarEstadoUI(true, printerName, '');
+                        mostrarEstado('Estado verificado: Conectada', 'success');
+                    } else {
+                        printerConnected = false;
+                        actualizarEstadoUI(false, '', '');
+                        mostrarEstado('Estado verificado: No conectada', 'info');
+                    }
+                } else {
+                    mostrarEstado('Error verificando estado: Formato no reconocido', 'error');
+                }
             }
         },
         

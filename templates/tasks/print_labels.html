@@ -177,33 +177,26 @@
     <div class="print-controls" style="background-color: var(--olive-green); border-radius: 12px; padding: 15px; margin: 15px auto; max-width: 90%; box-shadow: 0 4px 8px rgba(0,0,0,0.2);">
         <h5 class="text-white mb-2">Impresión de Etiqueta</h5>
         
-        <div class="row g-2 justify-content-center align-items-center mb-2">
+        <!-- Contador de cantidad con botones - y + -->
+        <div class="row g-2 justify-content-center align-items-center mb-3">
             <div class="col-auto">
-                <select id="quantity-selector" class="form-select me-2" style="min-width: 60px; font-weight: bold;">
-                    <option value="1" selected>1</option>
-                    <option value="2">2</option>
-                    <option value="3">3</option>
-                    <option value="4">4</option>
-                    <option value="5">5</option>
-                    <option value="10">10</option>
-                </select>
+                <div class="d-flex align-items-center" style="background-color: rgba(255,255,255,0.2); border-radius: 8px; padding: 5px;">
+                    <button type="button" id="decrease-quantity" class="btn btn-outline-light btn-sm" style="width: 40px; height: 40px; font-size: 20px; font-weight: bold;">
+                        -
+                    </button>
+                    <span id="quantity-display" class="mx-3 text-white" style="font-size: 24px; font-weight: bold; min-width: 40px; text-align: center;">1</span>
+                    <button type="button" id="increase-quantity" class="btn btn-outline-light btn-sm" style="width: 40px; height: 40px; font-size: 20px; font-weight: bold;">
+                        +
+                    </button>
+                </div>
             </div>
         </div>
         
-        <!-- Botón API para impresora Brother TD-4550DNWB -->
+        <!-- Botón único de impresión directa -->
         <div class="row g-2 justify-content-center align-items-center mb-2">
             <div class="col-auto">
-                <button type="button" id="brother-api-print-btn" class="btn btn-success btn-lg" style="min-width: 220px; min-height: 54px;">
-                    <i class="bi bi-wifi me-2"></i>API Brother TD-4550DNWB
-                </button>
-            </div>
-        </div>
-        
-        <!-- Botón Android para impresora Brother TD-4550DNWB -->
-        <div class="row g-2 justify-content-center align-items-center mb-2">
-            <div class="col-auto">
-                <button type="button" id="brother-android-print-btn" class="btn btn-primary btn-lg" style="min-width: 220px; min-height: 54px;">
-                    <i class="bi bi-phone me-2"></i>Android Brother TD-4550DNWB
+                <button type="button" id="brother-print-btn" class="btn btn-warning btn-lg" style="min-width: 280px; min-height: 54px; font-weight: bold;">
+                    <i class="bi bi-printer-fill me-2"></i>IMPRIMIR
                 </button>
             </div>
         </div>
@@ -361,12 +354,56 @@
     </script>
     
     <script>
+        // Variables globales para cantidad y control de impresión
+        let currentQuantity = 1;
+        let isAndroidApp = typeof AndroidBridge !== 'undefined';
+        
+        // Callbacks globales para Brother Print
+        window.BrotherPrint = {
+            onPrintersFound: function(printersJsonString) {
+                console.log('Impresoras encontradas:', printersJsonString);
+                try {
+                    const printers = JSON.parse(printersJsonString);
+                    if (printers.length > 0) {
+                        AndroidBridge.connectPrinter(printers[0].address);
+                        showMessage('Conectando con ' + printers[0].name + '...', false);
+                    } else {
+                        showMessage('No se encontraron impresoras Brother', true);
+                    }
+                } catch (e) {
+                    showMessage('Error al procesar lista de impresoras', true);
+                }
+            },
+            
+            onPrinterConnected: function() {
+                console.log('Impresora conectada exitosamente');
+                showMessage('Impresora conectada. Iniciando impresión...', false);
+                imprimirEtiquetas();
+            },
+            
+            onPrintSuccess: function() {
+                console.log('Impresión exitosa');
+                showMessage('Etiqueta impresa correctamente', false);
+            },
+            
+            onPrintError: function(errorMessage) {
+                console.error('Error de impresión:', errorMessage);
+                showMessage('Error: ' + errorMessage, true);
+            }
+        };
+        
         // Inicializar controles
         document.addEventListener('DOMContentLoaded', function() {
             console.log("Inicializando interfaz de impresión de etiquetas");
             
+            // Configurar botones del contador
+            setupQuantityControls();
+            
+            // Configurar botón de impresión
+            setupPrintButton();
+            
             // Función para mostrar mensajes
-            const showMessage = (message, isError = false) => {
+            function showMessage(message, isError = false) {
                 const messageArea = document.getElementById('print-message');
                 if (messageArea) {
                     messageArea.style.display = "block";
@@ -382,173 +419,133 @@
                 }
             };
             
-            // Obtener datos de la etiqueta para imprimir
-            const getPrintData = () => {
-                return {
-                    productName: document.getElementById("product-name").textContent || "",
-                    conservationType: document.getElementById("conservation-type").textContent || "",
-                    preparedBy: document.getElementById("prepared-by").textContent || "",
-                    startDate: document.getElementById("start-date").textContent || "",
-                    expiryDate: document.getElementById("expiry-date").textContent || "",
-                    secondaryExpiryDate: document.getElementById("secondary-expiry-date") ? 
-                        document.getElementById("secondary-expiry-date").textContent : "",
-                    quantity: parseInt(document.getElementById("quantity").value || "1")
-                };
-            };
-            
-            // Generar comandos para la impresora Brother
-            const generateBrotherCommand = (data) => {
-                // Inicio de comandos ESC/POS
-                const ESC = 0x1B;
-                const GS = 0x1D;
-                const INIT = [ESC, 0x40]; // Inicializar impresora
-                const FONT_B = [ESC, 0x4D, 0x01]; // Fuente B (más pequeña)
-                const FONT_A = [ESC, 0x4D, 0x00]; // Fuente A (normal)
-                const ALIGN_CENTER = [ESC, 0x61, 0x01]; // Centrar texto
-                const ALIGN_LEFT = [ESC, 0x61, 0x00]; // Alinear a la izquierda
-                const BOLD_ON = [ESC, 0x45, 0x01]; // Activar negrita
-                const BOLD_OFF = [ESC, 0x45, 0x00]; // Desactivar negrita
-                const FONT_SIZE_NORMAL = [GS, 0x21, 0x00]; // Tamaño normal
-                const FONT_SIZE_DOUBLE = [GS, 0x21, 0x11]; // Doble alto y ancho
-                const LINE_FEED = [0x0A]; // Salto de línea
-                const CUT_PAPER = [GS, 0x56, 0x41, 0x10]; // Cortar papel
+            // Función para configurar los controles de cantidad
+            function setupQuantityControls() {
+                const decreaseBtn = document.getElementById('decrease-quantity');
+                const increaseBtn = document.getElementById('increase-quantity');
+                const quantityDisplay = document.getElementById('quantity-display');
                 
-                // Construir el comando completo
-                let command = [];
-                
-                // Inicializar impresora
-                command = command.concat(INIT);
-                
-                // Configurar título (Nombre del producto)
-                command = command.concat(ALIGN_CENTER, FONT_SIZE_DOUBLE, BOLD_ON);
-                command = command.concat(Array.from(new TextEncoder().encode(data.productName)));
-                command = command.concat(LINE_FEED, LINE_FEED);
-                
-                // Configurar tipo de conservación
-                command = command.concat(FONT_SIZE_NORMAL, BOLD_ON);
-                command = command.concat(Array.from(new TextEncoder().encode(data.conservationType)));
-                command = command.concat(LINE_FEED, LINE_FEED);
-                
-                // Configurar información de preparación
-                command = command.concat(ALIGN_LEFT, BOLD_OFF);
-                command = command.concat(Array.from(new TextEncoder().encode(data.preparedBy)));
-                command = command.concat(LINE_FEED);
-                
-                // Configurar fecha de inicio
-                command = command.concat(Array.from(new TextEncoder().encode(data.startDate)));
-                command = command.concat(LINE_FEED);
-                
-                // Configurar fecha de caducidad (en negrita)
-                command = command.concat(BOLD_ON);
-                command = command.concat(Array.from(new TextEncoder().encode(data.expiryDate)));
-                command = command.concat(LINE_FEED);
-                
-                // Agregar fecha de caducidad secundaria si existe
-                if (data.secondaryExpiryDate) {
-                    command = command.concat(BOLD_OFF);
-                    command = command.concat(Array.from(new TextEncoder().encode(data.secondaryExpiryDate)));
-                    command = command.concat(LINE_FEED);
+                if (decreaseBtn && increaseBtn && quantityDisplay) {
+                    decreaseBtn.addEventListener('click', function() {
+                        if (currentQuantity > 1) {
+                            currentQuantity--;
+                            quantityDisplay.textContent = currentQuantity;
+                        }
+                    });
+                    
+                    increaseBtn.addEventListener('click', function() {
+                        if (currentQuantity < 10) {
+                            currentQuantity++;
+                            quantityDisplay.textContent = currentQuantity;
+                        }
+                    });
                 }
-                
-                // Agregar espacio al final y cortar papel
-                command = command.concat(LINE_FEED, LINE_FEED, LINE_FEED, CUT_PAPER);
-                
-                return new Uint8Array(command);
-            };
+            }
             
-            // Enviar datos a la impresora Bluetooth
-            const sendToPrinter = async (device, printData) => {
-                try {
-                    // Guardar la impresora para futuros usos
-                    localStorage.setItem('lastPrinterName', device.name || 'Unknown Printer');
-                    
-                    // Conectar al dispositivo
-                    showMessage(`Conectando a la impresora ${device.name}...`);
-                    const server = await device.gatt.connect();
-                    
-                    // Encontrar el servicio adecuado para la impresión
-                    let service;
-                    const serviceUUIDs = [
-                        '000018f0-0000-1000-8000-00805f9b34fb',  // Servicio de impresión estándar
-                        '1222e5db-36e1-4a53-bfef-bf7da833c5a5',  // Servicio de impresión alternativo
-                        '00001101-0000-1000-8000-00805f9b34fb'   // Serial Port Profile
-                    ];
-                    
-                    // Intentar cada servicio hasta encontrar uno que funcione
-                    for (const uuid of serviceUUIDs) {
+            // Función para configurar el botón de impresión
+            function setupPrintButton() {
+                const printBtn = document.getElementById('brother-print-btn');
+                if (printBtn) {
+                    printBtn.addEventListener('click', function() {
+                        if (!isAndroidApp) {
+                            showMessage('Esta función solo está disponible en la aplicación Android', true);
+                            return;
+                        }
+                        
+                        showMessage('Preparando impresión de ' + currentQuantity + ' etiqueta(s)...', false);
+                        
+                        // Verificar estado de impresora y buscar si es necesario
                         try {
-                            service = await server.getPrimaryService(uuid);
-                            console.log(`Servicio encontrado: ${uuid}`);
-                            break;
-                        } catch (e) {
-                            console.log(`Servicio ${uuid} no encontrado, intentando otro...`);
-                        }
-                    }
-                    
-                    if (!service) {
-                        throw new Error("No se encontró un servicio de impresión compatible");
-                    }
-                    
-                    // Buscar características de escritura
-                    const characteristics = await service.getCharacteristics();
-                    console.log("Características disponibles:", characteristics.length);
-                    
-                    let characteristic;
-                    for (let char of characteristics) {
-                        if (char.properties.write || char.properties.writeWithoutResponse) {
-                            characteristic = char;
-                            console.log("Característica de escritura encontrada");
-                            break;
-                        }
-                    }
-                    
-                    if (!characteristic) {
-                        throw new Error("No se encontró una característica de escritura en la impresora");
-                    }
-                    
-                    // Generar comando para la impresora
-                    const command = generateBrotherCommand(printData);
-                    
-                    // Enviar datos a la impresora
-                    const quantity = printData.quantity;
-                    
-                    for (let i = 0; i < quantity; i++) {
-                        showMessage(`Imprimiendo etiqueta ${i+1} de ${quantity}...`);
-                        
-                        // Enviar comando en chunks si es muy grande
-                        const CHUNK_SIZE = 512; // Tamaño máximo de chunk
-                        
-                        for (let j = 0; j < command.length; j += CHUNK_SIZE) {
-                            const chunk = command.slice(j, j + CHUNK_SIZE);
-                            
-                            if (characteristic.properties.writeWithoutResponse) {
-                                await characteristic.writeValueWithoutResponse(chunk);
+                            const status = JSON.parse(AndroidBridge.getPrinterStatus());
+                            if (status.connected) {
+                                imprimirEtiquetas();
                             } else {
-                                await characteristic.writeValue(chunk);
+                                showMessage('Buscando impresora Brother...', false);
+                                AndroidBridge.searchPrinters();
                             }
-                            
-                            // Pequeña pausa entre chunks
-                            await new Promise(resolve => setTimeout(resolve, 50));
+                        } catch (e) {
+                            showMessage('Buscando impresora Brother...', false);
+                            AndroidBridge.searchPrinters();
                         }
-                        
-                        // Pausa entre etiquetas
-                        if (i < quantity - 1) {
-                            await new Promise(resolve => setTimeout(resolve, 500));
-                        }
-                    }
-                    
-                    showMessage(`¡Impresión completada! ${quantity} etiqueta(s) enviada(s) a la impresora`);
-                    
-                    // Desconectar
-                    device.gatt.disconnect();
-                    
-                    return true;
-                } catch (error) {
-                    console.error("Error al imprimir:", error);
-                    showMessage("Error de impresión: " + error.message, true);
-                    return false;
+                    });
                 }
-            };
+            }
+            
+            // Función para imprimir las etiquetas
+            function imprimirEtiquetas() {
+                const labelData = getLabelData();
+                if (!labelData) {
+                    showMessage('Error al obtener datos de la etiqueta', true);
+                    return;
+                }
+                
+                for (let i = 0; i < currentQuantity; i++) {
+                    setTimeout(() => {
+                        const canvas = generateLabelCanvas(labelData);
+                        const base64 = canvas.toDataURL('image/png').replace('data:image/png;base64,', '');
+                        AndroidBridge.printImage(base64);
+                        
+                        if (i === 0) {
+                            showMessage(`Imprimiendo ${currentQuantity} etiqueta(s)...`, false);
+                        }
+                    }, i * 1000); // Delay de 1 segundo entre etiquetas
+                }
+            }
+            
+            // Función para obtener datos de la etiqueta desde el DOM
+            function getLabelData() {
+                return {
+                    productName: document.getElementById("product-name")?.textContent?.trim() || "PRODUCTO",
+                    conservationType: document.getElementById("conservation-type")?.textContent?.trim() || "CONSERVACIÓN",
+                    preparedBy: document.getElementById("prepared-by")?.textContent?.trim() || "EMPLEADO",
+                    startDate: document.getElementById("start-date")?.textContent?.trim() || "FECHA INICIO",
+                    expiryDate: document.getElementById("expiry-date")?.textContent?.trim() || "FECHA CADUCIDAD"
+                };
+            }
+            
+            // Función para generar canvas de etiqueta (520x449px para 44x38mm)
+            function generateLabelCanvas(datos) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 520;   // 44mm a 300 DPI
+                canvas.height = 449;  // 38mm a 300 DPI
+                const ctx = canvas.getContext('2d');
+                
+                // Fondo blanco
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Configurar estilos base
+                ctx.fillStyle = 'black';
+                ctx.textAlign = 'center';
+                
+                // Nombre del producto
+                ctx.font = 'bold 32px Arial';
+                ctx.fillText(datos.productName, canvas.width / 2, 80);
+                
+                // Tipo de conservación
+                ctx.font = 'bold 24px Arial';
+                ctx.fillText(datos.conservationType, canvas.width / 2, 130);
+                
+                // Información adicional (alineada a la izquierda)
+                ctx.textAlign = 'left';
+                const leftMargin = 35;
+                
+                ctx.font = '18px Arial';
+                ctx.fillText(datos.preparedBy, leftMargin, 200);
+                ctx.fillText(datos.startDate, leftMargin, 240);
+                
+                // Fecha de caducidad destacada
+                ctx.font = 'bold 20px Arial';
+                ctx.fillText(datos.expiryDate, leftMargin, 290);
+                
+                // Borde de la etiqueta
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(10, 10, 500, 429);
+                
+                return canvas;
+            }
+        });
             
             // Imprimir directamente con Bluetooth
             const printWithBluetooth = async () => {

@@ -168,14 +168,55 @@
             try {
                 const data = JSON.parse(text);
                 console.log('JSON parseado:', data);
-                if (data.success) {
+                if (data.success && data.print_to_brother && data.label_image) {
+                    console.log('✅ Etiqueta generada correctamente, enviando a impresora Brother...');
+                    console.log('📏 Tamaño de imagen base64:', data.label_image.length, 'caracteres');
+                    
+                    // Verificar si AndroidBridge está disponible
+                    if (typeof AndroidBridge === 'undefined') {
+                        console.error('❌ AndroidBridge no está disponible');
+                        showMessage('Error: Esta función solo está disponible en la aplicación Android', 'error');
+                        return;
+                    }
+                    
+                    // Verificar si el método printImage existe
+                    if (typeof AndroidBridge.printImage !== 'function') {
+                        console.error('❌ AndroidBridge.printImage no está disponible');
+                        showMessage('Error: Método de impresión no disponible', 'error');
+                        return;
+                    }
+                    
+                    console.log('🖨️ Enviando etiqueta a la impresora Brother TD-4550DNWB...');
+                    
+                    // Imprimir las etiquetas según la cantidad solicitada
+                    for (let i = 0; i < quantity; i++) {
+                        setTimeout(() => {
+                            console.log(`🏷️ Imprimiendo etiqueta ${i + 1} de ${quantity}`);
+                            try {
+                                // Enviar imagen a la impresora (sin el prefijo data:image/png;base64,)
+                                AndroidBridge.printImage(data.label_image);
+                                console.log(`✅ Etiqueta ${i + 1} enviada correctamente`);
+                            } catch (printError) {
+                                console.error(`❌ Error imprimiendo etiqueta ${i + 1}:`, printError);
+                            }
+                        }, i * 500); // Delay de 500ms entre etiquetas
+                    }
+                    
                     // Mostrar mensaje de éxito
-                    showMessage('Etiquetas enviadas a la impresora Brother TD-4550DNWB', 'success');
+                    showMessage(`${quantity} etiqueta(s) enviadas a la impresora Brother TD-4550DNWB`, 'success');
                     
                     // Resetear cantidad a 1
                     quantityElement.textContent = '1';
                     
-                    // Opcional: Regresar a la lista de productos después de un breve delay
+                    // Regresar a la lista de productos después de un breve delay
+                    setTimeout(() => {
+                        window.location.href = '{{ url_for("tasks.local_user_labels") }}';
+                    }, 2000);
+                    
+                } else if (data.success) {
+                    // Respuesta exitosa pero sin impresión Brother (fallback)
+                    showMessage('Etiquetas generadas correctamente', 'success');
+                    quantityElement.textContent = '1';
                     setTimeout(() => {
                         window.location.href = '{{ url_for("tasks.local_user_labels") }}';
                     }, 2000);

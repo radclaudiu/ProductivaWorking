@@ -16,6 +16,7 @@ class PortalType(Enum):
     """Tipos de portales para los que se pueden generar tokens"""
     TASKS = "tasks"           # Portal de tareas
     CHECKPOINTS = "fichajes"  # Portal de fichajes/checkpoints
+    LOCAL_USER = "local_user" # Portal de usuarios locales
 
 class LocationAccessToken(db.Model):
     """Modelo para almacenar tokens de acceso directo para ubicaciones."""

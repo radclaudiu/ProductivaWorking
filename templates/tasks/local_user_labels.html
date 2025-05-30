@@ -336,9 +336,9 @@
     window.BrotherPrint = {
         onPrintersFound: function(data) {
             console.log('=== CALLBACK onPrintersFound ===');
-            console.log('Data recibida:', data);
-            console.log('Tipo de data:', typeof data);
-            mostrarEstado('Impresoras encontradas, procesando...', 'info');
+            console.log('📡 Data recibida:', data);
+            console.log('📝 Tipo de data:', typeof data);
+            mostrarEstado('Impresoras encontradas, mostrando lista...', 'info');
             
             try {
                 let printers;
@@ -346,14 +346,17 @@
                 // Manejar tanto objetos como cadenas JSON
                 if (typeof data === 'object' && data !== null) {
                     printers = Array.isArray(data) ? data : [data];
-                    console.log('Data es array/objeto directo:', printers);
+                    console.log('📋 Data es array/objeto directo:', printers);
                 } else {
                     printers = JSON.parse(data);
-                    console.log('Data parseada como JSON:', printers);
+                    console.log('📋 Data parseada como JSON:', printers);
                 }
                 
-                console.log('Impresoras encontradas:', printers.length);
-                console.log('Lista completa:', printers);
+                console.log('🔍 Impresoras encontradas:', printers.length);
+                console.log('📊 Lista completa de impresoras:');
+                printers.forEach((printer, index) => {
+                    console.log(`${index + 1}. ${printer.name} - ${printer.address}`);
+                });
                 
                 if (printers.length === 0) {
                     console.log('❌ No se encontraron impresoras');
@@ -362,27 +365,13 @@
                     return;
                 }
                 
-                // Buscar específicamente TD-4550DNWB o conectar a la primera disponible
-                const brotherPrinter = printers.find(p => 
-                    p.name && (p.name.includes('TD-4550') || p.name.includes('Brother'))
-                ) || printers[0];
+                // Mostrar lista de impresoras para selección manual
+                mostrarListaImpresoras(printers);
                 
-                if (brotherPrinter) {
-                    console.log('🔄 Conectando automáticamente con:', brotherPrinter);
-                    console.log('- Nombre:', brotherPrinter.name);
-                    console.log('- Dirección:', brotherPrinter.address);
-                    
-                    mostrarEstado('Reconectando con ' + brotherPrinter.name + '...', 'info');
-                    AndroidBridge.connectPrinter(brotherPrinter.address);
-                } else {
-                    console.log('❌ No se encontró impresora compatible');
-                    mostrarEstado('No se encontró impresora TD-4550DNWB compatible', 'error');
-                    actualizarEstadoUI(false, '', '');
-                }
             } catch (e) {
-                console.error('Error procesando impresoras:', e);
-                console.log('Data original que falló:', data);
-                console.log('Tipo de data que falló:', typeof data);
+                console.error('❌ Error procesando impresoras:', e);
+                console.log('📝 Data original que falló:', data);
+                console.log('📝 Tipo de data que falló:', typeof data);
                 mostrarEstado('Error al procesar lista de impresoras: ' + e.message, 'error');
                 actualizarEstadoUI(false, '', '');
             }
@@ -889,6 +878,105 @@
             console.log('📝 Stack trace:', error.stack);
             mostrarEstado('Error al enviar etiqueta de prueba: ' + error.message, 'error');
         }
+    }
+
+    function mostrarListaImpresoras(printers) {
+        console.log('📋 FUNCIÓN mostrarListaImpresoras() INICIADA');
+        console.log('📊 Número de impresoras recibidas:', printers.length);
+        
+        // Remover lista anterior si existe
+        const existingList = document.getElementById('printer-list-container');
+        if (existingList) {
+            console.log('🗑️ Removiendo lista anterior de impresoras');
+            existingList.remove();
+        }
+        
+        // Crear contenedor para la lista de impresoras
+        const listContainer = document.createElement('div');
+        listContainer.id = 'printer-list-container';
+        listContainer.className = 'mt-3 p-3 border rounded bg-light';
+        
+        const title = document.createElement('h6');
+        title.className = 'mb-3 text-primary';
+        title.innerHTML = '<i class="bi bi-printer me-2"></i>Seleccione una impresora:';
+        listContainer.appendChild(title);
+        
+        console.log('🎨 Creando botones para cada impresora...');
+        
+        printers.forEach((printer, index) => {
+            console.log(`🖨️ Procesando impresora ${index + 1}:`, printer);
+            console.log(`- Nombre: ${printer.name}`);
+            console.log(`- Dirección: ${printer.address}`);
+            
+            const printerDiv = document.createElement('div');
+            printerDiv.className = 'mb-2';
+            
+            const button = document.createElement('button');
+            button.className = 'btn btn-outline-primary w-100 text-start d-flex justify-content-between align-items-center';
+            button.innerHTML = `
+                <div>
+                    <strong>${printer.name}</strong><br>
+                    <small class="text-muted">${printer.address}</small>
+                </div>
+                <i class="bi bi-bluetooth"></i>
+            `;
+            
+            button.onclick = function() {
+                console.log('🔗 Usuario seleccionó impresora:');
+                console.log('- Nombre:', printer.name);
+                console.log('- Dirección:', printer.address);
+                console.log('🔧 Llamando AndroidBridge.connectPrinter()...');
+                
+                mostrarEstado(`Conectando con ${printer.name}...`, 'info');
+                
+                try {
+                    AndroidBridge.connectPrinter(printer.address);
+                    console.log('✅ Llamada a connectPrinter() ejecutada correctamente');
+                    console.log('⏳ Esperando callback onPrinterConnected...');
+                    
+                    // Ocultar lista después de seleccionar
+                    listContainer.style.display = 'none';
+                } catch (e) {
+                    console.error('❌ Error conectando impresora:', e);
+                    mostrarEstado('Error conectando impresora: ' + e.message, 'error');
+                }
+            };
+            
+            printerDiv.appendChild(button);
+            listContainer.appendChild(printerDiv);
+        });
+        
+        // Botón para cancelar selección
+        const cancelDiv = document.createElement('div');
+        cancelDiv.className = 'mt-3';
+        
+        const cancelButton = document.createElement('button');
+        cancelButton.className = 'btn btn-secondary btn-sm';
+        cancelButton.innerHTML = '<i class="bi bi-x-circle me-1"></i>Cancelar';
+        cancelButton.onclick = function() {
+            console.log('❌ Usuario canceló selección de impresora');
+            listContainer.remove();
+            mostrarEstado('Selección de impresora cancelada', 'info');
+        };
+        
+        cancelDiv.appendChild(cancelButton);
+        listContainer.appendChild(cancelDiv);
+        
+        // Insertar la lista después del botón de buscar impresoras
+        const searchButton = document.querySelector('button[onclick="buscarImpresoras()"]');
+        if (searchButton && searchButton.parentNode) {
+            console.log('📍 Insertando lista de impresoras en la interfaz');
+            searchButton.parentNode.insertBefore(listContainer, searchButton.nextSibling);
+        } else {
+            console.log('📍 Agregando lista al final del formulario');
+            const form = document.querySelector('.card-body');
+            if (form) {
+                form.appendChild(listContainer);
+            }
+        }
+        
+        console.log('✅ Lista de impresoras mostrada correctamente');
+        mostrarEstado(`${printers.length} impresoras encontradas. Seleccione una para conectar.`, 'success');
     }
 
     function calcularFechaCaducidad(fechaInicio, diasVidaUtil) {

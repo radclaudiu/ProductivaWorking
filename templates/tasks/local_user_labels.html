@@ -470,12 +470,26 @@
         onPrintSuccess: function(data) {
             console.log('=== CALLBACK onPrintSuccess ===');
             console.log('Data recibida:', data);
+            console.log('Tipo de data:', typeof data);
             
             try {
-                const result = JSON.parse(data);
-                mostrarEstado('Impresión completada: ' + result.message, 'success');
-                console.log('Impresión exitosa - Mensaje:', result.message);
+                let result;
+                
+                // Si ya es un objeto, usarlo directamente
+                if (typeof data === 'object' && data !== null) {
+                    result = data;
+                    console.log('Data es objeto directo:', result);
+                } else {
+                    // Si es string, intentar parsearlo como JSON
+                    result = JSON.parse(data);
+                    console.log('Data parseada como JSON:', result);
+                }
+                
+                const mensaje = result.message || result.success || 'Impresión completada';
+                mostrarEstado('Impresión completada: ' + mensaje, 'success');
+                console.log('Impresión exitosa - Mensaje:', mensaje);
             } catch (e) {
+                console.log('Error procesando respuesta de éxito, usando mensaje por defecto');
                 mostrarEstado('Etiqueta Brother TD-4550DNWB impresa correctamente', 'success');
             }
             
@@ -491,13 +505,26 @@
         onPrintError: function(data) {
             console.log('=== CALLBACK onPrintError ===');
             console.log('Data recibida:', data);
+            console.log('Tipo de data:', typeof data);
             
             try {
-                const error = JSON.parse(data);
-                mostrarEstado('Error de impresión: ' + error.error, 'error');
-                console.log('Error detallado:', error.error);
+                let error;
                 
-                if (error.error.includes('No hay impresora conectada') || error.error.includes('not connected')) {
+                // Si ya es un objeto, usarlo directamente
+                if (typeof data === 'object' && data !== null) {
+                    error = data;
+                    console.log('Data es objeto directo:', error);
+                } else {
+                    // Si es string, intentar parsearlo como JSON
+                    error = JSON.parse(data);
+                    console.log('Data parseada como JSON:', error);
+                }
+                
+                const mensaje = error.error || error.message || 'Error desconocido';
+                mostrarEstado('Error de impresión: ' + mensaje, 'error');
+                console.log('Error detallado:', mensaje);
+                
+                if (mensaje.includes('No hay impresora conectada') || mensaje.includes('not connected')) {
                     console.log('Detectado error de conexión, actualizando estado');
                     printerConnected = false;
                     printerName = '';
@@ -505,8 +532,16 @@
                     actualizarEstadoUI(false, '', '');
                 }
             } catch (e) {
-                console.log('Error parseando error, data original:', data);
-                mostrarEstado('Error de impresión: ' + data, 'error');
+                console.log('Error procesando error, data original:', data);
+                console.log('Tipo de data que falló:', typeof data);
+                
+                // Intentar acceso directo si es un objeto
+                if (typeof data === 'object' && data !== null) {
+                    const mensaje = data.error || data.message || 'Error de impresión';
+                    mostrarEstado('Error de impresión: ' + mensaje, 'error');
+                } else {
+                    mostrarEstado('Error de impresión: ' + data, 'error');
+                }
             }
             etiquetasPendientes = 0;
         }

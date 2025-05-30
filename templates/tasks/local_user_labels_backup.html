@@ -161,9 +161,9 @@
                             <div class="text-md-end">
                                 <div class="printer-status d-inline-block">
                                     <span class="badge bg-secondary me-1" id="printerStatusBadge">
-                                        <i class="bi bi-bluetooth me-1"></i> Brother TD-4550DNWB
+                                        <i class="bi bi-printer me-1"></i> No configurado
                                     </span>
-                                    <button type="button" class="btn btn-sm btn-info" onclick="verificarEstadoImpresora()">
+                                    <button type="button" class="btn btn-sm btn-info" id="checkPrinterBtn">
                                         <i class="bi bi-arrow-clockwise"></i>
                                     </button>
                                 </div>
@@ -244,25 +244,10 @@
                                 {% endif %}
                             </div>
                         </div>
-                        
-                        <!-- Área de botones de etiquetas -->
                         <div class="mt-auto">
-                            {% if product.conservation_types %}
-                                {% for ct in product.conservation_types %}
-                                <div class="mb-2">
-                                    <a href="{{ url_for('tasks.generate_label', product_id=product.id, conservation_type_id=ct.conservation_type.id) }}" 
-                                       class="btn btn-olive btn-sm w-100">
-                                        <i class="bi bi-tag-fill me-1"></i>
-                                        Etiqueta {{ ct.conservation_type.value|capitalize }}
-                                    </a>
-                                </div>
-                                {% endfor %}
-                            {% else %}
-                                <div class="alert alert-warning small">
-                                    <i class="bi bi-exclamation-triangle me-1"></i>
-                                    No hay tipos de conservación configurados para este producto.
-                                </div>
-                            {% endif %}
+                            <a href="{{ url_for('tasks.product_conservation_selection', product_id=product.id) }}" class="btn btn-primary w-100">
+                                <i class="bi bi-tag-fill me-2"></i>Generar Etiqueta
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -270,19 +255,98 @@
             {% endfor %}
         </div>
 
-        {% if search_query and not products %}
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle-fill me-2"></i>No se encontraron productos que coincidan con la búsqueda "{{ search_query }}".
-            <a href="{{ url_for('tasks.local_user_labels') }}" class="btn btn-outline-primary btn-sm ms-2">
-                <i class="bi bi-x-circle me-1"></i>Ver todos los productos
-            </a>
+        <!-- Paginación (para futura implementación) -->
+        <div class="row">
+            <div class="col-12 d-flex justify-content-center">
+                <nav>
+                    <ul class="pagination">
+                        <li class="page-item disabled">
+                            <span class="page-link">Anterior</span>
+                        </li>
+                        <li class="page-item active">
+                            <span class="page-link">1</span>
+                        </li>
+                        <li class="page-item disabled">
+                            <span class="page-link">Siguiente</span>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
         </div>
-        {% endif %}
     {% endif %}
 </div>
 {% endblock %}
 
+
+
+{% block styles %}
+<style>
+    .product-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border-radius: 12px;
+        overflow: hidden;
+    }
+    
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important;
+    }
+    
+    .product-icon {
+        color: #6c757d;
+        transition: color 0.3s ease;
+    }
+    
+    .product-card:hover .product-icon {
+        color: #0d6efd;
+    }
+    
+    .conservation-types {
+        min-height: 40px;
+    }
+    
+    /* Estilos para la sección de impresora */
+    .printer-status {
+        padding: 5px 10px;
+        border-radius: 5px;
+    }
+    
+    .bg-earth-dark {
+        background-color: #8B4513; /* Marrón chocolate */
+        color: white;
+    }
+    
+    .btn-olive {
+        background-color: #556B2F; /* Verde oliva */
+        color: white;
+    }
+    
+    .btn-olive:hover {
+        background-color: #6B8E23;
+        color: white;
+    }
+    
+    /* Estilos adicionales para el modal personalizado */
+    .modal.show {
+        display: block;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+    
+    .modal-backdrop {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1040;
+    }
+</style>
+{% endblock %}
+
 {% block scripts %}
+<!-- Script para mostrar mensaje de confirmación después de imprimir -->
+<script src="/static/js/label-success-message.js"></script>
 <script>
     // Configurar callbacks globales para Brother Print
     window.BrotherPrint = {
@@ -350,87 +414,44 @@
         }
     }
     
+    // Añadir la función closeModal al objeto global window
+    window.closeModal = closeModal;
     // Establecer fecha y hora actual
     document.addEventListener('DOMContentLoaded', function() {
         const now = new Date();
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        const startDateTimeInput = document.getElementById('startDateTime');
-        if (startDateTimeInput) {
-            startDateTimeInput.value = now.toISOString().slice(0, 16);
-        }
+        document.getElementById('startDateTime').value = now.toISOString().slice(0, 16);
         
         // Generar vista previa inicial
         generarVistaPrevia();
         
         // Verificar estado de la impresora
         verificarEstadoImpresora();
-        
-        // Configurar evento para abrir modal
-        const openPrinterModalBtn = document.getElementById('openPrinterModal');
-        if (openPrinterModalBtn) {
-            openPrinterModalBtn.addEventListener('click', function() {
-                const modalElement = document.getElementById('printerSettingsModal');
-                if (modalElement) {
-                    modalElement.style.display = 'block';
-                    document.body.style.overflow = 'hidden';
-                }
-            });
-        }
     });
 
     function verificarEstadoImpresora() {
-        const statusElement = document.getElementById('printerStatus');
-        const badgeElement = document.getElementById('printerStatusBadge');
-        
         if (typeof AndroidBridge === 'undefined') {
-            if (statusElement) statusElement.textContent = 'No disponible (ejecutar en app Android)';
-            if (badgeElement) {
-                badgeElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> No disponible';
-                badgeElement.className = 'badge bg-secondary me-1';
-            }
+            document.getElementById('printerStatus').textContent = 'No disponible (ejecutar en app Android)';
             return;
         }
         
         try {
             const status = JSON.parse(AndroidBridge.getPrinterStatus());
             if (status.connected) {
-                const mensaje = `Conectada: ${status.printerName} (${status.printerAddress})`;
-                if (statusElement) {
-                    statusElement.textContent = mensaje;
-                    statusElement.style.color = '#28a745';
-                }
-                if (badgeElement) {
-                    badgeElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> Conectada';
-                    badgeElement.className = 'badge bg-success me-1';
-                }
+                document.getElementById('printerStatus').textContent = 
+                    `Conectada: ${status.printerName} (${status.printerAddress})`;
+                document.getElementById('printerStatus').style.color = '#28a745';
             } else if (status.configured) {
-                const mensaje = `Configurada pero desconectada: ${status.savedPrinterName}`;
-                if (statusElement) {
-                    statusElement.textContent = mensaje;
-                    statusElement.style.color = '#ffc107';
-                }
-                if (badgeElement) {
-                    badgeElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> Configurada';
-                    badgeElement.className = 'badge bg-warning me-1';
-                }
+                document.getElementById('printerStatus').textContent = 
+                    `Configurada pero desconectada: ${status.savedPrinterName}`;
+                document.getElementById('printerStatus').style.color = '#ffc107';
             } else {
-                const mensaje = 'No configurada (pulsa "Buscar Impresoras")';
-                if (statusElement) {
-                    statusElement.textContent = mensaje;
-                    statusElement.style.color = '#dc3545';
-                }
-                if (badgeElement) {
-                    badgeElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> No configurada';
-                    badgeElement.className = 'badge bg-danger me-1';
-                }
+                document.getElementById('printerStatus').textContent = 
+                    'No configurada (pulsa "Buscar Impresoras")';
+                document.getElementById('printerStatus').style.color = '#dc3545';
             }
         } catch (e) {
-            const mensaje = 'Error al verificar estado';
-            if (statusElement) statusElement.textContent = mensaje;
-            if (badgeElement) {
-                badgeElement.innerHTML = '<i class="bi bi-bluetooth me-1"></i> Error';
-                badgeElement.className = 'badge bg-danger me-1';
-            }
+            document.getElementById('printerStatus').textContent = 'Error al verificar estado';
         }
     }
 
@@ -462,24 +483,11 @@
     }
 
     function generarVistaPrevia() {
-        const productNameElement = document.getElementById('productName');
-        const conservationTypeElement = document.getElementById('conservationType');
-        const employeeElement = document.getElementById('employee');
-        const startDateTimeElement = document.getElementById('startDateTime');
-        const shelfLifeElement = document.getElementById('shelfLife');
-        const quantityElement = document.getElementById('quantity');
-        
-        if (!productNameElement || !conservationTypeElement || !employeeElement || 
-            !startDateTimeElement || !shelfLifeElement || !quantityElement) {
-            console.log('Algunos elementos del formulario no están disponibles');
-            return;
-        }
-        
-        const productName = productNameElement.value;
-        const conservationType = conservationTypeElement.value;
-        const employee = employeeElement.value;
-        const startDateTime = new Date(startDateTimeElement.value);
-        const shelfLife = shelfLifeElement.value;
+        const productName = document.getElementById('productName').value;
+        const conservationType = document.getElementById('conservationType').value;
+        const employee = document.getElementById('employee').value;
+        const startDateTime = new Date(document.getElementById('startDateTime').value);
+        const shelfLife = document.getElementById('shelfLife').value;
         
         const fechaCaducidad = calcularFechaCaducidad(startDateTime, shelfLife);
         
@@ -489,7 +497,7 @@
             preparedBy: `EMP: ${employee}`,
             startDate: `INICIO: ${formatearFecha(startDateTime)}`,
             expiryDate: `Caducidad: ${formatearFecha(fechaCaducidad)}`,
-            quantity: parseInt(quantityElement.value)
+            quantity: parseInt(document.getElementById('quantity').value)
         };
         
         dibujarEtiqueta(datosEtiqueta);
@@ -497,8 +505,6 @@
 
     function dibujarEtiqueta(datos) {
         const canvas = document.getElementById('labelCanvas');
-        if (!canvas) return;
-        
         const ctx = canvas.getContext('2d');
         
         // Limpiar canvas con fondo blanco
@@ -576,6 +582,22 @@
         ctx.strokeStyle = 'black';
         ctx.lineWidth = 3;
         ctx.strokeRect(5, 5, canvas.width - 10, canvas.height - 10);
+        
+        // Agregar esquinas redondeadas simuladas
+        ctx.lineWidth = 2;
+        const cornerSize = 15;
+        
+        // Esquina superior izquierda
+        ctx.beginPath();
+        ctx.moveTo(5 + cornerSize, 5);
+        ctx.arcTo(5, 5, 5, 5 + cornerSize, cornerSize);
+        ctx.stroke();
+        
+        // Esquina superior derecha
+        ctx.beginPath();
+        ctx.moveTo(canvas.width - 5 - cornerSize, 5);
+        ctx.arcTo(canvas.width - 5, 5, canvas.width - 5, 5 + cornerSize, cornerSize);
+        ctx.stroke();
     }
 
     function imprimirEtiquetas() {
@@ -600,8 +622,6 @@
         }
         
         const canvas = document.getElementById('labelCanvas');
-        if (!canvas) return;
-        
         const base64 = canvas.toDataURL('image/png').replace('data:image/png;base64,', '');
         
         // Actualizar estado
@@ -615,8 +635,6 @@
 
     function mostrarEstado(mensaje, tipo) {
         const statusDiv = document.getElementById('statusMessage');
-        if (!statusDiv) return;
-        
         statusDiv.textContent = mensaje;
         statusDiv.className = 'status ' + tipo;
         statusDiv.style.display = 'block';
@@ -629,6 +647,20 @@
         }
     }
 
+    // Configurar evento para abrir modal
+    document.addEventListener('DOMContentLoaded', function() {
+        const openPrinterModalBtn = document.getElementById('openPrinterModal');
+        if (openPrinterModalBtn) {
+            openPrinterModalBtn.addEventListener('click', function() {
+                const modalElement = document.getElementById('printerSettingsModal');
+                if (modalElement) {
+                    modalElement.style.display = 'block';
+                    document.body.style.overflow = 'hidden';
+                }
+            });
+        }
+    });
+
     // Agregar estilos CSS para los estados de mensaje
     const style = document.createElement('style');
     style.textContent = `
@@ -637,5 +669,280 @@
         .status.error { color: #dc3545; background-color: #f8d7da; padding: 8px; border-radius: 4px; }
     `;
     document.head.appendChild(style);
+            })
+            .catch(error => {
+                console.error('Error al cargar la configuración de impresora:', error);
+                updatePrinterConfigStatus(false);
+            });
+    }
+    
+    // Función para comprobar el estado de la impresora
+    function checkPrinterStatus() {
+        const statusBadge = document.getElementById('printerStatusBadge');
+        
+        // Verificar que el elemento exista
+        if (!statusBadge) {
+            console.error('Elemento printerStatusBadge no encontrado en el DOM');
+            return;
+        }
+        
+        statusBadge.className = 'badge bg-warning me-1';
+        statusBadge.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Comprobando...';
+        
+        // Capturar errores en la respuesta
+        fetch('/tasks/api/printers/check/{{ location.id }}')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Error HTTP: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    if (data.online) {
+                        statusBadge.className = 'badge bg-success me-1';
+                        statusBadge.innerHTML = '<i class="bi bi-printer-fill me-1"></i> Impresora conectada';
+                    } else {
+                        statusBadge.className = 'badge bg-danger me-1';
+                        statusBadge.innerHTML = '<i class="bi bi-printer me-1"></i> Impresora sin conexión';
+                    }
+                } else if (data.error === 'no_printer') {
+                    statusBadge.className = 'badge bg-secondary me-1';
+                    statusBadge.innerHTML = '<i class="bi bi-printer me-1"></i> No configurado';
+                } else {
+                    statusBadge.className = 'badge bg-danger me-1';
+                    statusBadge.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> Error: ' + data.message;
+                }
+            })
+            .catch(error => {
+                console.error('Error al comprobar el estado de la impresora:', error);
+                if (statusBadge) {
+                    statusBadge.className = 'badge bg-danger me-1';
+                    statusBadge.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> Error de conexión';
+                }
+            });
+    }
+    
+    // Función para probar la conexión con la impresora
+    function testPrinterConnection() {
+        const ipAddressElement = document.getElementById('printerIp');
+        const portElement = document.getElementById('printerPort');
+        
+        if (!ipAddressElement) {
+            console.error('Elemento printerIp no encontrado en el DOM');
+            return;
+        }
+        
+        const ipAddress = ipAddressElement.value;
+        const port = portElement ? portElement.value : '5000';
+        
+        if (!ipAddress) {
+            alert('Por favor, introduzca una dirección IP válida.');
+            return;
+        }
+        
+        fetch('/tasks/api/printers/test-connection', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ip_address: ipAddress,
+                port: parseInt(port) || 5000
+            }),
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                alert('Conexión exitosa: La impresora está en línea.');
+            } else {
+                alert('Error de conexión: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error al probar la conexión:', error);
+            alert('Error de sistema al intentar conectar con la impresora.');
+        });
+    }
+    
+    // Función para guardar la configuración de la impresora
+    function savePrinterConfig() {
+        const form = document.getElementById('printerSettingsForm');
+        
+        if (!form) {
+            console.error('Elemento printerSettingsForm no encontrado en el DOM');
+            return;
+        }
+        
+        // Validación básica del formulario
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+        
+        // Lista de elementos a obtener
+        const elements = {
+            'printerName': '',
+            'printerIp': '',
+            'printerPort': 5000,
+            'printerModel': '',
+            'apiPath': '/print',
+            'usbPort': '/dev/usb/lp0',
+            'requiresAuth': false,
+            'printerUsername': '',
+            'printerPassword': '',
+            'isDefault': true
+        };
+        
+        // Obtener valores de los elementos verificando primero que existan
+        for (const id in elements) {
+            const element = document.getElementById(id);
+            if (element) {
+                if (id === 'requiresAuth' || id === 'isDefault') {
+                    elements[id] = element.checked;
+                } else {
+                    elements[id] = element.value;
+                }
+            }
+        }
+        
+        // Recopilar datos del formulario
+        const printerData = {
+            name: elements.printerName,
+            ip_address: elements.printerIp,
+            port: parseInt(elements.printerPort) || 5000,
+            model: elements.printerModel,
+            printer_type: 'raspberry_pi', // Siempre usar Raspberry Pi
+            api_path: elements.apiPath,
+            usb_port: elements.usbPort,
+            requires_auth: elements.requiresAuth,
+            username: elements.printerUsername,
+            password: elements.printerPassword,
+            is_default: elements.isDefault,
+            location_id: {{ location.id }}
+        };
+        
+        fetch('/tasks/api/printers/save', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(printerData),
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Error HTTP: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                alert('Configuración guardada correctamente.');
+                
+                // Actualizar el estado
+                updatePrinterConfigStatus(true, data.printer);
+                
+                // Actualizar el estado en la interfaz principal
+                checkPrinterStatus();
+                
+                // Cerrar el modal
+                closeModal();
+            } else {
+                alert('Error al guardar la configuración: ' + (data.message || 'Error desconocido'));
+            }
+        })
+        .catch(error => {
+            console.error('Error al guardar la configuración:', error);
+            alert('Error de sistema al guardar la configuración.');
+        });
+    }
+    
+    // Función para cerrar el modal (implementación personalizada)
+    function closeModal() {
+        const modalElement = document.getElementById('printerSettingsModal');
+        if (modalElement) {
+            // Cerrar manualmente
+            modalElement.style.display = 'none';
+            
+            // Quitar restricciones del scroll del body si es necesario
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+        }
+    }
+    
+    // Función para actualizar el estado de la configuración
+    function updatePrinterConfigStatus(configured, printer = null) {
+        const statusDiv = document.getElementById('printerConfigStatus');
+        
+        // Verificar que el elemento exista
+        if (!statusDiv) {
+            console.error('Elemento printerConfigStatus no encontrado en el DOM');
+            return;
+        }
+        
+        if (configured && printer) {
+            let statusClass = 'secondary';
+            let statusText = 'Desconocido';
+            
+            if (printer.last_status === 'online') {
+                statusClass = 'success';
+                statusText = 'En línea';
+            } else if (printer.last_status === 'offline') {
+                statusClass = 'danger';
+                statusText = 'Sin conexión';
+            } else if (printer.last_status && printer.last_status.startsWith('error')) {
+                statusClass = 'danger';
+                statusText = printer.last_status;
+            }
+            
+            const lastCheck = printer.last_status_check ? new Date(printer.last_status_check).toLocaleString() : 'Nunca';
+            
+            statusDiv.innerHTML = `
+                <div class="alert alert-${statusClass} mb-2">
+                    <strong><i class="bi bi-printer-fill me-1"></i> Impresora configurada:</strong> ${printer.name}
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <tr>
+                            <th style="width: 30%">Tipo:</th>
+                            <td>Raspberry Pi</td>
+                        </tr>
+                        <tr>
+                            <th style="width: 30%">Dirección IP:</th>
+                            <td>${printer.ip_address}:${printer.port}</td>
+                        </tr>
+                        <tr>
+                            <th>Modelo:</th>
+                            <td>${printer.model || 'No especificado'}</td>
+                        </tr>
+                        <tr>
+                            <th>Puerto USB:</th>
+                            <td>${printer.usb_port || '/dev/usb/lp0'}</td>
+                        </tr>
+                        <tr>
+                            <th>Estado:</th>
+                            <td><span class="badge bg-${statusClass}">${statusText}</span></td>
+                        </tr>
+                        <tr>
+                            <th>Última verificación:</th>
+                            <td>${lastCheck}</td>
+                        </tr>
+                    </table>
+                </div>
+            `;
+        } else {
+            statusDiv.innerHTML = `
+                <div class="alert alert-secondary">
+                    No hay impresora configurada. Complete el formulario y haga clic en Guardar.
+                </div>
+            `;
+        }
+    }
 </script>
 {% endblock %}

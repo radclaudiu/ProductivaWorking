@@ -3,8 +3,50 @@
  * Versión 2.0 (30/05/2025) - Protocolo Brother SDK integrado
  * 
  * Este script implementa el protocolo Brother completo para WebView Android
- * con capacidades de búsqueda Bluetooth, conexión y impresión de etiquetas 35x40mm
+ * con capacidades de búsqueda Bluetooth, conexión y impresión de etiquetas 44x38mm
  */
+
+// Callbacks globales para recibir respuestas del sistema Android
+window.BrotherPrint = {
+    // Se llama cuando se encuentran impresoras
+    onPrintersFound: function(printersJsonString) {
+        const printers = JSON.parse(printersJsonString);
+        // printers = [{ name: "Brother TD-4550DNWB", address: "XX:XX:XX:XX:XX:XX" }]
+        console.log('Impresoras encontradas:', printers);
+        if (brotherBridge) {
+            brotherBridge.handlePrintersFound(printersJsonString);
+        }
+    },
+    
+    // Se llama cuando la impresora se conecta
+    onPrinterConnected: function() {
+        console.log('Impresora conectada');
+        if (brotherBridge) {
+            brotherBridge.handlePrinterConnected();
+        }
+    },
+    
+    // Se llama cuando la impresión es exitosa
+    onPrintSuccess: function() {
+        console.log('Impresión completada');
+        alert('Etiqueta impresa correctamente');
+        if (brotherBridge) {
+            brotherBridge.handlePrintSuccess();
+        }
+    },
+    
+    // Se llama cuando hay un error
+    onPrintError: function(errorMessage) {
+        console.error('Error:', errorMessage);
+        alert('Error al imprimir: ' + errorMessage);
+        if (brotherBridge) {
+            brotherBridge.handlePrintError(errorMessage);
+        }
+    }
+};
+
+// Variable global para el bridge
+let brotherBridge;
 
 // Clase principal para el bridge de Brother Print
 class BrotherPrintBridge {
@@ -94,12 +136,13 @@ class BrotherPrintBridge {
             return;
         }
         
-        // Generar imagen de la etiqueta (35x40mm)
+        // Generar imagen de la etiqueta (44x38mm)
         this.generateLabelImage(labelData)
-            .then(imageBase64 => {
+            .then(base64 => {
                 this.showMessage('Enviando etiqueta a impresora...');
                 try {
-                    AndroidBridge.printImage(imageBase64);
+                    // PASO 4: Enviar a imprimir
+                    AndroidBridge.printImage(base64);
                 } catch (error) {
                     console.error('Error al enviar a impresora:', error);
                     this.showMessage('Error al imprimir: ' + error.message, true);
@@ -137,83 +180,78 @@ class BrotherPrintBridge {
         }
     }
     
-    // Generar imagen de etiqueta optimizada para Brother TD-4550DNWB (35x40mm)
+    // Generar imagen de etiqueta optimizada para Brother TD-4550DNWB (44x38mm)
     generateLabelImage(labelData) {
         return new Promise((resolve, reject) => {
             try {
-                // Crear canvas con las dimensiones exactas para 35x40mm a 300 DPI
+                // PASO 1: Generar la etiqueta en un canvas
                 const canvas = document.createElement('canvas');
+                canvas.width = 520;   // 44mm a 300 DPI
+                canvas.height = 449;  // 38mm a 300 DPI
                 const ctx = canvas.getContext('2d');
                 
-                // 35mm x 40mm a 300 DPI = 413 x 472 pixels aproximadamente
-                const width = 413;
-                const height = 472;
-                
-                canvas.width = width;
-                canvas.height = height;
-                
-                // Fondo blanco
-                ctx.fillStyle = '#FFFFFF';
-                ctx.fillRect(0, 0, width, height);
+                // PASO 2: Dibujar la etiqueta
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
                 
                 // Configuración de texto
-                ctx.fillStyle = '#000000';
+                ctx.fillStyle = 'black';
                 ctx.textAlign = 'center';
                 
                 // Título del producto (tamaño más grande)
-                ctx.font = 'bold 28px Arial';
-                const productLines = this.wrapText(ctx, labelData.productName.toUpperCase(), width - 20);
-                let yPos = 40;
+                ctx.font = 'bold 32px Arial';
+                const productLines = this.wrapText(ctx, labelData.productName.toUpperCase(), canvas.width - 20);
+                let yPos = 60;
                 productLines.forEach(line => {
-                    ctx.fillText(line, width / 2, yPos);
-                    yPos += 32;
+                    ctx.fillText(line, canvas.width / 2, yPos);
+                    yPos += 36;
                 });
                 
                 // Tipo de conservación
-                yPos += 10;
-                ctx.font = 'bold 20px Arial';
-                ctx.fillStyle = '#333333';
-                ctx.fillText(labelData.conservationType, width / 2, yPos);
+                yPos += 15;
+                ctx.font = 'bold 24px Arial';
+                ctx.fillStyle = 'black';
+                ctx.fillText(labelData.conservationType, canvas.width / 2, yPos);
                 
                 // Empleado que preparó
-                yPos += 35;
-                ctx.font = '16px Arial';
-                ctx.fillStyle = '#000000';
-                ctx.fillText(labelData.preparedBy, width / 2, yPos);
+                yPos += 40;
+                ctx.font = '18px Arial';
+                ctx.fillStyle = 'black';
+                ctx.fillText(labelData.preparedBy, canvas.width / 2, yPos);
                 
                 // Fecha de inicio
-                yPos += 30;
-                ctx.font = '14px Arial';
-                ctx.fillText(labelData.startDate, width / 2, yPos);
+                yPos += 35;
+                ctx.font = '16px Arial';
+                ctx.fillText(labelData.startDate, canvas.width / 2, yPos);
                 
                 // Fecha de caducidad (destacada)
-                yPos += 40;
-                ctx.font = 'bold 18px Arial';
-                ctx.fillStyle = '#000000';
+                yPos += 45;
+                ctx.font = 'bold 20px Arial';
+                ctx.fillStyle = 'black';
                 // Crear rectángulo para la fecha de caducidad
                 const caducidadText = labelData.expiryDate;
                 const textWidth = ctx.measureText(caducidadText).width;
-                const rectWidth = textWidth + 20;
-                const rectHeight = 30;
-                const rectX = (width - rectWidth) / 2;
-                const rectY = yPos - 20;
+                const rectWidth = textWidth + 24;
+                const rectHeight = 32;
+                const rectX = (canvas.width - rectWidth) / 2;
+                const rectY = yPos - 24;
                 
-                ctx.strokeStyle = '#000000';
+                ctx.strokeStyle = 'black';
                 ctx.lineWidth = 2;
                 ctx.strokeRect(rectX, rectY, rectWidth, rectHeight);
-                ctx.fillText(caducidadText, width / 2, yPos);
+                ctx.fillText(caducidadText, canvas.width / 2, yPos);
                 
                 // Fecha de caducidad secundaria si existe
                 if (labelData.secondaryExpiryDate) {
-                    yPos += 35;
-                    ctx.font = '14px Arial';
+                    yPos += 40;
+                    ctx.font = '16px Arial';
                     ctx.fillStyle = '#666666';
-                    ctx.fillText(labelData.secondaryExpiryDate, width / 2, yPos);
+                    ctx.fillText(labelData.secondaryExpiryDate, canvas.width / 2, yPos);
                 }
                 
-                // Convertir canvas a base64
-                const imageBase64 = canvas.toDataURL('image/png').split(',')[1];
-                resolve(imageBase64);
+                // PASO 3: Convertir a base64 (IMPORTANTE: quitar el prefijo)
+                const base64 = canvas.toDataURL('image/png').replace('data:image/png;base64,', '');
+                resolve(base64);
                 
             } catch (error) {
                 reject(error);

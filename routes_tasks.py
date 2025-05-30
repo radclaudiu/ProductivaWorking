@@ -3595,15 +3595,90 @@ def generate_labels():
         
         # Para debug: siempre devolver JSON por ahora para probar
         if True:  # Cambiado temporalmente para debugging
-            # Respuesta JSON para impresión directa
-            return jsonify({
-                'success': True,
-                'message': f'Se generaron {quantity} etiqueta(s) para {product.name}',
-                'product_name': product.name,
-                'conservation_type': conservation_type.value,
-                'quantity': quantity,
-                'expiry_datetime': expiry_datetime.strftime('%d/%m/%Y %H:%M') if expiry_datetime else None
-            })
+            try:
+                # Generar la imagen de la etiqueta para enviar a la impresora Brother
+                from PIL import Image, ImageDraw, ImageFont
+                import io
+                import base64
+                
+                # Crear imagen de 472x413 píxeles (40mm x 35mm a 300 DPI)
+                width, height = 472, 413
+                image = Image.new('RGB', (width, height), 'white')
+                draw = ImageDraw.Draw(image)
+                
+                # Intentar cargar fuente, si no está disponible usar la por defecto
+                try:
+                    font_large = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
+                    font_medium = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 18)
+                    font_small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 14)
+                except:
+                    font_large = ImageFont.load_default()
+                    font_medium = ImageFont.load_default()
+                    font_small = ImageFont.load_default()
+                
+                # Dibujar contenido de la etiqueta
+                y_pos = 10
+                
+                # Nombre del producto (centrado, negrita)
+                product_name = product.name[:30]  # Limitar caracteres
+                bbox = draw.textbbox((0, 0), product_name, font=font_large)
+                text_width = bbox[2] - bbox[0]
+                x_centered = (width - text_width) // 2
+                draw.text((x_centered, y_pos), product_name, fill='black', font=font_large)
+                y_pos += 35
+                
+                # Tipo de conservación
+                conservation_text = f"Conservación: {conservation_type.value}"
+                draw.text((10, y_pos), conservation_text, fill='black', font=font_medium)
+                y_pos += 25
+                
+                # Fecha de elaboración
+                now_str = now.strftime('%d/%m/%Y %H:%M')
+                elaboration_text = f"Elaborado: {now_str}"
+                draw.text((10, y_pos), elaboration_text, fill='black', font=font_small)
+                y_pos += 20
+                
+                # Fecha de caducidad si existe
+                if expiry_datetime:
+                    expiry_str = expiry_datetime.strftime('%d/%m/%Y %H:%M')
+                    expiry_text = f"Caduca: {expiry_str}"
+                    draw.text((10, y_pos), expiry_text, fill='black', font=font_small)
+                    y_pos += 20
+                
+                # Usuario y ubicación
+                user_text = f"Usuario: {user.username}"
+                draw.text((10, y_pos), user_text, fill='black', font=font_small)
+                y_pos += 15
+                
+                location_text = f"Ubicación: {user.location.name}"
+                draw.text((10, y_pos), location_text, fill='black', font=font_small)
+                
+                # Convertir imagen a base64
+                buffer = io.BytesIO()
+                image.save(buffer, format='PNG')
+                buffer.seek(0)
+                image_base64 = base64.b64encode(buffer.getvalue()).decode('utf-8')
+                
+                current_app.logger.info(f"Etiqueta generada exitosamente para {product.name}, tamaño: {len(image_base64)} caracteres")
+                
+                # Respuesta JSON con la imagen para enviar a la impresora
+                return jsonify({
+                    'success': True,
+                    'message': f'Se generaron {quantity} etiqueta(s) para {product.name}',
+                    'product_name': product.name,
+                    'conservation_type': conservation_type.value,
+                    'quantity': quantity,
+                    'expiry_datetime': expiry_datetime.strftime('%d/%m/%Y %H:%M') if expiry_datetime else None,
+                    'label_image': image_base64,  # Imagen en base64 para enviar a la impresora
+                    'print_to_brother': True  # Indicar que debe imprimir con Brother
+                })
+                
+            except Exception as e:
+                current_app.logger.error(f"Error generando imagen de etiqueta: {str(e)}")
+                return jsonify({
+                    'success': False,
+                    'message': f'Error al generar la etiqueta: {str(e)}'
+                }), 500
         else:
             # Generar HTML para impresión directa, incluyendo las etiquetas de refrigeración si corresponde
             return render_template(

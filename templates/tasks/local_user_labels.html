@@ -398,6 +398,7 @@
             console.log('=== CALLBACK onStatusUpdate ===');
             console.log('Data recibida:', data);
             console.log('Tipo de data:', typeof data);
+            console.log('Data como string:', String(data));
             
             try {
                 let status;
@@ -412,24 +413,35 @@
                     console.log('Data parseada como JSON:', status);
                 }
                 
+                console.log('Status final a procesar:', status);
+                console.log('Status.connected:', status.connected);
+                console.log('Status.connected === true:', status.connected === true);
                 console.log('Status properties:');
                 Object.keys(status).forEach(key => {
-                    console.log(`- ${key}:`, status[key]);
+                    console.log(`- ${key}: ${status[key]} (tipo: ${typeof status[key]})`);
                 });
                 
-                if (status.connected === true) {
+                // Verificar conexión de forma más flexible
+                const isConnected = status.connected === true || status.connected === 'true' || status.connected === 1;
+                const isReady = status.ready === true || status.ready === 'true' || status.ready === 1;
+                
+                console.log('Evaluación de conexión:');
+                console.log('- isConnected:', isConnected);
+                console.log('- isReady:', isReady);
+                
+                if (isConnected) {
                     printerConnected = true;
-                    printerName = status.printerName || status.name || 'Brother TD-4550DNWB';
+                    printerName = status.printerName || status.name || 'TD-4550DNWB_5707';
                     printerAddress = status.printerAddress || status.mac || status.address || '';
                     
-                    console.log('Impresora detectada como CONECTADA');
+                    console.log('✅ IMPRESORA DETECTADA COMO CONECTADA');
                     console.log('- Nombre:', printerName);
                     console.log('- Dirección:', printerAddress);
-                    console.log('- Ready:', status.ready);
+                    console.log('- Ready:', isReady);
                     
                     actualizarEstadoUI(true, printerName, printerAddress);
                     
-                    if (status.ready === true) {
+                    if (isReady) {
                         mostrarEstado('Estado verificado: Conectada y lista para imprimir', 'success');
                     } else {
                         mostrarEstado('Estado verificado: Conectada pero no lista', 'info');
@@ -439,7 +451,8 @@
                     printerName = '';
                     printerAddress = '';
                     
-                    console.log('Impresora detectada como DESCONECTADA');
+                    console.log('❌ IMPRESORA DETECTADA COMO DESCONECTADA');
+                    console.log('- Valor de connected:', status.connected);
                     actualizarEstadoUI(false, '', '');
                     mostrarEstado('Estado verificado: No conectada', 'info');
                 }
@@ -451,9 +464,10 @@
                 // Intentar acceso directo si es un objeto con propiedades conocidas
                 if (typeof data === 'object' && data !== null && data.hasOwnProperty('connected')) {
                     console.log('Intentando acceso directo a propiedades');
-                    if (data.connected === true) {
+                    const isConnected = data.connected === true || data.connected === 'true' || data.connected === 1;
+                    if (isConnected) {
                         printerConnected = true;
-                        printerName = 'Brother TD-4550DNWB';
+                        printerName = 'TD-4550DNWB_5707';
                         actualizarEstadoUI(true, printerName, '');
                         mostrarEstado('Estado verificado: Conectada', 'success');
                     } else {

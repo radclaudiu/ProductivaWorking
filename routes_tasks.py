@@ -3589,8 +3589,12 @@ def generate_labels():
                 current_app.logger.error(f"Error al registrar etiquetas de refrigeración: {str(e)}")
                 # Continuar de todos modos
         
-        # Detectar si es una solicitud AJAX (para impresión directa)
-        if request.headers.get('Content-Type') == 'application/x-www-form-urlencoded' and request.method == 'POST':
+        # Detectar si es una solicitud fetch desde JavaScript (para impresión directa)
+        # Simplemente verificamos si el Accept header incluye application/json
+        is_fetch_request = 'application/json' in request.headers.get('Accept', '')
+        
+        # Para debug: siempre devolver JSON por ahora para probar
+        if True:  # Cambiado temporalmente para debugging
             # Respuesta JSON para impresión directa
             return jsonify({
                 'success': True,

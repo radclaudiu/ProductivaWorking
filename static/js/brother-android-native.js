@@ -368,10 +368,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Crear instancia del bridge
     brotherBridge = new BrotherPrintBridge();
     
-    // Verificar botón principal de impresión directa
-    const directPrintBtn = document.getElementById('direct-print-btn');
-    if (directPrintBtn) {
-        directPrintBtn.addEventListener('click', function(e) {
+    // Verificar botón principal de impresión Brother Android
+    const brotherAndroidPrintBtn = document.getElementById('brother-android-print-btn');
+    if (brotherAndroidPrintBtn) {
+        brotherAndroidPrintBtn.addEventListener('click', function(e) {
             e.preventDefault();
             
             if (!brotherBridge.isAndroidApp) {

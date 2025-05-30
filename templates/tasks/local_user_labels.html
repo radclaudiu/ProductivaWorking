@@ -326,7 +326,13 @@
     let printerName = '';
     let printerAddress = '';
     
+    console.log('🚀 INICIANDO SISTEMA DE IMPRESORA BROTHER TD-4550DNWB');
+    console.log('📊 Estado inicial:');
+    console.log('- printerConnected:', printerConnected);
+    console.log('- AndroidBridge disponible:', typeof AndroidBridge !== 'undefined');
+    
     // Configurar callbacks globales para Brother Print - Exactamente como especificado
+    console.log('⚙️ Configurando callbacks window.BrotherPrint...');
     window.BrotherPrint = {
         onPrintersFound: function(data) {
             console.log('=== CALLBACK onPrintersFound ===');
@@ -700,7 +706,10 @@
     }
 
     function verificarEstadoImpresora() {
+        console.log('🔍 FUNCIÓN verificarEstadoImpresora() INICIADA');
+        
         if (typeof AndroidBridge === 'undefined') {
+            console.log('❌ AndroidBridge no está disponible');
             const mensaje = 'No disponible (ejecutar en app Android)';
             const statusElement = document.getElementById('printerStatus');
             const badgeElement = document.getElementById('printerStatusBadge');
@@ -720,36 +729,58 @@
             return;
         }
         
+        console.log('✅ AndroidBridge está disponible');
+        console.log('📋 Métodos AndroidBridge disponibles:');
+        console.log('- getPrinterStatus:', typeof AndroidBridge.getPrinterStatus);
+        console.log('- searchPrinters:', typeof AndroidBridge.searchPrinters);
+        console.log('- connectPrinter:', typeof AndroidBridge.connectPrinter);
+        console.log('- printImage:', typeof AndroidBridge.printImage);
+        
         // Mostrar estado actual desde variables globales
+        console.log('📊 Estado actual en variables web:');
+        console.log('- printerConnected:', printerConnected);
+        console.log('- printerName:', printerName);
+        console.log('- printerAddress:', printerAddress);
+        
         actualizarEstadoUI(printerConnected, printerName, printerAddress);
         
         // Llamar a AndroidBridge.getPrinterStatus() para obtener estado actualizado vía callback
         console.log('=== VERIFICANDO ESTADO DE IMPRESORA ===');
-        console.log('Estado actual en web:');
-        console.log('- printerConnected:', printerConnected);
-        console.log('- printerName:', printerName);
-        console.log('- printerAddress:', printerAddress);
-        console.log('Llamando AndroidBridge.getPrinterStatus()...');
+        console.log('🔧 Llamando AndroidBridge.getPrinterStatus()...');
         
         try {
             AndroidBridge.getPrinterStatus();
-            console.log('Llamada a getPrinterStatus() ejecutada correctamente');
-            console.log('Esperando callback con estado actualizado...');
+            console.log('✅ Llamada a getPrinterStatus() ejecutada correctamente');
+            console.log('⏳ Esperando callback window.BrotherPrint.onStatusUpdate...');
+            console.log('💡 El resultado debería aparecer en onStatusUpdate callback');
         } catch (e) {
-            console.error('Error llamando getPrinterStatus:', e);
+            console.error('❌ Error llamando getPrinterStatus:', e);
+            console.log('📝 Detalles del error:', e.message);
             mostrarEstado('Error verificando estado de impresora: ' + e.message, 'error');
         }
     }
 
     function buscarImpresoras() {
+        console.log('🔍 FUNCIÓN buscarImpresoras() INICIADA');
+        
         if (typeof AndroidBridge === 'undefined') {
+            console.log('❌ AndroidBridge no disponible');
             mostrarEstado('AndroidBridge no disponible - Ejecutar en aplicación Android', 'error');
             return;
         }
         
-        console.log('Llamando AndroidBridge.searchPrinters()');
+        console.log('✅ AndroidBridge disponible');
+        console.log('🔧 Llamando AndroidBridge.searchPrinters()...');
         mostrarEstado('Buscando impresoras Brother TD-4550DNWB...', 'info');
-        AndroidBridge.searchPrinters();
+        
+        try {
+            AndroidBridge.searchPrinters();
+            console.log('✅ Llamada a searchPrinters() ejecutada correctamente');
+            console.log('⏳ Esperando callback window.BrotherPrint.onPrintersFound...');
+        } catch (e) {
+            console.error('❌ Error llamando searchPrinters:', e);
+            mostrarEstado('Error buscando impresoras: ' + e.message, 'error');
+        }
     }
 
     function desconectarImpresora() {
@@ -764,37 +795,48 @@
     }
 
     function enviarEtiquetaPrueba() {
+        console.log('🖨️ FUNCIÓN enviarEtiquetaPrueba() INICIADA');
+        
         if (typeof AndroidBridge === 'undefined') {
+            console.log('❌ AndroidBridge no disponible');
             mostrarEstado('Esta función solo está disponible en la aplicación Android', 'error');
             return;
         }
 
+        console.log('✅ AndroidBridge disponible');
+        console.log('🔧 Verificando método printImage...');
+        console.log('- printImage disponible:', typeof AndroidBridge.printImage);
+
         if (typeof AndroidBridge.printImage !== 'function') {
+            console.log('❌ Método printImage no disponible');
             mostrarEstado('Método de impresión no disponible', 'error');
             return;
         }
 
-        // Datos de etiqueta de prueba
-        const datosEtiquetaPrueba = {
-            productName: 'ETIQUETA DE PRUEBA',
-            conservationType: 'Brother TD-4550DNWB',
-            preparedBy: 'Preparado por: Sistema',
-            startDate: 'Fecha: ' + new Date().toLocaleDateString('es-ES'),
-            expiryDate: 'Hora: ' + new Date().toLocaleTimeString('es-ES')
-        };
+        console.log('📊 Estado actual de conexión:');
+        console.log('- printerConnected:', printerConnected);
+        console.log('- printerName:', printerName);
+        console.log('- printerAddress:', printerAddress);
 
         try {
             // Verificar que la impresora esté conectada
             if (!printerConnected) {
+                console.log('❌ Impresora no conectada');
                 mostrarEstado('Error: No hay impresora conectada. Busque impresoras primero.', 'error');
                 return;
             }
+            
+            console.log('✅ Impresora conectada, generando etiqueta de prueba...');
             
             // Generar canvas de prueba
             const canvas = document.createElement('canvas');
             canvas.width = 520;   // 44mm a 300 DPI
             canvas.height = 449;  // 38mm a 300 DPI
             const ctx = canvas.getContext('2d');
+            
+            console.log('🎨 Canvas creado:');
+            console.log('- Ancho:', canvas.width);
+            console.log('- Alto:', canvas.height);
             
             // Fondo blanco
             ctx.fillStyle = 'white';
@@ -825,16 +867,26 @@
             ctx.lineWidth = 3;
             ctx.strokeRect(10, 10, 500, 429);
             
+            console.log('🎨 Etiqueta dibujada en canvas');
+            
             const base64 = canvas.toDataURL('image/png').replace(/^data:image\/png;base64,/, '');
             
-            console.log('Llamando AndroidBridge.printImage() con etiqueta de prueba');
-            console.log('Base64 generado, longitud:', base64.length);
+            console.log('📷 Base64 generado:');
+            console.log('- Longitud:', base64.length);
+            console.log('- Primeros 50 caracteres:', base64.substring(0, 50));
+            console.log('🔧 Llamando AndroidBridge.printImage()...');
+            
             mostrarEstado('Enviando etiqueta de prueba a Brother TD-4550DNWB...', 'info');
             
             AndroidBridge.printImage(base64);
             
+            console.log('✅ Llamada a printImage() ejecutada correctamente');
+            console.log('⏳ Esperando callback onPrintSuccess o onPrintError...');
+            
         } catch (error) {
-            console.error('Error enviando etiqueta de prueba:', error);
+            console.error('❌ Error enviando etiqueta de prueba:', error);
+            console.log('📝 Detalles del error:', error.message);
+            console.log('📝 Stack trace:', error.stack);
             mostrarEstado('Error al enviar etiqueta de prueba: ' + error.message, 'error');
         }
     }

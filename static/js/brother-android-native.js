@@ -368,7 +368,26 @@ document.addEventListener('DOMContentLoaded', function() {
     // Crear instancia del bridge
     brotherBridge = new BrotherPrintBridge();
     
-    // Verificar botón principal de impresión Brother Android
+    // Verificar botón API Brother TD-4550DNWB
+    const brotherApiPrintBtn = document.getElementById('brother-api-print-btn');
+    if (brotherApiPrintBtn) {
+        brotherApiPrintBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            if (!brotherBridge.isAndroidApp) {
+                brotherBridge.showMessage('Para usar la API Brother TD-4550DNWB, abra esta página en la aplicación Android', true);
+                return;
+            }
+            
+            // Usar directamente la API Brother sin verificar conexión previa
+            brotherBridge.showMessage('Conectando con impresora Brother TD-4550DNWB...');
+            
+            // Buscar y conectar automáticamente
+            brotherBridge.searchPrinters();
+        });
+    }
+    
+    // Verificar botón Android Brother TD-4550DNWB
     const brotherAndroidPrintBtn = document.getElementById('brother-android-print-btn');
     if (brotherAndroidPrintBtn) {
         brotherAndroidPrintBtn.addEventListener('click', function(e) {

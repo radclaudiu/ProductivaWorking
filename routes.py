@@ -3,7 +3,7 @@ import sqlalchemy
 from datetime import datetime, time
 from functools import wraps
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, jsonify, send_from_directory, send_file, session
+from flask import Blueprint, render_template, redirect, url_for, flash, request, abort, jsonify, send_from_directory, send_file, session, make_response
 from flask_login import login_user, logout_user, login_required, current_user
 from urllib.parse import urlparse
 from werkzeug.utils import secure_filename
@@ -91,12 +91,20 @@ def privacy_policy():
 @auth_bp.route('/logout')
 @login_required
 def logout():
-    log_activity(f'Logout: {current_user.username}')
+    username = current_user.username
+    log_activity(f'Logout: {username}')
     logout_user()
     # Limpiar la sesión por completo para evitar problemas de persistencia
     session.clear()
+    
+    # Crear una respuesta de redirección con headers para evitar caché
+    response = make_response(redirect(url_for('main.index')))
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    
     flash('Has cerrado sesión correctamente.', 'success')
-    return redirect(url_for('auth.login'))
+    return response
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
 @admin_required

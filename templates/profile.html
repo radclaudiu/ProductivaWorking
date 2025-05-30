@@ -141,7 +141,8 @@
                 </div>
             </div>
             
-            <!-- Recent Activity -->
+            <!-- Recent Activity (only for admins) -->
+            {% if current_user.is_admin() %}
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold">Actividad Reciente</h6>
@@ -170,6 +171,7 @@
                     {% endif %}
                 </div>
             </div>
+            {% endif %}
         </div>
     </div>
 </div>

@@ -1,0 +1,724 @@
+# Guía completa: Impresión Brother TD-4550DNWB desde Web vía Android
+
+## PARTE 1: CONFIGURACIÓN DE LA APLICACIÓN ANDROID
+
+### 1.1 Dependencias y SDK
+
+#### Agregar al `build.gradle` (Module: app):
+```gradle
+dependencies {
+    implementation 'com.brother.ptouch.sdk:printerlibrary:4.4.0'
+    implementation 'androidx.webkit:webkit:1.7.0'
+    
+    // Para manejo de permisos
+    implementation 'com.karumi:dexter:6.2.3'
+    
+    // Para JSON
+    implementation 'com.google.code.gson:gson:2.10.1'
+}
+```
+
+#### Descargar Brother Print SDK:
+1. Registrarse en: https://www.brother.co.jp/product/dev/mobile/android/index.aspx
+2. Descargar el SDK completo
+3. Agregar el archivo JAR al proyecto: `libs/BrotherPrintLibrary.jar`
+
+### 1.2 Permisos en AndroidManifest.xml
+
+```xml
+<uses-permission android:name="android.permission.BLUETOOTH" />
+<uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+<uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+<uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+<!-- Para Android 12+ -->
+<uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+<uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+
+<application
+    android:requestLegacyExternalStorage="true"
+    ... >
+```
+
+### 1.3 Clase Principal de Impresión
+
+```java
+public class BrotherPrintManager {
+    private Context context;
+    private Printer printer;
+    private PrinterInfo printerInfo;
+    
+    public BrotherPrintManager(Context context) {
+        this.context = context;
+        setupPrinter();
+    }
+    
+    private void setupPrinter() {
+        printer = new Printer();
+        printerInfo = printer.getPrinterInfo();
+        
+        // Configuración para TD-4550DNWB
+        printerInfo.printerModel = PrinterInfo.Model.TD_4550DNWB;
+        printerInfo.port = PrinterInfo.Port.BLUETOOTH;
+        printerInfo.orientation = PrinterInfo.Orientation.LANDSCAPE;
+        printerInfo.paperSize = PrinterInfo.PaperSize.CUSTOM;
+        printerInfo.resolution = PrinterInfo.Resolution.RESOLUTION_300;
+        
+        printer.setPrinterInfo(printerInfo);
+    }
+    
+    public void searchBluetoothPrinters(PrinterSearchCallback callback) {
+        new Thread(() -> {
+            NetPrinter[] printers = printer.getNetPrinters(PrinterInfo.Port.BLUETOOTH);
+            callback.onPrintersFound(printers);
+        }).start();
+    }
+    
+    public void connectToPrinter(String macAddress) {
+        printerInfo.macAddress = macAddress;
+        printer.setPrinterInfo(printerInfo);
+    }
+    
+    public void printImage(String base64Image, PrintCallback callback) {
+        new Thread(() -> {
+            try {
+                // Decodificar imagen base64
+                byte[] imageBytes = Base64.decode(base64Image, Base64.DEFAULT);
+                Bitmap bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.length);
+                
+                // Configurar trabajo de impresión
+                PrinterStatus status = printer.printImage(bitmap);
+                
+                if (status.errorCode == PrinterInfo.ErrorCode.ERROR_NONE) {
+                    callback.onSuccess();
+                } else {
+                    callback.onError(status.errorCode.toString());
+                }
+            } catch (Exception e) {
+                callback.onError(e.getMessage());
+            }
+        }).start();
+    }
+    
+    public void printPDF(String base64PDF, PrintCallback callback) {
+        new Thread(() -> {
+            try {
+                // Guardar PDF temporalmente
+                byte[] pdfBytes = Base64.decode(base64PDF, Base64.DEFAULT);
+                File tempFile = new File(context.getCacheDir(), "temp_label.pdf");
+                FileOutputStream fos = new FileOutputStream(tempFile);
+                fos.write(pdfBytes);
+                fos.close();
+                
+                // Imprimir PDF
+                PrinterStatus status = printer.printPdfFile(tempFile.getAbsolutePath(), 1);
+                
+                if (status.errorCode == PrinterInfo.ErrorCode.ERROR_NONE) {
+                    callback.onSuccess();
+                } else {
+                    callback.onError(status.errorCode.toString());
+                }
+                
+                // Limpiar archivo temporal
+                tempFile.delete();
+            } catch (Exception e) {
+                callback.onError(e.getMessage());
+            }
+        }).start();
+    }
+}
+```
+
+### 1.4 Interfaces de Callback
+
+```java
+public interface PrinterSearchCallback {
+    void onPrintersFound(NetPrinter[] printers);
+}
+
+public interface PrintCallback {
+    void onSuccess();
+    void onError(String error);
+}
+```
+
+### 1.5 JavaScript Interface para WebView
+
+```java
+public class WebViewInterface {
+    private Context context;
+    private BrotherPrintManager printManager;
+    private WebView webView;
+    
+    public WebViewInterface(Context context, WebView webView) {
+        this.context = context;
+        this.webView = webView;
+        this.printManager = new BrotherPrintManager(context);
+    }
+    
+    @JavascriptInterface
+    public void searchPrinters() {
+        printManager.searchBluetoothPrinters(printers -> {
+            Gson gson = new Gson();
+            String jsonPrinters = gson.toJson(printers);
+            
+            ((Activity) context).runOnUiThread(() -> {
+                webView.evaluateJavascript(
+                    "window.BrotherPrint.onPrintersFound('" + jsonPrinters + "')", 
+                    null
+                );
+            });
+        });
+    }
+    
+    @JavascriptInterface
+    public void connectPrinter(String macAddress) {
+        printManager.connectToPrinter(macAddress);
+        
+        ((Activity) context).runOnUiThread(() -> {
+            webView.evaluateJavascript(
+                "window.BrotherPrint.onPrinterConnected()", 
+                null
+            );
+        });
+    }
+    
+    @JavascriptInterface
+    public void printImage(String base64Image) {
+        printManager.printImage(base64Image, new PrintCallback() {
+            @Override
+            public void onSuccess() {
+                ((Activity) context).runOnUiThread(() -> {
+                    webView.evaluateJavascript(
+                        "window.BrotherPrint.onPrintSuccess()", 
+                        null
+                    );
+                });
+            }
+            
+            @Override
+            public void onError(String error) {
+                ((Activity) context).runOnUiThread(() -> {
+                    webView.evaluateJavascript(
+                        "window.BrotherPrint.onPrintError('" + error + "')", 
+                        null
+                    );
+                });
+            }
+        });
+    }
+    
+    @JavascriptInterface
+    public void printPDF(String base64PDF) {
+        printManager.printPDF(base64PDF, new PrintCallback() {
+            @Override
+            public void onSuccess() {
+                ((Activity) context).runOnUiThread(() -> {
+                    webView.evaluateJavascript(
+                        "window.BrotherPrint.onPrintSuccess()", 
+                        null
+                    );
+                });
+            }
+            
+            @Override
+            public void onError(String error) {
+                ((Activity) context).runOnUiThread(() -> {
+                    webView.evaluateJavascript(
+                        "window.BrotherPrint.onPrintError('" + error + "')", 
+                        null
+                    );
+                });
+            }
+        });
+    }
+}
+```
+
+### 1.6 MainActivity configuración del WebView
+
+```java
+public class MainActivity extends AppCompatActivity {
+    private WebView webView;
+    private WebViewInterface webInterface;
+    
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        
+        webView = findViewById(R.id.webview);
+        setupWebView();
+        requestPermissions();
+    }
+    
+    private void setupWebView() {
+        WebSettings webSettings = webView.getSettings();
+        webSettings.setJavaScriptEnabled(true);
+        webSettings.setDomStorageEnabled(true);
+        webSettings.setAllowFileAccess(true);
+        webSettings.setAllowContentAccess(true);
+        
+        webInterface = new WebViewInterface(this, webView);
+        webView.addJavascriptInterface(webInterface, "AndroidBridge");
+        
+        webView.setWebViewClient(new WebViewClient());
+        webView.loadUrl("https://tu-dominio.com/etiquetas");
+    }
+    
+    private void requestPermissions() {
+        Dexter.withContext(this)
+            .withPermissions(
+                Manifest.permission.BLUETOOTH,
+                Manifest.permission.BLUETOOTH_ADMIN,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.BLUETOOTH_SCAN,
+                Manifest.permission.BLUETOOTH_CONNECT
+            )
+            .withListener(new MultiplePermissionsListener() {
+                @Override
+                public void onPermissionsChecked(MultiplePermissionsReport report) {
+                    if (report.areAllPermissionsGranted()) {
+                        // Permisos concedidos
+                    }
+                }
+                
+                @Override
+                public void onPermissionRationaleShouldBeShown(
+                    List<PermissionRequest> permissions, 
+                    PermissionToken token) {
+                    token.continuePermissionRequest();
+                }
+            }).check();
+    }
+}
+```
+
+---
+
+## PARTE 2: CONFIGURACIÓN DE LA PÁGINA WEB
+
+### 2.1 JavaScript Bridge para comunicación con Android
+
+```javascript
+class BrotherPrintBridge {
+    constructor() {
+        this.isAndroidApp = typeof AndroidBridge !== 'undefined';
+        this.connectedPrinter = null;
+        this.availablePrinters = [];
+        
+        // Configurar callbacks globales
+        window.BrotherPrint = {
+            onPrintersFound: (printersJson) => this.handlePrintersFound(printersJson),
+            onPrinterConnected: () => this.handlePrinterConnected(),
+            onPrintSuccess: () => this.handlePrintSuccess(),
+            onPrintError: (error) => this.handlePrintError(error)
+        };
+    }
+    
+    // Buscar impresoras disponibles
+    searchPrinters() {
+        if (!this.isAndroidApp) {
+            console.warn('Esta función solo está disponible en la app Android');
+            return;
+        }
+        
+        AndroidBridge.searchPrinters();
+    }
+    
+    // Conectar a impresora específica
+    connectToPrinter(macAddress) {
+        if (!this.isAndroidApp) {
+            console.warn('Esta función solo está disponible en la app Android');
+            return;
+        }
+        
+        AndroidBridge.connectPrinter(macAddress);
+    }
+    
+    // Imprimir imagen (base64)
+    printImage(imageBase64) {
+        if (!this.isAndroidApp) {
+            console.warn('Esta función solo está disponible en la app Android');
+            return;
+        }
+        
+        if (!this.connectedPrinter) {
+            this.handlePrintError('No hay impresora conectada');
+            return;
+        }
+        
+        AndroidBridge.printImage(imageBase64);
+    }
+    
+    // Imprimir PDF (base64)
+    printPDF(pdfBase64) {
+        if (!this.isAndroidApp) {
+            console.warn('Esta función solo está disponible en la app Android');
+            return;
+        }
+        
+        if (!this.connectedPrinter) {
+            this.handlePrintError('No hay impresora conectada');
+            return;
+        }
+        
+        AndroidBridge.printPDF(pdfBase64);
+    }
+    
+    // Callbacks
+    handlePrintersFound(printersJson) {
+        try {
+            this.availablePrinters = JSON.parse(printersJson);
+            this.showPrinterSelection();
+        } catch (e) {
+            console.error('Error parsing printers:', e);
+        }
+    }
+    
+    handlePrinterConnected() {
+        this.connectedPrinter = true;
+        this.showConnectionStatus('Impresora conectada correctamente');
+    }
+    
+    handlePrintSuccess() {
+        this.showNotification('Etiqueta impresa correctamente', 'success');
+    }
+    
+    handlePrintError(error) {
+        this.showNotification('Error al imprimir: ' + error, 'error');
+    }
+    
+    // UI Helper methods
+    showPrinterSelection() {
+        const printerSelect = document.getElementById('printer-select');
+        if (!printerSelect) return;
+        
+        printerSelect.innerHTML = '<option value="">Seleccionar impresora...</option>';
+        
+        this.availablePrinters.forEach(printer => {
+            const option = document.createElement('option');
+            option.value = printer.macAddress;
+            option.textContent = `${printer.modelName} (${printer.macAddress})`;
+            printerSelect.appendChild(option);
+        });
+        
+        printerSelect.style.display = 'block';
+    }
+    
+    showConnectionStatus(message) {
+        const statusDiv = document.getElementById('connection-status');
+        if (statusDiv) {
+            statusDiv.textContent = message;
+            statusDiv.className = 'status success';
+        }
+    }
+    
+    showNotification(message, type) {
+        // Crear notificación toast
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+}
+```
+
+### 2.2 Funciones de generación de etiquetas
+
+```javascript
+class LabelGenerator {
+    constructor(brotherBridge) {
+        this.bridge = brotherBridge;
+        this.canvas = null;
+        this.ctx = null;
+    }
+    
+    // Crear etiqueta como imagen
+    createLabelImage(labelData) {
+        return new Promise((resolve, reject) => {
+            // Crear canvas con dimensiones de etiqueta TD-4550DNWB
+            // Tamaño típico: 4" x 6" a 300 DPI = 1200x1800 pixels
+            this.canvas = document.createElement('canvas');
+            this.canvas.width = 1200;
+            this.canvas.height = 1800;
+            this.ctx = this.canvas.getContext('2d');
+            
+            // Fondo blanco
+            this.ctx.fillStyle = '#FFFFFF';
+            this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+            
+            // Configurar texto
+            this.ctx.fillStyle = '#000000';
+            this.ctx.font = 'bold 48px Arial';
+            this.ctx.textAlign = 'left';
+            
+            let yPosition = 100;
+            const lineHeight = 60;
+            
+            // Dibujar campos de la etiqueta
+            Object.entries(labelData).forEach(([key, value]) => {
+                this.ctx.fillText(`${key}: ${value}`, 50, yPosition);
+                yPosition += lineHeight;
+            });
+            
+            // Agregar código de barras si existe
+            if (labelData.barcode) {
+                this.drawBarcode(labelData.barcode, 50, yPosition + 50);
+            }
+            
+            // Convertir a base64
+            const base64Image = this.canvas.toDataURL('image/png').split(',')[1];
+            resolve(base64Image);
+        });
+    }
+    
+    // Crear etiqueta como PDF
+    createLabelPDF(labelData) {
+        return new Promise((resolve, reject) => {
+            // Usando jsPDF (incluir en tu HTML)
+            const { jsPDF } = window.jspdf;
+            const pdf = new jsPDF({
+                orientation: 'portrait',
+                unit: 'in',
+                format: [4, 6] // 4x6 inches
+            });
+            
+            let yPosition = 0.5;
+            const lineHeight = 0.3;
+            
+            pdf.setFontSize(12);
+            
+            Object.entries(labelData).forEach(([key, value]) => {
+                pdf.text(`${key}: ${value}`, 0.2, yPosition);
+                yPosition += lineHeight;
+            });
+            
+            // Agregar código de barras si existe
+            if (labelData.barcode) {
+                // Aquí puedes usar JsBarcode para generar código de barras
+                pdf.text(`Código: ${labelData.barcode}`, 0.2, yPosition + 0.5);
+            }
+            
+            const pdfBase64 = pdf.output('datauristring').split(',')[1];
+            resolve(pdfBase64);
+        });
+    }
+    
+    drawBarcode(code, x, y) {
+        // Implementación simple de código de barras
+        // Para una implementación completa, usar JsBarcode
+        this.ctx.fillStyle = '#000000';
+        const barWidth = 3;
+        const barHeight = 80;
+        
+        for (let i = 0; i < code.length; i++) {
+            if (i % 2 === 0) {
+                this.ctx.fillRect(x + (i * barWidth), y, barWidth, barHeight);
+            }
+        }
+        
+        // Texto del código
+        this.ctx.font = '16px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText(code, x + (code.length * barWidth) / 2, y + barHeight + 20);
+    }
+}
+```
+
+### 2.3 HTML de ejemplo con controles
+
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Etiquetas</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        .printer-controls {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 4px;
+            color: white;
+            z-index: 1000;
+        }
+        
+        .notification.success { background: #4CAF50; }
+        .notification.error { background: #f44336; }
+        
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        
+        .status.success { background: #d4edda; color: #155724; }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover { background: #0056b3; }
+        
+        select, input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Generador de Etiquetas Brother</h1>
+    
+    <div class="printer-controls">
+        <h3>Control de Impresora</h3>
+        <button onclick="searchPrinters()">Buscar Impresoras</button>
+        <select id="printer-select" style="display:none;" onchange="connectPrinter(this.value)">
+        </select>
+        <div id="connection-status"></div>
+    </div>
+    
+    <div class="label-form">
+        <h3>Datos de la Etiqueta</h3>
+        <form id="label-form">
+            <input type="text" id="product-name" placeholder="Nombre del producto" required>
+            <input type="text" id="product-code" placeholder="Código del producto" required>
+            <input type="number" id="product-price" placeholder="Precio" step="0.01" required>
+            <input type="text" id="product-barcode" placeholder="Código de barras">
+            <button type="button" onclick="generateAndPrint('image')">Imprimir como Imagen</button>
+            <button type="button" onclick="generateAndPrint('pdf')">Imprimir como PDF</button>
+        </form>
+    </div>
+    
+    <script>
+        // Inicializar bridge
+        const brotherBridge = new BrotherPrintBridge();
+        const labelGenerator = new LabelGenerator(brotherBridge);
+        
+        function searchPrinters() {
+            brotherBridge.searchPrinters();
+        }
+        
+        function connectPrinter(macAddress) {
+            if (macAddress) {
+                brotherBridge.connectToPrinter(macAddress);
+            }
+        }
+        
+        async function generateAndPrint(format) {
+            const formData = {
+                'Producto': document.getElementById('product-name').value,
+                'Código': document.getElementById('product-code').value,
+                'Precio': '$' + document.getElementById('product-price').value,
+                'barcode': document.getElementById('product-barcode').value
+            };
+            
+            if (!formData['Producto'] || !formData['Código'] || !formData['Precio']) {
+                alert('Por favor completa todos los campos requeridos');
+                return;
+            }
+            
+            try {
+                if (format === 'image') {
+                    const imageBase64 = await labelGenerator.createLabelImage(formData);
+                    brotherBridge.printImage(imageBase64);
+                } else if (format === 'pdf') {
+                    const pdfBase64 = await labelGenerator.createLabelPDF(formData);
+                    brotherBridge.printPDF(pdfBase64);
+                }
+            } catch (error) {
+                console.error('Error generando etiqueta:', error);
+                brotherBridge.handlePrintError('Error generando la etiqueta');
+            }
+        }
+    </script>
+</body>
+</html>
+```
+
+### 2.4 CSS adicional para estilos
+
+```css
+/* Estilos responsivos para tablet */
+@media (max-width: 768px) {
+    .printer-controls, .label-form {
+        margin: 10px;
+        padding: 15px;
+    }
+    
+    button {
+        width: 100%;
+        margin: 5px 0;
+    }
+    
+    input, select {
+        width: 100%;
+        box-sizing: border-box;
+    }
+}
+
+/* Estilos para preview de etiqueta */
+.label-preview {
+    border: 2px dashed #ccc;
+    padding: 20px;
+    margin: 20px 0;
+    text-align: center;
+    background: #fafafa;
+}
+
+.label-preview canvas {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #ddd;
+}
+```
+
+---
+
+## PARÁMETROS DE CONFIGURACIÓN ESPECÍFICOS
+
+### Configuración Brother TD-4550DNWB:
+- **Modelo**: `TD_4550DNWB`
+- **Puerto**: `BLUETOOTH` o `WIFI`
+- **Resolución**: `300 DPI`
+- **Tamaño papel**: `CUSTOM` (4" x 6" típico)
+- **Orientación**: `LANDSCAPE` o `PORTRAIT`
+
+### Parámetros de conexión Bluetooth:
+- **Timeout**: 30 segundos
+- **Auto-reconexión**: Habilitada
+- **Búsqueda automática**: Cada 60 segundos
+
+### Formatos de etiqueta soportados:
+- **Imágenes**: PNG, JPEG, BMP (máximo 300 DPI)
+- **PDF**: Hasta tamaño A4, 1 página
+- **Datos raw**: Comandos ESC/P
+
+Esta guía te permitirá implementar completamente el sistema de impresión desde tu web hacia la impresora Brother a través de tu aplicación Android navegador.

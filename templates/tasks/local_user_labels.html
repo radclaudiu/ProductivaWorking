@@ -284,6 +284,17 @@
 
 {% block scripts %}
 <script>
+    // Función para forzar solicitud de permisos de impresora
+    function forzarSolicitudPermisos() {
+        if (typeof AndroidBridge !== 'undefined') {
+            console.log('Forzando solicitud de permisos Bluetooth...');
+            // Esto forzará la solicitud de permisos si no están otorgados
+            AndroidBridge.searchPrinters();
+        } else {
+            console.log('AndroidBridge no disponible');
+        }
+    }
+    
     // Configurar callbacks globales para Brother Print
     window.BrotherPrint = {
         onPrintersFound: function(printersJsonString) {
@@ -364,6 +375,9 @@
         
         // Verificar estado de la impresora
         verificarEstadoImpresora();
+        
+        // Forzar solicitud de permisos Bluetooth al cargar la página
+        setTimeout(forzarSolicitudPermisos, 1500);
         
         // Configurar evento para abrir modal
         const openPrinterModalBtn = document.getElementById('openPrinterModal');

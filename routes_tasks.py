@@ -3606,16 +3606,18 @@ def generate_labels():
                 image = Image.new('RGB', (width, height), 'white')
                 draw = ImageDraw.Draw(image)
                 
-                # Fuentes optimizadas para 40mm x 30mm con fechas aumentadas 40%
+                # Fuentes optimizadas para 40mm x 30mm con diferentes tamaños
                 try:
                     font_title = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 36)    # Título
                     font_type = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)     # Tipo conservación
-                    font_date = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 34)     # Fechas 40% más grandes (24 + 40% = 34)
+                    font_date = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 34)     # Fechas caducidad y vida útil
+                    font_elab = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)     # Elaboración 30% más pequeña (34 - 30% = 24)
                     font_user = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)     # Usuario más grande y en negrita
                 except:
                     font_title = ImageFont.load_default()
                     font_type = ImageFont.load_default()
                     font_date = ImageFont.load_default()
+                    font_elab = ImageFont.load_default()
                     font_user = ImageFont.load_default()
                 
                 # Layout que ocupa toda la altura disponible con mejor separación
@@ -3642,13 +3644,13 @@ def generate_labels():
                 draw.text((x_centered, y_pos), conservation_text, fill='black', font=font_type)
                 y_pos += 45  # Mayor separación
                 
-                # Fecha de elaboración con hora (centrada)
+                # Fecha de elaboración con hora (centrada) - fuente más pequeña
                 now_str = now.strftime('%d/%m/%Y %H:%M')
                 elaboration_text = f"ELAB: {now_str}"
-                bbox = draw.textbbox((0, 0), elaboration_text, font=font_date)
+                bbox = draw.textbbox((0, 0), elaboration_text, font=font_elab)
                 text_width = bbox[2] - bbox[0]
                 x_centered = (width - text_width) // 2
-                draw.text((x_centered, y_pos), elaboration_text, fill='black', font=font_date)
+                draw.text((x_centered, y_pos), elaboration_text, fill='black', font=font_elab)
                 y_pos += 35  # Mayor separación
                 
                 # Fecha de caducidad con hora si existe (centrada)

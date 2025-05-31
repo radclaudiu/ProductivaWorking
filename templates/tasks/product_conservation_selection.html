@@ -199,16 +199,22 @@
                             return 0;
                         }
                         
-                        // Enviar todas las etiquetas en ráfaga rápida
-                        console.log(`⚡ Modo ráfaga: enviando ${quantity} etiquetas consecutivamente`);
+                        // Enviar todas las etiquetas en ráfaga ultra rápida
+                        console.log(`⚡ Modo ráfaga: enviando ${quantity} etiquetas`);
                         
-                        for (let i = 0; i < quantity; i++) {
+                        // Para múltiples etiquetas, envío directo sin comprobaciones
+                        if (quantity > 1) {
+                            for (let i = 0; i < quantity; i++) {
+                                AndroidBridge.printImage(data.label_image);
+                                successCount++;
+                            }
+                        } else {
+                            // Para una sola etiqueta, mantener manejo de errores
                             try {
-                                // Envío inmediato sin logging individual para máxima velocidad
                                 AndroidBridge.printImage(data.label_image);
                                 successCount++;
                             } catch (printError) {
-                                console.error(`❌ Error en etiqueta ${i + 1}:`, printError);
+                                console.error(`❌ Error:`, printError);
                             }
                         }
                         

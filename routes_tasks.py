@@ -3632,7 +3632,7 @@ def generate_labels():
                 text_width = bbox[2] - bbox[0]
                 x_centered = (width - text_width) // 2
                 draw.text((x_centered, y_pos), product_name, fill='black', font=current_font)
-                y_pos += 48  # Aumentado el espaciado
+                y_pos += 52  # Mayor separación
                 
                 # Tipo de conservación (centrado)
                 conservation_text = conservation_type.value.upper()
@@ -3640,7 +3640,7 @@ def generate_labels():
                 text_width = bbox[2] - bbox[0]
                 x_centered = (width - text_width) // 2
                 draw.text((x_centered, y_pos), conservation_text, fill='black', font=font_type)
-                y_pos += 40  # Aumentado el espaciado
+                y_pos += 45  # Mayor separación
                 
                 # Fecha de elaboración (centrada)
                 now_str = now.strftime('%d/%m/%Y')
@@ -3649,7 +3649,7 @@ def generate_labels():
                 text_width = bbox[2] - bbox[0]
                 x_centered = (width - text_width) // 2
                 draw.text((x_centered, y_pos), elaboration_text, fill='black', font=font_date)
-                y_pos += 30  # Aumentado el espaciado
+                y_pos += 35  # Mayor separación
                 
                 # Fecha de caducidad si existe (centrada)
                 if expiry_datetime:
@@ -3659,7 +3659,7 @@ def generate_labels():
                     text_width = bbox[2] - bbox[0]
                     x_centered = (width - text_width) // 2
                     draw.text((x_centered, y_pos), expiry_text, fill='black', font=font_date)
-                    y_pos += 30  # Aumentado el espaciado
+                    y_pos += 35  # Mayor separación
                 
                 # Formatear nombre del usuario: primer nombre + primera letra apellido
                 def format_user_name(username):

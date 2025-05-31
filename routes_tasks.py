@@ -3646,15 +3646,6 @@ def generate_labels():
                 draw.text((x_centered, y_pos), conservation_text, fill='black', font=font_type)
                 y_pos += 50  # Más separación
                 
-                # Fecha de elaboración con hora (centrada) - fuente más pequeña
-                now_str = now.strftime('%d/%m/%Y %H:%M')
-                elaboration_text = f"ELAB: {now_str}"
-                bbox = draw.textbbox((0, 0), elaboration_text, font=font_elab)
-                text_width = bbox[2] - bbox[0]
-                x_centered = (width - text_width) // 2
-                draw.text((x_centered, y_pos), elaboration_text, fill='black', font=font_elab)
-                y_pos += 48  # Mayor separación antes de CAD
-                
                 # Fecha de caducidad con hora si existe (centrada)
                 if expiry_datetime:
                     expiry_str = expiry_datetime.strftime('%d/%m/%Y %H:%M')
@@ -3664,6 +3655,15 @@ def generate_labels():
                     x_centered = (width - text_width) // 2
                     draw.text((x_centered, y_pos), expiry_text, fill='black', font=font_date)
                     y_pos += 48  # Mayor separación después de CAD
+                
+                # Fecha de elaboración con hora (centrada) - fuente más pequeña
+                now_str = now.strftime('%d/%m/%Y %H:%M')
+                elaboration_text = f"ELAB: {now_str}"
+                bbox = draw.textbbox((0, 0), elaboration_text, font=font_elab)
+                text_width = bbox[2] - bbox[0]
+                x_centered = (width - text_width) // 2
+                draw.text((x_centered, y_pos), elaboration_text, fill='black', font=font_elab)
+                y_pos += 42  # Separación normal
                 
                 # Mostrar fecha de vida útil (centrada) - fecha de hoy + días de vida útil
                 shelf_life_text = ""

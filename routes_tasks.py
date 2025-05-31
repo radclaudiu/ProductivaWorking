@@ -3608,7 +3608,7 @@ def generate_labels():
                 
                 # Fuentes optimizadas para 40mm x 30mm con diferentes tamaños
                 try:
-                    font_title = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 36)    # Título
+                    font_title = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 42)    # Título más grande
                     font_type = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)     # Tipo conservación
                     font_date = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 34)     # Fecha caducidad
                     font_elab = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)     # Elaboración

@@ -3622,8 +3622,8 @@ def generate_labels():
                     font_vida = ImageFont.load_default()
                     font_user = ImageFont.load_default()
                 
-                # Layout que ocupa toda la altura disponible con mejor separación
-                y_pos = 5  # Comenzar casi desde el borde superior
+                # Layout que ocupa toda la altura disponible con mayor separación
+                y_pos = 8  # Comenzar con más margen superior
                 
                 # Nombre del producto (centrado, título principal)
                 product_name = product.name[:18].upper()  # Limitar caracteres para que encaje
@@ -3636,7 +3636,7 @@ def generate_labels():
                 text_width = bbox[2] - bbox[0]
                 x_centered = (width - text_width) // 2
                 draw.text((x_centered, y_pos), product_name, fill='black', font=current_font)
-                y_pos += 52  # Mayor separación
+                y_pos += 58  # Más separación
                 
                 # Tipo de conservación (centrado)
                 conservation_text = conservation_type.value.upper()
@@ -3644,7 +3644,7 @@ def generate_labels():
                 text_width = bbox[2] - bbox[0]
                 x_centered = (width - text_width) // 2
                 draw.text((x_centered, y_pos), conservation_text, fill='black', font=font_type)
-                y_pos += 45  # Mayor separación
+                y_pos += 50  # Más separación
                 
                 # Fecha de elaboración con hora (centrada) - fuente más pequeña
                 now_str = now.strftime('%d/%m/%Y %H:%M')
@@ -3653,7 +3653,7 @@ def generate_labels():
                 text_width = bbox[2] - bbox[0]
                 x_centered = (width - text_width) // 2
                 draw.text((x_centered, y_pos), elaboration_text, fill='black', font=font_elab)
-                y_pos += 35  # Mayor separación
+                y_pos += 42  # Más separación
                 
                 # Fecha de caducidad con hora si existe (centrada)
                 if expiry_datetime:
@@ -3663,7 +3663,7 @@ def generate_labels():
                     text_width = bbox[2] - bbox[0]
                     x_centered = (width - text_width) // 2
                     draw.text((x_centered, y_pos), expiry_text, fill='black', font=font_date)
-                    y_pos += 35  # Mayor separación
+                    y_pos += 42  # Más separación
                 
                 # Mostrar fecha de vida útil (centrada) - fecha de hoy + días de vida útil
                 shelf_life_text = ""
@@ -3678,7 +3678,7 @@ def generate_labels():
                     text_width = bbox[2] - bbox[0]
                     x_centered = (width - text_width) // 2
                     draw.text((x_centered, y_pos), shelf_life_text, fill='black', font=font_vida)
-                    y_pos += 35  # Mayor separación
+                    y_pos += 42  # Más separación
                 
                 # Formatear nombre del usuario: primer nombre + primera letra apellido
                 def format_user_name(name, last_name):

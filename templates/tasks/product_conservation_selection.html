@@ -199,33 +199,22 @@
                             return 0;
                         }
                         
-                        // Enviar todas las etiquetas juntas
+                        // Enviar todas las etiquetas en ráfaga rápida
+                        console.log(`⚡ Modo ráfaga: enviando ${quantity} etiquetas consecutivamente`);
+                        
                         for (let i = 0; i < quantity; i++) {
-                            console.log(`📤 Enviando etiqueta ${i + 1} de ${quantity}`);
-                            
                             try {
-                                // Enviar imagen a la impresora inmediatamente
+                                // Envío inmediato sin logging individual para máxima velocidad
                                 AndroidBridge.printImage(data.label_image);
                                 successCount++;
-                                console.log(`✅ Etiqueta ${i + 1} enviada`);
-                                
                             } catch (printError) {
                                 console.error(`❌ Error en etiqueta ${i + 1}:`, printError);
                             }
                         }
                         
-                        // Aplicar calibración solo al final si es necesaria
-                        try {
-                            if (typeof AndroidBridge.calibratePrinter === 'function') {
-                                console.log(`🎯 Aplicando calibración final`);
-                                AndroidBridge.calibratePrinter();
-                            } else if (typeof AndroidBridge.feedLabel === 'function') {
-                                console.log(`📄 Aplicando feed final`);
-                                AndroidBridge.feedLabel();
-                            }
-                        } catch (calibrationError) {
-                            console.log(`⚠️ Error en calibración final: ${calibrationError}`);
-                        }
+                        console.log(`🚀 ${successCount} etiquetas enviadas en ráfaga`);
+                        
+                        // NO aplicar calibración para evitar delays adicionales
                         
                         console.log(`🏁 Proceso completado: ${successCount} de ${quantity} etiquetas enviadas`);
                         return successCount;

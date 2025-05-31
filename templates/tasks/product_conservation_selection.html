@@ -212,9 +212,10 @@
                                     console.log(`⚠️ Error en calibración, continuando: ${calibrationError}`);
                                 }
                                 
-                                // Esperar tiempo entre etiquetas para permitir calibración
+                                // Esperar tiempo entre etiquetas para permitir calibración y procesamiento
                                 if (i < quantity - 1) {
-                                    await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5 segundos
+                                    console.log(`⏱️ Esperando 3 segundos antes de siguiente etiqueta...`);
+                                    await new Promise(resolve => setTimeout(resolve, 3000)); // 3 segundos para garantizar procesamiento
                                 }
                             } catch (printError) {
                                 console.error(`❌ Error imprimiendo etiqueta ${i + 1}:`, printError);
@@ -226,8 +227,15 @@
                         return successCount;
                     };
                     
-                    // Ejecutar la impresión secuencial
-                    printSequentially();
+                    // Ejecutar la impresión secuencial y esperar resultado
+                    printSequentially().then(successCount => {
+                        console.log(`🎯 Impresión finalizada: ${successCount} de ${quantity} etiquetas procesadas`);
+                        if (successCount < quantity) {
+                            showMessage(`Solo se imprimieron ${successCount} de ${quantity} etiquetas solicitadas`, 'warning');
+                        }
+                    }).catch(error => {
+                        console.error('Error en el proceso de impresión:', error);
+                    });
                     
                     // Mostrar mensaje de éxito
                     showMessage(`${quantity} etiqueta(s) enviadas a la impresora Brother TD-4550DNWB`, 'success');

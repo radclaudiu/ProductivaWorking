@@ -191,39 +191,57 @@
                     // Función para imprimir etiquetas secuencialmente con calibración
                     const printSequentially = async () => {
                         let successCount = 0;
+                        console.log(`🚀 Iniciando impresión de ${quantity} etiquetas`);
+                        
                         for (let i = 0; i < quantity; i++) {
-                            console.log(`🏷️ Imprimiendo etiqueta ${i + 1} de ${quantity}`);
+                            console.log(`🏷️ === PROCESANDO ETIQUETA ${i + 1} DE ${quantity} ===`);
+                            
                             try {
-                                // Enviar imagen a la impresora (sin el prefijo data:image/png;base64,)
-                                AndroidBridge.printImage(data.label_image);
-                                console.log(`✅ Etiqueta ${i + 1} enviada correctamente`);
+                                // Verificar AndroidBridge antes de cada impresión
+                                if (typeof AndroidBridge === 'undefined' || typeof AndroidBridge.printImage !== 'function') {
+                                    console.error(`❌ AndroidBridge no disponible en iteración ${i + 1}`);
+                                    break;
+                                }
+                                
+                                console.log(`📤 Enviando imagen a impresora (iteración ${i + 1})`);
+                                
+                                // Enviar imagen a la impresora
+                                const result = AndroidBridge.printImage(data.label_image);
+                                console.log(`📋 Resultado de printImage:`, result);
+                                
                                 successCount++;
+                                console.log(`✅ Etiqueta ${i + 1} procesada exitosamente (total: ${successCount})`);
                                 
-                                // Enviar comando de calibración después de cada etiqueta
-                                try {
-                                    if (typeof AndroidBridge.calibratePrinter === 'function') {
-                                        console.log(`🎯 Calibrando impresora después de etiqueta ${i + 1}`);
-                                        AndroidBridge.calibratePrinter();
-                                    } else if (typeof AndroidBridge.feedLabel === 'function') {
-                                        console.log(`📄 Avanzando a siguiente etiqueta después de ${i + 1}`);
-                                        AndroidBridge.feedLabel();
-                                    }
-                                } catch (calibrationError) {
-                                    console.log(`⚠️ Error en calibración, continuando: ${calibrationError}`);
-                                }
-                                
-                                // Esperar tiempo entre etiquetas para permitir calibración y procesamiento
+                                // Solo hacer calibración si no es la última etiqueta
                                 if (i < quantity - 1) {
-                                    console.log(`⏱️ Esperando 3 segundos antes de siguiente etiqueta...`);
-                                    await new Promise(resolve => setTimeout(resolve, 3000)); // 3 segundos para garantizar procesamiento
+                                    console.log(`🎯 Aplicando calibración después de etiqueta ${i + 1}`);
+                                    try {
+                                        if (typeof AndroidBridge.calibratePrinter === 'function') {
+                                            AndroidBridge.calibratePrinter();
+                                            console.log(`✅ Calibración aplicada`);
+                                        } else if (typeof AndroidBridge.feedLabel === 'function') {
+                                            AndroidBridge.feedLabel();
+                                            console.log(`✅ Feed aplicado`);
+                                        }
+                                    } catch (calibrationError) {
+                                        console.log(`⚠️ Error en calibración (continuando): ${calibrationError}`);
+                                    }
+                                    
+                                    console.log(`⏱️ Esperando 4 segundos antes de siguiente etiqueta...`);
+                                    await new Promise(resolve => setTimeout(resolve, 4000));
+                                    console.log(`⏰ Espera completada, continuando con etiqueta ${i + 2}`);
                                 }
+                                
                             } catch (printError) {
-                                console.error(`❌ Error imprimiendo etiqueta ${i + 1}:`, printError);
-                                // No hacer break, continuar con la siguiente etiqueta
-                                continue;
+                                console.error(`❌ ERROR CRÍTICO en etiqueta ${i + 1}:`, printError);
+                                console.error(`❌ Tipo de error:`, typeof printError);
+                                console.error(`❌ Mensaje:`, printError.message || 'Sin mensaje');
+                                // Intentar continuar con la siguiente
                             }
                         }
-                        console.log(`🏁 Proceso completado: ${successCount}/${quantity} etiquetas impresas`);
+                        
+                        console.log(`🏁 === PROCESO FINALIZADO ===`);
+                        console.log(`📊 Resultado: ${successCount} de ${quantity} etiquetas procesadas`);
                         return successCount;
                     };
                     

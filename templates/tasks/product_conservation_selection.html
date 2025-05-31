@@ -188,60 +188,46 @@
                     
                     console.log('🖨️ Enviando etiqueta a la impresora Brother TD-4550DNWB...');
                     
-                    // Función para imprimir etiquetas secuencialmente con calibración
+                    // Función para imprimir etiquetas sin delay
                     const printSequentially = async () => {
                         let successCount = 0;
-                        console.log(`🚀 Iniciando impresión de ${quantity} etiquetas`);
+                        console.log(`🚀 Enviando ${quantity} etiquetas a la impresora Brother sin delay`);
                         
+                        // Verificar AndroidBridge una sola vez
+                        if (typeof AndroidBridge === 'undefined' || typeof AndroidBridge.printImage !== 'function') {
+                            console.error(`❌ AndroidBridge no disponible`);
+                            return 0;
+                        }
+                        
+                        // Enviar todas las etiquetas juntas
                         for (let i = 0; i < quantity; i++) {
-                            console.log(`🏷️ === PROCESANDO ETIQUETA ${i + 1} DE ${quantity} ===`);
+                            console.log(`📤 Enviando etiqueta ${i + 1} de ${quantity}`);
                             
                             try {
-                                // Verificar AndroidBridge antes de cada impresión
-                                if (typeof AndroidBridge === 'undefined' || typeof AndroidBridge.printImage !== 'function') {
-                                    console.error(`❌ AndroidBridge no disponible en iteración ${i + 1}`);
-                                    break;
-                                }
-                                
-                                console.log(`📤 Enviando imagen a impresora (iteración ${i + 1})`);
-                                
-                                // Enviar imagen a la impresora
-                                const result = AndroidBridge.printImage(data.label_image);
-                                console.log(`📋 Resultado de printImage:`, result);
-                                
+                                // Enviar imagen a la impresora inmediatamente
+                                AndroidBridge.printImage(data.label_image);
                                 successCount++;
-                                console.log(`✅ Etiqueta ${i + 1} procesada exitosamente (total: ${successCount})`);
-                                
-                                // Solo hacer calibración si no es la última etiqueta
-                                if (i < quantity - 1) {
-                                    console.log(`🎯 Aplicando calibración después de etiqueta ${i + 1}`);
-                                    try {
-                                        if (typeof AndroidBridge.calibratePrinter === 'function') {
-                                            AndroidBridge.calibratePrinter();
-                                            console.log(`✅ Calibración aplicada`);
-                                        } else if (typeof AndroidBridge.feedLabel === 'function') {
-                                            AndroidBridge.feedLabel();
-                                            console.log(`✅ Feed aplicado`);
-                                        }
-                                    } catch (calibrationError) {
-                                        console.log(`⚠️ Error en calibración (continuando): ${calibrationError}`);
-                                    }
-                                    
-                                    console.log(`⏱️ Esperando 4 segundos antes de siguiente etiqueta...`);
-                                    await new Promise(resolve => setTimeout(resolve, 4000));
-                                    console.log(`⏰ Espera completada, continuando con etiqueta ${i + 2}`);
-                                }
+                                console.log(`✅ Etiqueta ${i + 1} enviada`);
                                 
                             } catch (printError) {
-                                console.error(`❌ ERROR CRÍTICO en etiqueta ${i + 1}:`, printError);
-                                console.error(`❌ Tipo de error:`, typeof printError);
-                                console.error(`❌ Mensaje:`, printError.message || 'Sin mensaje');
-                                // Intentar continuar con la siguiente
+                                console.error(`❌ Error en etiqueta ${i + 1}:`, printError);
                             }
                         }
                         
-                        console.log(`🏁 === PROCESO FINALIZADO ===`);
-                        console.log(`📊 Resultado: ${successCount} de ${quantity} etiquetas procesadas`);
+                        // Aplicar calibración solo al final si es necesaria
+                        try {
+                            if (typeof AndroidBridge.calibratePrinter === 'function') {
+                                console.log(`🎯 Aplicando calibración final`);
+                                AndroidBridge.calibratePrinter();
+                            } else if (typeof AndroidBridge.feedLabel === 'function') {
+                                console.log(`📄 Aplicando feed final`);
+                                AndroidBridge.feedLabel();
+                            }
+                        } catch (calibrationError) {
+                            console.log(`⚠️ Error en calibración final: ${calibrationError}`);
+                        }
+                        
+                        console.log(`🏁 Proceso completado: ${successCount} de ${quantity} etiquetas enviadas`);
                         return successCount;
                     };
                     

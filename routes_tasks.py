@@ -3618,7 +3618,7 @@ def generate_labels():
                     font_date = ImageFont.load_default()
                     font_user = ImageFont.load_default()
                 
-                # Layout que ocupa toda la altura disponible (sin espacios en blanco)
+                # Layout que ocupa toda la altura disponible con mejor separación
                 y_pos = 5  # Comenzar casi desde el borde superior
                 
                 # Nombre del producto (centrado, título principal)
@@ -3632,7 +3632,7 @@ def generate_labels():
                 text_width = bbox[2] - bbox[0]
                 x_centered = (width - text_width) // 2
                 draw.text((x_centered, y_pos), product_name, fill='black', font=current_font)
-                y_pos += 42
+                y_pos += 48  # Aumentado el espaciado
                 
                 # Tipo de conservación (centrado)
                 conservation_text = conservation_type.value.upper()
@@ -3640,7 +3640,7 @@ def generate_labels():
                 text_width = bbox[2] - bbox[0]
                 x_centered = (width - text_width) // 2
                 draw.text((x_centered, y_pos), conservation_text, fill='black', font=font_type)
-                y_pos += 35
+                y_pos += 40  # Aumentado el espaciado
                 
                 # Fecha de elaboración (centrada)
                 now_str = now.strftime('%d/%m/%Y')
@@ -3649,7 +3649,7 @@ def generate_labels():
                 text_width = bbox[2] - bbox[0]
                 x_centered = (width - text_width) // 2
                 draw.text((x_centered, y_pos), elaboration_text, fill='black', font=font_date)
-                y_pos += 25
+                y_pos += 30  # Aumentado el espaciado
                 
                 # Fecha de caducidad si existe (centrada)
                 if expiry_datetime:
@@ -3659,14 +3659,30 @@ def generate_labels():
                     text_width = bbox[2] - bbox[0]
                     x_centered = (width - text_width) // 2
                     draw.text((x_centered, y_pos), expiry_text, fill='black', font=font_date)
-                    y_pos += 25
+                    y_pos += 30  # Aumentado el espaciado
                 
-                # Usuario (centrado, justo después del contenido anterior)
-                user_text = f"USR: {user.username[:10]}"
+                # Formatear nombre del usuario: primer nombre + primera letra apellido
+                def format_user_name(username):
+                    try:
+                        # Dividir por espacios para obtener nombre y apellido
+                        parts = username.split()
+                        if len(parts) >= 2:
+                            # Primer nombre + primera letra del apellido
+                            return f"{parts[0]} {parts[1][0]}."
+                        else:
+                            # Si solo hay un nombre, devolverlo tal como está
+                            return parts[0] if parts else username
+                    except:
+                        # En caso de error, devolver el username original
+                        return username[:12]
+                
+                # Usuario (centrado, con formato mejorado)
+                formatted_user = format_user_name(user.username)
+                user_text = f"{formatted_user}"
                 bbox = draw.textbbox((0, 0), user_text, font=font_user)
                 text_width = bbox[2] - bbox[0]
                 x_centered = (width - text_width) // 2
-                # Posicionar justo después del último elemento, sin margen inferior
+                # Posicionar con un poco más de separación
                 draw.text((x_centered, y_pos), user_text, fill='black', font=font_user)
                 
                 # Convertir imagen a base64

@@ -3662,22 +3662,24 @@ def generate_labels():
                     y_pos += 35  # Mayor separación
                 
                 # Formatear nombre del usuario: primer nombre + primera letra apellido
-                def format_user_name(username):
+                def format_user_name(name, last_name):
                     try:
-                        # Dividir por espacios para obtener nombre y apellido
-                        parts = username.split()
-                        if len(parts) >= 2:
+                        # Usar los campos name y last_name del LocalUser
+                        if name and last_name:
                             # Primer nombre + primera letra del apellido
-                            return f"{parts[0]} {parts[1][0]}."
+                            return f"{name} {last_name[0]}."
+                        elif name:
+                            # Si solo hay nombre, devolverlo
+                            return name
                         else:
-                            # Si solo hay un nombre, devolverlo tal como está
-                            return parts[0] if parts else username
+                            # Fallback al username si no hay name/last_name
+                            return user.username[:12]
                     except:
                         # En caso de error, devolver el username original
-                        return username[:12]
+                        return user.username[:12]
                 
                 # Usuario (centrado, con formato mejorado)
-                formatted_user = format_user_name(user.username)
+                formatted_user = format_user_name(user.name, user.last_name)
                 user_text = f"{formatted_user}"
                 bbox = draw.textbbox((0, 0), user_text, font=font_user)
                 text_width = bbox[2] - bbox[0]

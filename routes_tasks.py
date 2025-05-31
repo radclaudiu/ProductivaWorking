@@ -3671,7 +3671,7 @@ def generate_labels():
                     # Calcular fecha de caducidad por vida útil: fecha actual + días de vida útil
                     shelf_life_expiry = now.date() + timedelta(days=product.shelf_life_days)
                     shelf_life_str = shelf_life_expiry.strftime('%d/%m/%Y')
-                    shelf_life_text = f"VIDA: {shelf_life_str}"
+                    shelf_life_text = f"1ᵃ {shelf_life_str}"
                 
                 if shelf_life_text:
                     bbox = draw.textbbox((0, 0), shelf_life_text, font=font_vida)

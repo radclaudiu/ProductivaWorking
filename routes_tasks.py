@@ -3654,7 +3654,7 @@ def generate_labels():
                     text_width = bbox[2] - bbox[0]
                     x_centered = (width - text_width) // 2
                     draw.text((x_centered, y_pos), expiry_text, fill='black', font=font_date)
-                    y_pos += 55  # Más separación después de CAD
+                    y_pos += 60  # Más separación después de CAD
                 
                 # Fecha de elaboración con hora (centrada) - fuente más pequeña
                 now_str = now.strftime('%d/%m/%Y %H:%M')

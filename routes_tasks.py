@@ -3661,6 +3661,42 @@ def generate_labels():
                     draw.text((x_centered, y_pos), expiry_text, fill='black', font=font_date)
                     y_pos += 35  # Mayor separación
                 
+                # Mostrar vida útil (centrada)
+                shelf_life_text = ""
+                if conservation:
+                    hours = conservation.hours_valid
+                    if hours >= 24:
+                        days = hours // 24
+                        remaining_hours = hours % 24
+                        if remaining_hours > 0:
+                            shelf_life_text = f"VIDA: {days}d {remaining_hours}h"
+                        else:
+                            shelf_life_text = f"VIDA: {days} días"
+                    else:
+                        shelf_life_text = f"VIDA: {hours} horas"
+                else:
+                    # Usar valores predeterminados
+                    hours_map = {
+                        ConservationType.DESCONGELACION: 24,  # 1 día
+                        ConservationType.REFRIGERACION: 72,   # 3 días
+                        ConservationType.GASTRO: 48,          # 2 días
+                        ConservationType.CALIENTE: 2,         # 2 horas
+                        ConservationType.SECO: 720            # 30 días
+                    }
+                    hours = hours_map.get(conservation_type, 24)
+                    if hours >= 24:
+                        days = hours // 24
+                        shelf_life_text = f"VIDA: {days} días"
+                    else:
+                        shelf_life_text = f"VIDA: {hours} horas"
+                
+                if shelf_life_text:
+                    bbox = draw.textbbox((0, 0), shelf_life_text, font=font_date)
+                    text_width = bbox[2] - bbox[0]
+                    x_centered = (width - text_width) // 2
+                    draw.text((x_centered, y_pos), shelf_life_text, fill='black', font=font_date)
+                    y_pos += 35  # Mayor separación
+                
                 # Formatear nombre del usuario: primer nombre + primera letra apellido
                 def format_user_name(name, last_name):
                     try:

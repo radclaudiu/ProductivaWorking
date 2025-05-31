@@ -3653,7 +3653,7 @@ def generate_labels():
                 text_width = bbox[2] - bbox[0]
                 x_centered = (width - text_width) // 2
                 draw.text((x_centered, y_pos), elaboration_text, fill='black', font=font_elab)
-                y_pos += 42  # Más separación
+                y_pos += 48  # Mayor separación antes de CAD
                 
                 # Fecha de caducidad con hora si existe (centrada)
                 if expiry_datetime:
@@ -3663,7 +3663,7 @@ def generate_labels():
                     text_width = bbox[2] - bbox[0]
                     x_centered = (width - text_width) // 2
                     draw.text((x_centered, y_pos), expiry_text, fill='black', font=font_date)
-                    y_pos += 42  # Más separación
+                    y_pos += 48  # Mayor separación después de CAD
                 
                 # Mostrar fecha de vida útil (centrada) - fecha de hoy + días de vida útil
                 shelf_life_text = ""

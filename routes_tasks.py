@@ -3610,14 +3610,16 @@ def generate_labels():
                 try:
                     font_title = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 36)    # Título
                     font_type = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)     # Tipo conservación
-                    font_date = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 34)     # Fechas caducidad y vida útil
-                    font_elab = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)     # Elaboración 30% más pequeña (34 - 30% = 24)
-                    font_user = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)     # Usuario más grande y en negrita
+                    font_date = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 34)     # Fecha caducidad
+                    font_elab = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)     # Elaboración
+                    font_vida = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 26)     # Vida útil más pequeña
+                    font_user = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 26)     # Usuario más grande
                 except:
                     font_title = ImageFont.load_default()
                     font_type = ImageFont.load_default()
                     font_date = ImageFont.load_default()
                     font_elab = ImageFont.load_default()
+                    font_vida = ImageFont.load_default()
                     font_user = ImageFont.load_default()
                 
                 # Layout que ocupa toda la altura disponible con mejor separación
@@ -3672,10 +3674,10 @@ def generate_labels():
                     shelf_life_text = f"VIDA: {shelf_life_str}"
                 
                 if shelf_life_text:
-                    bbox = draw.textbbox((0, 0), shelf_life_text, font=font_date)
+                    bbox = draw.textbbox((0, 0), shelf_life_text, font=font_vida)
                     text_width = bbox[2] - bbox[0]
                     x_centered = (width - text_width) // 2
-                    draw.text((x_centered, y_pos), shelf_life_text, fill='black', font=font_date)
+                    draw.text((x_centered, y_pos), shelf_life_text, fill='black', font=font_vida)
                     y_pos += 35  # Mayor separación
                 
                 # Formatear nombre del usuario: primer nombre + primera letra apellido

@@ -188,23 +188,47 @@
                     
                     console.log('🖨️ Enviando etiqueta a la impresora Brother TD-4550DNWB...');
                     
-                    // Función ultra optimizada para impresión múltiple
+                    // Función para imprimir etiquetas sin delay
                     const printSequentially = async () => {
-                        // Solo verificar una vez al inicio
+                        let successCount = 0;
+                        console.log(`🚀 Enviando ${quantity} etiquetas a la impresora Brother sin delay`);
+                        
+                        // Verificar AndroidBridge una sola vez
                         if (typeof AndroidBridge === 'undefined' || typeof AndroidBridge.printImage !== 'function') {
                             console.error(`❌ AndroidBridge no disponible`);
                             return 0;
                         }
                         
-                        console.log(`⚡ Enviando ${quantity} etiquetas en modo ultra rápido`);
-                        
-                        // Bucle completamente directo - sin comprobaciones adicionales
+                        // Enviar todas las etiquetas juntas
                         for (let i = 0; i < quantity; i++) {
-                            AndroidBridge.printImage(data.label_image);
+                            console.log(`📤 Enviando etiqueta ${i + 1} de ${quantity}`);
+                            
+                            try {
+                                // Enviar imagen a la impresora inmediatamente
+                                AndroidBridge.printImage(data.label_image);
+                                successCount++;
+                                console.log(`✅ Etiqueta ${i + 1} enviada`);
+                                
+                            } catch (printError) {
+                                console.error(`❌ Error en etiqueta ${i + 1}:`, printError);
+                            }
                         }
                         
-                        console.log(`🚀 ${quantity} etiquetas enviadas`);
-                        return quantity;
+                        // Aplicar calibración solo al final si es necesaria
+                        try {
+                            if (typeof AndroidBridge.calibratePrinter === 'function') {
+                                console.log(`🎯 Aplicando calibración final`);
+                                AndroidBridge.calibratePrinter();
+                            } else if (typeof AndroidBridge.feedLabel === 'function') {
+                                console.log(`📄 Aplicando feed final`);
+                                AndroidBridge.feedLabel();
+                            }
+                        } catch (calibrationError) {
+                            console.log(`⚠️ Error en calibración final: ${calibrationError}`);
+                        }
+                        
+                        console.log(`🏁 Proceso completado: ${successCount} de ${quantity} etiquetas enviadas`);
+                        return successCount;
                     };
                     
                     // Ejecutar la impresión secuencial y esperar resultado

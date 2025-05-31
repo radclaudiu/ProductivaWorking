@@ -3613,7 +3613,7 @@ def generate_labels():
                     font_date = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 34)     # Fecha caducidad
                     font_elab = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)     # Elaboración
                     font_vida = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 26)     # Vida útil más pequeña
-                    font_user = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 26)     # Usuario más grande
+                    font_user = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 32)     # Usuario aún más grande
                 except:
                     font_title = ImageFont.load_default()
                     font_type = ImageFont.load_default()

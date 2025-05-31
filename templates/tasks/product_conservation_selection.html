@@ -188,7 +188,7 @@
                     
                     console.log('🖨️ Enviando etiqueta a la impresora Brother TD-4550DNWB...');
                     
-                    // Función para imprimir etiquetas secuencialmente con mayor delay
+                    // Función para imprimir etiquetas secuencialmente con calibración
                     const printSequentially = async () => {
                         for (let i = 0; i < quantity; i++) {
                             console.log(`🏷️ Imprimiendo etiqueta ${i + 1} de ${quantity}`);
@@ -197,9 +197,20 @@
                                 AndroidBridge.printImage(data.label_image);
                                 console.log(`✅ Etiqueta ${i + 1} enviada correctamente`);
                                 
-                                // Esperar más tiempo entre etiquetas (especialmente importante para múltiples impresiones)
+                                // Enviar comando de calibración después de cada etiqueta
+                                if (typeof AndroidBridge.calibratePrinter === 'function') {
+                                    console.log(`🎯 Calibrando impresora después de etiqueta ${i + 1}`);
+                                    AndroidBridge.calibratePrinter();
+                                } else if (typeof AndroidBridge.feedLabel === 'function') {
+                                    console.log(`📄 Avanzando a siguiente etiqueta después de ${i + 1}`);
+                                    AndroidBridge.feedLabel();
+                                } else {
+                                    console.log(`⚠️ Comando de calibración no disponible, usando delay extendido`);
+                                }
+                                
+                                // Esperar más tiempo entre etiquetas para permitir calibración
                                 if (i < quantity - 1) {
-                                    await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5 segundos entre etiquetas
+                                    await new Promise(resolve => setTimeout(resolve, 2000)); // 2 segundos para permitir calibración
                                 }
                             } catch (printError) {
                                 console.error(`❌ Error imprimiendo etiqueta ${i + 1}:`, printError);

@@ -3606,11 +3606,11 @@ def generate_labels():
                 image = Image.new('RGB', (width, height), 'white')
                 draw = ImageDraw.Draw(image)
                 
-                # Fuentes optimizadas para 40mm x 30mm con fechas y usuario más grandes
+                # Fuentes optimizadas para 40mm x 30mm con fechas aumentadas 40%
                 try:
                     font_title = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 36)    # Título
                     font_type = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)     # Tipo conservación
-                    font_date = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)     # Fechas más grandes y en negrita
+                    font_date = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 34)     # Fechas 40% más grandes (24 + 40% = 34)
                     font_user = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)     # Usuario más grande y en negrita
                 except:
                     font_title = ImageFont.load_default()

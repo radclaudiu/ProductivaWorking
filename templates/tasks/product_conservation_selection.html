@@ -188,42 +188,23 @@
                     
                     console.log('🖨️ Enviando etiqueta a la impresora Brother TD-4550DNWB...');
                     
-                    // Función para imprimir etiquetas sin delay
+                    // Función ultra optimizada para impresión múltiple
                     const printSequentially = async () => {
-                        let successCount = 0;
-                        console.log(`🚀 Enviando ${quantity} etiquetas a la impresora Brother sin delay`);
-                        
-                        // Verificar AndroidBridge una sola vez
+                        // Solo verificar una vez al inicio
                         if (typeof AndroidBridge === 'undefined' || typeof AndroidBridge.printImage !== 'function') {
                             console.error(`❌ AndroidBridge no disponible`);
                             return 0;
                         }
                         
-                        // Enviar todas las etiquetas en ráfaga ultra rápida
-                        console.log(`⚡ Modo ráfaga: enviando ${quantity} etiquetas`);
+                        console.log(`⚡ Enviando ${quantity} etiquetas en modo ultra rápido`);
                         
-                        // Para múltiples etiquetas, envío directo sin comprobaciones
-                        if (quantity > 1) {
-                            for (let i = 0; i < quantity; i++) {
-                                AndroidBridge.printImage(data.label_image);
-                                successCount++;
-                            }
-                        } else {
-                            // Para una sola etiqueta, mantener manejo de errores
-                            try {
-                                AndroidBridge.printImage(data.label_image);
-                                successCount++;
-                            } catch (printError) {
-                                console.error(`❌ Error:`, printError);
-                            }
+                        // Bucle completamente directo - sin comprobaciones adicionales
+                        for (let i = 0; i < quantity; i++) {
+                            AndroidBridge.printImage(data.label_image);
                         }
                         
-                        console.log(`🚀 ${successCount} etiquetas enviadas en ráfaga`);
-                        
-                        // NO aplicar calibración para evitar delays adicionales
-                        
-                        console.log(`🏁 Proceso completado: ${successCount} de ${quantity} etiquetas enviadas`);
-                        return successCount;
+                        console.log(`🚀 ${quantity} etiquetas enviadas`);
+                        return quantity;
                     };
                     
                     // Ejecutar la impresión secuencial y esperar resultado

@@ -3642,8 +3642,8 @@ def generate_labels():
                 draw.text((x_centered, y_pos), conservation_text, fill='black', font=font_type)
                 y_pos += 45  # Mayor separación
                 
-                # Fecha de elaboración (centrada)
-                now_str = now.strftime('%d/%m/%Y')
+                # Fecha de elaboración con hora (centrada)
+                now_str = now.strftime('%d/%m/%Y %H:%M')
                 elaboration_text = f"ELAB: {now_str}"
                 bbox = draw.textbbox((0, 0), elaboration_text, font=font_date)
                 text_width = bbox[2] - bbox[0]
@@ -3651,9 +3651,9 @@ def generate_labels():
                 draw.text((x_centered, y_pos), elaboration_text, fill='black', font=font_date)
                 y_pos += 35  # Mayor separación
                 
-                # Fecha de caducidad si existe (centrada)
+                # Fecha de caducidad con hora si existe (centrada)
                 if expiry_datetime:
-                    expiry_str = expiry_datetime.strftime('%d/%m/%Y')
+                    expiry_str = expiry_datetime.strftime('%d/%m/%Y %H:%M')
                     expiry_text = f"CAD: {expiry_str}"
                     bbox = draw.textbbox((0, 0), expiry_text, font=font_date)
                     text_width = bbox[2] - bbox[0]

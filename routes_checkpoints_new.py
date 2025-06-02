@@ -870,8 +870,8 @@ def export_original_records_pdf(records, start_date=None, end_date=None, company
         # Agrupar registros por empleado
         employee_records = {}
         for original, employee in records:
-            if not original.original_check_in_time:
-                continue  # Omitir registros sin hora de entrada original
+            # Incluir TODOS los registros, incluso los que solo tienen entrada sin salida
+            # No saltarse registros sin hora de entrada original
                 
             if employee.id not in employee_records:
                 employee_records[employee.id] = {
@@ -901,11 +901,17 @@ def export_original_records_pdf(records, start_date=None, end_date=None, company
             # Agrupar registros por semana (de lunes a domingo)
             weeks_records = {}
             for record in sorted_records:
-                if not record.original_check_in_time:
-                    continue
+                # Incluir registros incluso si no tienen hora de entrada (pueden tener solo salida)
+                if record.original_check_in_time:
+                    record_date = record.original_check_in_time
+                elif record.original_check_out_time:
+                    record_date = record.original_check_out_time
+                else:
+                    # Si no tiene ni entrada ni salida, usar fecha actual para agrupación
+                    record_date = datetime.now()
                     
                 # Obtener el lunes de la semana para este registro
-                week_start, _ = get_iso_week_start_end(record.original_check_in_time)
+                week_start, _ = get_iso_week_start_end(record_date)
                 week_key = week_start.strftime('%Y-%m-%d')
                 
                 if week_key not in weeks_records:

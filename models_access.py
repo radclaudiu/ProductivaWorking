@@ -59,9 +59,9 @@ class LocationAccessToken(db.Model):
             LocationAccessToken: Objeto del token creado/actualizado.
         """
         # Buscar si ya existe un token para esta ubicación y tipo de portal
-        existing_token = LocationAccessToken.query.filter_by(
-            location_id=location_id, 
-            portal_type=portal_type
+        existing_token = LocationAccessToken.query.filter(
+            LocationAccessToken.location_id == location_id,
+            LocationAccessToken.portal_type == portal_type
         ).first()
         
         if existing_token:
@@ -157,8 +157,8 @@ class LocationAccessToken(db.Model):
         Returns:
             LocationAccessToken: Objeto del token activo o None si no existe.
         """
-        return LocationAccessToken.query.filter_by(
-            location_id=location_id,
-            portal_type=portal_type,
-            is_active=True
+        return LocationAccessToken.query.filter(
+            LocationAccessToken.location_id == location_id,
+            LocationAccessToken.portal_type == portal_type,
+            LocationAccessToken.is_active == True
         ).first()

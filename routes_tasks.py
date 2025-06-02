@@ -883,10 +883,10 @@ def create_task(location_id):
             return redirect(url_for('tasks.configure_daily_schedule', task_id=task.id))
         elif task.frequency == TaskFrequency.SEMANAL:
             return redirect(url_for('tasks.configure_weekly_schedule', task_id=task.id))
-        elif task.frequency == TaskFrequency.MENSUAL:
+        elif task.frequency == TaskFrequency.PERSONALIZADA:
+            return redirect(url_for('tasks.configure_custom_schedule', task_id=task.id))
+        elif task.frequency == TaskFrequency.FECHA_ESPECIFICA:
             return redirect(url_for('tasks.configure_monthly_schedule', task_id=task.id))
-        elif task.frequency == TaskFrequency.QUINCENAL:
-            return redirect(url_for('tasks.configure_biweekly_schedule', task_id=task.id))
         else:
             return redirect(url_for('tasks.list_tasks', location_id=location_id))
     
@@ -979,7 +979,7 @@ def configure_monthly_schedule(task_id):
         return redirect(url_for('tasks.list_tasks', location_id=task.location_id))
     
     # Verificar que sea una tarea mensual
-    if task.frequency != TaskFrequency.MENSUAL:
+    if task.frequency != TaskFrequency.FECHA_ESPECIFICA:
         flash('Esta tarea no es de frecuencia mensual.', 'warning')
         return redirect(url_for('tasks.list_tasks', location_id=task.location_id))
     

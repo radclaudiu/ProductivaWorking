@@ -13,10 +13,10 @@ class TaskPriority(enum.Enum):
     URGENTE = "urgente"
 
 class TaskFrequency(enum.Enum):
-    DIARIA = "diaria"
-    SEMANAL = "semanal"
-    PERSONALIZADA = "personalizada"
-    FECHA_ESPECIFICA = "fecha_especifica"
+    DIARIA = "DIARIA"
+    SEMANAL = "SEMANAL"
+    PERSONALIZADA = "PERSONALIZADA"
+    FECHA_ESPECIFICA = "FECHA_ESPECIFICA"
 
 class TaskStatus(enum.Enum):
     PENDIENTE = "pendiente"

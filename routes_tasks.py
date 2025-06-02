@@ -1031,7 +1031,7 @@ def configure_biweekly_schedule(task_id):
         return redirect(url_for('tasks.list_tasks', location_id=task.location_id))
     
     # Verificar que sea una tarea quincenal
-    if task.frequency != TaskFrequency.QUINCENAL:
+    if task.frequency != TaskFrequency.PERSONALIZADA:
         flash('Esta tarea no es de frecuencia quincenal.', 'warning')
         return redirect(url_for('tasks.list_tasks', location_id=task.location_id))
     
@@ -1158,9 +1158,9 @@ def edit_task(task_id):
                 return redirect(url_for('tasks.configure_daily_schedule', task_id=task.id))
             elif task.frequency == TaskFrequency.SEMANAL:
                 return redirect(url_for('tasks.configure_weekly_schedule', task_id=task.id))
-            elif task.frequency == TaskFrequency.MENSUAL:
+            elif task.frequency == TaskFrequency.FECHA_ESPECIFICA:
                 return redirect(url_for('tasks.configure_monthly_schedule', task_id=task.id))
-            elif task.frequency == TaskFrequency.QUINCENAL:
+            elif task.frequency == TaskFrequency.PERSONALIZADA:
                 return redirect(url_for('tasks.configure_biweekly_schedule', task_id=task.id))
         else:
             flash(f'Tarea "{task.title}" actualizada correctamente.', 'success')
@@ -1701,7 +1701,7 @@ def purge_monthly_tasks(location_id):
         # Obtener todas las tareas mensuales de esta ubicación
         monthly_tasks = Task.query.filter_by(
             location_id=location_id, 
-            frequency=TaskFrequency.MENSUAL
+            frequency=TaskFrequency.FECHA_ESPECIFICA
         ).all()
         
         task_count = len(monthly_tasks)
@@ -2086,13 +2086,13 @@ def local_user_tasks(date_str=None, group_id=None):
             return False
         
         # Para tareas quincenales, verificar quincena
-        if task.frequency == TaskFrequency.QUINCENAL:
+        if task.frequency == TaskFrequency.PERSONALIZADA:
             start_date = task.start_date or task.created_at.date()
             days_diff = (check_date - start_date).days
             return days_diff % 14 == 0
         
         # Para tareas mensuales, verificar día del mes
-        if task.frequency == TaskFrequency.MENSUAL:
+        if task.frequency == TaskFrequency.FECHA_ESPECIFICA:
             # Si la tarea ya está completada para el mes actual, no mostrarla
             if task.current_month_completed:
                 return False
@@ -2222,7 +2222,7 @@ def complete_task(task_id):
             task.current_week_completed = True
             
         # Si es una tarea mensual, marcar como completada para este mes
-        elif task.frequency == TaskFrequency.MENSUAL:
+        elif task.frequency == TaskFrequency.FECHA_ESPECIFICA:
             task.current_month_completed = True
         
         db.session.add(completion)
@@ -2285,7 +2285,7 @@ def ajax_complete_task(task_id):
         task.current_week_completed = True
         
     # Si es una tarea mensual, marcar como completada para este mes
-    elif task.frequency == TaskFrequency.MENSUAL:
+    elif task.frequency == TaskFrequency.FECHA_ESPECIFICA:
         task.current_month_completed = True
     
     db.session.add(completion)

@@ -51,7 +51,7 @@ def reset_monthly_tasks():
         if today.day == 1:
             # Obtener todas las tareas mensuales
             monthly_tasks = Task.query.filter_by(
-                frequency=TaskFrequency.MENSUAL,
+                frequency=TaskFrequency.FECHA_ESPECIFICA,
                 current_month_completed=True,
                 status=TaskStatus.PENDIENTE
             ).all()
@@ -82,7 +82,7 @@ def reset_monthly_tasks():
                 TaskMonthDay,
                 Task.id == TaskMonthDay.task_id
             ).filter(
-                Task.frequency == TaskFrequency.MENSUAL,
+                Task.frequency == TaskFrequency.FECHA_ESPECIFICA,
                 Task.current_month_completed == False,
                 Task.status == TaskStatus.PENDIENTE,
                 TaskMonthDay.day_of_month == day_of_month

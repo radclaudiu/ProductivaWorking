@@ -866,6 +866,14 @@ def create_task(location_id):
                 db.session.add(TaskWeekday(task_id=task.id, day_of_week=WeekDay.DOMINGO))
             
             db.session.commit()
+            
+        # Para tareas de fecha específica, guardar los días del mes seleccionados
+        if task.frequency == TaskFrequency.FECHA_ESPECIFICA:
+            for day_str in form.selected_month_days.data:
+                day_num = int(day_str)
+                db.session.add(TaskMonthDay(task_id=task.id, day_of_month=day_num))
+            
+            db.session.commit()
         
         # Redirigir a la página de programación según la frecuencia
         log_activity(f'Tarea creada: {task.title} en {location.name}')

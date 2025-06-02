@@ -281,7 +281,7 @@ class Task(db.Model):
             return False
             
         # Para tareas mensuales personalizadas con múltiples días del mes
-        if self.frequency == TaskFrequency.MENSUAL and self.monthdays:
+        if self.frequency == TaskFrequency.FECHA_ESPECIFICA and self.month_days:
             # Si la tarea ya está completada para el mes actual, no está activa
             if self.current_month_completed:
                 return False

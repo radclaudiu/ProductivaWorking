@@ -186,6 +186,29 @@
                             </div>
                         </div>
                         
+                        <!-- Campos para tareas de fecha específica del mes -->
+                        <div id="monthDayFields" class="mb-3" style="display: none;">
+                            <div class="card border-warning mb-3">
+                                <div class="card-header bg-warning bg-opacity-25">
+                                    <h5 class="card-title mb-0">Días específicos del mes</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text">Selecciona los días del mes en los que esta tarea debe aparecer (ej: día 12 y 24):</p>
+                                    
+                                    <div class="form-group">
+                                        {{ form.selected_month_days.label(class="form-label") }}
+                                        {{ form.selected_month_days(class="form-select" + (" is-invalid" if form.selected_month_days.errors else ""), multiple=true, size="8", style="height: 120px;") }}
+                                        {% for error in form.selected_month_days.errors %}
+                                        <div class="invalid-feedback">{{ error }}</div>
+                                        {% endfor %}
+                                        <div class="form-text">
+                                            Mantén presionado Ctrl (Cmd en Mac) para seleccionar múltiples días.
+                                            Ejemplo: selecciona día 12 y día 24 para una tarea que se ejecute dos veces al mes.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                         
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                             <a href="{{ url_for('tasks.list_tasks', location_id=location_id) }}" class="btn btn-secondary me-md-2">Cancelar</a>
@@ -204,21 +227,27 @@
     document.addEventListener('DOMContentLoaded', function() {
         const frequencySelect = document.getElementById('taskFrequency');
         const customFields = document.getElementById('customFrequencyFields');
+        const monthDayFields = document.getElementById('monthDayFields');
         
-        // Función para mostrar/ocultar campos personalizados
-        function toggleCustomFields() {
+        // Función para mostrar/ocultar campos según la frecuencia
+        function toggleFrequencyFields() {
+            // Ocultar todos los campos especiales primero
+            customFields.style.display = 'none';
+            monthDayFields.style.display = 'none';
+            
+            // Mostrar el campo correspondiente según la selección
             if (frequencySelect.value === 'personalizada') {
                 customFields.style.display = 'block';
-            } else {
-                customFields.style.display = 'none';
+            } else if (frequencySelect.value === 'fecha_especifica') {
+                monthDayFields.style.display = 'block';
             }
         }
         
         // Verificar estado inicial
-        toggleCustomFields();
+        toggleFrequencyFields();
         
         // Escuchar cambios en la selección
-        frequencySelect.addEventListener('change', toggleCustomFields);
+        frequencySelect.addEventListener('change', toggleFrequencyFields);
     });
 </script>
 {% endblock %}

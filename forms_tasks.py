@@ -70,6 +70,11 @@ class TaskForm(FlaskForm):
     saturday = BooleanField('Sábado', default=False)
     sunday = BooleanField('Domingo', default=False)
     
+    # Días específicos del mes para frecuencia por fecha específica (1-30)
+    selected_month_days = SelectMultipleField('Días del mes', 
+                                            choices=[(str(i), str(i)) for i in range(1, 31)],
+                                            validators=[Optional()])
+    
     submit = SubmitField('Guardar Tarea')
     
     def __init__(self, *args, **kwargs):
@@ -92,6 +97,12 @@ class TaskForm(FlaskForm):
                     self.thursday.data or self.friday.data or self.saturday.data or 
                     self.sunday.data):
                 self.frequency.errors.append('Debes seleccionar al menos un día de la semana para tareas personalizadas')
+                return False
+        
+        # Verificar que si la frecuencia es fecha específica, al menos un día del mes está seleccionado
+        if self.frequency.data == TaskFrequency.FECHA_ESPECIFICA.value:
+            if not self.selected_month_days.data:
+                self.selected_month_days.errors.append('Debes seleccionar al menos un día del mes para tareas con fecha específica')
                 return False
                 
         return True

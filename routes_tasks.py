@@ -876,18 +876,23 @@ def create_task(location_id):
             
             db.session.commit()
         
-        # Redirigir a la página de programación según la frecuencia
+        # Redirigir según la frecuencia de la tarea
         log_activity(f'Tarea creada: {task.title} en {location.name}')
-        flash(f'Tarea "{task.title}" creada correctamente. Ahora debes configurar su programación.', 'success')
         
-        if task.frequency == TaskFrequency.DIARIA:
+        if task.frequency == TaskFrequency.FECHA_ESPECIFICA:
+            # Para tareas de fecha específica, ya se configuraron los días con checkboxes
+            flash(f'Tarea "{task.title}" creada correctamente con los días seleccionados.', 'success')
+            return redirect(url_for('tasks.list_tasks', location_id=location_id))
+        elif task.frequency == TaskFrequency.PERSONALIZADA:
+            # Para tareas personalizadas, ya se configuraron los días con checkboxes
+            flash(f'Tarea "{task.title}" creada correctamente con los días seleccionados.', 'success')
+            return redirect(url_for('tasks.list_tasks', location_id=location_id))
+        elif task.frequency == TaskFrequency.DIARIA:
+            flash(f'Tarea "{task.title}" creada correctamente. Ahora debes configurar su programación.', 'success')
             return redirect(url_for('tasks.configure_daily_schedule', task_id=task.id))
         elif task.frequency == TaskFrequency.SEMANAL:
+            flash(f'Tarea "{task.title}" creada correctamente. Ahora debes configurar su programación.', 'success')
             return redirect(url_for('tasks.configure_weekly_schedule', task_id=task.id))
-        elif task.frequency == TaskFrequency.PERSONALIZADA:
-            return redirect(url_for('tasks.configure_custom_schedule', task_id=task.id))
-        elif task.frequency == TaskFrequency.FECHA_ESPECIFICA:
-            return redirect(url_for('tasks.configure_monthly_schedule', task_id=task.id))
         else:
             return redirect(url_for('tasks.list_tasks', location_id=location_id))
     

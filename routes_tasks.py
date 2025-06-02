@@ -869,7 +869,8 @@ def create_task(location_id):
             
         # Para tareas de fecha específica, guardar los días del mes seleccionados
         if task.frequency == TaskFrequency.FECHA_ESPECIFICA:
-            for day_str in form.selected_month_days.data:
+            selected_days = request.form.getlist('selected_month_days')
+            for day_str in selected_days:
                 day_num = int(day_str)
                 db.session.add(TaskMonthDay(task_id=task.id, day_of_month=day_num))
             

@@ -193,17 +193,56 @@
                                     <h5 class="card-title mb-0">Días específicos del mes</h5>
                                 </div>
                                 <div class="card-body">
-                                    <p class="card-text">Selecciona los días del mes en los que esta tarea debe aparecer (ej: día 12 y 24):</p>
+                                    <p class="card-text">Selecciona los días del mes en los que esta tarea debe aparecer:</p>
                                     
-                                    <div class="form-group">
-                                        {{ form.selected_month_days.label(class="form-label") }}
-                                        {{ form.selected_month_days(class="form-select" + (" is-invalid" if form.selected_month_days.errors else ""), multiple=true, size="8", style="height: 120px;") }}
-                                        {% for error in form.selected_month_days.errors %}
-                                        <div class="invalid-feedback">{{ error }}</div>
-                                        {% endfor %}
-                                        <div class="form-text">
-                                            Mantén presionado Ctrl (Cmd en Mac) para seleccionar múltiples días.
-                                            Ejemplo: selecciona día 12 y día 24 para una tarea que se ejecute dos veces al mes.
+                                    <div class="row">
+                                        <!-- Días 1-10 -->
+                                        <div class="col-md-3">
+                                            {% for day in range(1, 11) %}
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="selected_month_days" value="{{ day }}" id="day{{ day }}">
+                                                <label class="form-check-label" for="day{{ day }}">
+                                                    Día {{ day }}
+                                                </label>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        
+                                        <!-- Días 11-20 -->
+                                        <div class="col-md-3">
+                                            {% for day in range(11, 21) %}
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="selected_month_days" value="{{ day }}" id="day{{ day }}">
+                                                <label class="form-check-label" for="day{{ day }}">
+                                                    Día {{ day }}
+                                                </label>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        
+                                        <!-- Días 21-30 -->
+                                        <div class="col-md-3">
+                                            {% for day in range(21, 31) %}
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="selected_month_days" value="{{ day }}" id="day{{ day }}">
+                                                <label class="form-check-label" for="day{{ day }}">
+                                                    Día {{ day }}
+                                                </label>
+                                            </div>
+                                            {% endfor %}
+                                        </div>
+                                        
+                                        <!-- Día 31 -->
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" name="selected_month_days" value="31" id="day31">
+                                                <label class="form-check-label" for="day31">
+                                                    Día 31
+                                                </label>
+                                            </div>
+                                            <div class="form-text mt-3">
+                                                <small>Puedes seleccionar múltiples días. Ejemplo: días 12 y 24 para una tarea que se ejecute dos veces al mes.</small>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

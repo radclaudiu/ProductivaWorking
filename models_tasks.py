@@ -15,9 +15,8 @@ class TaskPriority(enum.Enum):
 class TaskFrequency(enum.Enum):
     DIARIA = "diaria"
     SEMANAL = "semanal"
-    QUINCENAL = "quincenal"
-    MENSUAL = "mensual"
     PERSONALIZADA = "personalizada"
+    FECHA_ESPECIFICA = "fecha_especifica"
 
 class TaskStatus(enum.Enum):
     PENDIENTE = "pendiente"
@@ -204,25 +203,6 @@ class LocalUser(db.Model):
             'employee_name': f"{self.employee.first_name} {self.employee.last_name}" if self.employee else None
         }
 
-class TaskMonthDay(db.Model):
-    """Modelo para almacenar los días del mes en los que una tarea debe ejecutarse"""
-    __tablename__ = 'task_monthdays'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    day_of_month = db.Column(db.Integer, nullable=False)  # Día del mes (1-31)
-    
-    # Relaciones
-    task_id = db.Column(db.Integer, db.ForeignKey('tasks.id'), nullable=False)
-    task = db.relationship('Task', back_populates='monthdays')
-    
-    def __repr__(self):
-        return f'<TaskMonthDay {self.task.title} - Día {self.day_of_month}>'
-        
-    @classmethod
-    def day_matches_today(cls, day_of_month):
-        """Comprueba si el día del mes corresponde al día actual"""
-        return date.today().day == day_of_month
-
 
 class Task(db.Model):
     __tablename__ = 'tasks'
@@ -253,7 +233,7 @@ class Task(db.Model):
     # Programación
     schedule_details = db.relationship('TaskSchedule', back_populates='task', cascade='all, delete-orphan')
     weekdays = db.relationship('TaskWeekday', back_populates='task', cascade='all, delete-orphan')
-    monthdays = db.relationship('TaskMonthDay', back_populates='task', cascade='all, delete-orphan')
+    month_days = db.relationship('TaskMonthDay', back_populates='task', cascade='all, delete-orphan')
     
     # Historial de completado
     completions = db.relationship('TaskCompletion', back_populates='task', cascade='all, delete-orphan')
@@ -429,6 +409,25 @@ class TaskWeekday(db.Model):
             WeekDay.DOMINGO: 6
         }
         return date.today().weekday() == day_map[weekday]
+
+class TaskMonthDay(db.Model):
+    """Modelo para almacenar los días específicos del mes en los que una tarea debe ejecutarse"""
+    __tablename__ = 'task_month_days'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    day_of_month = db.Column(db.Integer, nullable=False)  # Día del mes (1-30)
+    
+    # Relaciones
+    task_id = db.Column(db.Integer, db.ForeignKey('tasks.id'), nullable=False)
+    task = db.relationship('Task', back_populates='month_days')
+    
+    def __repr__(self):
+        return f'<TaskMonthDay {self.task.title} - día {self.day_of_month}>'
+        
+    @classmethod
+    def day_matches_today(cls, day_of_month):
+        """Comprueba si el día del mes corresponde al día actual"""
+        return date.today().day == day_of_month
 
 class TaskInstance(db.Model):
     """Instancia de tarea programada para una fecha específica."""

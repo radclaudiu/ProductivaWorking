@@ -2099,9 +2099,9 @@ def local_user_tasks(date_str=None, group_id=None):
                 return False
                 
             # Si hay días específicos configurados con el nuevo modelo
-            if task.monthdays:
+            if task.month_days:
                 # Verificar si el día actual coincide con alguno de los días configurados
-                return any(monthday.day_of_month == check_date.day for monthday in task.monthdays)
+                return any(monthday.day_of_month == check_date.day for monthday in task.month_days)
                 
             # Si no hay días específicos configurados con el nuevo modelo,
             # intentar con el modelo antiguo (TaskSchedule)

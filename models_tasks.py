@@ -287,7 +287,7 @@ class Task(db.Model):
                 return False
                 
             # Verificar si hoy coincide con alguno de los días del mes configurados
-            for monthday_entry in self.monthdays:
+            for monthday_entry in self.month_days:
                 if TaskMonthDay.day_matches_today(monthday_entry.day_of_month):
                     return True
             # Si llegamos aquí, es que hoy no es uno de los días del mes configurados
@@ -309,9 +309,9 @@ class Task(db.Model):
                 return False
                 
             # Para tareas con fecha específica del mes, verificamos si el día actual coincide
-            elif self.frequency == TaskFrequency.FECHA_ESPECIFICA and self.monthdays:
+            elif self.frequency == TaskFrequency.FECHA_ESPECIFICA and self.month_days:
                 current_day = today.day
-                return any(md.day_of_month == current_day for md in self.monthdays)
+                return any(md.day_of_month == current_day for md in self.month_days)
             
             # Para cualquier otro caso, mostramos la tarea
             return True

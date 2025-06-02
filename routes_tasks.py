@@ -985,7 +985,7 @@ def configure_monthly_schedule(task_id):
         return redirect(url_for('tasks.list_tasks', location_id=task.location_id))
     
     # Buscar días configurados con el nuevo modelo
-    existing_days = [str(day.day_of_month) for day in task.monthdays]
+    existing_days = [str(day.day_of_month) for day in task.month_days]
     
     # Inicializar formulario
     form = MonthlyScheduleForm()
@@ -996,7 +996,7 @@ def configure_monthly_schedule(task_id):
     
     if form.validate_on_submit():
         # Manejar el nuevo modelo (TaskMonthDay) - Primero eliminar días existentes
-        for monthday in task.monthdays:
+        for monthday in task.month_days:
             db.session.delete(monthday)
         
         # Agregar los nuevos días seleccionados
